@@ -1,0 +1,246 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader } from "./ui/card";
+import { TactileButton } from "./TactileButton";
+import { supabaseAPI } from "../utils/supabase-api";
+import { toast } from "sonner@2.0.3";
+
+interface SignUpScreenProps {
+  onAuthSuccess: (token: string) => void;
+  onNavigateToSignIn: () => void;
+}
+
+export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn }: SignUpScreenProps) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [height, setHeight] = useState("");
+  const [weight, setWeight] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const validateInputs = () => {
+    if (!firstName.trim()) {
+      toast.error("First name is required");
+      return false;
+    }
+    if (!lastName.trim()) {
+      toast.error("Last name is required");
+      return false;
+    }
+    if (!displayName.trim()) {
+      toast.error("Display name is required");
+      return false;
+    }
+    if (!email.trim()) {
+      toast.error("Email is required");
+      return false;
+    }
+    if (!password.trim()) {
+      toast.error("Password is required");
+      return false;
+    }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return false;
+    }
+    if (height && (isNaN(Number(height)) || Number(height) <= 0)) {
+      toast.error("Height must be a valid number");
+      return false;
+    }
+    if (weight && (isNaN(Number(weight)) || Number(weight) <= 0)) {
+      toast.error("Weight must be a valid number");
+      return false;
+    }
+    return true;
+  };
+
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateInputs()) return;
+
+    setIsLoading(true);
+    
+    try {
+      // Step 1: Sign up
+      const signUpResult = await supabaseAPI.signUp(email, password);
+      
+      let token: string;
+      
+      if (signUpResult.token) {
+        token = signUpResult.token;
+      } else if (signUpResult.needsSignIn) {
+        // Step 2: If no token returned, call sign in
+        token = await supabaseAPI.signIn(email, password);
+      } else {
+        throw new Error("No token received from sign up or sign in");
+      }
+
+      // Set the token in the API client
+      supabaseAPI.setToken(token);
+
+      // Step 3: Create profile with all the new fields
+      const heightCm = height ? Number(height) : undefined;
+      const weightKg = weight ? Number(weight) : undefined;
+      
+      await supabaseAPI.upsertProfile(firstName, lastName, displayName, heightCm, weightKg);
+
+      // Step 4: Navigate to home
+      onAuthSuccess(token);
+      toast.success("Account created successfully!");
+    } catch (err) {
+      if (err instanceof Error) {
+        // Handle specific error types
+        if (err.message === "RATE_LIMIT") {
+          toast.error("Too many requests. Please wait a few minutes and try again.");
+        } else if (err.message.toLowerCase().includes("email")) {
+          toast.error("Invalid email address or email already exists");
+        } else if (err.message.toLowerCase().includes("password")) {
+          toast.error("Password must be at least 6 characters");
+        } else if (err.message.includes("429")) {
+          toast.error("Server is busy. Please wait a moment and try again.");
+        } else {
+          toast.error(err.message || "Sign up failed");
+        }
+      } else {
+        toast.error("Sign up failed");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex items-center justify-center p-6">
+      <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-[var(--border)]">
+        <CardHeader className="text-center space-y-2">
+          <h1 className="text-2xl font-medium text-[var(--warm-brown)]">Create Account</h1>
+          <p className="text-[var(--warm-brown)]/70">Join and start tracking your workouts</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form onSubmit={handleCreateAccount} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <input
+                  type="text"
+                  placeholder="First Name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                  disabled={isLoading}
+                  autoComplete="given-name"
+                  required
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                  disabled={isLoading}
+                  autoComplete="family-name"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div>
+              <input
+                type="text"
+                placeholder="Display Name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                disabled={isLoading}
+                autoComplete="nickname"
+                required
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <input
+                  type="number"
+                  placeholder="Height (cm)"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                  disabled={isLoading}
+                  min="1"
+                />
+              </div>
+              <div>
+                <input
+                  type="number"
+                  placeholder="Weight (kg)"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                  disabled={isLoading}
+                  min="1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                disabled={isLoading}
+                autoComplete="email"
+                required
+              />
+            </div>
+            
+            <div>
+              <input
+                type="password"
+                placeholder="Password (min 6 characters)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                disabled={isLoading}
+                autoComplete="new-password"
+                required
+              />
+            </div>
+
+            <TactileButton
+              type="submit"
+              disabled={isLoading || !firstName || !lastName || !displayName || !email || !password}
+              className="w-full bg-gradient-to-r from-[var(--warm-coral)] to-[var(--warm-peach)] text-white disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 animate-spin border-2 border-white border-t-transparent rounded-full" />
+                  Creating Account...
+                </div>
+              ) : (
+                "Create Account"
+              )}
+            </TactileButton>
+          </form>
+
+          <div className="text-center">
+            <div className="text-sm text-[var(--warm-brown)]/60">
+              Already have an account?{" "}
+              <button
+                onClick={onNavigateToSignIn}
+                className="text-[var(--warm-coral)] hover:text-[var(--warm-coral)]/80 transition-colors font-medium"
+                disabled={isLoading}
+              >
+                Sign in
+              </button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

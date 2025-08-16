@@ -1,0 +1,64 @@
+import { TrendingUp, Dumbbell, User, FileText } from "lucide-react";
+import { TactileButton } from "./TactileButton";
+
+export type TabType = "workouts" | "routines" | "progress" | "profile";
+
+interface BottomNavigationProps {
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
+}
+
+export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationProps) {
+  const tabs = [
+    {
+      id: "workouts" as TabType,
+      label: "Workouts",
+      icon: Dumbbell,
+      variant: activeTab === "workouts" ? "primary" : "secondary"
+    },
+    {
+      id: "routines" as TabType,
+      label: "Routines",
+      icon: FileText,
+      variant: activeTab === "routines" ? "primary" : "secondary"
+    },
+    {
+      id: "progress" as TabType,
+      label: "Progress", 
+      icon: TrendingUp,
+      variant: activeTab === "progress" ? "sage" : "secondary"
+    },
+    {
+      id: "profile" as TabType,
+      label: "Profile",
+      icon: User,
+      variant: activeTab === "profile" ? "peach" : "secondary"
+    }
+  ] as const;
+
+  return (
+    <div 
+      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] px-4 pt-4" 
+      style={{ 
+        paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))'
+      }}
+    >
+      <div className="flex justify-center gap-2 max-w-md mx-auto">
+        {tabs.map((tab) => (
+          <TactileButton
+            key={tab.id}
+            variant={tab.variant}
+            size="md"
+            className={`flex-1 flex flex-col items-center gap-1 py-2 ${
+              activeTab === tab.id ? "" : "shadow-sm"
+            }`}
+            onClick={() => onTabChange(tab.id)}
+          >
+            <tab.icon size={18} />
+            <span className="text-xs">{tab.label}</span>
+          </TactileButton>
+        ))}
+      </div>
+    </div>
+  );
+}
