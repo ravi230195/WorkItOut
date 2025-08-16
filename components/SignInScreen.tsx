@@ -5,7 +5,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
 import { supabaseAPI } from "../utils/supabase-api";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface SignInScreenProps {
   onAuthSuccess: (token: string) => void;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { TactileButton } from "./TactileButton";
 import { supabaseAPI } from "../utils/supabase-api";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface SignUpScreenProps {
   onAuthSuccess: (token: string) => void;

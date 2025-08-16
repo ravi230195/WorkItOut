@@ -7,7 +7,7 @@ import { Exercise, exerciseDatabase } from "./ExerciseDatabase";
 import { WorkoutTemplate } from "./WorkoutTemplates";
 import { supabaseAPI, WorkoutExercise, Set } from "../utils/supabase-api";
 import { useAuth } from "./AuthContext";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface SetInput {
   id: string;

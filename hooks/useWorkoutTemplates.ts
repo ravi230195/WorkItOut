@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabaseAPI, UserRoutine, UserRoutineExercise, Exercise } from '../utils/supabase-api';
 import { WorkoutTemplate } from '../components/WorkoutTemplates';
 import { exerciseDatabase } from '../components/ExerciseDatabase';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 export function useWorkoutTemplates(userToken: string | null) {
   const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplate[]>([]);

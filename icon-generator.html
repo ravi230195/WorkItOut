@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Workout Tracker Icons</title>
+    <style>
+        body { 
+            font-family: system-ui; 
+            padding: 20px; 
+            background: #fefcfb;
+        }
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+            gap: 15px; 
+            margin: 20px 0; 
+        }
+        .icon-item { 
+            text-align: center; 
+            padding: 15px; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 8px rgba(224,122,95,0.1);
+        }
+        canvas { 
+            border-radius: 8px; 
+            margin: 8px 0;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        button { 
+            background: #e07a5f; 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 12px;
+        }
+        .download-all { 
+            background: #a7c4a0; 
+            font-size: 16px; 
+            padding: 12px 24px; 
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏋️ Workout Tracker Icon Generator</h1>
+    <p>Generate all app icons with warm coral theme</p>
+    
+    <button class="download-all" onclick="downloadAllIcons()">
+        📦 Download All Icons as ZIP
+    </button>
+    
+    <div class="grid" id="iconGrid"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        const icons = [
+            { size: 16, name: 'favicon-16x16.png' },
+            { size: 32, name: 'favicon-32x32.png' },
+            { size: 72, name: 'icon-72x72.png' },
+            { size: 96, name: 'icon-96x96.png' },
+            { size: 128, name: 'icon-128x128.png' },
+            { size: 144, name: 'icon-144x144.png' },
+            { size: 152, name: 'icon-152x152.png' },
+            { size: 180, name: 'apple-touch-icon.png' },
+            { size: 192, name: 'icon-192x192.png' },
+            { size: 384, name: 'icon-384x384.png' },
+            { size: 512, name: 'icon-512x512.png' }
+        ];
+
+        const colors = {
+            primary: '#e07a5f',
+            secondary: '#f4e8c1', 
+            accent: '#a7c4a0',
+            background: '#fefcfb',
+            dark: '#3d2914'
+        };
+
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const center = size / 2;
+            const scale = size / 128;
+            
+            // Background gradient
+            const grad = ctx.createRadialGradient(center, center, 0, center, center, center);
+            grad.addColorStop(0, colors.background);
+            grad.addColorStop(1, colors.secondary);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Dumbbell
+            ctx.fillStyle = colors.primary;
+            ctx.strokeStyle = colors.dark;
+            ctx.lineWidth = Math.max(1, 2 * scale);
+            
+            // Weight plates
+            const plateR = 18 * scale;
+            const plateOffset = 35 * scale;
+            
+            // Left plate
+            ctx.beginPath();
+            ctx.arc(center - plateOffset, center, plateR, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Right plate  
+            ctx.beginPath();
+            ctx.arc(center + plateOffset, center, plateR, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Bar
+            const barW = 70 * scale;
+            const barH = Math.max(2, 6 * scale);
+            ctx.fillRect(center - barW/2, center - barH/2, barW, barH);
+            ctx.strokeRect(center - barW/2, center - barH/2, barW, barH);
+            
+            // Grip
+            ctx.fillStyle = colors.accent;
+            const gripW = 20 * scale;
+            const gripH = Math.max(3, 8 * scale);
+            ctx.fillRect(center - gripW/2, center - gripH/2, gripW, gripH);
+            
+            // Shadow for larger icons
+            if (size >= 32) {
+                ctx.fillStyle = 'rgba(61, 41, 20, 0.15)';
+                ctx.beginPath();
+                ctx.arc(center - plateOffset, center + 2 * scale, plateR, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(center + plateOffset, center + 2 * scale, plateR, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        function createIconElement(icon) {
+            const canvas = document.createElement('canvas');
+            canvas.width = icon.size;
+            canvas.height = icon.size;
+            drawIcon(canvas, icon.size);
+            
+            const container = document.createElement('div');
+            container.className = 'icon-item';
+            
+            const label = document.createElement('div');
+            label.textContent = `${icon.size}×${icon.size}`;
+            label.style.fontSize = '11px';
+            label.style.color = colors.dark;
+            label.style.marginBottom = '5px';
+            
+            const filename = document.createElement('div');
+            filename.textContent = icon.name;
+            filename.style.fontSize = '10px';
+            filename.style.color = '#666';
+            filename.style.marginBottom = '8px';
+            
+            const downloadBtn = document.createElement('button');
+            downloadBtn.textContent = '⬇️ Download';
+            downloadBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.download = icon.name;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+            
+            container.appendChild(label);
+            container.appendChild(filename);
+            container.appendChild(canvas);
+            container.appendChild(downloadBtn);
+            
+            return { container, canvas, icon };
+        }
+
+        async function downloadAllIcons() {
+            const zip = new JSZip();
+            const canvases = [];
+            
+            // Generate all icons
+            icons.forEach(icon => {
+                const canvas = document.createElement('canvas');
+                canvas.width = icon.size;
+                canvas.height = icon.size;
+                drawIcon(canvas, icon.size);
+                
+                const dataUrl = canvas.toDataURL('image/png');
+                const base64Data = dataUrl.split(',')[1];
+                zip.file(icon.name, base64Data, { base64: true });
+            });
+            
+            // Add favicon.ico (using 32x32)
+            const faviconCanvas = document.createElement('canvas');
+            faviconCanvas.width = 32;
+            faviconCanvas.height = 32;
+            drawIcon(faviconCanvas, 32);
+            const faviconData = faviconCanvas.toDataURL('image/png').split(',')[1];
+            zip.file('favicon.ico', faviconData, { base64: true });
+            
+            // Create installation instructions
+            const instructions = `# Workout Tracker App Icons
+
+## Installation
+1. Extract all files to your /public/ directory
+2. Update your manifest.json with the icon references
+3. Add favicon links to your index.html
+
+## Generated Icons:
+${icons.map(icon => `- ${icon.name} (${icon.size}×${icon.size})`).join('\n')}
+- favicon.ico (32×32)
+
+## Colors Used:
+- Primary: ${colors.primary} (warm coral)
+- Secondary: ${colors.secondary} (warm cream) 
+- Accent: ${colors.accent} (sage green)
+- Background: ${colors.background} (warm white)
+- Dark: ${colors.dark} (warm brown)
+
+Generated on: ${new Date().toLocaleString()}
+`;
+            
+            zip.file('README.md', instructions);
+            
+            const content = await zip.generateAsync({ type: 'blob' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = 'workout-tracker-icons.zip';
+            link.click();
+        }
+
+        // Initialize page
+        window.onload = () => {
+            const grid = document.getElementById('iconGrid');
+            icons.forEach(icon => {
+                const element = createIconElement(icon);
+                grid.appendChild(element.container);
+            });
+        };
+    </script>
+</body>
+</html>

@@ -4,7 +4,7 @@ import { Input } from "./ui/input";
 import { TactileButton } from "./TactileButton";
 import { supabaseAPI, Exercise } from "../utils/supabase-api";
 import { useAuth } from "./AuthContext";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 interface AddExercisesToRoutineProps {

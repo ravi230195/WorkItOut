@@ -3,7 +3,7 @@ import { MoreHorizontal, FileText, AlertCircle, Plus } from "lucide-react";
 import { TactileButton } from "./TactileButton";
 import { supabaseAPI, UserRoutine } from "../utils/supabase-api";
 import { useAuth } from "./AuthContext";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface RoutinesScreenProps {
   onCreateRoutine: () => void;

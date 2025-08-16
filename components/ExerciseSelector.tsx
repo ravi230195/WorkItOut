@@ -5,7 +5,7 @@ import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { X, Search, Filter, Dumbbell } from "lucide-react";
 import { supabaseAPI, Exercise } from "../utils/supabase-api";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 // For fallback compatibility with old Exercise type
 interface LegacyExercise {

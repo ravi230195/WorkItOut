@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabaseAPI, Workout } from '../utils/supabase-api';
 import { useAuth } from '../components/AuthContext';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface WorkoutStats {
   thisWeek: number;

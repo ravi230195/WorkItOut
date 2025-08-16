@@ -9,7 +9,7 @@
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.workouttracker.app</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -22,42 +22,21 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
-	<key>NSCameraUsageDescription</key>
-	<string>This app uses the camera to take photos of your workouts.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app uses location to enhance your workout tracking experience.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>This app uses the microphone to record workout audio notes.</string>
-	<key>NSMotionUsageDescription</key>
-	<string>This app uses motion data to track your steps and workout activity.</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>This app reads step count data to track your daily activity and integrate it with your workouts.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>This app writes workout data to HealthKit to keep your fitness data synchronized.</string>
-	<key>UILaunchScreen</key>
-	<dict>
-		<key>UIColorName</key>
-		<string>SplashBackgroundColor</string>
-		<key>UIImageName</key>
-		<string>Splash</string>
-		<key>UIImageRespectsSafeAreaInsets</key>
-		<true/>
-		<key>UILaunchScreenMimimumTime</key>
-		<real>2</real>
-	</dict>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>
 	</array>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
@@ -68,9 +47,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>UIStatusBarStyle</key>
-	<string>UIStatusBarStyleDefault</string>
-	<key>UIUserInterfaceStyle</key>
-	<string>Light</string>
 </dict>
 </plist>
