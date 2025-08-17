@@ -35,7 +35,7 @@ export function CreateRoutine({ onBack, onRoutineCreated }: CreateRoutineProps) 
   return (
     <div className="h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 safe-area-top bg-white/80 backdrop-blur-sm">
+              <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm">
         <TactileButton 
           variant="secondary"
           size="sm"

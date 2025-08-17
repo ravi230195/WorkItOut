@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from "./ui/card";
 import { TactileButton } from "./TactileButton";
 import { CircularProgress } from "./CircularProgress";
 import { StepCounter } from "./StepCounter";
-import { PullToRefresh } from "./PullToRefresh";
+
 import {
   Clock,
   TrendingUp,
@@ -15,7 +15,7 @@ import { useWorkout } from "./WorkoutContext";
 import { WorkoutTemplate } from "./WorkoutTemplates";
 import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
 import { useStepTracking } from "../hooks/useStepTracking";
-import { useRefreshData } from "../hooks/useRefreshData";
+
 import { supabaseAPI, Workout } from "../utils/supabase-api";
 import { useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
@@ -106,19 +106,7 @@ export function WorkoutDashboard({
     total: 0
   });
 
-  // Pull-to-refresh integration
-  const { isRefreshing, refreshAllData } = useRefreshData({
-    onWorkoutsUpdated: (workouts) => {
-      console.log('🔄 [DBG] Updating recent workouts in dashboard:', workouts.length);
-      setRecentWorkoutsFromAPI(workouts);
-    },
-    onStatsUpdated: (stats) => {
-      console.log('🔄 [DBG] Updating workout stats in dashboard:', stats);
-      setWorkoutStats(stats);
-    },
-    onStepGoalRefreshed: refreshStepGoal,
-    onStepDataRefreshed: forceRefreshStepData
-  });
+
 
   // Initial data fetch on mount and when user token changes
   useEffect(() => {
@@ -250,11 +238,7 @@ export function WorkoutDashboard({
   };
 
   return (
-    <PullToRefresh 
-      onRefresh={refreshAllData}
-      isRefreshing={isRefreshing}
-    >
-      <div className="p-6 space-y-6 max-w-md mx-auto" style={{ paddingTop: 'max(24px, calc(24px + env(safe-area-inset-top, 0px)))', paddingBottom: 'max(96px, calc(96px + env(safe-area-inset-bottom, 0px)))' }}>
+    <div className="screen-container dashboard-bg p-6 space-y-6 max-w-md mx-auto pb-24">
         {/* Dynamic Greeting */}
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-medium text-[var(--warm-brown)]">
@@ -480,6 +464,5 @@ export function WorkoutDashboard({
           </div>
         </div>
       </div>
-    </PullToRefresh>
   );
 }

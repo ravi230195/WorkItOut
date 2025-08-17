@@ -107,7 +107,7 @@ export function AppRouter({
   const showBottomNav = !VIEWS_WITHOUT_BOTTOM_NAV.includes(currentView);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
+    <div>
       {currentView === "workouts" && (
         <WorkoutDashboard 
           onSelectTemplate={onSelectTemplate}

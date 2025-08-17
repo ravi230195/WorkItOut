@@ -112,7 +112,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn }: SignUpScreen
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex items-center justify-center p-6">
+    <div className="screen-container signup-bg flex items-center justify-center p-6">
       <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-[var(--border)]">
         <CardHeader className="text-center space-y-2">
           <h1 className="text-2xl font-medium text-[var(--warm-brown)]">Create Account</h1>

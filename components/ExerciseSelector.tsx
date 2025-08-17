@@ -106,7 +106,7 @@ export function ExerciseSelector({ onSelectExercise, onClose }: ExerciseSelector
   };
 
   return (
-    <div className="p-4 safe-area-top safe-area-bottom space-y-4 max-w-md mx-auto h-screen flex flex-col">
+          <div className="p-4 space-y-4 max-w-md mx-auto h-screen flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm">
         <div className="flex items-center gap-2">

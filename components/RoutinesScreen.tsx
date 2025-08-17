@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { MoreHorizontal, FileText, AlertCircle, Plus } from "lucide-react";
+import { Card, CardContent } from "./ui/card";
 import { TactileButton } from "./TactileButton";
+import { Plus, MoreHorizontal, AlertCircle } from "lucide-react";
 import { supabaseAPI, UserRoutine } from "../utils/supabase-api";
-import { useAuth } from "./AuthContext";
-import { toast } from "sonner";
 
 interface RoutinesScreenProps {
   onCreateRoutine: () => void;
@@ -14,51 +13,41 @@ export function RoutinesScreen({ onCreateRoutine, onSelectRoutine }: RoutinesScr
   const [routines, setRoutines] = useState<UserRoutine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { userToken } = useAuth();
 
   useEffect(() => {
     const fetchRoutines = async () => {
       try {
+        setIsLoading(true);
         setError(null);
-        
-        if (!userToken) {
-          console.log("No user token, skipping routine fetch");
-          setIsLoading(false);
-          return;
-        }
-
-        console.log("Fetching user routines...");
-        const routineData = await supabaseAPI.getUserRoutines();
-        console.log("Fetched routines:", routineData);
-        
-        // Filter for active routines
-        const activeRoutines = routineData.filter(routine => routine.is_active);
-        setRoutines(activeRoutines);
-      } catch (error) {
-        console.error("Failed to fetch routines:", error);
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        setError(errorMessage);
-        toast.error("Failed to load routines");
+        const routinesData = await supabaseAPI.getUserRoutines();
+        setRoutines(routinesData);
+      } catch (err) {
+        console.error("Failed to fetch routines:", err);
+        setError(err instanceof Error ? err.message : "Failed to load routines");
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchRoutines();
-  }, [userToken]);
+  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return "yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString();
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
       {/* Header */}
-      <div className="safe-area-top pb-6 px-4">
+      <div className="pt-6 pb-6 px-4">
         <div className="text-center">
           <h1 className="text-2xl font-medium text-[var(--warm-brown)] mb-2">
             MY ROUTINES
@@ -70,7 +59,7 @@ export function RoutinesScreen({ onCreateRoutine, onSelectRoutine }: RoutinesScr
       </div>
 
       {/* Content */}
-      <div className="px-4 safe-area-bottom">
+      <div className="px-4 pb-24">
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin mx-auto mb-4 w-8 h-8 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full"></div>
@@ -84,7 +73,7 @@ export function RoutinesScreen({ onCreateRoutine, onSelectRoutine }: RoutinesScr
             <h3 className="text-lg font-medium text-[var(--warm-brown)] mb-2">
               Error Loading Routines
             </h3>
-            <p className="text-red-600 mb-4 text-sm max-w-sm mx-auto">
+            <p className="red-600 mb-4 text-sm max-w-sm mx-auto">
               {error}
             </p>
             <div className="flex gap-3 justify-center">
@@ -108,6 +97,12 @@ export function RoutinesScreen({ onCreateRoutine, onSelectRoutine }: RoutinesScr
             <p className="text-[var(--warm-brown)]/60 text-lg">
               Start by adding new routine
             </p>
+            <TactileButton
+              onClick={onCreateRoutine}
+              className="mt-4 bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white px-6 py-2 font-medium"
+            >
+              Create Your First Routine
+            </TactileButton>
           </div>
         ) : (
           <div className="space-y-3">
@@ -146,7 +141,7 @@ export function RoutinesScreen({ onCreateRoutine, onSelectRoutine }: RoutinesScr
       </div>
 
       {/* Floating Add Routine Button */}
-      <div className="fixed right-4 z-50" style={{ bottom: 'max(80px, calc(80px + env(safe-area-inset-bottom)))' }}>
+      <div className="fixed right-4 bottom-20 z-50">
         <TactileButton
           onClick={onCreateRoutine}
           className="w-14 h-14 bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white rounded-full shadow-lg btn-tactile flex items-center justify-center"

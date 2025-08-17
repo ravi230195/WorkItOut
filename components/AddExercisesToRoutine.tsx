@@ -142,7 +142,7 @@ export function AddExercisesToRoutine({
   return (
     <div className="h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 safe-area-top bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
+              <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
         <TactileButton 
           variant="secondary"
           size="sm"
@@ -187,7 +187,7 @@ export function AddExercisesToRoutine({
       </div>
 
       {/* Exercise List */}
-      <div className="flex-1 overflow-y-auto px-4" style={{ paddingBottom: 'max(128px, calc(128px + env(safe-area-inset-bottom)))' }}>
+      <div className="flex-1 overflow-y-auto px-4">
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin mx-auto mb-2 w-8 h-8 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full"></div>
@@ -257,9 +257,7 @@ export function AddExercisesToRoutine({
       {/* Bottom Action Bar - Always visible */}
       <div 
         className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4" 
-        style={{ 
-          paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))'
-        }}
+
       >
         <div className="flex gap-3">
           <TactileButton

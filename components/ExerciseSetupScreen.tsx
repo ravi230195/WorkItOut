@@ -456,7 +456,7 @@ export function ExerciseSetupScreen({
         </TactileButton>
       </div>
 
-      <div className="flex-1" style={{ paddingBottom: hasUnsavedChanges ? 'max(96px, calc(96px + env(safe-area-inset-bottom)))' : '96px' }}>
+      <div className="flex-1">
         {/* Saved Exercises - ALWAYS SHOW */}
         <div className="mx-4 mt-6 mb-6">
           <h3 className="text-sm text-[var(--muted-foreground)] uppercase tracking-wider mb-3">
@@ -787,9 +787,7 @@ export function ExerciseSetupScreen({
       {hasUnsavedChanges && (
         <div 
           className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4" 
-          style={{ 
-            paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))'
-          }}
+
         >
           <div className="flex gap-3">
             <TactileButton

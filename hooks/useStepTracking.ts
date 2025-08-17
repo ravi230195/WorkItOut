@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabaseAPI } from '../utils/supabase-api';
 import { useAuth } from '../components/AuthContext';
 
@@ -29,24 +29,24 @@ export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
   const { userToken } = useAuth();
 
   // Check if we're on a native platform (Capacitor)
-  const isNativePlatform = (): boolean => {
+  const isNativePlatform = useCallback((): boolean => {
     return !!(window as any).Capacitor && !!(window as any).Capacitor.isNativePlatform;
-  };
+  }, []);
 
   // Check if app is in foreground
-  const isAppInForeground = (): boolean => {
+  const isAppInForeground = useCallback((): boolean => {
     return !document.hidden;
-  };
+  }, []);
 
   // Check if enough time has passed since last read (10 minutes)
-  const shouldReadStepData = (): boolean => {
+  const shouldReadStepData = useCallback((): boolean => {
     const now = Date.now();
     const tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
     return now - lastReadRef.current >= tenMinutes;
-  };
+  }, []);
 
   // Load step goal from Supabase (separated from step data reading)
-  const refreshStepGoal = async (): Promise<void> => {
+  const refreshStepGoal = useCallback(async (): Promise<void> => {
     if (!userToken) return;
     
     console.log('🔄 [DBG] Loading step goal from Supabase...');
@@ -61,10 +61,10 @@ export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
     } catch (error) {
       console.error('❌ [DBG] Error loading step goal from Supabase:', error);
     }
-  };
+  }, [userToken]);
 
   // Read step data from native health platforms (no longer loads goal)
-  const readStepData = async (forceRead: boolean = false): Promise<void> => {
+  const readStepData = useCallback(async (forceRead: boolean = false): Promise<void> => {
     // Only proceed if all conditions are met (or forced)
     if (!forceRead && (!isOnDashboard || !isAppInForeground() || !shouldReadStepData())) {
       return;
@@ -84,6 +84,8 @@ export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
         // Real implementation would use HealthKit/Health Connect
         console.log('📱 [DBG] Native platform detected - would read from health APIs');
         // steps would be set from actual health data
+        // For testing, let's simulate some steps on native platforms
+        steps = Math.floor(Math.random() * 5000) + 1000; // Random steps between 1000-6000
       } else {
         // Web platform always shows 0 steps
         console.log('🌍 [DBG] Web platform - showing 0 steps');
@@ -91,33 +93,33 @@ export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
       }
 
       // Update step data using cached goal (no API call)
-      const newStepData: StepData = {
-        steps: steps,
-        lastUpdated: Date.now(),
-        goal: stepData.goal // Use cached goal
-      };
-
-      console.log('✅ [DBG] Step data updated:', { steps, goal: stepData.goal });
-      setStepData(newStepData);
+      setStepData(prev => {
+        const newStepData: StepData = {
+          steps: steps,
+          lastUpdated: Date.now(),
+          goal: prev.goal // Use current goal from state
+        };
+        console.log('✅ [DBG] Step data updated:', { steps, goal: prev.goal });
+        return newStepData;
+      });
     } catch (error) {
       console.error('❌ [DBG] Error reading step data:', error);
       // On error, show 0 steps and keep cached goal
-      const errorStepData: StepData = {
+      setStepData(prev => ({
         steps: 0,
         lastUpdated: Date.now(),
-        goal: stepData.goal // Use cached goal
-      };
-      setStepData(errorStepData);
+        goal: prev.goal // Use current goal from state
+      }));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isOnDashboard, isAppInForeground, shouldReadStepData, isNativePlatform]);
 
   // Force refresh step data (bypass 10-minute rule)
-  const forceRefreshStepData = async (): Promise<void> => {
+  const forceRefreshStepData = useCallback(async (): Promise<void> => {
     console.log('🔄 [DBG] Force refreshing step data...');
     await readStepData(true);
-  };
+  }, [readStepData]);
 
   // Initialize step goal on mount (only once)
   useEffect(() => {
@@ -125,7 +127,7 @@ export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
       console.log('🚀 [DBG] Initializing step goal on mount...');
       refreshStepGoal();
     }
-  }, [userToken]);
+  }, [userToken, refreshStepGoal]);
 
   // Set up interval to check conditions and read step data (no goal loading)
   useEffect(() => {
@@ -144,7 +146,7 @@ export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
         }
       };
     }
-  }, [isOnDashboard, userToken, stepData.goal]); // Include goal in dependencies
+  }, [isOnDashboard, userToken, readStepData]); // Fixed: removed stepData.goal dependency
 
   // Clean up interval on unmount
   useEffect(() => {

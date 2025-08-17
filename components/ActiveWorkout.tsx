@@ -369,7 +369,7 @@ export function ActiveWorkout({
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto h-screen flex flex-col" style={{ paddingTop: 'max(16px, env(safe-area-inset-top, 16px))', paddingBottom: 'max(96px, calc(96px + env(safe-area-inset-bottom, 0px)))' }}>
+    <div className="p-4 space-y-4 max-w-md mx-auto">
       {/* Header with Timer */}
       <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm">
         <div>
