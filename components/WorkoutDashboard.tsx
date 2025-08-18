@@ -15,6 +15,8 @@ import { useWorkout } from "./WorkoutContext";
 import { WorkoutTemplate } from "./WorkoutTemplates";
 import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
 import { useStepTracking } from "../hooks/useStepTracking";
+import { useScrollToTop } from "../hooks/useScrollToTop";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 import { supabaseAPI, Workout } from "../utils/supabase-api";
 import { useState, useEffect } from "react";
@@ -80,6 +82,11 @@ interface WorkoutDashboardProps {
 export function WorkoutDashboard({
   onSelectTemplate,
 }: WorkoutDashboardProps) {
+  // Scroll to top when component mounts
+  const scrollRef = useScrollToTop();
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const { hasWorkedOutToday, todaysWorkout } = useWorkout();
   const { 
     userToken, 
@@ -238,7 +245,7 @@ export function WorkoutDashboard({
   };
 
   return (
-    <div className="screen-container dashboard-bg p-6 space-y-6 max-w-md mx-auto pb-24">
+    <div ref={scrollRef} className="dashboard-bg pt-safe p-6 space-y-6 max-w-md mx-auto pb-20">
         {/* Dynamic Greeting */}
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-medium text-[var(--warm-brown)]">

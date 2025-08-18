@@ -3,6 +3,8 @@ import { Card, CardContent } from "./ui/card";
 import { TactileButton } from "./TactileButton";
 import { Plus, MoreHorizontal, AlertCircle } from "lucide-react";
 import { supabaseAPI, UserRoutine } from "../utils/supabase-api";
+import { useScrollToTop } from "../hooks/useScrollToTop";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 interface RoutinesScreenProps {
   onCreateRoutine: () => void;
@@ -10,6 +12,11 @@ interface RoutinesScreenProps {
 }
 
 export function RoutinesScreen({ onCreateRoutine, onSelectRoutine }: RoutinesScreenProps) {
+  // Scroll to top when component mounts
+  const scrollRef = useScrollToTop();
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const [routines, setRoutines] = useState<UserRoutine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +52,7 @@ export function RoutinesScreen({ onCreateRoutine, onSelectRoutine }: RoutinesScr
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
+    <div ref={scrollRef} className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 pt-safe">
       {/* Header */}
       <div className="pt-6 pb-6 px-4">
         <div className="text-center">
@@ -59,7 +66,7 @@ export function RoutinesScreen({ onCreateRoutine, onSelectRoutine }: RoutinesScr
       </div>
 
       {/* Content */}
-      <div className="px-4 pb-24">
+      <div className="px-4 pb-20">
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin mx-auto mb-4 w-8 h-8 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full"></div>

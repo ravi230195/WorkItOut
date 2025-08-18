@@ -8,6 +8,7 @@ import { WorkoutTemplate } from "./WorkoutTemplates";
 import { supabaseAPI, WorkoutExercise, Set } from "../utils/supabase-api";
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 interface SetInput {
   id: string;
@@ -41,6 +42,9 @@ export function ActiveWorkout({
   onExerciseAdded,
   template 
 }: ActiveWorkoutProps) {
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const [workoutName] = useState(template?.name || "Custom Workout");
   const { 
     userToken, 

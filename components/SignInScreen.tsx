@@ -6,6 +6,7 @@ import { Label } from "./ui/label";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
 import { supabaseAPI } from "../utils/supabase-api";
 import { toast } from "sonner";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 interface SignInScreenProps {
   onAuthSuccess: (token: string) => void;
@@ -13,6 +14,9 @@ interface SignInScreenProps {
 }
 
 export function SignInScreen({ onAuthSuccess, onNavigateToSignUp }: SignInScreenProps) {
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -20,23 +24,18 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp }: SignInScreen
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email.trim() || !password.trim()) {
       toast.error("Please enter both email and password");
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
       const token = await supabaseAPI.signIn(email, password);
-      
-      // Set the token in the API instance
       supabaseAPI.setToken(token);
-      
-      // Call the success handler
       onAuthSuccess(token);
-      
       toast.success("Welcome back!");
     } catch (error) {
       console.error("Sign in failed:", error);
@@ -57,8 +56,25 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp }: SignInScreen
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex items-center justify-center p-6">
-      <Card className="w-full max-w-md bg-white/80 backdrop-blur-sm border-[var(--border)]">
+    <div
+      className="
+        fixed inset-0                     /* lock to visible viewport */
+        flex items-center justify-center
+        overflow-hidden overscroll-none   /* prevent page scroll/bounce */
+        px-6                              /* horizontal padding only */
+        bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30
+        [height:100dvh]                   /* dynamic vh to avoid iOS URL bar overshoot */
+      "
+    >
+      <Card
+        className="
+          w-full max-w-md
+          bg-white/80 backdrop-blur-sm border-[var(--border)]
+          max-h-[100svh]                  /* never taller than small visible viewport */
+          overflow-y-auto                 /* internal scroll if needed */
+          pt-safe pb-safe kb-aware        /* respect notches/home indicator + keyboard */
+        "
+      >
         <CardHeader className="text-center space-y-4 pb-6">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-[var(--warm-coral)] to-[var(--warm-peach)] flex items-center justify-center mx-auto">
             <Dumbbell size={32} className="text-white" />

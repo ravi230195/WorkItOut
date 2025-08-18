@@ -6,6 +6,7 @@ import { supabaseAPI, Exercise } from "../utils/supabase-api";
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 interface AddExercisesToRoutineProps {
   routineId?: number; // Optional now - will be created on first exercise add
@@ -22,6 +23,9 @@ export function AddExercisesToRoutine({
   onExerciseSelected,
   isFromExerciseSetup = false
 }: AddExercisesToRoutineProps) {
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
@@ -140,7 +144,7 @@ export function AddExercisesToRoutine({
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col">
+    <div className="bg-background flex flex-col">
       {/* Header */}
               <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
         <TactileButton 
@@ -187,7 +191,7 @@ export function AddExercisesToRoutine({
       </div>
 
       {/* Exercise List */}
-      <div className="flex-1 overflow-y-auto px-4">
+      <div className="overflow-y-auto px-4 pb-24">
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin mx-auto mb-2 w-8 h-8 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full"></div>

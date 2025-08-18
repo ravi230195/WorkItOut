@@ -5,6 +5,7 @@ import { TactileButton } from "./TactileButton";
 import { supabaseAPI } from "../utils/supabase-api";
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 interface CreateRoutineProps {
   onBack: () => void;
@@ -12,6 +13,9 @@ interface CreateRoutineProps {
 }
 
 export function CreateRoutine({ onBack, onRoutineCreated }: CreateRoutineProps) {
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const [routineName, setRoutineName] = useState("");
   const { userToken } = useAuth();
 
@@ -33,9 +37,9 @@ export function CreateRoutine({ onBack, onRoutineCreated }: CreateRoutineProps) 
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col">
+    <div className="bg-background flex flex-col">
       {/* Header */}
-              <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm">
+      <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm">
         <TactileButton 
           variant="secondary"
           size="sm"
@@ -48,9 +52,9 @@ export function CreateRoutine({ onBack, onRoutineCreated }: CreateRoutineProps) 
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col px-4">
+      <div className="px-4 py-8 space-y-8">
         {/* Name Input */}
-        <div className="mt-8 mb-auto">
+        <div>
           <Input
             value={routineName}
             onChange={(e) => setRoutineName(e.target.value)}
@@ -62,7 +66,7 @@ export function CreateRoutine({ onBack, onRoutineCreated }: CreateRoutineProps) 
         </div>
 
         {/* Add Exercises Button */}
-        <div className="safe-area-bottom">
+        <div>
           <TactileButton
             onClick={handleCreateRoutine}
             disabled={!routineName.trim()}

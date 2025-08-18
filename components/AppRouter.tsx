@@ -107,86 +107,88 @@ export function AppRouter({
   const showBottomNav = !VIEWS_WITHOUT_BOTTOM_NAV.includes(currentView);
 
   return (
-    <div>
-      {currentView === "workouts" && (
-        <WorkoutDashboard 
-          onSelectTemplate={onSelectTemplate}
-        />
-      )}
+    <>
+      <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
+        {currentView === "workouts" && (
+          <WorkoutDashboard 
+            onSelectTemplate={onSelectTemplate}
+          />
+        )}
 
-      {currentView === "routines" && (
-        <RoutinesScreen 
-          onCreateRoutine={onCreateRoutine}
-          onSelectRoutine={onSelectRoutine}
-        />
-      )}
-      
+        {currentView === "routines" && (
+          <RoutinesScreen 
+            onCreateRoutine={onCreateRoutine}
+            onSelectRoutine={onSelectRoutine}
+          />
+        )}
+        
 
-      
-      {currentView === "create-routine" && (
-        <CreateRoutine
-          onBack={onCloseCreateRoutine}
-          onRoutineCreated={onRoutineCreated}
-        />
-      )}
-      
-      {currentView === "add-exercises-to-routine" && currentRoutineName && (
-        <AddExercisesToRoutine
-          routineId={currentRoutineId || undefined}
-          routineName={currentRoutineName}
-          onBack={currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine}
-          onExerciseSelected={currentRoutineId ? (exercise: Exercise) => onReturnToExerciseSetup(exercise) : onExerciseSelected}
-          isFromExerciseSetup={!!currentRoutineId}
-        />
-      )}
+        
+        {currentView === "create-routine" && (
+          <CreateRoutine
+            onBack={onCloseCreateRoutine}
+            onRoutineCreated={onRoutineCreated}
+          />
+        )}
+        
+        {currentView === "add-exercises-to-routine" && currentRoutineName && (
+          <AddExercisesToRoutine
+            routineId={currentRoutineId || undefined}
+            routineName={currentRoutineName}
+            onBack={currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine}
+            onExerciseSelected={currentRoutineId ? (exercise: Exercise) => onReturnToExerciseSetup(exercise) : onExerciseSelected}
+            isFromExerciseSetup={!!currentRoutineId}
+          />
+        )}
 
-      {currentView === "exercise-setup" && currentRoutineId && currentRoutineName && (
-        <ExerciseSetupScreen
-          exercise={selectedExercise || undefined}
-          routineId={currentRoutineId}
-          routineName={currentRoutineName}
-          onBack={onCloseExerciseSetupToRoutines}
-          onSave={onExerciseSetupComplete}
-          onAddMoreExercises={onCloseExerciseSetup}
-          isEditingExistingRoutine={!selectedExercise}
-          onShowExerciseSelector={onShowExerciseSelector}
-        />
-      )}
+        {currentView === "exercise-setup" && currentRoutineId && currentRoutineName && (
+          <ExerciseSetupScreen
+            exercise={selectedExercise || undefined}
+            routineId={currentRoutineId}
+            routineName={currentRoutineName}
+            onBack={onCloseExerciseSetupToRoutines}
+            onSave={onExerciseSetupComplete}
+            onAddMoreExercises={onCloseExerciseSetup}
+            isEditingExistingRoutine={!selectedExercise}
+            onShowExerciseSelector={onShowExerciseSelector}
+          />
+        )}
 
-      {currentView === "routine-editor" && currentRoutineId && (
-        <RoutineEditor
-          routineId={currentRoutineId}
-          routineName={currentRoutineName}
-          onBack={onCloseRoutineEditor}
-          onAddExercise={onCloseRoutineEditor}
-          onSave={onCompleteRoutineCreation}
-        />
-      )}
-      
-      {currentView === "active-workout" && (
-        <ActiveWorkout 
-          onEndWorkout={onEndWorkout}
-          onAddExercise={onAddExercise}
-          selectedExercise={selectedExercise}
-          onExerciseAdded={onExerciseAdded}
-          template={selectedTemplate || undefined}
-        />
-      )}
-      
-      {currentView === "exercise-selection" && (
-        <ExerciseSelector
-          onSelectExercise={onSelectExercise}
-          onClose={onCloseExerciseSelector}
-        />
-      )}
+        {currentView === "routine-editor" && currentRoutineId && (
+          <RoutineEditor
+            routineId={currentRoutineId}
+            routineName={currentRoutineName}
+            onBack={onCloseRoutineEditor}
+            onAddExercise={onCloseRoutineEditor}
+            onSave={onCompleteRoutineCreation}
+          />
+        )}
+        
+        {currentView === "active-workout" && (
+          <ActiveWorkout 
+            onEndWorkout={onEndWorkout}
+            onAddExercise={onAddExercise}
+            selectedExercise={selectedExercise}
+            onExerciseAdded={onExerciseAdded}
+            template={selectedTemplate || undefined}
+          />
+        )}
+        
+        {currentView === "exercise-selection" && (
+          <ExerciseSelector
+            onSelectExercise={onSelectExercise}
+            onClose={onCloseExerciseSelector}
+          />
+        )}
 
-      {currentView === "progress" && (
-        <ProgressScreen />
-      )}
+        {currentView === "progress" && (
+          <ProgressScreen />
+        )}
 
-      {currentView === "profile" && (
-        <ProfileScreen />
-      )}
+        {currentView === "profile" && (
+          <ProfileScreen />
+        )}
+      </div>
       
       {showBottomNav && (
         <BottomNavigation 
@@ -194,6 +196,6 @@ export function AppRouter({
           onTabChange={onTabChange}
         />
       )}
-    </div>
+    </>
   );
 }

@@ -6,6 +6,7 @@ import { supabaseAPI, Exercise, UserRoutineExercise } from "../utils/supabase-ap
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 interface RoutineEditorProps {
   routineId: number;
@@ -31,6 +32,9 @@ export function RoutineEditor({
   onAddExercise, 
   onSave 
 }: RoutineEditorProps) {
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const [exercises, setExercises] = useState<ExerciseWithSets[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -133,7 +137,7 @@ export function RoutineEditor({
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-background flex items-center justify-center">
+      <div className="bg-background flex items-center justify-center p-6">
         <div className="text-center">
           <div className="animate-spin mx-auto mb-2 w-8 h-8 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full"></div>
           <p className="text-[var(--warm-brown)]/60">Loading routine...</p>
@@ -143,7 +147,7 @@ export function RoutineEditor({
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col">
+    <div className="bg-background flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-12 bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
         <TactileButton 

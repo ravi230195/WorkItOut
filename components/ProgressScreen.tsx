@@ -6,6 +6,8 @@ import { TrendingUp, Calendar, Target, Award, Zap, Medal, Trophy } from "lucide-
 import { Badge } from "./ui/badge";
 import { supabaseAPI, Workout } from "../utils/supabase-api";
 import { useState, useEffect } from "react";
+import { useScrollToTop } from "../hooks/useScrollToTop";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 const weeklyData = [
   { week: "W1", workouts: 3 },
@@ -47,6 +49,11 @@ const achievements = [
 ];
 
 export function ProgressScreen() {
+  // Scroll to top when component mounts
+  const scrollRef = useScrollToTop();
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([]);
   const [workoutStats, setWorkoutStats] = useState({
     thisWeekCount: 0,
@@ -93,7 +100,7 @@ export function ProgressScreen() {
   }, []);
 
   return (
-    <div className="p-6 space-y-6 max-w-md mx-auto pb-24">
+    <div ref={scrollRef} className="pt-safe p-6 space-y-6 max-w-md mx-auto pb-20">
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center gap-2">

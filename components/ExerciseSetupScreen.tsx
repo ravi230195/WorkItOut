@@ -6,6 +6,7 @@ import { supabaseAPI, Exercise, UserRoutineExercise, UserRoutineExerciseSet } fr
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 interface Set {
   id: string;
@@ -39,6 +40,9 @@ export function ExerciseSetupScreen({
   isEditingExistingRoutine = false,
   onShowExerciseSelector
 }: ExerciseSetupScreenProps) {
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const [sets, setSets] = useState<Set[]>([
     { id: '1', reps: '0', weight: '0' },
     { id: '2', reps: '0', weight: '0' },
@@ -432,7 +436,7 @@ export function ExerciseSetupScreen({
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex flex-col overflow-y-auto">
+    <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex flex-col kb-aware">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-12 bg-gradient-to-r from-[var(--background)] to-[var(--warm-cream)]/20 sticky top-0 z-10 border-b border-[var(--border)]">
         <TactileButton 

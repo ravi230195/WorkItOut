@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from "./ui/card";
 import { TactileButton } from "./TactileButton";
 import { supabaseAPI } from "../utils/supabase-api";
 import { toast } from "sonner";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 interface SignUpScreenProps {
   onAuthSuccess: (token: string) => void;
@@ -10,6 +11,9 @@ interface SignUpScreenProps {
 }
 
 export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn }: SignUpScreenProps) {
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -112,7 +116,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn }: SignUpScreen
   };
 
   return (
-    <div className="screen-container signup-bg flex items-center justify-center p-6">
+    <div className="screen-container signup-bg flex items-center justify-center p-6 kb-aware">
       <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-[var(--border)]">
         <CardHeader className="text-center space-y-2">
           <h1 className="text-2xl font-medium text-[var(--warm-brown)]">Create Account</h1>

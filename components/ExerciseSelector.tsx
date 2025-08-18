@@ -6,6 +6,7 @@ import { Badge } from "./ui/badge";
 import { X, Search, Filter, Dumbbell } from "lucide-react";
 import { supabaseAPI, Exercise } from "../utils/supabase-api";
 import { toast } from "sonner";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 // For fallback compatibility with old Exercise type
 interface LegacyExercise {
@@ -22,6 +23,9 @@ interface ExerciseSelectorProps {
 }
 
 export function ExerciseSelector({ onSelectExercise, onClose }: ExerciseSelectorProps) {
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [showFilters, setShowFilters] = useState(false);
@@ -106,7 +110,7 @@ export function ExerciseSelector({ onSelectExercise, onClose }: ExerciseSelector
   };
 
   return (
-          <div className="p-4 space-y-4 max-w-md mx-auto h-screen flex flex-col">
+          <div className="p-4 space-y-4 max-w-md mx-auto flex flex-col kb-aware">
       {/* Header */}
       <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm">
         <div className="flex items-center gap-2">

@@ -17,6 +17,8 @@ import {
 import { useAuth } from "./AuthContext";
 import { supabaseAPI, Profile } from "../utils/supabase-api";
 import { toast } from "sonner";
+import { useScrollToTop } from "../hooks/useScrollToTop";
+import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 interface PersonalBest {
   exercise: string;
@@ -26,6 +28,11 @@ interface PersonalBest {
 }
 
 export function ProfileScreen() {
+  // Scroll to top when component mounts
+  const scrollRef = useScrollToTop();
+  // Keyboard-aware scrolling
+  useKeyboardInset();
+  
   const { userToken, signOut: authSignOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,7 +114,7 @@ export function ProfileScreen() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-md mx-auto pb-24">
+    <div ref={scrollRef} className="pt-safe p-6 space-y-6 max-w-md mx-auto pb-32">
       {/* Profile Header */}
       <Card className="bg-gradient-to-r from-[var(--warm-coral)]/10 to-[var(--warm-peach)]/10 border-[var(--warm-coral)]/20">
         <CardContent className="p-6 text-center">
