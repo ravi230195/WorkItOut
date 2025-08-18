@@ -6,6 +6,9 @@ import { useAppNavigation } from "./hooks/useAppNavigation";
 import { useMobileSetup } from "./hooks/useMobileSetup";
 import { Toaster } from "./components/ui/sonner";
 
+/* ✅ NEW: import BottomNavigation + TabType */
+import { BottomNavigation, TabType } from "./components/BottomNavigation";
+
 function AppContent() {
   const { setUserToken } = useAuth();
   
@@ -47,42 +50,66 @@ function AppContent() {
   } = useAppNavigation();
 
   const { isAuthenticated } = useAuthEffects({ currentView, setCurrentView });
+  /* ✅ ADDED: show nav only after successful sign-in
+     You can tighten this later to also hide on specific auth screens if needed.
+  */
+     const showNav = isAuthenticated;
+  /* ✅ CHANGED: wrap the app in a 2-row grid:
+     - <main> is the ONLY scrollable area
+     - BottomNavigation stays fixed at the bottom
+  */
+    return (
+    <div id="app" className="h-[100dvh] grid grid-rows-[1fr_auto] overflow-hidden">
+      <main
+        className={
+          "overflow-auto overscroll-contain " +
+          (showNav ? "pb-[calc(72px+env(safe-area-inset-bottom))]" : "")
+        }
+      >
+        <AppRouter
+          currentView={currentView}
+          activeTab={activeTab}
+          selectedExercise={selectedExercise}
+          selectedTemplate={selectedTemplate}
+          currentRoutineId={currentRoutineId}
+          currentRoutineName={currentRoutineName}
+          refreshTrigger={refreshTrigger}
+          isAuthenticated={isAuthenticated}
+          onAuthSuccess={(token) => handleAuthSuccess(token, setUserToken)}
+          onNavigateToSignUp={navigateToSignUp}
+          onNavigateToSignIn={navigateToSignIn}
+          onSelectTemplate={handleSelectTemplate}
+          onEndWorkout={endWorkout}
+          onAddExercise={showExerciseSelector}
+          onSelectExercise={handleSelectExercise}
+          onCloseExerciseSelector={closeExerciseSelector}
+          onExerciseAdded={() => setSelectedExercise(null)}
+          onTabChange={handleTabChange}
+          onCreateRoutine={showCreateRoutine}
+          onRoutineCreated={handleRoutineCreated}
+          onCloseCreateRoutine={closeCreateRoutine}
+          onCompleteRoutineCreation={completeRoutineCreation}
+          onExerciseSelected={handleExerciseSelected}
+          onShowExerciseSetup={showExerciseSetup}
+          onCloseExerciseSetup={closeExerciseSetup}
+          onExerciseSetupComplete={handleExerciseSetupComplete}
+          onShowRoutineEditor={showRoutineEditor}
+          onCloseRoutineEditor={closeRoutineEditor}
+          onSelectRoutine={showExerciseSetupEmpty}
+          onCloseExerciseSetupToRoutines={closeExerciseSetupToRoutines}
+          onShowExerciseSelector={showExerciseSelector}
+          onReturnToExerciseSetup={returnToExerciseSetup}
+        />
+      </main>
 
-  return (
-    <AppRouter
-      currentView={currentView}
-      activeTab={activeTab}
-      selectedExercise={selectedExercise}
-      selectedTemplate={selectedTemplate}
-      currentRoutineId={currentRoutineId}
-      currentRoutineName={currentRoutineName}
-      refreshTrigger={refreshTrigger}
-      isAuthenticated={isAuthenticated}
-      onAuthSuccess={(token) => handleAuthSuccess(token, setUserToken)}
-      onNavigateToSignUp={navigateToSignUp}
-      onNavigateToSignIn={navigateToSignIn}
-      onSelectTemplate={handleSelectTemplate}
-      onEndWorkout={endWorkout}
-      onAddExercise={showExerciseSelector}
-      onSelectExercise={handleSelectExercise}
-      onCloseExerciseSelector={closeExerciseSelector}
-      onExerciseAdded={() => setSelectedExercise(null)}
-      onTabChange={handleTabChange}
-      onCreateRoutine={showCreateRoutine}
-      onRoutineCreated={handleRoutineCreated}
-      onCloseCreateRoutine={closeCreateRoutine}
-      onCompleteRoutineCreation={completeRoutineCreation}
-      onExerciseSelected={handleExerciseSelected}
-      onShowExerciseSetup={showExerciseSetup}
-      onCloseExerciseSetup={closeExerciseSetup}
-      onExerciseSetupComplete={handleExerciseSetupComplete}
-      onShowRoutineEditor={showRoutineEditor}
-      onCloseRoutineEditor={closeRoutineEditor}
-      onSelectRoutine={showExerciseSetupEmpty}
-      onCloseExerciseSetupToRoutines={closeExerciseSetupToRoutines}
-      onShowExerciseSelector={showExerciseSelector}
-      onReturnToExerciseSetup={returnToExerciseSetup}
-    />
+      {/* ✅ CHANGED: render BottomNavigation only when signed in */}
+      {showNav && (
+        <BottomNavigation
+          activeTab={activeTab as TabType}
+          onTabChange={handleTabChange}
+        />
+      )}
+    </div>
   );
 }
 

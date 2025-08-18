@@ -38,7 +38,8 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
 
   return (
     <div 
-      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] px-4 z-[9999] force-fixed-bottom"
+      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] px-4 z-[9999] force-fixed-bottom pb-[env(safe-area-inset-bottom)]" 
+      /* ↑ ADDED: pb-[env(safe-area-inset-bottom)] */
     >
       <div className="flex justify-center gap-2 max-w-md mx-auto">
         {tabs.map((tab) => (
