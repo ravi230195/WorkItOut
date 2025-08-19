@@ -1,18 +1,17 @@
 import { useState } from "react";
 import { ArrowLeft, Plus } from "lucide-react";
-import { Input } from "./ui/input";
-import { TactileButton } from "./TactileButton";
-import { supabaseAPI } from "../utils/supabase-api";
-import { useAuth } from "./AuthContext";
+import { Input } from "../ui/input";
+import { TactileButton } from "../TactileButton";
+import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
-import { useKeyboardInset } from "../hooks/useKeyboardInset";
+import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 
-interface CreateRoutineProps {
+interface CreateRoutineScreenProps {
   onBack: () => void;
   onRoutineCreated: (routineName: string) => void;
 }
 
-export function CreateRoutine({ onBack, onRoutineCreated }: CreateRoutineProps) {
+export function CreateRoutineScreen({ onBack, onRoutineCreated }: CreateRoutineScreenProps) {
   // Keyboard-aware scrolling
   useKeyboardInset();
   
@@ -37,7 +36,7 @@ export function CreateRoutine({ onBack, onRoutineCreated }: CreateRoutineProps) 
   };
 
   return (
-    <div className="bg-background flex flex-col">
+    <div className="bg-background flex flex-col pt-safe">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm">
         <TactileButton 

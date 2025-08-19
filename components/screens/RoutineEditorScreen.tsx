@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, MoreHorizontal, X, Trash2 } from "lucide-react";
-import { TactileButton } from "./TactileButton";
-import { Input } from "./ui/input";
-import { supabaseAPI, Exercise, UserRoutineExercise } from "../utils/supabase-api";
-import { useAuth } from "./AuthContext";
+import { TactileButton } from "../TactileButton";
+import { Input } from "../ui/input";
+import { supabaseAPI, Exercise, UserRoutineExercise } from "../../utils/supabase-api";
+import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { useKeyboardInset } from "../hooks/useKeyboardInset";
+import { ImageWithFallback } from "../figma/ImageWithFallback";
+import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 
-interface RoutineEditorProps {
+interface RoutineEditorScreenProps {
   routineId: number;
   routineName: string;
   onBack: () => void;
@@ -25,13 +25,13 @@ interface ExerciseWithSets {
   }[];
 }
 
-export function RoutineEditor({ 
+export function RoutineEditorScreen({ 
   routineId, 
   routineName, 
   onBack, 
   onAddExercise, 
   onSave 
-}: RoutineEditorProps) {
+}: RoutineEditorScreenProps) {
   // Keyboard-aware scrolling
   useKeyboardInset();
   
@@ -162,6 +162,7 @@ export function RoutineEditor({
           variant="secondary"
           size="sm"
           onClick={onAddExercise}
+          className="p-2 h-auto bg-green-500 border-green-600 text-white hover:bg-green-600"
         >
           <Plus size={20} />
         </TactileButton>

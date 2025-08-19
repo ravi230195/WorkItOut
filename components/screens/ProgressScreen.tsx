@@ -1,13 +1,13 @@
-import { Card, CardContent, CardHeader } from "./ui/card";
-import { CircularProgress } from "./CircularProgress";
-import { TrendChart } from "./TrendChart";
-import { Progress } from "./ui/progress";
+import { Card, CardContent, CardHeader } from "../ui/card";
+import { CircularProgress } from "../CircularProgress";
+import { TrendChart } from "../TrendChart";
+import { Progress } from "../ui/progress";
 import { TrendingUp, Calendar, Target, Award, Zap, Medal, Trophy } from "lucide-react";
-import { Badge } from "./ui/badge";
-import { supabaseAPI, Workout } from "../utils/supabase-api";
+import { Badge } from "../ui/badge";
+import { supabaseAPI, Workout } from "../../utils/supabase-api";
 import { useState, useEffect } from "react";
-import { useScrollToTop } from "../hooks/useScrollToTop";
-import { useKeyboardInset } from "../hooks/useKeyboardInset";
+import { useScrollToTop } from "../../hooks/useScrollToTop";
+import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 
 const weeklyData = [
   { week: "W1", workouts: 3 },

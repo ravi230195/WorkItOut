@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, X, Trash2, MoreVertical, ChevronUp } from "lucide-react";
-import { TactileButton } from "./TactileButton";
-import { Input } from "./ui/input";
-import { supabaseAPI, Exercise, UserRoutineExercise, UserRoutineExerciseSet } from "../utils/supabase-api";
-import { useAuth } from "./AuthContext";
+import { TactileButton } from "../TactileButton";
+import { Input } from "../ui/input";
+import { supabaseAPI, Exercise, UserRoutineExercise, UserRoutineExerciseSet } from "../../utils/supabase-api";
+import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { useKeyboardInset } from "../hooks/useKeyboardInset";
+
+import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 
 interface ExerciseSet {
   id: string;
@@ -431,7 +431,7 @@ export function ExerciseSetupScreen({
           variant="secondary"
           size="sm"
           onClick={isEditingExistingRoutine && onShowExerciseSelector ? onShowExerciseSelector : onAddMoreExercises}
-          className="p-2 h-auto bg-[var(--warm-sage)]/80 border-[var(--border)] text-white hover:bg-[var(--warm-sage)] btn-tactile-sage"
+          className="p-2 h-auto bg-green-500 border-green-600 text-white hover:bg-green-600 btn-tactile-sage"
         >
           <Plus size={20} />
         </TactileButton>
@@ -466,29 +466,18 @@ export function ExerciseSetupScreen({
                 
                 return (
                   <div key={savedExercise.routine_template_exercise_id || index} className="space-y-2">
-                    <div className={`flex items-center gap-3 p-3 border rounded-xl transition-all ${
-                      isEditing 
-                        ? 'bg-[var(--warm-coral)]/5 border-[var(--warm-coral)]/30' 
-                        : 'bg-white/70 border-[var(--border)]'
-                    }`}>
+                    <div 
+                      className={`flex items-center gap-3 p-3 border rounded-xl transition-all cursor-pointer ${
+                        isEditing 
+                          ? 'bg-[var(--warm-coral)]/5 border-[var(--warm-coral)]/30' 
+                          : 'bg-white/70 border-[var(--border)] hover:bg-white/90'
+                      }`}
+                      onClick={(e) => handleKebabClick(savedExercise, e)}
+                    >
                       <div className="w-10 h-10 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
-                        {savedExercise.exercise_name?.includes('Press') || savedExercise.exercise_name?.includes('Arnold') ? (
-                          <ImageWithFallback 
-                            src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop&crop=center"
-                            alt={savedExercise.exercise_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : savedExercise.exercise_name?.includes('Bike') || savedExercise.exercise_name?.includes('Assault') ? (
-                          <ImageWithFallback 
-                            src="https://images.unsplash.com/photo-1544397886-6bd04d7a922e?w=100&h=100&fit=crop&crop=center"
-                            alt={savedExercise.exercise_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-sm font-medium text-[var(--muted-foreground)]">
-                            {(savedExercise.exercise_name || '').substring(0, 2).toUpperCase()}
-                          </span>
-                        )}
+                        <span className="text-sm font-medium text-[var(--muted-foreground)]">
+                          {(savedExercise.exercise_name || '').substring(0, 2).toUpperCase()}
+                        </span>
                       </div>
                       <div className="flex-1">
                         <p className="font-medium text-[var(--foreground)]">{savedExercise.exercise_name}</p>
@@ -645,23 +634,9 @@ export function ExerciseSetupScreen({
           <div className="mx-4 mb-6 p-4 bg-white/70 border border-[var(--border)] rounded-2xl shadow-sm">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-12 h-12 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
-                {currentExercise.name.includes('Press') || currentExercise.name.includes('Arnold') ? (
-                  <ImageWithFallback 
-                    src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop&crop=center"
-                    alt={currentExercise.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : currentExercise.name.includes('Bike') || currentExercise.name.includes('Assault') ? (
-                  <ImageWithFallback 
-                    src="https://images.unsplash.com/photo-1544397886-6bd04d7a922e?w=100&h=100&fit=crop&crop=center"
-                    alt={currentExercise.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-lg font-medium text-[var(--muted-foreground)]">
-                    {currentExercise.name.substring(0, 2).toUpperCase()}
-                  </span>
-                )}
+                <span className="text-lg font-medium text-[var(--muted-foreground)]">
+                  {currentExercise.name.substring(0, 2).toUpperCase()}
+                </span>
               </div>
               <div className="flex-1">
                 <h2 className="font-medium text-[var(--foreground)] mb-1">{currentExercise.name}</h2>

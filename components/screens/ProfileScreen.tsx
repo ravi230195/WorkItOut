@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader } from "./ui/card";
-import { TactileButton } from "./TactileButton";
-import { Avatar, AvatarFallback } from "./ui/avatar";
-import { Badge } from "./ui/badge";
+import { Card, CardContent, CardHeader } from "../ui/card";
+import { TactileButton } from "../TactileButton";
+import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Badge } from "../ui/badge";
 import {
   User,
   Trophy,
@@ -14,11 +14,11 @@ import {
   Dumbbell,
   TrendingUp,
 } from "lucide-react";
-import { useAuth } from "./AuthContext";
-import { supabaseAPI, Profile } from "../utils/supabase-api";
+import { useAuth } from "../AuthContext";
+import { supabaseAPI, Profile } from "../../utils/supabase-api";
 import { toast } from "sonner";
-import { useScrollToTop } from "../hooks/useScrollToTop";
-import { useKeyboardInset } from "../hooks/useKeyboardInset";
+import { useScrollToTop } from "../../hooks/useScrollToTop";
+import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 
 interface PersonalBest {
   exercise: string;

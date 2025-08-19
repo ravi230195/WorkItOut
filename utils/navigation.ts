@@ -2,8 +2,6 @@ export type AppView =
   | "signin"
   | "signup"
   | "workouts" 
-  | "active-workout" 
-  | "exercise-selection"
   | "create-routine"
   | "add-exercises-to-routine"
   | "exercise-setup"
@@ -14,8 +12,6 @@ export type AppView =
 export const VIEWS_WITHOUT_BOTTOM_NAV: AppView[] = [
   "signin",
   "signup", 
-  "active-workout", 
-  "exercise-selection", 
   "create-routine",
   "add-exercises-to-routine",
   "exercise-setup",

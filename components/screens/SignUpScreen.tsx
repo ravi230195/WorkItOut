@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader } from "./ui/card";
-import { TactileButton } from "./TactileButton";
-import { supabaseAPI } from "../utils/supabase-api";
+import { Card, CardContent, CardHeader } from "../ui/card";
+import { TactileButton } from "../TactileButton";
+import { supabaseAPI } from "../../utils/supabase-api";
 import { toast } from "sonner";
-import { useKeyboardInset } from "../hooks/useKeyboardInset";
+import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 
 interface SignUpScreenProps {
   onAuthSuccess: (token: string) => void;

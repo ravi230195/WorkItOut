@@ -6,7 +6,6 @@ import { useAppNavigation } from "./hooks/useAppNavigation";
 import { useMobileSetup } from "./hooks/useMobileSetup";
 import { Toaster } from "./components/ui/sonner";
 
-/* ✅ NEW: import BottomNavigation + TabType */
 import { BottomNavigation, TabType } from "./components/BottomNavigation";
 import { VIEWS_WITHOUT_BOTTOM_NAV } from "./utils/navigation";
 
@@ -25,7 +24,7 @@ function AppContent() {
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,
-    showExerciseSelector,
+
     handleTabChange,
     showCreateRoutine,
     handleRoutineCreated,
@@ -54,14 +53,12 @@ function AppContent() {
       >
         <AppRouter
           currentView={currentView}
-          activeTab={activeTab}
           currentRoutineId={currentRoutineId}
           currentRoutineName={currentRoutineName}
           isAuthenticated={isAuthenticated}
           onAuthSuccess={(token) => handleAuthSuccess(token, setUserToken)}
           onNavigateToSignUp={navigateToSignUp}
           onNavigateToSignIn={navigateToSignIn}
-          onTabChange={handleTabChange}
           onCreateRoutine={showCreateRoutine}
           onRoutineCreated={handleRoutineCreated}
           onCloseCreateRoutine={closeCreateRoutine}
@@ -72,12 +69,11 @@ function AppContent() {
           onCloseRoutineEditor={closeRoutineEditor}
           onSelectRoutine={showExerciseSetupEmpty}
           onCloseExerciseSetupToRoutines={closeExerciseSetupToRoutines}
-          onShowExerciseSelector={showExerciseSelector}
           onReturnToExerciseSetup={returnToExerciseSetup}
         />
       </main>
 
-      {/* ✅ unchanged: BottomNavigation rendered here when signed in */}
+
       {showNav && (
         <BottomNavigation
           activeTab={activeTab as TabType}

@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader } from "./ui/card";
-import { TactileButton } from "./TactileButton";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { Card, CardContent, CardHeader } from "../ui/card";
+import { TactileButton } from "../TactileButton";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
-import { supabaseAPI } from "../utils/supabase-api";
+import { supabaseAPI } from "../../utils/supabase-api";
 import { toast } from "sonner";
-import { useKeyboardInset } from "../hooks/useKeyboardInset";
+import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 
 interface SignInScreenProps {
   onAuthSuccess: (token: string) => void;

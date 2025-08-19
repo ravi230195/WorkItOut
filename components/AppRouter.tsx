@@ -1,26 +1,23 @@
-import { WorkoutDashboard } from "./WorkoutDashboard";
-import { CreateRoutine } from "./CreateRoutine";
-import { AddExercisesToRoutine } from "./AddExercisesToRoutine";
-import { ExerciseSetupScreen } from "./ExerciseSetupScreen";
-import { RoutineEditor } from "./RoutineEditor";
-import { ProgressScreen } from "./ProgressScreen";
-import { ProfileScreen } from "./ProfileScreen";
-import { SignInScreen } from "./SignInScreen";
-import { SignUpScreen } from "./SignUpScreen";
-import { TabType } from "./BottomNavigation";
+import { WorkoutDashboardScreen } from "./screens/WorkoutDashboardScreen";
+import { CreateRoutineScreen } from "./screens/CreateRoutineScreen";
+import { AddExercisesToRoutineScreen } from "./screens/AddExercisesToRoutineScreen";
+import { ExerciseSetupScreen } from "./screens/ExerciseSetupScreen";
+import { RoutineEditorScreen } from "./screens/RoutineEditorScreen";
+import { ProgressScreen } from "./screens/ProgressScreen";
+import { ProfileScreen } from "./screens/ProfileScreen";
+import { SignInScreen } from "./screens/SignInScreen";
+import { SignUpScreen } from "./screens/SignUpScreen";
 import { AppView } from "../utils/navigation";
 import { Exercise } from "../utils/supabase-api";
 
 interface AppRouterProps {
   currentView: AppView;
-  activeTab: TabType;
   currentRoutineId: number | null;
   currentRoutineName: string;
   isAuthenticated: boolean;
   onAuthSuccess: (token: string) => void;
   onNavigateToSignUp: () => void;
   onNavigateToSignIn: () => void;
-  onTabChange: (tab: TabType) => void;
   onCreateRoutine: () => void;
   onRoutineCreated: (routineName: string) => void;
   onCloseCreateRoutine: () => void;
@@ -31,20 +28,17 @@ interface AppRouterProps {
   onCloseRoutineEditor: () => void;
   onSelectRoutine: (routineId: number, routineName: string) => void;
   onCloseExerciseSetupToRoutines: () => void;
-  onShowExerciseSelector: () => void;
   onReturnToExerciseSetup: (exercise: Exercise) => void;
 }
 
 export function AppRouter({
   currentView,
-  activeTab,
   currentRoutineId,
   currentRoutineName,
   isAuthenticated,
   onAuthSuccess,
   onNavigateToSignUp,
   onNavigateToSignIn,
-  onTabChange,
   onCreateRoutine,
   onRoutineCreated,
   onCloseCreateRoutine,
@@ -55,9 +49,10 @@ export function AppRouter({
   onCloseRoutineEditor,
   onSelectRoutine,
   onCloseExerciseSetupToRoutines,
-  onShowExerciseSelector,
   onReturnToExerciseSetup
 }: AppRouterProps) {
+  // Debug log for current screen
+  console.log(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
   // Show auth screens when not authenticated or when explicitly navigating to auth screens
   if (!isAuthenticated || currentView === "signin" || currentView === "signup") {
     if (currentView === "signup") {
@@ -81,21 +76,21 @@ export function AppRouter({
     <>
       <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
         {currentView === "workouts" && (
-          <WorkoutDashboard 
+          <WorkoutDashboardScreen 
             onCreateRoutine={onCreateRoutine}
             onSelectRoutine={onSelectRoutine}
           />
         )}
 
         {currentView === "create-routine" && (
-          <CreateRoutine
+          <CreateRoutineScreen
             onBack={onCloseCreateRoutine}
             onRoutineCreated={onRoutineCreated}
           />
         )}
         
         {currentView === "add-exercises-to-routine" && currentRoutineName && (
-          <AddExercisesToRoutine
+          <AddExercisesToRoutineScreen
             routineId={currentRoutineId || undefined}
             routineName={currentRoutineName}
             onBack={currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine}
@@ -116,7 +111,7 @@ export function AppRouter({
         )}
 
         {currentView === "routine-editor" && currentRoutineId && (
-          <RoutineEditor
+          <RoutineEditorScreen
             routineId={currentRoutineId}
             routineName={currentRoutineName}
             onBack={onCloseRoutineEditor}

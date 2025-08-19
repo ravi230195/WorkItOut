@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Search, Plus, Filter } from "lucide-react";
-import { Input } from "./ui/input";
-import { TactileButton } from "./TactileButton";
-import { supabaseAPI, Exercise } from "../utils/supabase-api";
-import { useAuth } from "./AuthContext";
+import { Input } from "../ui/input";
+import { TactileButton } from "../TactileButton";
+import { supabaseAPI, Exercise } from "../../utils/supabase-api";
+import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
-import { useKeyboardInset } from "../hooks/useKeyboardInset";
+import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 
-interface AddExercisesToRoutineProps {
+interface AddExercisesToRoutineScreenProps {
   routineId?: number; // Optional now - will be created on first exercise add
   routineName: string; // We'll pass the routine name to create it with first exercise
   onBack: () => void;
@@ -15,13 +15,13 @@ interface AddExercisesToRoutineProps {
   isFromExerciseSetup?: boolean; // Flag to determine if coming from ExerciseSetupScreen
 }
 
-export function AddExercisesToRoutine({ 
+export function AddExercisesToRoutineScreen({ 
   routineId, 
   routineName, 
   onBack, 
   onExerciseSelected,
   isFromExerciseSetup = false
-}: AddExercisesToRoutineProps) {
+}: AddExercisesToRoutineScreenProps) {
   // Keyboard-aware scrolling
   useKeyboardInset();
   
@@ -143,9 +143,9 @@ export function AddExercisesToRoutine({
   };
 
   return (
-    <div className="bg-background flex flex-col">
+    <div className="bg-background flex flex-col pt-safe">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
+      <div className="flex items-center p-4 bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
         <TactileButton 
           variant="secondary"
           size="sm"
@@ -154,8 +154,7 @@ export function AddExercisesToRoutine({
         >
           <ArrowLeft size={20} />
         </TactileButton>
-        <h1 className="font-medium text-[var(--warm-brown)]">SELECT EXERCISES</h1>
-        <div className="w-10" />
+        <h1 className="flex-1 text-center font-medium text-[var(--warm-brown)]">SELECT EXERCISES</h1>
       </div>
 
       {/* Search and Filter */}

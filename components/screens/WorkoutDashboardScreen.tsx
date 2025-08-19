@@ -1,30 +1,30 @@
 
-import { StepCounter } from "./StepCounter";
-import { TactileButton } from "./TactileButton";
+import { StepCounter } from "../StepCounter";
+import { TactileButton } from "../TactileButton";
 
 import {
   MoreHorizontal,
   AlertCircle,
 } from "lucide-react";
 
-import { useStepTracking } from "../hooks/useStepTracking";
-import { useScrollToTop } from "../hooks/useScrollToTop";
-import { useKeyboardInset } from "../hooks/useKeyboardInset";
+import { useStepTracking } from "../../hooks/useStepTracking";
+import { useScrollToTop } from "../../hooks/useScrollToTop";
+import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 
-import { supabaseAPI, UserRoutine } from "../utils/supabase-api";
+import { supabaseAPI, UserRoutine } from "../../utils/supabase-api";
 import { useState, useEffect } from "react";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 
-interface WorkoutDashboardProps {
+interface WorkoutDashboardScreenProps {
   onCreateRoutine: () => void;
   onSelectRoutine: (routineId: number, routineName: string) => void;
 }
 
-export function WorkoutDashboard({
+export function WorkoutDashboardScreen({
   onCreateRoutine,
   onSelectRoutine,
-}: WorkoutDashboardProps) {
+}: WorkoutDashboardScreenProps) {
   // Scroll to top when component mounts
   const scrollRef = useScrollToTop();
   // Keyboard-aware scrolling

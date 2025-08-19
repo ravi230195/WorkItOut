@@ -29,11 +29,7 @@ This document outlines all navigation flows within the workout tracker applicati
 ## **Workout Creation Flows**
 
 ### **Template-Based Workout Flow:**
-- **WorkoutDashboard** → Select template → **ActiveWorkout** (with selected template)
-- **ActiveWorkout** → Click "+" → **ExerciseSelector** (for adding exercises to active workout)
-- **ExerciseSelector** → Select exercise → **ActiveWorkout** (with selected exercise)
-- **ExerciseSelector** → Click "✕" → **ActiveWorkout**
-- **ActiveWorkout** → Click "End Workout" → **WorkoutDashboard**
+*Note: Template-based workouts have been replaced with routine-based workouts*
 
 ---
 
@@ -80,9 +76,7 @@ This document outlines all navigation flows within the workout tracker applicati
 ### **Workout Management:**
 - `handleSelectTemplate(template)` - Starts workout with template
 - `endWorkout()` - Ends workout and returns to dashboard
-- `showExerciseSelector()` - Context-aware exercise selection
-- `handleSelectExercise(exercise)` - Selects exercise for active workout
-- `closeExerciseSelector()` - Returns to active workout
+
 
 ### **Routine Management:**
 - `showCreateRoutine()` - Goes to create routine screen
@@ -111,7 +105,7 @@ This document outlines all navigation flows within the workout tracker applicati
 - **ExerciseSetupScreen** "←" → Always goes to **RoutinesScreen**
 - **AddExercisesToRoutine** "←" → **RoutinesScreen** (context-dependent)
 - **CreateRoutine** "←" → **RoutinesScreen**
-- **ActiveWorkout** "End Workout" → **WorkoutDashboard**
+
 
 ### **State Management:**
 - **Exercise Selection:** Clears when navigating between exercise-related screens
@@ -128,7 +122,7 @@ This document outlines all navigation flows within the workout tracker applicati
 ## **Screen Classifications**
 
 ### **Views Without Bottom Navigation:**
-- SignInScreen, SignUpScreen, ActiveWorkout, ExerciseSelector, CreateRoutine, AddExercisesToRoutine, ExerciseSetupScreen, RoutineEditor
+- SignInScreen, SignUpScreen, CreateRoutine, AddExercisesToRoutine, ExerciseSetupScreen, RoutineEditor
 
 ### **Views With Bottom Navigation:**
 - WorkoutDashboard, RoutinesScreen, ProgressScreen, ProfileScreen
@@ -161,7 +155,7 @@ This document outlines all navigation flows within the workout tracker applicati
 
 ### **Screen Components:**
 - WorkoutDashboard, RoutinesScreen, ProgressScreen, ProfileScreen
-- SignInScreen, SignUpScreen, ActiveWorkout, ExerciseSelector
+- SignInScreen, SignUpScreen
 - CreateRoutine, AddExercisesToRoutine, ExerciseSetupScreen, RoutineEditor
 
 ---

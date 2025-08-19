@@ -41,22 +41,11 @@ export function useAppNavigation() {
 
 
 
-  const showExerciseSelector = () => {
-    // If we're in exercise setup with a routine, go to add exercises to routine
-    if (currentView === "exercise-setup" && currentRoutineId) {
-      setCurrentView("add-exercises-to-routine");
-    } else {
-      setCurrentView("exercise-selection");
-    }
-  };
 
-  const handleSelectExercise = (exercise: Exercise) => {
-    setCurrentView("exercise-setup");
-  };
 
-  const closeExerciseSelector = () => {
-    setCurrentView("workouts");
-  };
+
+
+
 
   const handleTabChange = (tab: "workouts" | "progress" | "profile") => {
     setActiveTab(tab);
@@ -170,9 +159,7 @@ export function useAppNavigation() {
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,
-    showExerciseSelector,
-    handleSelectExercise,
-    closeExerciseSelector,
+
     handleTabChange,
     showCreateRoutine,
     handleRoutineCreated,
