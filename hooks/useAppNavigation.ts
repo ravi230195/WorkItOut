@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { WorkoutTemplate } from "../components/WorkoutTemplates";
-import { Exercise } from "../components/ExerciseDatabase";
+
+import { Exercise } from "../utils/supabase-api";
 import { ViewType } from "../utils/navigation";
 import { toast } from "sonner";
 
 export function useAppNavigation() {
   const [currentView, setCurrentView] = useState<ViewType>("workouts");
-  const [activeTab, setActiveTab] = useState<"workouts" | "routines" | "progress" | "profile">("workouts");
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<WorkoutTemplate | null>(null);
+  const [activeTab, setActiveTab] = useState<"workouts" | "progress" | "profile">("workouts");
+
+
   const [currentRoutineId, setCurrentRoutineId] = useState<number | null>(null);
   const [currentRoutineName, setCurrentRoutineName] = useState<string>("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -37,17 +37,9 @@ export function useAppNavigation() {
     setCurrentView("signin");
   };
 
-  const handleSelectTemplate = (template: WorkoutTemplate) => {
-    setSelectedTemplate(template);
-    setCurrentView("active-workout");
-  };
 
-  const endWorkout = () => {
-    setSelectedTemplate(null);
-    setCurrentView("workouts");
-    setActiveTab("workouts");
-    // Refresh the workouts view to show updated data
-  };
+
+
 
   const showExerciseSelector = () => {
     // If we're in exercise setup with a routine, go to add exercises to routine
@@ -59,24 +51,20 @@ export function useAppNavigation() {
   };
 
   const handleSelectExercise = (exercise: Exercise) => {
-    setSelectedExercise(exercise);
-    setCurrentView("active-workout");
+    setCurrentView("exercise-setup");
   };
 
   const closeExerciseSelector = () => {
-    setCurrentView("active-workout");
+    setCurrentView("workouts");
   };
 
-  const handleTabChange = (tab: "workouts" | "routines" | "progress" | "profile") => {
+  const handleTabChange = (tab: "workouts" | "progress" | "profile") => {
     setActiveTab(tab);
     
     // Map tab to view
     switch (tab) {
       case "workouts":
         setCurrentView("workouts");
-        break;
-      case "routines":
-        setCurrentView("routines");
         break;
       case "progress":
         setCurrentView("progress");
@@ -101,67 +89,58 @@ export function useAppNavigation() {
     setCurrentView("add-exercises-to-routine");
   };
 
-  const handleExerciseSelected = (exercise: Exercise, createdRoutineId: number) => {
-    // Store the exercise and routine info, then navigate to exercise setup
-    setSelectedExercise(exercise);
-    setCurrentRoutineId(createdRoutineId);
+  const handleExerciseSelected = (exercise: Exercise, createdRoutineId?: number) => {
+    // Store the routine info, then navigate to exercise setup
+    if (createdRoutineId) {
+      setCurrentRoutineId(createdRoutineId);
+    }
     setCurrentView("exercise-setup");
   };
 
-  const showExerciseSetup = () => {
-    setCurrentView("exercise-setup");
-  };
+
 
   const showExerciseSetupEmpty = (routineId: number, routineName: string) => {
     setCurrentRoutineId(routineId);
     setCurrentRoutineName(routineName);
-    setSelectedExercise(null); // No exercise selected
     setCurrentView("exercise-setup");
   };
 
   const closeExerciseSetup = () => {
-    // Clear selected exercise when navigating to exercise selection
-    setSelectedExercise(null);
     setCurrentView("add-exercises-to-routine");
   };
 
   // New function specifically for returning to exercise setup from exercise selection
   const returnToExerciseSetup = (exercise: Exercise) => {
-    setSelectedExercise(exercise);
     setCurrentView("exercise-setup");
   };
 
   const closeExerciseSetupToRoutines = () => {
-    // Clear all routine state and go back to routines
-    setSelectedExercise(null);
+    // Clear all routine state and go back to workouts
     setCurrentRoutineId(null);
     setCurrentRoutineName("");
-    setCurrentView("routines");
+    setCurrentView("workouts");
   };
 
   const handleExerciseSetupComplete = () => {
-    // After exercise setup is complete, clear the selected exercise but stay on screen
+    // After exercise setup is complete, stay on screen
     // This allows the component to show the empty state with saved exercises
-    setSelectedExercise(null);
     console.log("Exercise setup completed, staying on screen for more exercises");
   };
 
-  const showRoutineEditor = () => {
-    setCurrentView("routine-editor");
-  };
+
 
   const closeRoutineEditor = () => {
     setCurrentView("add-exercises-to-routine");
   };
 
   const closeCreateRoutine = () => {
-    setCurrentView("routines");
+    setCurrentView("workouts");
   };
 
   const completeRoutineCreation = () => {
     setCurrentRoutineId(null);
     setCurrentRoutineName("");
-    setCurrentView("routines");
+    setCurrentView("workouts");
     // Trigger a refresh of the routines list to show the new routine
     setRefreshTrigger(prev => prev + 1);
   };
@@ -185,17 +164,12 @@ export function useAppNavigation() {
     currentView,
     setCurrentView,
     activeTab,
-    selectedExercise,
-    setSelectedExercise,
-    selectedTemplate,
     currentRoutineId,
     currentRoutineName,
     refreshTrigger,
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,
-    handleSelectTemplate,
-    endWorkout,
     showExerciseSelector,
     handleSelectExercise,
     closeExerciseSelector,
@@ -205,10 +179,8 @@ export function useAppNavigation() {
     closeCreateRoutine,
     completeRoutineCreation,
     handleExerciseSelected,
-    showExerciseSetup,
     closeExerciseSetup,
     handleExerciseSetupComplete,
-    showRoutineEditor,
     closeRoutineEditor,
     showExerciseSetupEmpty,
     closeExerciseSetupToRoutines,

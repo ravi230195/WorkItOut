@@ -1,7 +1,7 @@
-import { TrendingUp, Dumbbell, User, FileText } from "lucide-react";
+import { TrendingUp, Dumbbell, User } from "lucide-react";
 import { TactileButton } from "./TactileButton";
 
-export type TabType = "workouts" | "routines" | "progress" | "profile";
+export type TabType = "workouts" | "progress" | "profile";
 
 interface BottomNavigationProps {
   activeTab: TabType;
@@ -15,12 +15,6 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
       label: "Workouts",
       icon: Dumbbell,
       variant: activeTab === "workouts" ? "primary" : "secondary"
-    },
-    {
-      id: "routines" as TabType,
-      label: "Routines",
-      icon: FileText,
-      variant: activeTab === "routines" ? "primary" : "secondary"
     },
     {
       id: "progress" as TabType,

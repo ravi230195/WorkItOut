@@ -2,7 +2,6 @@ export type AppView =
   | "signin"
   | "signup"
   | "workouts" 
-  | "routines"
   | "active-workout" 
   | "exercise-selection"
   | "create-routine"

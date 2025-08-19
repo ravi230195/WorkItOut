@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
-interface Set {
+interface ExerciseSet {
   id: string;
   reps: string;
   weight: string;
@@ -43,7 +43,7 @@ export function ExerciseSetupScreen({
   // Keyboard-aware scrolling
   useKeyboardInset();
   
-  const [sets, setSets] = useState<Set[]>([
+  const [sets, setSets] = useState<ExerciseSet[]>([
     { id: '1', reps: '0', weight: '0' },
     { id: '2', reps: '0', weight: '0' },
     { id: '3', reps: '0', weight: '0' }
@@ -55,7 +55,7 @@ export function ExerciseSetupScreen({
   const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
   const [exerciseSetsData, setExerciseSetsData] = useState<Record<number, UserRoutineExerciseSet[]>>({});
   const [loadingSets, setLoadingSets] = useState<Record<number, boolean>>({});
-  const [editingExercises, setEditingExercises] = useState<Set<number>>(new Set());
+  const [editingExercises, setEditingExercises] = useState(new Set<number>());
   const [editingSets, setEditingSets] = useState<Record<number, { reps: string; weight: string }>>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [savingAllChanges, setSavingAllChanges] = useState(false);
@@ -211,7 +211,7 @@ export function ExerciseSetupScreen({
     if (expandedExercise === exerciseTemplateId) {
       console.log('Closing expanded exercise');
       setExpandedExercise(null);
-      setEditingExercise(null); // Exit edit mode when closing
+      setEditingExercises(new Set<number>()); // Exit edit mode when closing
       return;
     }
 
@@ -244,7 +244,7 @@ export function ExerciseSetupScreen({
     const setsData = exerciseSetsData[exerciseTemplateId] || [];
     
     // Add to editing exercises set
-    setEditingExercises(prev => new Set([...prev, exerciseTemplateId]));
+    setEditingExercises((prev: Set<number>) => new Set<number>(Array.from(prev).concat([exerciseTemplateId])));
     
     // Initialize editing state with current values
     const newEditingState: Record<number, { reps: string; weight: string }> = {};
@@ -259,30 +259,7 @@ export function ExerciseSetupScreen({
     setHasUnsavedChanges(true);
   };
 
-  const handleCancelEdit = (exerciseTemplateId: number) => {
-    // Remove from editing exercises
-    setEditingExercises(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(exerciseTemplateId);
-      return newSet;
-    });
-    
-    // Remove editing data for this exercise
-    const setsData = exerciseSetsData[exerciseTemplateId] || [];
-    const setIdsToRemove = setsData.map(set => set.routine_template_exercise_set_id);
-    
-    setEditingSets(prev => {
-      const newState = { ...prev };
-      setIdsToRemove.forEach(id => delete newState[id]);
-      return newState;
-    });
-    
-    // Check if any exercises are still being edited
-    const remainingEditing = Array.from(editingExercises).filter(id => id !== exerciseTemplateId);
-    if (remainingEditing.length === 0) {
-      setHasUnsavedChanges(false);
-    }
-  };
+
 
   const handleCancelAllEdits = () => {
     setEditingExercises(new Set());
@@ -360,7 +337,7 @@ export function ExerciseSetupScreen({
     
     try {
       // Process all editing exercises
-      for (const exerciseTemplateId of editingExercises) {
+      for (const exerciseTemplateId of Array.from(editingExercises)) {
         const setsData = exerciseSetsData[exerciseTemplateId] || [];
         
         // Handle existing sets (update)
@@ -567,7 +544,7 @@ export function ExerciseSetupScreen({
                                   <span className="text-center">Weight (kg)</span>
                                   <span></span>
                                 </div>
-                                {setsData.map((set, setIndex) => (
+                                {setsData.map((set) => (
                                   <div key={set.routine_template_exercise_set_id} className="grid grid-cols-4 gap-3 items-center py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20">
                                     <span className="text-sm font-medium text-[var(--warm-brown)]/80">
                                       {set.set_order}
@@ -612,7 +589,7 @@ export function ExerciseSetupScreen({
                             ) : (
                               // View Mode
                               <div className="space-y-2">
-                                {setsData.map((set, setIndex) => (
+                                {setsData.map((set) => (
                                   <div key={set.routine_template_exercise_set_id} className="flex items-center justify-between py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20">
                                     <span className="text-sm font-medium text-[var(--warm-brown)]/80">Set {set.set_order}</span>
                                     <div className="flex items-center gap-3 text-sm text-[var(--warm-brown)]">
@@ -791,7 +768,6 @@ export function ExerciseSetupScreen({
       {hasUnsavedChanges && (
         <div 
           className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4" 
-
         >
           <div className="flex gap-3">
             <TactileButton

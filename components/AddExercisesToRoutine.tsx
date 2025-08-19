@@ -5,7 +5,6 @@ import { TactileButton } from "./TactileButton";
 import { supabaseAPI, Exercise } from "../utils/supabase-api";
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { useKeyboardInset } from "../hooks/useKeyboardInset";
 
 interface AddExercisesToRoutineProps {
@@ -146,7 +145,7 @@ export function AddExercisesToRoutine({
   return (
     <div className="bg-background flex flex-col">
       {/* Header */}
-              <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
+      <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
         <TactileButton 
           variant="secondary"
           size="sm"
@@ -167,7 +166,7 @@ export function AddExercisesToRoutine({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search for an exercise..."
-            className="bg-[var(--input-background)] border-[var(--border)] text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/60 h-12 pl-10 pr-12 text-base rounded-xl focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
+            className="bg-[var(--input-background)] border-[var(--border)] text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/60 h-12 pl-10 pr-12 rounded-xl focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
           />
           <TactileButton 
             variant="secondary" 
@@ -190,7 +189,7 @@ export function AddExercisesToRoutine({
         </TactileButton>
       </div>
 
-      {/* Exercise List */}
+      {/* Exercise List (inherits global fonts) */}
       <div className="overflow-y-auto px-4 pb-24">
         {isLoading ? (
           <div className="text-center py-8">
@@ -202,50 +201,48 @@ export function AddExercisesToRoutine({
             No exercises found
           </div>
         ) : (
-          Object.keys(groupedExercises).sort().map(letter => (
+          Object.keys(groupedExercises).sort().map((letter) => (
             <div key={letter} className="mb-6">
-              <h2 className="text-[var(--warm-brown)]/60 font-medium mb-3 px-2">{letter}</h2>
+              <h2 className="text-[var(--warm-brown)]/60 font-medium mb-3 px-2 tracking-wide">
+                {letter}
+              </h2>
+
               <div className="space-y-2">
-                {groupedExercises[letter].map(exercise => {
+                {groupedExercises[letter].map((exercise) => {
                   const isSelected = selectedExercise?.exercise_id === exercise.exercise_id;
+                  const initials = exercise.name.substring(0, 2).toUpperCase();
+
                   return (
                     <TactileButton
-                      key={`${exercise.exercise_id}-${exercise.name}`}
+                      key={exercise.exercise_id}
                       variant="secondary"
                       onClick={() => handleSelectExercise(exercise)}
                       className={`w-full p-4 rounded-xl border transition-all ${
                         isSelected
-                          ? 'bg-white border-[var(--warm-coral)] shadow-lg ring-2 ring-[var(--warm-coral)]/20'
-                          : 'bg-[var(--soft-gray)]/50 border-[var(--border)] hover:bg-white hover:border-[var(--warm-coral)]/30 hover:shadow-md'
+                          ? "bg-white border-[var(--warm-coral)] shadow-lg ring-2 ring-[var(--warm-coral)]/20"
+                          : "bg-[var(--soft-gray)]/50 border-[var(--border)] hover:bg-white hover:border-[var(--warm-coral)]/30 hover:shadow-md"
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-[var(--warm-brown)]/10 rounded-lg flex items-center justify-center overflow-hidden">
-                          {exercise.name.includes('Press') || exercise.name.includes('Arnold') ? (
-                            <ImageWithFallback 
-                              src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop&crop=center"
-                              alt={exercise.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : exercise.name.includes('Bike') || exercise.name.includes('Assault') ? (
-                            <ImageWithFallback 
-                              src="https://images.unsplash.com/photo-1544397886-6bd04d7a922e?w=100&h=100&fit=crop&crop=center"
-                              alt={exercise.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-lg font-medium text-[var(--warm-brown)]/60">
-                              {exercise.name.substring(0, 2).toUpperCase()}
-                            </span>
-                          )}
+                        {/* Initials badge (no images) */}
+                        <div className="w-12 h-12 bg-[var(--warm-brown)]/10 rounded-lg flex items-center justify-center">
+                          <span className="font-medium text-[var(--warm-brown)]/60">
+                            {initials}
+                          </span>
                         </div>
+
                         <div className="flex-1 text-left">
-                          <h3 className="font-medium text-[var(--warm-brown)]">{exercise.name}</h3>
-                          <p className="text-sm text-[var(--warm-brown)]/60">{exercise.equipment}</p>
+                          <h3 className="font-medium text-[var(--warm-brown)]">
+                            {exercise.name}
+                          </h3>
+                          <p className="text-[var(--warm-brown)]/60">
+                            {exercise.equipment}
+                          </p>
                         </div>
+
                         <div className="text-[var(--warm-brown)]/40">
                           <div className="w-6 h-6 rounded-full border border-[var(--warm-brown)]/20 flex items-center justify-center">
-                            <div className="text-xs">ⓘ</div>
+                            <div>ⓘ</div>
                           </div>
                         </div>
                       </div>
@@ -261,7 +258,6 @@ export function AddExercisesToRoutine({
       {/* Bottom Action Bar - Always visible */}
       <div 
         className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4" 
-
       >
         <div className="flex gap-3">
           <TactileButton
@@ -276,8 +272,8 @@ export function AddExercisesToRoutine({
             disabled={!selectedExercise || isAddingExercise}
             className={`flex-1 h-12 font-medium border-0 transition-all ${
               selectedExercise
-                ? 'bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile'
-                : 'bg-[var(--warm-brown)]/20 text-[var(--warm-brown)]/40 cursor-not-allowed'
+                ? "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
+                : "bg-[var(--warm-brown)]/20 text-[var(--warm-brown)]/40 cursor-not-allowed"
             }`}
           >
             {isAddingExercise 

@@ -1,8 +1,4 @@
 import { WorkoutDashboard } from "./WorkoutDashboard";
-import { RoutinesScreen } from "./RoutinesScreen";
-import { ActiveWorkout } from "./ActiveWorkout";
-import { ExerciseSelector } from "./ExerciseSelector";
-
 import { CreateRoutine } from "./CreateRoutine";
 import { AddExercisesToRoutine } from "./AddExercisesToRoutine";
 import { ExerciseSetupScreen } from "./ExerciseSetupScreen";
@@ -13,37 +9,25 @@ import { SignInScreen } from "./SignInScreen";
 import { SignUpScreen } from "./SignUpScreen";
 import { BottomNavigation, TabType } from "./BottomNavigation";
 import { AppView, VIEWS_WITHOUT_BOTTOM_NAV } from "../utils/navigation";
-import { Exercise } from "./ExerciseDatabase";
-import { WorkoutTemplate } from "./WorkoutTemplates";
+import { Exercise } from "../utils/supabase-api";
 
 interface AppRouterProps {
   currentView: AppView;
   activeTab: TabType;
-  selectedExercise: Exercise | null;
-  selectedTemplate: WorkoutTemplate | null;
   currentRoutineId: number | null;
   currentRoutineName: string;
-  refreshTrigger: number;
   isAuthenticated: boolean;
   onAuthSuccess: (token: string) => void;
   onNavigateToSignUp: () => void;
   onNavigateToSignIn: () => void;
-  onSelectTemplate: (template: WorkoutTemplate) => void;
-  onEndWorkout: () => void;
-  onAddExercise: () => void;
-  onSelectExercise: (exercise: Exercise) => void;
-  onCloseExerciseSelector: () => void;
-  onExerciseAdded: () => void;
   onTabChange: (tab: TabType) => void;
   onCreateRoutine: () => void;
   onRoutineCreated: (routineName: string) => void;
   onCloseCreateRoutine: () => void;
   onCompleteRoutineCreation: () => void;
-  onExerciseSelected: (exercise: any, createdRoutineId: number) => void;
-  onShowExerciseSetup: () => void;
+  onExerciseSelected: (exercise: Exercise, createdRoutineId?: number) => void;
   onCloseExerciseSetup: () => void;
   onExerciseSetupComplete: () => void;
-  onShowRoutineEditor: () => void;
   onCloseRoutineEditor: () => void;
   onSelectRoutine: (routineId: number, routineName: string) => void;
   onCloseExerciseSetupToRoutines: () => void;
@@ -54,31 +38,20 @@ interface AppRouterProps {
 export function AppRouter({
   currentView,
   activeTab,
-  selectedExercise,
-  selectedTemplate,
   currentRoutineId,
   currentRoutineName,
-  refreshTrigger,
   isAuthenticated,
   onAuthSuccess,
   onNavigateToSignUp,
   onNavigateToSignIn,
-  onSelectTemplate,
-  onEndWorkout,
-  onAddExercise,
-  onSelectExercise,
-  onCloseExerciseSelector,
-  onExerciseAdded,
   onTabChange,
   onCreateRoutine,
   onRoutineCreated,
   onCloseCreateRoutine,
   onCompleteRoutineCreation,
   onExerciseSelected,
-  onShowExerciseSetup,
   onCloseExerciseSetup,
   onExerciseSetupComplete,
-  onShowRoutineEditor,
   onCloseRoutineEditor,
   onSelectRoutine,
   onCloseExerciseSetupToRoutines,
@@ -111,16 +84,12 @@ export function AppRouter({
       <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
         {currentView === "workouts" && (
           <WorkoutDashboard 
-            onSelectTemplate={onSelectTemplate}
-          />
-        )}
-
-        {currentView === "routines" && (
-          <RoutinesScreen 
             onCreateRoutine={onCreateRoutine}
             onSelectRoutine={onSelectRoutine}
           />
         )}
+
+
         
 
         
@@ -143,14 +112,12 @@ export function AppRouter({
 
         {currentView === "exercise-setup" && currentRoutineId && currentRoutineName && (
           <ExerciseSetupScreen
-            exercise={selectedExercise || undefined}
             routineId={currentRoutineId}
             routineName={currentRoutineName}
             onBack={onCloseExerciseSetupToRoutines}
             onSave={onExerciseSetupComplete}
             onAddMoreExercises={onCloseExerciseSetup}
-            isEditingExistingRoutine={!selectedExercise}
-            onShowExerciseSelector={onShowExerciseSelector}
+            isEditingExistingRoutine={true}
           />
         )}
 
@@ -164,22 +131,9 @@ export function AppRouter({
           />
         )}
         
-        {currentView === "active-workout" && (
-          <ActiveWorkout 
-            onEndWorkout={onEndWorkout}
-            onAddExercise={onAddExercise}
-            selectedExercise={selectedExercise}
-            onExerciseAdded={onExerciseAdded}
-            template={selectedTemplate || undefined}
-          />
-        )}
+
         
-        {currentView === "exercise-selection" && (
-          <ExerciseSelector
-            onSelectExercise={onSelectExercise}
-            onClose={onCloseExerciseSelector}
-          />
-        )}
+
 
         {currentView === "progress" && (
           <ProgressScreen />
