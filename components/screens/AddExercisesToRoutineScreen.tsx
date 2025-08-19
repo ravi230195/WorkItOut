@@ -20,7 +20,7 @@ export function AddExercisesToRoutineScreen({
   routineName, 
   onBack, 
   onExerciseSelected,
-  isFromExerciseSetup = false
+  isFromExerciseSetup = false,
 }: AddExercisesToRoutineScreenProps) {
   // Keyboard-aware scrolling
   useKeyboardInset();
@@ -106,8 +106,34 @@ export function AddExercisesToRoutineScreen({
     try {
       let actualRoutineId = routineId;
 
-      // If no routine ID exists, create the routine first (only for new routines)
-      if (!actualRoutineId && !isFromExerciseSetup) {
+      // If opened from ExerciseSetup, DO NOT write to DB here.
+      // Hand the selected exercise back so the parent opens configure mode.
+      if (isFromExerciseSetup) {
+        // Coming from ExerciseSetupScreen: add exercise to routine first
+        console.log("Adding exercise to existing routine:", selectedExercise.name);
+        if (!actualRoutineId) {
+          throw new Error("No routine ID available to add exercise to");
+        }
+        
+        const exerciseOrder = 1; // server will place correctly
+        const savedExercise = await supabaseAPI.addExerciseToRoutine(
+          actualRoutineId,
+          selectedExercise.exercise_id,
+          exerciseOrder
+        );
+        
+        if (!savedExercise) {
+          throw new Error("Failed to add exercise to routine");
+        }
+        
+        console.log("Exercise added to routine successfully:", savedExercise);
+        // Now pass the exercise back to exercise setup
+        onExerciseSelected(selectedExercise);
+        return;
+      }
+
+      // Create-routine flow: create routine first if needed
+      if (!actualRoutineId) {
         console.log(`Creating routine "${routineName}" since it doesn't exist yet`);
         const newRoutine = await supabaseAPI.createUserRoutine(routineName);
         
@@ -119,15 +145,10 @@ export function AddExercisesToRoutineScreen({
         console.log(`Created routine with ID: ${actualRoutineId}`);
       }
 
-      // Navigate to exercise setup screen
-      if (isFromExerciseSetup) {
-        // Coming from ExerciseSetupScreen, just pass the exercise back
-        onExerciseSelected(selectedExercise);
-      } else {
-        // Coming from create routine flow
-        onExerciseSelected(selectedExercise, actualRoutineId!);
-      }
-      
+      // Notify parent to open configure screen with the selected exercise
+      onExerciseSelected(selectedExercise, actualRoutineId!);
+      // (Do not call onShowExerciseSetup here; parent owns navigation)
+
     } catch (error) {
       console.error("Failed to proceed to exercise setup:", error);
       if (error instanceof Error && error.message === "UNAUTHORIZED") {
@@ -188,7 +209,7 @@ export function AddExercisesToRoutineScreen({
         </TactileButton>
       </div>
 
-      {/* Exercise List (inherits global fonts) */}
+      {/* Exercise List */}
       <div className="overflow-y-auto px-4 pb-24">
         {isLoading ? (
           <div className="text-center py-8">
@@ -223,7 +244,6 @@ export function AddExercisesToRoutineScreen({
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        {/* Initials badge (no images) */}
                         <div className="w-12 h-12 bg-[var(--warm-brown)]/10 rounded-lg flex items-center justify-center">
                           <span className="font-medium text-[var(--warm-brown)]/60">
                             {initials}
@@ -254,9 +274,9 @@ export function AddExercisesToRoutineScreen({
         )}
       </div>
 
-      {/* Bottom Action Bar - Always visible */}
+      {/* Bottom Action Bar */}
       <div 
-        className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4" 
+        className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4 pb-[env(safe-area-inset-bottom)]"
       >
         <div className="flex gap-3">
           <TactileButton

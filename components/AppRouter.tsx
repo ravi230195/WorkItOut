@@ -14,6 +14,8 @@ interface AppRouterProps {
   currentView: AppView;
   currentRoutineId: number | null;
   currentRoutineName: string;
+  selectedExerciseForSetup: Exercise | null;
+  setSelectedExerciseForSetup: (exercise: Exercise | null) => void;
   isAuthenticated: boolean;
   onAuthSuccess: (token: string) => void;
   onNavigateToSignUp: () => void;
@@ -35,6 +37,8 @@ export function AppRouter({
   currentView,
   currentRoutineId,
   currentRoutineName,
+  selectedExerciseForSetup,
+  setSelectedExerciseForSetup,
   isAuthenticated,
   onAuthSuccess,
   onNavigateToSignUp,
@@ -103,10 +107,13 @@ export function AppRouter({
           <ExerciseSetupScreen
             routineId={currentRoutineId}
             routineName={currentRoutineName}
+            selectedExerciseForSetup={selectedExerciseForSetup}
+            setSelectedExerciseForSetup={setSelectedExerciseForSetup}
             onBack={onCloseExerciseSetupToRoutines}
             onSave={onExerciseSetupComplete}
             onAddMoreExercises={onCloseExerciseSetup}
             isEditingExistingRoutine={true}
+            onShowExerciseSelector={onCloseExerciseSetup}
           />
         )}
 

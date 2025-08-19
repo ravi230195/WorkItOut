@@ -12,6 +12,7 @@ export function useAppNavigation() {
   const [currentRoutineId, setCurrentRoutineId] = useState<number | null>(null);
   const [currentRoutineName, setCurrentRoutineName] = useState<string>("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedExerciseForSetup, setSelectedExerciseForSetup] = useState<Exercise | null>(null);
 
   // Error handling for unauthorized sessions
   const handleUnauthorizedError = (error: Error) => {
@@ -100,6 +101,8 @@ export function useAppNavigation() {
 
   // New function specifically for returning to exercise setup from exercise selection
   const returnToExerciseSetup = (exercise: Exercise) => {
+    console.log("🔍 [DBG] Returning to exercise setup with exercise:", exercise.name);
+    setSelectedExerciseForSetup(exercise);
     setCurrentView("exercise-setup");
   };
 
@@ -156,6 +159,8 @@ export function useAppNavigation() {
     currentRoutineId,
     currentRoutineName,
     refreshTrigger,
+    selectedExerciseForSetup,
+    setSelectedExerciseForSetup,
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,

@@ -18,6 +18,8 @@ interface ExerciseSetupScreenProps {
   exercise?: Exercise; // Made optional - might not have exercise selected
   routineId: number;
   routineName: string;
+  selectedExerciseForSetup: Exercise | null;
+  setSelectedExerciseForSetup: (exercise: Exercise | null) => void;
   onBack: () => void;
   onSave: () => void;
   onAddMoreExercises: () => void;
@@ -34,6 +36,8 @@ export function ExerciseSetupScreen({
   exercise, 
   routineId, 
   routineName, 
+  selectedExerciseForSetup,
+  setSelectedExerciseForSetup,
   onBack, 
   onSave,
   onAddMoreExercises,
@@ -65,6 +69,16 @@ export function ExerciseSetupScreen({
   useEffect(() => {
     setCurrentExercise(exercise);
   }, [exercise]);
+
+  // Update current exercise when selectedExerciseForSetup changes (from ADD flow)
+  useEffect(() => {
+    if (selectedExerciseForSetup) {
+      console.log("🔍 [DBG] Setting currentExercise from selectedExerciseForSetup:", selectedExerciseForSetup.name);
+      setCurrentExercise(selectedExerciseForSetup);
+      // Clear the selected exercise after setting it
+      setSelectedExerciseForSetup(null);
+    }
+  }, [selectedExerciseForSetup, setSelectedExerciseForSetup]);
 
   // Load saved exercises for this routine
   useEffect(() => {
@@ -430,7 +444,20 @@ export function ExerciseSetupScreen({
         <TactileButton 
           variant="secondary"
           size="sm"
-          onClick={isEditingExistingRoutine && onShowExerciseSelector ? onShowExerciseSelector : onAddMoreExercises}
+          onClick={() => {
+            console.log('🔍 [DBG] ADD BUTTON CLICKED!');
+            console.log('🔍 [DBG] isEditingExistingRoutine:', isEditingExistingRoutine);
+            console.log('🔍 [DBG] onShowExerciseSelector exists:', !!onShowExerciseSelector);
+            console.log('🔍 [DBG] onAddMoreExercises exists:', !!onAddMoreExercises);
+            
+            if (isEditingExistingRoutine && onShowExerciseSelector) {
+              console.log('🔍 [DBG] Calling onShowExerciseSelector');
+              onShowExerciseSelector();
+            } else {
+              console.log('🔍 [DBG] Calling onAddMoreExercises');
+              onAddMoreExercises();
+            }
+          }}
           className="p-2 h-auto bg-green-500 border-green-600 text-white hover:bg-green-600 btn-tactile-sage"
         >
           <Plus size={20} />

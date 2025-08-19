@@ -21,6 +21,8 @@ function AppContent() {
     activeTab,
     currentRoutineId,
     currentRoutineName,
+    selectedExerciseForSetup,
+    setSelectedExerciseForSetup,
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,
@@ -55,6 +57,8 @@ function AppContent() {
           currentView={currentView}
           currentRoutineId={currentRoutineId}
           currentRoutineName={currentRoutineName}
+          selectedExerciseForSetup={selectedExerciseForSetup}
+          setSelectedExerciseForSetup={setSelectedExerciseForSetup}
           isAuthenticated={isAuthenticated}
           onAuthSuccess={(token) => handleAuthSuccess(token, setUserToken)}
           onNavigateToSignUp={navigateToSignUp}
