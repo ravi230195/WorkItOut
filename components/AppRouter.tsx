@@ -7,8 +7,8 @@ import { ProgressScreen } from "./ProgressScreen";
 import { ProfileScreen } from "./ProfileScreen";
 import { SignInScreen } from "./SignInScreen";
 import { SignUpScreen } from "./SignUpScreen";
-import { BottomNavigation, TabType } from "./BottomNavigation";
-import { AppView, VIEWS_WITHOUT_BOTTOM_NAV } from "../utils/navigation";
+import { TabType } from "./BottomNavigation";
+import { AppView } from "../utils/navigation";
 import { Exercise } from "../utils/supabase-api";
 
 interface AppRouterProps {
@@ -77,8 +77,6 @@ export function AppRouter({
     }
   }
 
-  const showBottomNav = !VIEWS_WITHOUT_BOTTOM_NAV.includes(currentView);
-
   return (
     <>
       <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
@@ -89,10 +87,6 @@ export function AppRouter({
           />
         )}
 
-
-        
-
-        
         {currentView === "create-routine" && (
           <CreateRoutine
             onBack={onCloseCreateRoutine}
@@ -130,10 +124,6 @@ export function AppRouter({
             onSave={onCompleteRoutineCreation}
           />
         )}
-        
-
-        
-
 
         {currentView === "progress" && (
           <ProgressScreen />
@@ -143,13 +133,6 @@ export function AppRouter({
           <ProfileScreen />
         )}
       </div>
-      
-      {showBottomNav && (
-        <BottomNavigation 
-          activeTab={activeTab} 
-          onTabChange={onTabChange}
-        />
-      )}
     </>
   );
 }

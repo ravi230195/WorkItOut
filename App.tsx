@@ -8,6 +8,7 @@ import { Toaster } from "./components/ui/sonner";
 
 /* ✅ NEW: import BottomNavigation + TabType */
 import { BottomNavigation, TabType } from "./components/BottomNavigation";
+import { VIEWS_WITHOUT_BOTTOM_NAV } from "./utils/navigation";
 
 function AppContent() {
   const { setUserToken } = useAuth();
@@ -25,8 +26,6 @@ function AppContent() {
     navigateToSignUp,
     navigateToSignIn,
     showExerciseSelector,
-    handleSelectExercise,
-    closeExerciseSelector,
     handleTabChange,
     showCreateRoutine,
     handleRoutineCreated,
@@ -42,8 +41,8 @@ function AppContent() {
   } = useAppNavigation();
 
   const { isAuthenticated } = useAuthEffects({ currentView, setCurrentView });
-
-  const showNav = isAuthenticated;
+  const showBottomNav = !VIEWS_WITHOUT_BOTTOM_NAV.includes(currentView);
+  const showNav = isAuthenticated && showBottomNav;
 
   return (
     <div id="app" className="h-[100dvh] grid grid-rows-[1fr_auto] overflow-hidden">
@@ -62,9 +61,6 @@ function AppContent() {
           onAuthSuccess={(token) => handleAuthSuccess(token, setUserToken)}
           onNavigateToSignUp={navigateToSignUp}
           onNavigateToSignIn={navigateToSignIn}
-
-          onSelectExercise={handleSelectExercise}
-          onCloseExerciseSelector={closeExerciseSelector}
           onTabChange={handleTabChange}
           onCreateRoutine={showCreateRoutine}
           onRoutineCreated={handleRoutineCreated}
