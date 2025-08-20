@@ -14,21 +14,29 @@ interface AppRouterProps {
   currentView: AppView;
   currentRoutineId: number | null;
   currentRoutineName: string;
+
   selectedExerciseForSetup: Exercise | null;
   setSelectedExerciseForSetup: (exercise: Exercise | null) => void;
+
   isAuthenticated: boolean;
   onAuthSuccess: (token: string) => void;
   onNavigateToSignUp: () => void;
   onNavigateToSignIn: () => void;
+
   onCreateRoutine: () => void;
-  onRoutineCreated: (routineName: string) => void;
+  /** Updated: passes (name, id) to jump straight to ExerciseSetup */
+  onRoutineCreated: (routineName: string, routineId: number) => void;
+
   onCloseCreateRoutine: () => void;
   onCompleteRoutineCreation: () => void;
+
   onExerciseSelected: (exercise: Exercise, createdRoutineId?: number) => void;
   onCloseExerciseSetup: () => void;
   onExerciseSetupComplete: () => void;
+
   onCloseRoutineEditor: () => void;
   onSelectRoutine: (routineId: number, routineName: string) => void;
+
   onCloseExerciseSetupToRoutines: () => void;
   onReturnToExerciseSetup: (exercise: Exercise) => void;
 }
@@ -37,104 +45,105 @@ export function AppRouter({
   currentView,
   currentRoutineId,
   currentRoutineName,
+
   selectedExerciseForSetup,
   setSelectedExerciseForSetup,
+
   isAuthenticated,
   onAuthSuccess,
   onNavigateToSignUp,
   onNavigateToSignIn,
+
   onCreateRoutine,
   onRoutineCreated,
   onCloseCreateRoutine,
   onCompleteRoutineCreation,
+
   onExerciseSelected,
   onCloseExerciseSetup,
   onExerciseSetupComplete,
+
   onCloseRoutineEditor,
   onSelectRoutine,
+
   onCloseExerciseSetupToRoutines,
-  onReturnToExerciseSetup
+  onReturnToExerciseSetup,
 }: AppRouterProps) {
-  // Debug log for current screen
   console.log(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
-  // Show auth screens when not authenticated or when explicitly navigating to auth screens
+
   if (!isAuthenticated || currentView === "signin" || currentView === "signup") {
     if (currentView === "signup") {
       return (
-        <SignUpScreen 
-          onAuthSuccess={onAuthSuccess} 
+        <SignUpScreen
+          onAuthSuccess={onAuthSuccess}
           onNavigateToSignIn={onNavigateToSignIn}
         />
       );
-    } else {
-      return (
-        <SignInScreen 
-          onAuthSuccess={onAuthSuccess} 
-          onNavigateToSignUp={onNavigateToSignUp} 
-        />
-      );
     }
+    return (
+      <SignInScreen
+        onAuthSuccess={onAuthSuccess}
+        onNavigateToSignUp={onNavigateToSignUp}
+      />
+    );
   }
 
   return (
-    <>
-      <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
-        {currentView === "workouts" && (
-          <WorkoutDashboardScreen 
-            onCreateRoutine={onCreateRoutine}
-            onSelectRoutine={onSelectRoutine}
-          />
-        )}
+    <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
+      {currentView === "workouts" && (
+        <WorkoutDashboardScreen
+          onCreateRoutine={onCreateRoutine}
+          onSelectRoutine={onSelectRoutine}
+        />
+      )}
 
-        {currentView === "create-routine" && (
-          <CreateRoutineScreen
-            onBack={onCloseCreateRoutine}
-            onRoutineCreated={onRoutineCreated}
-          />
-        )}
-        
-        {currentView === "add-exercises-to-routine" && currentRoutineName && (
-          <AddExercisesToRoutineScreen
-            routineId={currentRoutineId || undefined}
-            routineName={currentRoutineName}
-            onBack={currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine}
-            onExerciseSelected={currentRoutineId ? (exercise: Exercise) => onReturnToExerciseSetup(exercise) : onExerciseSelected}
-            isFromExerciseSetup={!!currentRoutineId}
-          />
-        )}
+      {currentView === "create-routine" && (
+        <CreateRoutineScreen
+          onBack={onCloseCreateRoutine}
+          onRoutineCreated={onRoutineCreated} // (name, id)
+        />
+      )}
 
-        {currentView === "exercise-setup" && currentRoutineId && currentRoutineName && (
-          <ExerciseSetupScreen
-            routineId={currentRoutineId}
-            routineName={currentRoutineName}
-            selectedExerciseForSetup={selectedExerciseForSetup}
-            setSelectedExerciseForSetup={setSelectedExerciseForSetup}
-            onBack={onCloseExerciseSetupToRoutines}
-            onSave={onExerciseSetupComplete}
-            onAddMoreExercises={onCloseExerciseSetup}
-            isEditingExistingRoutine={true}
-            onShowExerciseSelector={onCloseExerciseSetup}
-          />
-        )}
+      {currentView === "add-exercises-to-routine" && currentRoutineName && (
+        <AddExercisesToRoutineScreen
+          routineId={currentRoutineId || undefined}
+          routineName={currentRoutineName}
+          onBack={currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine}
+          onExerciseSelected={
+            currentRoutineId
+              ? (exercise: Exercise) => onReturnToExerciseSetup(exercise) // back to setup in configure mode
+              : (exercise: Exercise, routineId?: number) => onExerciseSelected(exercise, routineId)
+          }
+          isFromExerciseSetup={!!currentRoutineId}
+        />
+      )}
 
-        {currentView === "routine-editor" && currentRoutineId && (
-          <RoutineEditorScreen
-            routineId={currentRoutineId}
-            routineName={currentRoutineName}
-            onBack={onCloseRoutineEditor}
-            onAddExercise={onCloseRoutineEditor}
-            onSave={onCompleteRoutineCreation}
-          />
-        )}
+      {currentView === "exercise-setup" && currentRoutineId && currentRoutineName && (
+        <ExerciseSetupScreen
+          routineId={currentRoutineId}
+          routineName={currentRoutineName}
+          selectedExerciseForSetup={selectedExerciseForSetup}
+          setSelectedExerciseForSetup={setSelectedExerciseForSetup}
+          onBack={onCloseExerciseSetupToRoutines}       // ← back to Workouts/Routines
+          onSave={onExerciseSetupComplete}              // stay here
+          onAddMoreExercises={onCloseExerciseSetup}     // “+” → picker
+          isEditingExistingRoutine={true}
+          onShowExerciseSelector={onCloseExerciseSetup}
+        />
+      )}
 
-        {currentView === "progress" && (
-          <ProgressScreen />
-        )}
+      {currentView === "routine-editor" && currentRoutineId && (
+        <RoutineEditorScreen
+          routineId={currentRoutineId}
+          routineName={currentRoutineName}
+          onBack={onCloseRoutineEditor}
+          onAddExercise={onCloseRoutineEditor}
+          onSave={onCompleteRoutineCreation}
+        />
+      )}
 
-        {currentView === "profile" && (
-          <ProfileScreen />
-        )}
-      </div>
-    </>
+      {currentView === "progress" && <ProgressScreen />}
+      {currentView === "profile" && <ProfileScreen />}
+    </div>
   );
 }

@@ -5,7 +5,6 @@ import { Input } from "../ui/input";
 import { supabaseAPI, Exercise, UserRoutineExercise, UserRoutineExerciseSet } from "../../utils/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
-
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 
 interface ExerciseSet {
@@ -15,7 +14,7 @@ interface ExerciseSet {
 }
 
 interface ExerciseSetupScreenProps {
-  exercise?: Exercise; // Made optional - might not have exercise selected
+  exercise?: Exercise; // Might be undefined (comes from the + flow)
   routineId: number;
   routineName: string;
   selectedExerciseForSetup: Exercise | null;
@@ -23,34 +22,34 @@ interface ExerciseSetupScreenProps {
   onBack: () => void;
   onSave: () => void;
   onAddMoreExercises: () => void;
-  isEditingExistingRoutine?: boolean; // New prop to differentiate flow
-  onShowExerciseSelector?: () => void; // New prop for exercise selection
+  isEditingExistingRoutine?: boolean;
+  onShowExerciseSelector?: () => void;
 }
 
 interface SavedExerciseWithDetails extends UserRoutineExercise {
   exercise_name?: string;
   category?: string;
+  exercise_id: number; // keep non-optional to avoid TS extends error
 }
 
-export function ExerciseSetupScreen({ 
-  exercise, 
-  routineId, 
-  routineName, 
+export function ExerciseSetupScreen({
+  exercise,
+  routineId,
+  routineName,
   selectedExerciseForSetup,
   setSelectedExerciseForSetup,
-  onBack, 
+  onBack,
   onSave,
   onAddMoreExercises,
   isEditingExistingRoutine = false,
   onShowExerciseSelector
 }: ExerciseSetupScreenProps) {
-  // Keyboard-aware scrolling
   useKeyboardInset();
-  
+
   const [sets, setSets] = useState<ExerciseSet[]>([
-    { id: '1', reps: '0', weight: '0' },
-    { id: '2', reps: '0', weight: '0' },
-    { id: '3', reps: '0', weight: '0' }
+    { id: "1", reps: "0", weight: "0" },
+    { id: "2", reps: "0", weight: "0" },
+    { id: "3", reps: "0", weight: "0" }
   ]);
   const [isSaving, setIsSaving] = useState(false);
   const [savedExercises, setSavedExercises] = useState<SavedExerciseWithDetails[]>([]);
@@ -63,19 +62,21 @@ export function ExerciseSetupScreen({
   const [editingSets, setEditingSets] = useState<Record<number, { reps: string; weight: string }>>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [savingAllChanges, setSavingAllChanges] = useState(false);
+
+  // Track deletions for Save All (soft delete in DB)
+  const [deletedSetIds, setDeletedSetIds] = useState<Set<number>>(new Set());
+
   const { userToken } = useAuth();
 
-  // Update current exercise when prop changes
+  // Wire currentExercise from prop
   useEffect(() => {
     setCurrentExercise(exercise);
   }, [exercise]);
 
-  // Update current exercise when selectedExerciseForSetup changes (from ADD flow)
+  // When coming back from AddExercises screen with a selection
   useEffect(() => {
     if (selectedExerciseForSetup) {
-      console.log("🔍 [DBG] Setting currentExercise from selectedExerciseForSetup:", selectedExerciseForSetup.name);
       setCurrentExercise(selectedExerciseForSetup);
-      // Clear the selected exercise after setting it
       setSelectedExerciseForSetup(null);
     }
   }, [selectedExerciseForSetup, setSelectedExerciseForSetup]);
@@ -84,12 +85,10 @@ export function ExerciseSetupScreen({
   useEffect(() => {
     const loadSavedExercises = async () => {
       if (!userToken) return;
-      
       setIsLoadingSaved(true);
       try {
-        // Load saved exercises for this routine (with exercise details from join)
         const saved = await supabaseAPI.getUserRoutineExercisesWithDetails(routineId);
-        setSavedExercises(saved);
+        setSavedExercises(saved as SavedExerciseWithDetails[]);
       } catch (error) {
         console.error("Failed to load saved exercises:", error);
         toast.error("Failed to load saved exercises");
@@ -97,62 +96,59 @@ export function ExerciseSetupScreen({
         setIsLoadingSaved(false);
       }
     };
-
     loadSavedExercises();
   }, [routineId, userToken]);
 
   const addSet = () => {
     const newId = (sets.length + 1).toString();
-    setSets([...sets, { id: newId, reps: '0', weight: '0' }]);
+    setSets([...sets, { id: newId, reps: "0", weight: "0" }]);
   };
 
   const removeSet = (setId: string) => {
     if (sets.length > 1) {
-      setSets(sets.filter(set => set.id !== setId));
+      setSets(sets.filter((s) => s.id !== setId));
     }
   };
 
-  const updateSet = (setId: string, field: 'reps' | 'weight', value: string) => {
-    setSets(sets.map(set => 
-      set.id === setId 
-        ? { ...set, [field]: value }
-        : set
-    ));
+  const updateSet = (setId: string, field: "reps" | "weight", value: string) => {
+    setSets((prev) => prev.map((s) => (s.id === setId ? { ...s, [field]: value } : s)));
   };
 
   const resetForm = () => {
     setSets([
-      { id: '1', reps: '0', weight: '0' },
-      { id: '2', reps: '0', weight: '0' },
-      { id: '3', reps: '0', weight: '0' }
+      { id: "1", reps: "0", weight: "0" },
+      { id: "2", reps: "0", weight: "0" },
+      { id: "3", reps: "0", weight: "0" }
     ]);
   };
 
   const refreshSavedExercises = async () => {
     try {
       const saved = await supabaseAPI.getUserRoutineExercisesWithDetails(routineId);
-      setSavedExercises(saved);
+      setSavedExercises(saved as SavedExerciseWithDetails[]);
     } catch (error) {
       console.error("Failed to refresh saved exercises:", error);
     }
   };
 
+  // Helper to find exercise_id when creating new sets (no existing rows)
+  const getExerciseIdForTemplate = (templateId: number) => {
+    const row = savedExercises.find((e) => e.routine_template_exercise_id === templateId);
+    return row?.exercise_id ?? null;
+    };
+
+  // Save the configure-card (newly selected exercise)
   const handleSave = async () => {
     if (!currentExercise) {
       toast.error("No exercise selected");
       return;
     }
-
     if (!userToken) {
       toast.error("Please sign in to save exercise");
       return;
     }
 
-    // Validate that at least one set has reps or weight > 0
-    const hasValidSet = sets.some(set => 
-      (parseInt(set.reps) > 0) || (parseFloat(set.weight) > 0)
-    );
-    
+    const hasValidSet = sets.some((s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0);
     if (!hasValidSet) {
       toast.error("Please add at least one set with reps or weight");
       return;
@@ -160,29 +156,22 @@ export function ExerciseSetupScreen({
 
     setIsSaving(true);
     try {
-      // Get the current number of exercises in the routine for ordering
       const exerciseOrder = savedExercises.length + 1;
 
-      // Calculate valid sets that have reps or weight > 0
-      const validSets = sets.filter(set => 
-        parseInt(set.reps) > 0 || parseFloat(set.weight) > 0
-      );
-      
-      // Add the exercise to the routine (basic info only - detailed sets go to separate table)
+      const validSets = sets.filter((s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0);
+
       const savedExercise = await supabaseAPI.addExerciseToRoutine(
-        routineId, 
-        currentExercise.exercise_id, 
+        routineId,
+        currentExercise.exercise_id,
         exerciseOrder
       );
+      if (!savedExercise) throw new Error("Failed to save exercise to routine");
 
-      if (!savedExercise) {
-        throw new Error("Failed to save exercise to routine");
-      }
-
-      // Now save the individual sets data to the new table
-      const setsToSave = validSets.map(set => ({
-        reps: parseInt(set.reps) || 0,
-        weight: parseFloat(set.weight) || 0
+      // Include explicit set_order (1..n) so DB doesn't default to 1
+      const setsToSave = validSets.map((s, idx) => ({
+        reps: parseInt(s.reps) || 0,
+        weight: parseFloat(s.weight) || 0,
+        set_order: idx + 1
       }));
 
       await supabaseAPI.addExerciseSetsToRoutine(
@@ -191,156 +180,149 @@ export function ExerciseSetupScreen({
         setsToSave
       );
 
-      toast.success(`Added ${currentExercise.name} with ${validSets.length} sets to routine`);
-      
-      // Refresh the saved exercises list and clear the current exercise - STAY ON SCREEN
+      toast.success(`Added ${currentExercise.name} with ${validSets.length} sets`);
       await refreshSavedExercises();
-      
-      // Clear the current exercise locally and reset form
+
       setCurrentExercise(undefined);
       resetForm();
-      
-      // Call onSave to trigger clearing the selected exercise in parent
       onSave();
-      
     } catch (error) {
       console.error("Failed to save exercise:", error);
-      if (error instanceof Error) {
-        toast.error(`Failed to save exercise: ${error.message}`);
-      } else {
-        toast.error("Failed to save exercise. Please try again.");
-      }
+      toast.error(
+        error instanceof Error ? `Failed to save exercise: ${error.message}` : "Failed to save exercise. Please try again."
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleKebabClick = async (savedExercise: SavedExerciseWithDetails, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent any parent click handlers
-    
+    e.stopPropagation();
     const exerciseTemplateId = savedExercise.routine_template_exercise_id;
-    console.log('🔥 KEBAB MENU CLICKED for:', savedExercise.exercise_name, 'Template ID:', exerciseTemplateId);
-    
-    // Toggle expanded state
+
     if (expandedExercise === exerciseTemplateId) {
-      console.log('Closing expanded exercise');
       setExpandedExercise(null);
-      setEditingExercises(new Set<number>()); // Exit edit mode when closing
+      setEditingExercises(new Set<number>());
       return;
     }
 
-    console.log('Expanding exercise, loading sets data...');
     setExpandedExercise(exerciseTemplateId);
 
-    // If we already have the data, don't fetch again
-    if (exerciseSetsData[exerciseTemplateId]) {
-      console.log('Using cached sets data');
-      return;
-    }
+    if (exerciseSetsData[exerciseTemplateId]) return; // cached
 
-    // Fetch sets data for this routine exercise
-    setLoadingSets(prev => ({ ...prev, [exerciseTemplateId]: true }));
+    setLoadingSets((prev) => ({ ...prev, [exerciseTemplateId]: true }));
     try {
-      console.log('Fetching sets for routine exercise:', exerciseTemplateId);
       const setsData = await supabaseAPI.getExerciseSetsForRoutine(exerciseTemplateId);
-      console.log('Fetched sets data:', setsData);
-      setExerciseSetsData(prev => ({ ...prev, [exerciseTemplateId]: setsData }));
+      setExerciseSetsData((prev) => ({ ...prev, [exerciseTemplateId]: setsData }));
     } catch (error) {
       console.error("Failed to fetch exercise sets:", error);
       toast.error("Failed to load exercise sets");
-      setExpandedExercise(null); // Close on error
+      setExpandedExercise(null);
     } finally {
-      setLoadingSets(prev => ({ ...prev, [exerciseTemplateId]: false }));
+      setLoadingSets((prev) => ({ ...prev, [exerciseTemplateId]: false }));
     }
   };
 
   const handleEditSets = (exerciseTemplateId: number) => {
     const setsData = exerciseSetsData[exerciseTemplateId] || [];
-    
-    // Add to editing exercises set
-    setEditingExercises((prev: Set<number>) => new Set<number>(Array.from(prev).concat([exerciseTemplateId])));
-    
-    // Initialize editing state with current values
-    const newEditingState: Record<number, { reps: string; weight: string }> = {};
-    setsData.forEach(set => {
-      newEditingState[set.routine_template_exercise_set_id] = {
-        reps: set.planned_reps?.toString() || '0',
-        weight: set.planned_weight_kg?.toString() || '0'
+
+    setEditingExercises((prev: Set<number>) => new Set<number>([...prev, exerciseTemplateId]));
+
+    const newEditing: Record<number, { reps: string; weight: string }> = {};
+    setsData.forEach((s) => {
+      newEditing[s.routine_template_exercise_set_id] = {
+        reps: s.planned_reps?.toString() || "0",
+        weight: s.planned_weight_kg?.toString() || "0"
       };
     });
-    
-    setEditingSets(prev => ({ ...prev, ...newEditingState }));
-    setHasUnsavedChanges(true);
+    setEditingSets((prev) => ({ ...prev, ...newEditing }));
+
+    setHasUnsavedChanges(true); // mark dirty as soon as edit mode starts
   };
-
-
 
   const handleCancelAllEdits = () => {
     setEditingExercises(new Set());
     setEditingSets({});
+    setDeletedSetIds(new Set());
     setHasUnsavedChanges(false);
   };
 
-  const updateEditingSet = (setId: number, field: 'reps' | 'weight', value: string) => {
-    setEditingSets(prev => ({
+  const updateEditingSet = (setId: number, field: "reps" | "weight", value: string) => {
+    setEditingSets((prev) => ({
       ...prev,
-      [setId]: {
-        ...prev[setId],
-        [field]: value
-      }
+      [setId]: { ...prev[setId], [field]: value }
     }));
+    setHasUnsavedChanges(true);
   };
 
+  // Add a new inline set (edit mode) with correct next set_order
   const addSetToExercise = (exerciseTemplateId: number) => {
     const setsData = exerciseSetsData[exerciseTemplateId] || [];
-    const newSetOrder = setsData.length + 1;
-    
-    // Create a temporary set with negative ID (will be created on save)
-    const tempSetId = -(Date.now()); // Negative ID for temp sets
-    
-    // Add to editing state
-    setEditingSets(prev => ({
+    // next order based on max existing (avoids duplicates after deletes)
+    const maxOrder = setsData.reduce((m, s) => Math.max(m, s.set_order || 0), 0);
+    const newSetOrder = maxOrder + 1;
+
+    const tempSetId = -Date.now(); // negative = temporary
+
+    setEditingSets((prev) => ({
       ...prev,
-      [tempSetId]: {
-        reps: '0',
-        weight: '0'
-      }
+      [tempSetId]: { reps: "0", weight: "0" }
     }));
-    
-    // Add to local sets data for display
+
     const tempSet: UserRoutineExerciseSet = {
       routine_template_exercise_set_id: tempSetId,
       routine_template_exercise_id: exerciseTemplateId,
-      exercise_id: 0, // Will be set properly on save
+      exercise_id: 0, // will be supplied at save
       set_order: newSetOrder,
       is_active: true,
       planned_reps: 0,
       planned_weight_kg: 0
     };
-    
-    setExerciseSetsData(prev => ({
+
+    setExerciseSetsData((prev) => ({
       ...prev,
       [exerciseTemplateId]: [...(prev[exerciseTemplateId] || []), tempSet]
     }));
+
+    setHasUnsavedChanges(true);
   };
 
+  // Local reindex helper (1..N) for a routine exercise — keeps UI compact immediately
+  const reindexLocalSetOrders = (exerciseTemplateId: number, setsArr: UserRoutineExerciseSet[]) => {
+    const sorted = [...setsArr].sort((a, b) => (a.set_order || 0) - (b.set_order || 0));
+    return sorted.map((s, idx) => ({ ...s, set_order: idx + 1 }));
+  };
+
+  // Remove inline set (edit mode)
   const removeSetFromExercise = (exerciseTemplateId: number, setId: number) => {
-    // Remove from editing state
-    setEditingSets(prev => {
-      const newState = { ...prev };
-      delete newState[setId];
-      return newState;
+    // queue deletion for persisted sets
+    if (setId > 0) {
+      setDeletedSetIds((prev) => {
+        const next = new Set(prev);
+        next.add(setId);
+        return next;
+      });
+    }
+
+    setEditingSets((prev) => {
+      const next = { ...prev };
+      delete next[setId];
+      return next;
     });
-    
-    // Remove from local sets data
-    setExerciseSetsData(prev => ({
-      ...prev,
-      [exerciseTemplateId]: (prev[exerciseTemplateId] || []).filter(
-        set => set.routine_template_exercise_set_id !== setId
-      )
-    }));
+
+    // remove locally and reindex remaining 1..N so labels look right
+    setExerciseSetsData((prev) => {
+      const remaining = (prev[exerciseTemplateId] || []).filter(
+        (s) => s.routine_template_exercise_set_id !== setId
+      );
+      const compacted = reindexLocalSetOrders(exerciseTemplateId, remaining);
+      return { ...prev, [exerciseTemplateId]: compacted };
+    });
+
+    setHasUnsavedChanges(true);
   };
 
+  // Persist all edit-mode changes (delete → update values → reindex orders → create new)
   const handleSaveAllChanges = async () => {
     if (!userToken) {
       toast.error("Please sign in to save changes");
@@ -348,67 +330,95 @@ export function ExerciseSetupScreen({
     }
 
     setSavingAllChanges(true);
-    
     try {
-      // Process all editing exercises
       for (const exerciseTemplateId of Array.from(editingExercises)) {
         const setsData = exerciseSetsData[exerciseTemplateId] || [];
-        
-        // Handle existing sets (update)
-        const existingSets = setsData.filter(set => set.routine_template_exercise_set_id > 0);
-        const updatePromises = existingSets.map(async (set) => {
-          const editingData = editingSets[set.routine_template_exercise_set_id];
-          if (editingData) {
-            const reps = parseInt(editingData.reps) || 0;
-            const weight = parseFloat(editingData.weight) || 0;
-            
-            return await supabaseAPI.updateExerciseSet(
-              set.routine_template_exercise_set_id,
-              reps,
-              weight
-            );
+
+        // 1) Process deletions (soft delete)
+        if (deletedSetIds.size) {
+          // operate on ids that were actually deleted from this exercise
+          const deletionsForThisExercise = Array.from(deletedSetIds).filter((id) =>
+            setsData.every((s) => s.routine_template_exercise_set_id !== id)
+          );
+          if (deletionsForThisExercise.length) {
+            await Promise.all(deletionsForThisExercise.map((id) => supabaseAPI.deleteExerciseSet(id)));
           }
-          return set;
-        });
-        
-        await Promise.all(updatePromises);
-        
-        // Handle new sets (create)
-        const newSets = setsData.filter(set => set.routine_template_exercise_set_id < 0);
-        if (newSets.length > 0) {
-          const newSetsData = newSets.map(set => {
-            const editingData = editingSets[set.routine_template_exercise_set_id];
-            return {
-              reps: parseInt(editingData?.reps || '0') || 0,
-              weight: parseFloat(editingData?.weight || '0') || 0
-            };
-          }).filter(set => set.reps > 0 || set.weight > 0); // Only save sets with data
-          
+        }
+
+        // 2) Update planned reps/weight for existing sets
+        const existingSets = setsData.filter((s) => s.routine_template_exercise_set_id > 0);
+        await Promise.all(
+          existingSets.map(async (s) => {
+            const edit = editingSets[s.routine_template_exercise_set_id];
+            if (!edit) return s;
+            const reps = parseInt(edit.reps) || 0;
+            const weight = parseFloat(edit.weight) || 0;
+            if (reps !== (s.planned_reps || 0) || weight !== (s.planned_weight_kg || 0)) {
+              return await supabaseAPI.updateExerciseSet(s.routine_template_exercise_set_id, reps, weight);
+            }
+            return s;
+          })
+        );
+
+        // 3) Reindex orders for remaining existing sets to 1..K and persist
+        const stillExisting = (exerciseSetsData[exerciseTemplateId] || []).filter(
+          (s) => s.routine_template_exercise_set_id > 0
+        );
+        const reindexedExisting = reindexLocalSetOrders(exerciseTemplateId, stillExisting);
+
+        await Promise.all(
+          reindexedExisting.map(async (s, idx) => {
+            const desiredOrder = idx + 1;
+            if (s.set_order !== desiredOrder) {
+              await supabaseAPI.updateExerciseSetOrder(s.routine_template_exercise_set_id, desiredOrder);
+            }
+          })
+        );
+
+        // 4) Create new sets (temp id < 0) appended after reindexed existing
+        const newTempSets = (exerciseSetsData[exerciseTemplateId] || [])
+          .filter((s) => s.routine_template_exercise_set_id < 0)
+          .sort((a, b) => (a.set_order || 0) - (b.set_order || 0));
+
+        if (newTempSets.length > 0) {
+          let nextOrder = reindexedExisting.length + 1;
+
+          const newSetsData = newTempSets
+            .map((s) => {
+              const edit = editingSets[s.routine_template_exercise_set_id];
+              const reps = parseInt(edit?.reps || "0") || 0;
+              const weight = parseFloat(edit?.weight || "0") || 0;
+              if (reps <= 0 && weight <= 0) return null; // skip empty
+              const payload = { reps, weight, set_order: nextOrder };
+              nextOrder += 1;
+              return payload;
+            })
+            .filter(Boolean) as { reps: number; weight: number; set_order: number }[];
+
           if (newSetsData.length > 0) {
-            // Get the exercise ID from the existing sets
-            const existingSet = existingSets[0];
-            if (existingSet) {
-              await supabaseAPI.addExerciseSetsToRoutine(
-                exerciseTemplateId,
-                existingSet.exercise_id,
-                newSetsData
-              );
+            const fallbackExerciseId =
+              reindexedExisting[0]?.exercise_id ?? getExerciseIdForTemplate(exerciseTemplateId);
+
+            if (fallbackExerciseId) {
+              await supabaseAPI.addExerciseSetsToRoutine(exerciseTemplateId, fallbackExerciseId, newSetsData);
+            } else {
+              console.warn("No exercise_id found for template", exerciseTemplateId);
             }
           }
         }
-        
-        // Refresh the sets data for this exercise
-        const updatedSetsData = await supabaseAPI.getExerciseSetsForRoutine(exerciseTemplateId);
-        setExerciseSetsData(prev => ({ ...prev, [exerciseTemplateId]: updatedSetsData }));
+
+        // 5) Refresh this exercise's sets from DB (source of truth)
+        const updated = await supabaseAPI.getExerciseSetsForRoutine(exerciseTemplateId);
+        setExerciseSetsData((prev) => ({ ...prev, [exerciseTemplateId]: updated }));
       }
-      
-      // Clear all editing state
+
+      // Clear edit state
       setEditingExercises(new Set());
       setEditingSets({});
+      setDeletedSetIds(new Set());
       setHasUnsavedChanges(false);
-      
+
       toast.success("All changes saved successfully!");
-      
     } catch (error) {
       console.error("Failed to save changes:", error);
       toast.error("Failed to save changes");
@@ -420,7 +430,7 @@ export function ExerciseSetupScreen({
   const getExerciseNote = () => {
     if (!currentExercise) return null;
     const name = currentExercise.name.toLowerCase();
-    if (name.includes('dumbbell') && !name.includes('single')) {
+    if (name.includes("dumbbell") && !name.includes("single")) {
       return "If lifting two dumbbells enter the combined weight of both.";
     }
     return null;
@@ -430,7 +440,7 @@ export function ExerciseSetupScreen({
     <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex flex-col kb-aware">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-12 bg-gradient-to-r from-[var(--background)] to-[var(--warm-cream)]/20 sticky top-0 z-10 border-b border-[var(--border)]">
-        <TactileButton 
+        <TactileButton
           variant="secondary"
           size="sm"
           onClick={onBack}
@@ -441,20 +451,13 @@ export function ExerciseSetupScreen({
         <h1 className="font-medium text-[var(--foreground)] uppercase tracking-wide">
           {routineName || "ROUTINE"}
         </h1>
-        <TactileButton 
+        <TactileButton
           variant="secondary"
           size="sm"
           onClick={() => {
-            console.log('🔍 [DBG] ADD BUTTON CLICKED!');
-            console.log('🔍 [DBG] isEditingExistingRoutine:', isEditingExistingRoutine);
-            console.log('🔍 [DBG] onShowExerciseSelector exists:', !!onShowExerciseSelector);
-            console.log('🔍 [DBG] onAddMoreExercises exists:', !!onAddMoreExercises);
-            
             if (isEditingExistingRoutine && onShowExerciseSelector) {
-              console.log('🔍 [DBG] Calling onShowExerciseSelector');
               onShowExerciseSelector();
             } else {
-              console.log('🔍 [DBG] Calling onAddMoreExercises');
               onAddMoreExercises();
             }
           }}
@@ -465,12 +468,12 @@ export function ExerciseSetupScreen({
       </div>
 
       <div className="flex-1">
-        {/* Saved Exercises - ALWAYS SHOW */}
+        {/* Saved Exercises */}
         <div className="mx-4 mt-6 mb-6">
           <h3 className="text-sm text-[var(--muted-foreground)] uppercase tracking-wider mb-3">
             EXERCISES IN ROUTINE ({savedExercises.length})
           </h3>
-          
+
           {isLoadingSaved ? (
             <div className="space-y-3">
               {[1, 2].map((i) => (
@@ -490,26 +493,31 @@ export function ExerciseSetupScreen({
                 const setsData = exerciseSetsData[savedExercise.routine_template_exercise_id] || [];
                 const isLoadingSetsData = loadingSets[savedExercise.routine_template_exercise_id] || false;
                 const isEditing = editingExercises.has(savedExercise.routine_template_exercise_id);
-                
+
+                // always sort by set_order to keep UI stable
+                const sortedSets = [...setsData].sort(
+                  (a, b) => (a.set_order || 0) - (b.set_order || 0)
+                );
+
                 return (
                   <div key={savedExercise.routine_template_exercise_id || index} className="space-y-2">
-                    <div 
+                    <div
                       className={`flex items-center gap-3 p-3 border rounded-xl transition-all cursor-pointer ${
-                        isEditing 
-                          ? 'bg-[var(--warm-coral)]/5 border-[var(--warm-coral)]/30' 
-                          : 'bg-white/70 border-[var(--border)] hover:bg-white/90'
+                        isEditing
+                          ? "bg-[var(--warm-coral)]/5 border-[var(--warm-coral)]/30"
+                          : "bg-white/70 border-[var(--border)] hover:bg-white/90"
                       }`}
                       onClick={(e) => handleKebabClick(savedExercise, e)}
                     >
                       <div className="w-10 h-10 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
                         <span className="text-sm font-medium text-[var(--muted-foreground)]">
-                          {(savedExercise.exercise_name || '').substring(0, 2).toUpperCase()}
+                          {(savedExercise.exercise_name || "").substring(0, 2).toUpperCase()}
                         </span>
                       </div>
                       <div className="flex-1">
                         <p className="font-medium text-[var(--foreground)]">{savedExercise.exercise_name}</p>
                         <p className="text-sm text-[var(--muted-foreground)]">
-                          Exercise #{savedExercise.exercise_order} • {savedExercise.category || 'Exercise'}
+                          Exercise #{savedExercise.exercise_order} • {savedExercise.category || "Exercise"}
                           {isEditing && <span className="text-[var(--warm-coral)] ml-2">• Editing</span>}
                         </p>
                       </div>
@@ -519,7 +527,7 @@ export function ExerciseSetupScreen({
                           size="sm"
                           onClick={(e) => handleKebabClick(savedExercise, e)}
                           className={`p-2 h-auto bg-transparent hover:bg-[var(--warm-brown)]/10 text-[var(--warm-brown)]/60 hover:text-[var(--warm-brown)] ${
-                            isEditing ? 'ring-2 ring-[var(--warm-coral)]/30' : ''
+                            isEditing ? "ring-2 ring-[var(--warm-coral)]/30" : ""
                           }`}
                         >
                           {isExpanded ? <ChevronUp size={16} /> : <MoreVertical size={16} />}
@@ -535,7 +543,7 @@ export function ExerciseSetupScreen({
                             <div className="animate-spin w-4 h-4 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full"></div>
                             <span className="ml-2 text-sm text-[var(--warm-brown)]/60">Loading sets...</span>
                           </div>
-                        ) : setsData.length > 0 ? (
+                        ) : sortedSets.length > 0 ? (
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <h4 className="text-sm font-medium text-[var(--warm-brown)]">Sets in this Routine</h4>
@@ -550,9 +558,8 @@ export function ExerciseSetupScreen({
                                 </TactileButton>
                               )}
                             </div>
-                            
+
                             {isEditing ? (
-                              // Edit Mode
                               <div className="space-y-3">
                                 <div className="grid grid-cols-4 gap-3 text-xs text-[var(--warm-brown)]/60 uppercase tracking-wider">
                                   <span>Set</span>
@@ -560,40 +567,56 @@ export function ExerciseSetupScreen({
                                   <span className="text-center">Weight (kg)</span>
                                   <span></span>
                                 </div>
-                                {setsData.map((set) => (
-                                  <div key={set.routine_template_exercise_set_id} className="grid grid-cols-4 gap-3 items-center py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20">
+
+                                {sortedSets.map((s) => (
+                                  <div
+                                    key={s.routine_template_exercise_set_id}
+                                    className="grid grid-cols-4 gap-3 items-center py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20"
+                                  >
                                     <span className="text-sm font-medium text-[var(--warm-brown)]/80">
-                                      {set.set_order}
+                                      {s.set_order}
                                     </span>
                                     <Input
                                       type="number"
-                                      value={editingSets[set.routine_template_exercise_set_id]?.reps || '0'}
-                                      onChange={(e) => updateEditingSet(set.routine_template_exercise_set_id, 'reps', e.target.value)}
+                                      value={editingSets[s.routine_template_exercise_set_id]?.reps || "0"}
+                                      onChange={(e) =>
+                                        updateEditingSet(s.routine_template_exercise_set_id, "reps", e.target.value)
+                                      }
                                       className="bg-white border-[var(--border)] text-[var(--foreground)] text-center h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm"
                                       min="0"
                                     />
                                     <Input
                                       type="number"
                                       step="0.5"
-                                      value={editingSets[set.routine_template_exercise_set_id]?.weight || '0'}
-                                      onChange={(e) => updateEditingSet(set.routine_template_exercise_set_id, 'weight', e.target.value)}
+                                      value={editingSets[s.routine_template_exercise_set_id]?.weight || "0"}
+                                      onChange={(e) =>
+                                        updateEditingSet(s.routine_template_exercise_set_id, "weight", e.target.value)
+                                      }
                                       className="bg-white border-[var(--border)] text-[var(--foreground)] text-center h-8 rounded-md focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 text-sm"
                                       min="0"
                                     />
                                     <TactileButton
                                       variant="secondary"
                                       size="sm"
-                                      onClick={() => removeSetFromExercise(savedExercise.routine_template_exercise_id, set.routine_template_exercise_set_id)}
-                                      disabled={setsData.length <= 1}
-                                      className={`p-1 h-auto ${setsData.length <= 1 ? 'opacity-30 cursor-not-allowed' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}
+                                      onClick={() =>
+                                        removeSetFromExercise(
+                                          savedExercise.routine_template_exercise_id,
+                                          s.routine_template_exercise_set_id
+                                        )
+                                      }
+                                      disabled={sortedSets.length <= 1}
+                                      className={`p-1 h-auto ${
+                                        sortedSets.length <= 1
+                                          ? "opacity-30 cursor-not-allowed"
+                                          : "bg-red-50 text-red-500 hover:bg-red-100"
+                                      }`}
                                       title="Remove this set"
                                     >
                                       <X size={14} />
                                     </TactileButton>
                                   </div>
                                 ))}
-                                
-                                {/* Add Set Button */}
+
                                 <TactileButton
                                   onClick={() => addSetToExercise(savedExercise.routine_template_exercise_id)}
                                   className="w-full py-2 text-sm bg-[var(--warm-sage)]/10 text-[var(--warm-sage)] hover:bg-[var(--warm-sage)]/20 border-2 border-dashed border-[var(--warm-sage)]/30 rounded-lg"
@@ -603,23 +626,27 @@ export function ExerciseSetupScreen({
                                 </TactileButton>
                               </div>
                             ) : (
-                              // View Mode
                               <div className="space-y-2">
-                                {setsData.map((set) => (
-                                  <div key={set.routine_template_exercise_set_id} className="flex items-center justify-between py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20">
-                                    <span className="text-sm font-medium text-[var(--warm-brown)]/80">Set {set.set_order}</span>
+                                {sortedSets.map((s) => (
+                                  <div
+                                    key={s.routine_template_exercise_set_id}
+                                    className="flex items-center justify-between py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20"
+                                  >
+                                    <span className="text-sm font-medium text-[var(--warm-brown)]/80">
+                                      Set {s.set_order}
+                                    </span>
                                     <div className="flex items-center gap-3 text-sm text-[var(--warm-brown)]">
-                                      {set.planned_reps && (
+                                      {s.planned_reps ? (
                                         <span className="bg-[var(--warm-sage)]/20 text-[var(--warm-sage)] px-2 py-1 rounded-md">
-                                          {set.planned_reps} reps
+                                          {s.planned_reps} reps
                                         </span>
-                                      )}
-                                      {set.planned_weight_kg && (
+                                      ) : null}
+                                      {s.planned_weight_kg ? (
                                         <span className="bg-[var(--warm-coral)]/20 text-[var(--warm-coral)] px-2 py-1 rounded-md">
-                                          {set.planned_weight_kg}kg
+                                          {s.planned_weight_kg}kg
                                         </span>
-                                      )}
-                                      {!set.planned_reps && !set.planned_weight_kg && (
+                                      ) : null}
+                                      {!s.planned_reps && !s.planned_weight_kg && (
                                         <span className="text-[var(--warm-brown)]/50 italic">No data</span>
                                       )}
                                     </div>
@@ -656,7 +683,7 @@ export function ExerciseSetupScreen({
           )}
         </div>
 
-        {/* Current Exercise Setup - ONLY SHOW IF EXERCISE SELECTED */}
+        {/* Configure Card (only when a new exercise is selected) */}
         {currentExercise && (
           <div className="mx-4 mb-6 p-4 bg-white/70 border border-[var(--border)] rounded-2xl shadow-sm">
             <div className="flex items-center gap-3 mb-3">
@@ -674,14 +701,12 @@ export function ExerciseSetupScreen({
               </span>
             </div>
 
-            {/* Exercise Note */}
             {getExerciseNote() && (
               <p className="text-sm text-[var(--muted-foreground)] mb-4 italic bg-[var(--warm-cream)]/50 p-3 rounded-lg">
                 {getExerciseNote()}
               </p>
             )}
 
-            {/* Sets Headers */}
             <div className="grid grid-cols-3 gap-4 mb-4">
               <div></div>
               <div className="text-center">
@@ -692,18 +717,17 @@ export function ExerciseSetupScreen({
               </div>
             </div>
 
-            {/* Sets */}
             <div className="space-y-3">
-              {sets.map((set, index) => (
-                <div key={set.id} className="grid grid-cols-3 gap-4 items-center">
+              {sets.map((s, index) => (
+                <div key={s.id} className="grid grid-cols-3 gap-4 items-center">
                   <div className="flex items-center justify-center">
                     <span className="text-lg font-medium text-[var(--foreground)]">{index + 1}</span>
                   </div>
                   <div>
                     <Input
                       type="number"
-                      value={set.reps}
-                      onChange={(e) => updateSet(set.id, 'reps', e.target.value)}
+                      value={s.reps}
+                      onChange={(e) => updateSet(s.id, "reps", e.target.value)}
                       className="bg-[var(--input-background)] border-[var(--border)] text-[var(--foreground)] text-center h-12 rounded-lg focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
                       min="0"
                     />
@@ -712,18 +736,18 @@ export function ExerciseSetupScreen({
                     <Input
                       type="number"
                       step="0.5"
-                      value={set.weight}
-                      onChange={(e) => updateSet(set.id, 'weight', e.target.value)}
+                      value={s.weight}
+                      onChange={(e) => updateSet(s.id, "weight", e.target.value)}
                       className="bg-[var(--input-background)] border-[var(--border)] text-[var(--foreground)] text-center h-12 rounded-lg focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
                       min="0"
                     />
                     <TactileButton
                       variant="secondary"
                       size="sm"
-                      onClick={() => removeSet(set.id)}
+                      onClick={() => removeSet(s.id)}
                       disabled={sets.length <= 1}
                       className={`p-2 h-auto bg-white/70 border-[var(--border)] hover:bg-red-50 ${
-                        sets.length <= 1 ? 'opacity-30 cursor-not-allowed' : 'text-red-500'
+                        sets.length <= 1 ? "opacity-30 cursor-not-allowed" : "text-red-500"
                       }`}
                     >
                       <X size={16} />
@@ -733,7 +757,6 @@ export function ExerciseSetupScreen({
               ))}
             </div>
 
-            {/* Add Set Button */}
             <div className="mt-4 flex justify-between items-center">
               <TactileButton
                 onClick={addSet}
@@ -743,16 +766,20 @@ export function ExerciseSetupScreen({
                 <span className="text-sm font-medium uppercase tracking-wider">Add Set</span>
               </TactileButton>
 
+              {/* Trash cancels configure */}
               <TactileButton
                 variant="secondary"
                 size="sm"
+                onClick={() => {
+                  setCurrentExercise(undefined);
+                  resetForm();
+                }}
                 className="p-3 h-auto bg-white/70 border-red-200 text-red-500 hover:bg-red-50 btn-tactile"
               >
                 <Trash2 size={18} />
               </TactileButton>
             </div>
 
-            {/* Save Button */}
             <div className="mt-6">
               <TactileButton
                 onClick={handleSave}
@@ -766,11 +793,9 @@ export function ExerciseSetupScreen({
         )}
       </div>
 
-      {/* Master Save/Cancel Bar - Fixed at bottom when editing */}
+      {/* Bottom Save/Cancel bar when editing inline */}
       {hasUnsavedChanges && (
-        <div 
-          className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4" 
-        >
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4">
           <div className="flex gap-3">
             <TactileButton
               variant="secondary"
@@ -784,10 +809,7 @@ export function ExerciseSetupScreen({
               disabled={savingAllChanges}
               className="flex-1 h-12 font-medium border-0 transition-all bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
             >
-              {savingAllChanges 
-                ? "SAVING..." 
-                : `SAVE ALL (${editingExercises.size})`
-              }
+              {savingAllChanges ? "SAVING..." : `SAVE ALL (${editingExercises.size})`}
             </TactileButton>
           </div>
         </div>

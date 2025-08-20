@@ -168,10 +168,7 @@ export class SupabaseAPI {
       const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
         method: 'POST',
         headers: this.getHeaders(),
-        body: JSON.stringify({
-          email,
-          password
-        })
+        body: JSON.stringify({ email, password })
       });
 
       const data: AuthResponse = await response.json();
@@ -201,10 +198,7 @@ export class SupabaseAPI {
       const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
         method: 'POST',
         headers: this.getHeaders(),
-        body: JSON.stringify({
-          email,
-          password
-        })
+        body: JSON.stringify({ email, password })
       });
 
       const data: AuthResponse = await response.json();
@@ -241,10 +235,7 @@ export class SupabaseAPI {
 
       const user = await response.json();
       console.log("✅ [DBG] Supabase API: Current user retrieved:", user.id);
-      return {
-        id: user.id,
-        email: user.email
-      };
+      return { id: user.id, email: user.email };
     } catch (error) {
       console.error('❌ [DBG] Supabase API: Get current user error:', error);
       throw error;
@@ -258,7 +249,6 @@ export class SupabaseAPI {
         method: 'POST',
         headers: this.getHeaders(true)
       });
-      
       this.setToken(null);
       console.log("✅ [DBG] Supabase API: Signout successful");
     } catch (error) {
@@ -298,9 +288,7 @@ export class SupabaseAPI {
       
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/user_routines?user_id=eq.${user.id}&select=*`,
-        {
-          headers: this.getHeaders(true)
-        }
+        { headers: this.getHeaders(true) }
       );
 
       console.log(`ℹ️ [DBG] Supabase API: Response status: ${response.status} ${response.statusText}`);
@@ -325,9 +313,7 @@ export class SupabaseAPI {
       console.log(`🔄 [DBG] Supabase API: Fetching exercises for routine ${routineTemplateId}`);
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&select=*`,
-        {
-          headers: this.getHeaders(true)
-        }
+        { headers: this.getHeaders(true) }
       );
 
       if (!response.ok) {
@@ -345,14 +331,14 @@ export class SupabaseAPI {
     }
   }
 
-  async getUserRoutineExercisesWithDetails(routineTemplateId: number): Promise<Array<UserRoutineExercise & { exercise_name?: string; category?: string; }>> {
+  async getUserRoutineExercisesWithDetails(
+    routineTemplateId: number
+  ): Promise<Array<UserRoutineExercise & { exercise_name?: string; category?: string }>> {
     try {
       console.log(`🔄 [DBG] Supabase API: Fetching exercises with details for routine ${routineTemplateId}`);
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&select=*,exercises(name,category)`,
-        {
-          headers: this.getHeaders(true)
-        }
+        { headers: this.getHeaders(true) }
       );
 
       if (!response.ok) {
@@ -427,7 +413,6 @@ export class SupabaseAPI {
   ): Promise<UserRoutineExercise | null> {
     try {
       console.log(`🔄 [DBG] Supabase API: Adding exercise ${exerciseId} to routine ${routineTemplateId}`);
-      // Only send basic required fields that exist in the database schema
       const body: any = {
         routine_template_id: routineTemplateId,
         exercise_id: exerciseId,
@@ -466,15 +451,15 @@ export class SupabaseAPI {
   async addExerciseSetsToRoutine(
     routineTemplateExerciseId: number,
     exerciseId: number,
-    setsData: { reps: number; weight: number }[]
+    // now accepts optional set_order per set
+    setsData: { reps: number; weight: number; set_order?: number }[]
   ): Promise<UserRoutineExerciseSet[]> {
     try {
       console.log(`🔄 [DBG] Supabase API: Adding ${setsData.length} sets to routine exercise ${routineTemplateExerciseId}`);
-      // Prepare the sets data for insertion
       const setsToInsert = setsData.map((set, index) => ({
         routine_template_exercise_id: routineTemplateExerciseId,
         exercise_id: exerciseId,
-        set_order: index + 1,
+        set_order: set.set_order ?? index + 1, // ✅ respect provided set_order
         is_active: true,
         planned_reps: set.reps > 0 ? set.reps : null,
         planned_weight_kg: set.weight > 0 ? set.weight : null
@@ -506,9 +491,7 @@ export class SupabaseAPI {
       console.log(`🔄 [DBG] Supabase API: Fetching sets for routine exercise ${routineTemplateExerciseId}`);
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}&is_active=eq.true&order=set_order`,
-        {
-          headers: this.getHeaders(true)
-        }
+        { headers: this.getHeaders(true) }
       );
 
       if (!response.ok) {
@@ -561,51 +544,76 @@ export class SupabaseAPI {
     }
   }
 
+  /** ✅ Update set_order for a set */
+  async updateExerciseSetOrder(
+    routineTemplateExerciseSetId: number,
+    newOrder: number
+  ): Promise<void> {
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_set_id=eq.${routineTemplateExerciseSetId}`,
+      {
+        method: "PATCH",
+        headers: this.getHeaders(true, true, "return=minimal"),
+        body: JSON.stringify({ set_order: newOrder })
+      }
+    );
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      throw new Error(`Failed to update set order: ${resp.status} ${resp.statusText}. ${errorText}`);
+    }
+  }
+
+  /** ✅ SOFT DELETE: mark a set inactive instead of removing it */
+  async deleteExerciseSet(routineTemplateExerciseSetId: number): Promise<void> {
+    try {
+      console.log(`🗑️ [DBG] Supabase API: Soft-deleting set ${routineTemplateExerciseSetId}`);
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_set_id=eq.${routineTemplateExerciseSetId}`,
+        {
+          method: 'PATCH',
+          headers: this.getHeaders(true, true, "return=minimal"),
+          body: JSON.stringify({ is_active: false })
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [DBG] Supabase API: Soft delete error body:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}. ${errorText}`);
+      }
+
+      console.log(`✅ [DBG] Supabase API: Marked set ${routineTemplateExerciseSetId} as inactive`);
+    } catch (error) {
+      console.error('❌ [DBG] Supabase API: Soft delete exercise set error:', error);
+      throw error;
+    }
+  }
+
   // Workout methods
   async getRecentWorkouts(): Promise<Workout[]> {
     try {
-      // Since the 'workouts' table doesn't exist, return mock data for now
-      // This would normally query the actual workouts table once it's created
       console.log('🔄 [DBG] Supabase API: Returning mock workout data (workouts table not available)');
-      
       const mockWorkouts: Workout[] = [
-        {
-          id: '1',
-          started_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-          duration_minutes: 45
-        },
-        {
-          id: '2', 
-          started_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-          duration_minutes: 52
-        },
-        {
-          id: '3',
-          started_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-          duration_minutes: 38
-        }
+        { id: '1', started_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), duration_minutes: 45 },
+        { id: '2', started_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), duration_minutes: 52 },
+        { id: '3', started_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), duration_minutes: 38 }
       ];
-
       console.log(`✅ [DBG] Supabase API: Returning ${mockWorkouts.length} mock workouts`);
       return mockWorkouts;
     } catch (error) {
       console.error('❌ [DBG] Supabase API: Get recent workouts error:', error);
-      // Return empty array on error to prevent crashes
       return [];
     }
   }
 
   async startWorkout(templateId: string | number): Promise<Workout | null> {
     try {
-      // Mock implementation since workouts table doesn't exist yet
       console.log(`🔄 [DBG] Supabase API: Starting workout with template ID: ${templateId}`);
-      
       const mockWorkout: Workout = {
         id: Date.now().toString(),
         template_id: templateId,
         started_at: new Date().toISOString()
       };
-
       console.log(`✅ [DBG] Supabase API: Mock workout started with ID: ${mockWorkout.id}`);
       return mockWorkout;
     } catch (error) {
@@ -621,9 +629,7 @@ export class SupabaseAPI {
       console.log(`🔄 [DBG] Supabase API: Fetching profile for user: ${user.id}`);
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`,
-        {
-          headers: this.getHeaders(true)
-        }
+        { headers: this.getHeaders(true) }
       );
 
       if (!response.ok) {
@@ -641,7 +647,14 @@ export class SupabaseAPI {
     }
   }
 
-  async upsertProfile(firstName: string, lastName: string, displayName: string, heightCm?: number, weightKg?: number, userId?: string): Promise<Profile | null> {
+  async upsertProfile(
+    firstName: string,
+    lastName: string,
+    displayName: string,
+    heightCm?: number,
+    weightKg?: number,
+    userId?: string
+  ): Promise<Profile | null> {
     try {
       const user = userId ? { id: userId } : await this.getCurrentUser();
       console.log(`🔄 [DBG] Supabase API: Upserting profile for user: ${user.id}`);
@@ -681,9 +694,7 @@ export class SupabaseAPI {
       console.log(`🔄 [DBG] Supabase API: Fetching step goal for user: ${user.id}`);
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/user_steps?user_id=eq.${user.id}&select=goal`,
-        {
-          headers: this.getHeaders(true)
-        }
+        { headers: this.getHeaders(true) }
       );
 
       if (!response.ok) {
@@ -698,13 +709,11 @@ export class SupabaseAPI {
         return steps[0].goal;
       } else {
         console.log(`ℹ️ [DBG] Supabase API: No step goal found, creating default`);
-        // Create default step goal if none exists
         const defaultGoal = await this.createUserStepGoal(10000);
         return defaultGoal;
       }
     } catch (error) {
       console.error('❌ [DBG] Supabase API: Get user step goal error:', error);
-      // Return default goal on error
       return 10000;
     }
   }
@@ -717,10 +726,7 @@ export class SupabaseAPI {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/user_steps`, {
         method: 'POST',
         headers: this.getHeaders(true, true),
-        body: JSON.stringify({
-          user_id: user.id,
-          goal: goal
-        })
+        body: JSON.stringify({ user_id: user.id, goal })
       });
 
       if (!response.ok) {
@@ -742,8 +748,6 @@ export class SupabaseAPI {
       return goal;
     }
   }
-
-
 }
 
 // Create a singleton instance

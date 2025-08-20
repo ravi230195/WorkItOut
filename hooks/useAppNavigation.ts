@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 import { Exercise } from "../utils/supabase-api";
 import { ViewType } from "../utils/navigation";
 import { toast } from "sonner";
@@ -8,13 +7,13 @@ export function useAppNavigation() {
   const [currentView, setCurrentView] = useState<ViewType>("workouts");
   const [activeTab, setActiveTab] = useState<"workouts" | "progress" | "profile">("workouts");
 
-
   const [currentRoutineId, setCurrentRoutineId] = useState<number | null>(null);
   const [currentRoutineName, setCurrentRoutineName] = useState<string>("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // When picker returns, ExerciseSetup uses this to open configure form
   const [selectedExerciseForSetup, setSelectedExerciseForSetup] = useState<Exercise | null>(null);
 
-  // Error handling for unauthorized sessions
   const handleUnauthorizedError = (error: Error) => {
     if (error.message === "UNAUTHORIZED") {
       toast.error("Session expired. Please sign in.");
@@ -30,28 +29,11 @@ export function useAppNavigation() {
     setActiveTab("workouts");
   };
 
-  const navigateToSignUp = () => {
-    setCurrentView("signup");
-  };
-
-  const navigateToSignIn = () => {
-    setCurrentView("signin");
-  };
-
-
-
-
-
-
-
-
-
-
+  const navigateToSignUp = () => setCurrentView("signup");
+  const navigateToSignIn = () => setCurrentView("signin");
 
   const handleTabChange = (tab: "workouts" | "progress" | "profile") => {
     setActiveTab(tab);
-    
-    // Map tab to view
     switch (tab) {
       case "workouts":
         setCurrentView("workouts");
@@ -65,79 +47,65 @@ export function useAppNavigation() {
     }
   };
 
-  const showCreateRoutine = () => {
-    setCurrentView("create-routine");
-  };
+  const showCreateRoutine = () => setCurrentView("create-routine");
 
+  /** After CreateRoutineScreen creates a routine, jump to ExerciseSetup (empty) */
   const handleRoutineCreated = (routineName: string, routineId?: number) => {
-    // Store routine name and ID
     setCurrentRoutineName(routineName);
-    if (routineId) {
-      setCurrentRoutineId(routineId);
-    }
-    // For now, keep going to exercise selection first
-    setCurrentView("add-exercises-to-routine");
+    if (routineId) setCurrentRoutineId(routineId);
+    setSelectedExerciseForSetup(null); // start empty
+    setCurrentView("exercise-setup");
   };
 
+  /** When a picker selects an exercise (also used by create flow if needed) */
   const handleExerciseSelected = (exercise: Exercise, createdRoutineId?: number) => {
-    // Store the routine info, then navigate to exercise setup
-    if (createdRoutineId) {
-      setCurrentRoutineId(createdRoutineId);
-    }
-    setCurrentView("exercise-setup");
-  };
-
-
-
-  const showExerciseSetupEmpty = (routineId: number, routineName: string) => {
-    setCurrentRoutineId(routineId);
-    setCurrentRoutineName(routineName);
-    setCurrentView("exercise-setup");
-  };
-
-  const closeExerciseSetup = () => {
-    setCurrentView("add-exercises-to-routine");
-  };
-
-  // New function specifically for returning to exercise setup from exercise selection
-  const returnToExerciseSetup = (exercise: Exercise) => {
-    console.log("🔍 [DBG] Returning to exercise setup with exercise:", exercise.name);
+    if (createdRoutineId) setCurrentRoutineId(createdRoutineId);
     setSelectedExerciseForSetup(exercise);
     setCurrentView("exercise-setup");
   };
 
-  const closeExerciseSetupToRoutines = () => {
-    // Clear all routine state and go back to workouts
-    setCurrentRoutineId(null);
-    setCurrentRoutineName("");
-    setCurrentView("workouts");
+  const showExerciseSetupEmpty = (routineId: number, routineName: string) => {
+    setCurrentRoutineId(routineId);
+    setCurrentRoutineName(routineName);
+    setSelectedExerciseForSetup(null);
+    setCurrentView("exercise-setup");
   };
 
-  const handleExerciseSetupComplete = () => {
-    // After exercise setup is complete, stay on screen
-    // This allows the component to show the empty state with saved exercises
-    console.log("Exercise setup completed, staying on screen for more exercises");
-  };
-
-
-
-  const closeRoutineEditor = () => {
+  /** From ExerciseSetup: the "+" opens the picker */
+  const closeExerciseSetup = () => {
     setCurrentView("add-exercises-to-routine");
   };
 
-  const closeCreateRoutine = () => {
+  /** Picker returns an exercise → go back to ExerciseSetup with it preloaded */
+  const returnToExerciseSetup = (exercise: Exercise) => {
+    setSelectedExerciseForSetup(exercise);
+    setCurrentView("exercise-setup");
+  };
+
+  /** Back from ExerciseSetup → Workouts/Routines */
+  const closeExerciseSetupToRoutines = () => {
+    setCurrentRoutineId(null);
+    setCurrentRoutineName("");
+    setSelectedExerciseForSetup(null);
     setCurrentView("workouts");
   };
+
+  /** Save in ExerciseSetup should stay on the screen (list updates there) */
+  const handleExerciseSetupComplete = () => {
+    // no navigation; screen handles UI refresh
+  };
+
+  const closeRoutineEditor = () => setCurrentView("add-exercises-to-routine");
+  const closeCreateRoutine = () => setCurrentView("workouts");
 
   const completeRoutineCreation = () => {
     setCurrentRoutineId(null);
     setCurrentRoutineName("");
+    setSelectedExerciseForSetup(null);
     setCurrentView("workouts");
-    // Trigger a refresh of the routines list to show the new routine
     setRefreshTrigger(prev => prev + 1);
   };
 
-  // Navigation helper that handles errors
   const safeNavigate = async (asyncAction: () => Promise<void>, fallbackView?: ViewType) => {
     try {
       await asyncAction();
@@ -145,9 +113,7 @@ export function useAppNavigation() {
       console.error("Navigation action failed:", error);
       if (error instanceof Error && !handleUnauthorizedError(error)) {
         toast.error("Something went wrong. Please try again.");
-        if (fallbackView) {
-          setCurrentView(fallbackView);
-        }
+        if (fallbackView) setCurrentView(fallbackView);
       }
     }
   };
@@ -161,15 +127,17 @@ export function useAppNavigation() {
     refreshTrigger,
     selectedExerciseForSetup,
     setSelectedExerciseForSetup,
+
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,
-
     handleTabChange,
+
     showCreateRoutine,
     handleRoutineCreated,
     closeCreateRoutine,
     completeRoutineCreation,
+
     handleExerciseSelected,
     closeExerciseSetup,
     handleExerciseSetupComplete,
@@ -178,6 +146,6 @@ export function useAppNavigation() {
     closeExerciseSetupToRoutines,
     handleUnauthorizedError,
     safeNavigate,
-    returnToExerciseSetup
+    returnToExerciseSetup,
   };
 }
