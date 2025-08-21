@@ -7,6 +7,7 @@ import { ProgressScreen } from "./screens/ProgressScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { SignInScreen } from "./screens/SignInScreen";
 import { SignUpScreen } from "./screens/SignUpScreen";
+
 import { AppView } from "../utils/navigation";
 import { Exercise } from "../utils/supabase-api";
 
@@ -24,7 +25,7 @@ interface AppRouterProps {
   onNavigateToSignIn: () => void;
 
   onCreateRoutine: () => void;
-  /** Updated: passes (name, id) to jump straight to ExerciseSetup */
+  /** Passes (name, id) to jump straight to ExerciseSetup */
   onRoutineCreated: (routineName: string, routineId: number) => void;
 
   onCloseCreateRoutine: () => void;
@@ -39,6 +40,9 @@ interface AppRouterProps {
 
   onCloseExerciseSetupToRoutines: () => void;
   onReturnToExerciseSetup: (exercise: Exercise) => void;
+
+  /** notify App when a modal/sheet is open so it can hide BottomNavigation */
+  onOverlayChange?: (open: boolean) => void;
 }
 
 export function AppRouter({
@@ -68,6 +72,8 @@ export function AppRouter({
 
   onCloseExerciseSetupToRoutines,
   onReturnToExerciseSetup,
+
+  onOverlayChange,
 }: AppRouterProps) {
   console.log(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
 
@@ -94,6 +100,8 @@ export function AppRouter({
         <WorkoutDashboardScreen
           onCreateRoutine={onCreateRoutine}
           onSelectRoutine={onSelectRoutine}
+          // ⬇️ forward overlay visibility changes to App (to hide bottom nav)
+          onOverlayChange={onOverlayChange}
         />
       )}
 
@@ -111,26 +119,29 @@ export function AppRouter({
           onBack={currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine}
           onExerciseSelected={
             currentRoutineId
-              ? (exercise: Exercise) => onReturnToExerciseSetup(exercise) // back to setup in configure mode
-              : (exercise: Exercise, routineId?: number) => onExerciseSelected(exercise, routineId)
+              ? (exercise: Exercise) => onReturnToExerciseSetup(exercise)
+              : (exercise: Exercise, routineId?: number) =>
+                  onExerciseSelected(exercise, routineId)
           }
           isFromExerciseSetup={!!currentRoutineId}
         />
       )}
 
-      {currentView === "exercise-setup" && currentRoutineId && currentRoutineName && (
-        <ExerciseSetupScreen
-          routineId={currentRoutineId}
-          routineName={currentRoutineName}
-          selectedExerciseForSetup={selectedExerciseForSetup}
-          setSelectedExerciseForSetup={setSelectedExerciseForSetup}
-          onBack={onCloseExerciseSetupToRoutines}       // ← back to Workouts/Routines
-          onSave={onExerciseSetupComplete}              // stay here
-          onAddMoreExercises={onCloseExerciseSetup}     // “+” → picker
-          isEditingExistingRoutine={true}
-          onShowExerciseSelector={onCloseExerciseSetup}
-        />
-      )}
+      {currentView === "exercise-setup" &&
+        currentRoutineId &&
+        currentRoutineName && (
+          <ExerciseSetupScreen
+            routineId={currentRoutineId}
+            routineName={currentRoutineName}
+            selectedExerciseForSetup={selectedExerciseForSetup}
+            setSelectedExerciseForSetup={setSelectedExerciseForSetup}
+            onBack={onCloseExerciseSetupToRoutines}   // back to routines list
+            onSave={onExerciseSetupComplete}          // stay on setup
+            onAddMoreExercises={onCloseExerciseSetup} // “+” opens exercise picker
+            isEditingExistingRoutine={true}
+            onShowExerciseSelector={onCloseExerciseSetup}
+          />
+        )}
 
       {currentView === "routine-editor" && currentRoutineId && (
         <RoutineEditorScreen

@@ -5,6 +5,7 @@ import { useAuthEffects } from "./hooks/useAuthEffects";
 import { useAppNavigation } from "./hooks/useAppNavigation";
 import { useMobileSetup } from "./hooks/useMobileSetup";
 import { Toaster } from "./components/ui/sonner";
+import { useState } from 'react'
 
 import { BottomNavigation, TabType } from "./components/BottomNavigation";
 import { VIEWS_WITHOUT_BOTTOM_NAV } from "./utils/navigation";
@@ -26,7 +27,6 @@ function AppContent() {
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,
-
     handleTabChange,
     showCreateRoutine,
     handleRoutineCreated,
@@ -43,7 +43,9 @@ function AppContent() {
 
   const { isAuthenticated } = useAuthEffects({ currentView, setCurrentView });
   const showBottomNav = !VIEWS_WITHOUT_BOTTOM_NAV.includes(currentView);
-  const showNav = isAuthenticated && showBottomNav;
+  const [overlayOpen, setOverlayOpen] = useState(false);
+
+  const showNav = isAuthenticated && showBottomNav && !overlayOpen;
 
   return (
     <div id="app" className="h-[100dvh] grid grid-rows-[1fr_auto] overflow-hidden">
@@ -74,6 +76,7 @@ function AppContent() {
           onSelectRoutine={showExerciseSetupEmpty}
           onCloseExerciseSetupToRoutines={closeExerciseSetupToRoutines}
           onReturnToExerciseSetup={returnToExerciseSetup}
+          onOverlayChange={setOverlayOpen}
         />
       </main>
 
