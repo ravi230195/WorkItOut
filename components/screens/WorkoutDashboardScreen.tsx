@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { StepCounter } from "../StepCounter";
 import { TactileButton } from "../TactileButton";
-import { MoreVertical, AlertCircle, Clock3 as Clock, TrendingUp} from "lucide-react";
+import { MoreVertical, AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
@@ -14,6 +13,171 @@ interface WorkoutDashboardScreenProps {
   onSelectRoutine: (routineId: number, routineName: string) => void;
   onOverlayChange?: (open: boolean) => void;
 }
+
+/* ---------- Inline Whoop-style progress rings (no external import) ---------- */
+function CircularStat({
+  value,
+  max = 100,
+  label,
+  unit = "%",
+  size = 112,
+  strokeWidth = 10,
+  decimals = 0,
+  trackColor = "#e5e7eb",     // gray-200
+  progressColor = "#e07a5f",  // warm coral
+  textColor = "#3d2914",      // warm brown
+}: {
+  value: number | null | undefined;
+  max?: number;
+  label: string;
+  unit?: string;
+  size?: number;
+  strokeWidth?: number;
+  decimals?: number;
+  trackColor?: string;
+  progressColor?: string;
+  textColor?: string;
+}) {
+  const safeValue = typeof value === "number" && isFinite(value) ? Math.max(0, Math.min(value, max)) : null;
+  const radius = (size - strokeWidth) / 2;
+  const C = 2 * Math.PI * radius;
+  const progress = safeValue == null ? 0 : safeValue / max;
+  const dashOffset = C * (1 - progress);
+  const gradId = `grad-${String(label).replace(/[^a-zA-Z0-9_-]/g, "")}`;
+
+  return (
+    <div className="flex flex-col items-center select-none" role="group" aria-label={`${label} progress`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={progressColor} />
+            <stop offset="100%" stopColor={progressColor} />
+          </linearGradient>
+        </defs>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={trackColor}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+          style={{ opacity: 0.25 }}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={`url(#${gradId})`}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeDasharray={`${C} ${C}`}
+          strokeDashoffset={dashOffset}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          aria-valuemin={0}
+          aria-valuemax={max}
+          aria-valuenow={safeValue ?? undefined}
+          role="progressbar"
+        />
+        <g transform={`translate(${size / 2}, ${size / 2})`}>
+          <text
+            textAnchor="middle"
+            dominantBaseline="central"
+            style={{ fontSize: size * 0.24, fontWeight: 700, fill: textColor }}
+          >
+            {safeValue == null ? "—" : safeValue.toFixed(decimals)}
+          </text>
+          <text
+            y={size * 0.18}
+            textAnchor="middle"
+            dominantBaseline="hanging"
+            style={{ fontSize: size * 0.14, fontWeight: 600, fill: textColor, opacity: 0.5 }}
+          >
+            {unit}
+          </text>
+        </g>
+      </svg>
+      <div className="mt-2 text-xs" style={{ color: textColor, opacity: 0.75 }}>{label}</div>
+    </div>
+  );
+}
+
+function ProgressRings({
+  steps,
+  goal,
+  recoveryPercent,
+  strain,
+  onStepsClick,
+  onRecoveryClick,
+  onStrainClick,
+}: {
+  steps: number | null | undefined;
+  goal: number | null | undefined;
+  recoveryPercent?: number | null;
+  strain?: number | null;
+  onStepsClick?: () => void;
+  onRecoveryClick?: () => void;
+  onStrainClick?: () => void;
+}) {
+  const css = (typeof window !== "undefined" && typeof document !== "undefined")
+    ? getComputedStyle(document.documentElement)
+    : null;
+  const warmBrown = css?.getPropertyValue("--foreground")?.trim() || "#3d2914";
+  const warmCoral = css?.getPropertyValue("--primary")?.trim() || "#e07a5f";
+  const accentBlue = css?.getPropertyValue("--accent-blue")?.trim() || "#4aa3df";
+
+  const percent = steps != null && goal != null ? Math.round((steps / Math.max(goal, 1)) * 100) : null;
+
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-between gap-3 px-1">
+        <button className="touch-manipulation" onClick={onStepsClick} aria-label="Steps progress">
+          <CircularStat
+            value={percent}
+            max={100}
+            label="Steps"
+            unit="%"
+            size={108}
+            strokeWidth={10}
+            textColor={warmBrown}
+            progressColor={accentBlue}
+            trackColor="#d1d5db"
+          />
+        </button>
+        <button className="touch-manipulation" onClick={onRecoveryClick} aria-label="Recovery progress">
+          <CircularStat
+            value={recoveryPercent ?? null}
+            max={100}
+            label="Recovery"
+            unit="%"
+            size={108}
+            strokeWidth={10}
+            textColor={warmBrown}
+            progressColor={"#f2c94c"}
+            trackColor="#d1d5db"
+          />
+        </button>
+        <button className="touch-manipulation" onClick={onStrainClick} aria-label="Strain">
+          <CircularStat
+            value={strain ?? null}
+            max={10}  // set to 21 if you prefer WHOOP scale
+            label="Strain"
+            unit=""
+            size={108}
+            strokeWidth={10}
+            decimals={1}
+            textColor={warmBrown}
+            progressColor={warmCoral}
+            trackColor="#d1d5db"
+          />
+        </button>
+      </div>
+      <div className="mt-3 h-px bg-black/5" />
+    </div>
+  );
+}
+/* -------------------------------------------------------------------------- */
 
 /** 🎨 App-palette avatars */
 const avatarPalette = [
@@ -47,8 +211,7 @@ export function WorkoutDashboardScreen({
   const [renameValue, setRenameValue] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const { steps, goal, progressPercentage, isLoading: isLoadingSteps } =
-    useStepTracking(true);
+  const { steps, goal, isLoading: isLoadingSteps } = useStepTracking(true);
 
   const reloadRoutines = async () => {
     const data = await supabaseAPI.getUserRoutines();
@@ -78,7 +241,7 @@ export function WorkoutDashboardScreen({
   // compute exercise counts for each routine (for time display)
   useEffect(() => {
     let cancelled = false;
-  
+
     const fetchExerciseCounts = async () => {
       if (!userToken || routines.length === 0) {
         setExerciseCounts({});
@@ -88,29 +251,29 @@ export function WorkoutDashboardScreen({
       try {
         const entries: Array<[number, number]> = [];
         const needsRecompute: number[] = [];
-  
+
         // get counts and note which routines lack a summary
         for (const r of routines) {
           const list = await supabaseAPI.getUserRoutineExercises(r.routine_template_id);
           const active = (Array.isArray(list) ? list : []).filter(x => x.is_active !== false);
           entries.push([r.routine_template_id, active.length]);
-  
+
           const summary = (r as any).muscle_group_summary as string | undefined;
           if (active.length > 0 && (!summary || summary.trim() === "")) {
             needsRecompute.push(r.routine_template_id);
           }
         }
-  
+
         if (!cancelled) {
           setExerciseCounts(Object.fromEntries(entries));
         }
-  
+
         // recompute + persist summaries that are empty but have exercises
         if (needsRecompute.length > 0) {
           const results = await Promise.allSettled(
             needsRecompute.map(id => supabaseAPI.recomputeAndSaveRoutineMuscleSummary(id))
           );
-  
+
           // (optional) update local routines so UI reflects it immediately
           if (!cancelled) {
             const summariesById = new Map<number, string>();
@@ -135,11 +298,10 @@ export function WorkoutDashboardScreen({
         if (!cancelled) setLoadingCounts(false);
       }
     };
-  
+
     fetchExerciseCounts();
     return () => { cancelled = true; };
   }, [userToken, routines]);
-  
 
   // make sure bottom-nav is restored if unmounting with sheet open
   useEffect(() => {
@@ -214,6 +376,17 @@ export function WorkoutDashboardScreen({
           Select a routine to start your workout
         </p>
       </div>
+
+      {/* NEW: Whoop-style progress rings row (placed ABOVE Create Routine) */}
+      <ProgressRings
+        steps={isLoadingSteps ? null : steps}
+        goal={isLoadingSteps ? null : goal}
+        recoveryPercent={null} // placeholder until you have data
+        strain={null}          // placeholder until you have data
+        onStepsClick={() => {}}
+        onRecoveryClick={() => {}}
+        onStrainClick={() => {}}
+      />
 
       <div className="flex items-center justify-end">
         <TactileButton
@@ -320,22 +493,13 @@ export function WorkoutDashboardScreen({
         </div>
       )}
 
-      <div className="space-y-4">
-        <StepCounter
-          steps={steps}
-          goal={goal}
-          progressPercentage={progressPercentage}
-          isLoading={isLoadingSteps}
-        />
-      </div>
-
       {/* bottom sheet */}
       {actionRoutine && (
         <div className="fixed inset-0 z-50" aria-modal="true" role="dialog" onClick={closeActions}>
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
           <div className="absolute inset-x-0 bottom-0" onClick={(e) => e.stopPropagation()}>
             <div className="mx-auto w-full max-w-md px-4 pb-[env(safe-area-inset-bottom)]">
-              <div className="bg-white rounded-t-2xl shadow-2xl border border-[var(--border)] overflow-hidden">
+              <div className="bg-white rounded-t-2xl shadow-2xl border-t border-x border-[var(--border)] overflow-hidden">
                 <div className="flex justify-center py-2">
                   <div className="h-1.5 w-10 rounded-full bg-gray-200" />
                 </div>
@@ -410,7 +574,7 @@ export function WorkoutDashboardScreen({
                     <p className="text-sm text-gray-700">
                       Delete <span className="font-medium">{actionRoutine.name}</span>?
                       <br />
-                      <span className="text-gray-500">This will remove it from your list (soft delete).</span>
+                      <span className="text-gray-500">This will remove it from your list</span>
                     </p>
                     <div className="flex gap-3 pt-1">
                       <TactileButton

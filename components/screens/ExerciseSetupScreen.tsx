@@ -131,73 +131,142 @@ export function ExerciseSetupScreen({
     }
   };
 
+  // TOREMOVE
+
+  // Pretty, safe chunk logger (avoids WebKit/Xcode truncation)
+function logChunks(label: string, data: unknown, chunkSize = 4000) {
+  let s: string;
+  try { s = typeof data === "string" ? data : JSON.stringify(data, null, 2); }
+  catch { s = String(data); }
+  for (let i = 0; i < s.length; i += chunkSize) {
+    // keep label short; some consoles cut very long prefixes
+    console.debug(`${label} [${i}-${Math.min(i + chunkSize, s.length)}/${s.length}]`, s.slice(i, i + chunkSize));
+  }
+}
+
+// Sanity checks for sets payload before sending to DB
+function validateSetsPayload(rows: Array<{ reps: number; weight: number; set_order: number }>) {
+  const errors: string[] = [];
+  rows.forEach((r, i) => {
+    if (!Number.isInteger(r.reps) || r.reps < 0) errors.push(`row ${i}: reps must be int ≥ 0 (got ${r.reps})`);
+    if (!(Number.isFinite(r.weight) && r.weight >= 0)) errors.push(`row ${i}: weight must be number ≥ 0 (got ${r.weight})`);
+    if (!Number.isInteger(r.set_order) || r.set_order <= 0) errors.push(`row ${i}: set_order must be int ≥ 1 (got ${r.set_order})`);
+  });
+  const expectedSeq = rows.map((_, i) => i + 1).join(",");
+  const actualSeq = rows.map(r => r.set_order).join(",");
+  if (expectedSeq !== actualSeq) errors.push(`set_order sequence mismatch. expected [${expectedSeq}] got [${actualSeq}]`);
+  return errors;
+}
+
   // Helper to find exercise_id when creating new sets (no existing rows)
   const getExerciseIdForTemplate = (templateId: number) => {
     const row = savedExercises.find((e) => e.routine_template_exercise_id === templateId);
     return row?.exercise_id ?? null;
     };
 
-  // Save the configure-card (newly selected exercise)
-  const handleSave = async () => {
-    if (!currentExercise) {
-      toast.error("No exercise selected");
-      return;
+// Save the configure-card (newly selected exercise)
+const handleSave = async () => {
+  if (!currentExercise) {
+    toast.error("No exercise selected");
+    return;
+  }
+  if (!userToken) {
+    toast.error("Please sign in to save exercise");
+    return;
+  }
+
+  const hasValidSet = sets.some((s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0);
+  if (!hasValidSet) {
+    toast.error("Please add at least one set with reps or weight");
+    return;
+  }
+
+  setIsSaving(true);
+  try {
+    const exerciseOrder = savedExercises.length + 1;
+
+    // 🧪 Context + raw sets
+    console.debug("🧪 [SAVE] context", {
+      routineId,
+      exerciseOrder,
+      currentExercise: { id: currentExercise.exercise_id, name: currentExercise.name },
+      savedExercisesLen: savedExercises.length,
+    });
+    logChunks("🧪 [SAVE] raw sets", sets);
+
+    const validSets = sets.filter((s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0);
+    logChunks("🧪 [SAVE] validSets", validSets);
+
+    const savedExercise = await supabaseAPI.addExerciseToRoutine(
+      routineId,
+      currentExercise.exercise_id,
+      exerciseOrder
+    );
+    if (!savedExercise) throw new Error("Failed to save exercise to routine");
+
+    // ✅ Confirm what the server returned
+    console.debug("✅ [addExerciseToRoutine] ok", {
+      routine_template_id: routineId,
+      routine_template_exercise_id: savedExercise.routine_template_exercise_id,
+      exercise_id: currentExercise.exercise_id,
+    });
+
+    // Include explicit set_order (1..n) so DB doesn't default to 1
+    const setsToSave = validSets.map((s, idx) => ({
+      reps: parseInt(s.reps) || 0,
+      weight: parseFloat(s.weight) || 0,
+      set_order: idx + 1
+    }));
+
+    // 🧪 Validate mapped payload (client-side)
+    const valErrors = validateSetsPayload(setsToSave);
+    if (valErrors.length) console.warn("⚠️ [SETS VALIDATION ERRORS]", valErrors);
+    console.table(setsToSave);
+    logChunks("🧪 [SAVE] setsToSave (payload to API)", setsToSave);
+
+    // Heads-up: if your API expects planned_* columns, this will warn you.
+    if (setsToSave.length && !("planned_reps" in setsToSave[0])) {
+      console.warn("ℹ️ Your setsToSave use keys {reps, weight, set_order}. If API expects {planned_reps, planned_weight_kg}, this will fail.");
     }
-    if (!userToken) {
-      toast.error("Please sign in to save exercise");
-      return;
-    }
 
-    const hasValidSet = sets.some((s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0);
-    if (!hasValidSet) {
-      toast.error("Please add at least one set with reps or weight");
-      return;
-    }
+    console.debug("➡️ [addExerciseSetsToRoutine] sending", {
+      rtexId: savedExercise.routine_template_exercise_id,
+      exerciseId: currentExercise.exercise_id,
+      count: setsToSave.length
+    });
 
-    setIsSaving(true);
-    try {
-      const exerciseOrder = savedExercises.length + 1;
+    await supabaseAPI.addExerciseSetsToRoutine(
+      savedExercise.routine_template_exercise_id,
+      currentExercise.exercise_id,
+      setsToSave
+    );
 
-      const validSets = sets.filter((s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0);
+    console.debug("✅ [addExerciseSetsToRoutine] ok");
 
-      const savedExercise = await supabaseAPI.addExerciseToRoutine(
-        routineId,
-        currentExercise.exercise_id,
-        exerciseOrder
-      );
-      if (!savedExercise) throw new Error("Failed to save exercise to routine");
+    // Recompute and save the muscle summary
+    await supabaseAPI.recomputeAndSaveRoutineMuscleSummary(routineId);
+    console.debug("♻️ [recomputeAndSaveRoutineMuscleSummary] ok");
 
-      // Include explicit set_order (1..n) so DB doesn't default to 1
-      const setsToSave = validSets.map((s, idx) => ({
-        reps: parseInt(s.reps) || 0,
-        weight: parseFloat(s.weight) || 0,
-        set_order: idx + 1
-      }));
+    toast.success(`Added ${currentExercise.name} with ${validSets.length} sets`);
+    await refreshSavedExercises();
 
-      await supabaseAPI.addExerciseSetsToRoutine(
-        savedExercise.routine_template_exercise_id,
-        currentExercise.exercise_id,
-        setsToSave
-      );
+    setCurrentExercise(undefined);
+    resetForm();
+    onSave();
+  } catch (error) {
+    // ❌ Rich error output
+    console.error("❌ [handleSave] Failed to save exercise", {
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorObj: error,
+    });
+    toast.error(
+      error instanceof Error ? `Failed to save exercise: ${error.message}` : "Failed to save exercise. Please try again."
+    );
+  } finally {
+    setIsSaving(false);
+  }
+};
 
-      // Recompute and save the muscle summary
-      await supabaseAPI.recomputeAndSaveRoutineMuscleSummary(routineId);
-
-      toast.success(`Added ${currentExercise.name} with ${validSets.length} sets`);
-      await refreshSavedExercises();
-
-      setCurrentExercise(undefined);
-      resetForm();
-      onSave();
-    } catch (error) {
-      console.error("Failed to save exercise:", error);
-      toast.error(
-        error instanceof Error ? `Failed to save exercise: ${error.message}` : "Failed to save exercise. Please try again."
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleKebabClick = async (savedExercise: SavedExerciseWithDetails, e: React.MouseEvent) => {
     e.stopPropagation();

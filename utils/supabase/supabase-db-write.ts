@@ -230,36 +230,39 @@ export class SupabaseDBWrite extends SupabaseBase {
     return rows[0]?.goal ?? goal;
   }
 
-  // Recompute and persist muscle group summary (also refresh routines cache)
-  async recomputeAndSaveRoutineMuscleSummary(routineTemplateId: number): Promise<string> {
-    const rows: Array<{ exercises?: { muscle_group?: string } }> = await this.fetchJson(
-      `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&is_active=eq.true&select=exercise_id,exercises(muscle_group)`,
-      true
-    );
-
-    const counts = new Map<string, number>();
-    for (const r of rows) {
-      const g = (r.exercises?.muscle_group || "").trim();
-      if (!g) continue;
-      counts.set(g, (counts.get(g) || 0) + 1);
-    }
-    const summary = Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .map(([g]) => g)
-      .join(" • ");
-
-    await this.fetchJson(
-      `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`,
+  async recomputeAndSaveRoutineMuscleSummary(routineTemplateId: number) {
+    // Load active exercises → muscle groups
+    const urlEx =
+      `${SUPABASE_URL}/rest/v1/user_routine_exercises_data` +
+      `?routine_template_id=eq.${routineTemplateId}&is_active=eq.true` +
+      `&select=exercises(muscle_group)`;
+  
+    const rows = await this.fetchJson<Array<{ exercises?: { muscle_group?: string } }>>(urlEx, true);
+  
+    const groups = Array.from(
+      new Set(
+        rows.map(r => (r.exercises?.muscle_group ?? "").trim()).filter(Boolean)
+      )
+    ).sort();
+  
+    // Use NULL when no groups (avoids DB pattern/CHECK failures on empty string)
+    const summary = groups.length ? groups.join(" • ") : null;
+  
+    // Patch base table
+    const urlPatch = `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`;
+    await this.fetchJson<any[]>(
+      urlPatch,
       true,
       "PATCH",
-      { muscle_group_summary: summary || null },
-      "return=minimal"
+      [{ muscle_group_summary: summary }],
+      "return=representation"
     );
-
-    const user = await this.getCurrentUser();
-    await this.refreshRoutines(user.id);
-    return summary;
-  }
+  
+    // Refresh routines cache so UI reflects changes
+    const { id: userId } = await this.getCurrentUser();
+    await this.refreshRoutines(userId);
+  }  
 }
+  
 
 export default SupabaseDBWrite;

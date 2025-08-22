@@ -18,12 +18,12 @@ export const SUPABASE_ANON_KEY =
 // TTLs and read strategy
 export const CACHE_TTL = {
   exercises: 24 * 60 * 60 * 1000, // 24h
-  routines: 60 * 1000,            // 60s
-  routineExercises: 60 * 1000,
-  routineExercisesWithDetails: 60 * 1000,
-  routineSets: 60 * 1000,
-  profile: 60 * 1000,
-  steps: 60 * 1000,
+  routines: 60 * 60 * 1000,            // 60s
+  routineExercises: 60 * 60 * 1000,
+  routineExercisesWithDetails: 60 * 60 * 1000,
+  routineSets: 60 * 60 * 1000,
+  profile: 60 * 60 * 1000,
+  steps: 60 * 60 * 1000,
 };
 
 export const PREFER_CACHE_ON_READ = true;
