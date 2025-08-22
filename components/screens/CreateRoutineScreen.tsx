@@ -54,7 +54,9 @@ export function CreateRoutineScreen({ onBack, onRoutineCreated }: CreateRoutineS
         <TactileButton variant="secondary" size="sm" onClick={onBack}>
           <ArrowLeft size={20} />
         </TactileButton>
-        <h1 className="font-medium text-[var(--warm-brown)] tracking-wide">NAME YOUR WORKOUT</h1>
+        <h1 className="absolute left-1/2 -translate-x-1/2 font-medium text-[var(--warm-brown)] tracking-wide">
+        NAME YOUR WORKOUT
+        </h1>
         <div className="w-10" />
       </div>
 
@@ -80,7 +82,7 @@ export function CreateRoutineScreen({ onBack, onRoutineCreated }: CreateRoutineS
           >
             <div className="flex items-center justify-center gap-2">
               <Plus size={20} />
-              {isCreating ? "CREATING..." : "ADD EXERCISES"}
+              {isCreating ? "CREATING..." : "ADD ROUTINE"}
             </div>
           </TactileButton>
         </div>

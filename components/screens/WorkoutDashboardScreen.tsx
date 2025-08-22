@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { StepCounter } from "../StepCounter";
 import { TactileButton } from "../TactileButton";
-import { MoreVertical, AlertCircle } from "lucide-react";
+import { MoreVertical, AlertCircle, Clock3 as Clock, TrendingUp} from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
@@ -12,67 +12,136 @@ import { toast } from "sonner";
 interface WorkoutDashboardScreenProps {
   onCreateRoutine: () => void;
   onSelectRoutine: (routineId: number, routineName: string) => void;
-  /** NEW: notify parent when a modal/sheet is opened/closed so it can hide BottomNavigation */
   onOverlayChange?: (open: boolean) => void;
 }
+
+/** 🎨 App-palette avatars */
+const avatarPalette = [
+  { bg: "bg-[var(--soft-gray)]",  iconBg: "bg-[var(--warm-coral)]", emoji: "🏋️" },
+  { bg: "bg-[var(--warm-cream)]", iconBg: "bg-[var(--warm-brown)]", emoji: "🏃" },
+  { bg: "bg-[var(--soft-gray)]",  iconBg: "bg-[var(--warm-sage)]",  emoji: "🧘" },
+  { bg: "bg-[var(--warm-cream)]", iconBg: "bg-[var(--warm-coral)]", emoji: "🤸" },
+  { bg: "bg-[var(--soft-gray)]",  iconBg: "bg-[var(--warm-brown)]", emoji: "🔥" },
+];
 
 export function WorkoutDashboardScreen({
   onCreateRoutine,
   onSelectRoutine,
-  onOverlayChange, // NEW
+  onOverlayChange,
 }: WorkoutDashboardScreenProps) {
-  // Scroll and keyboard helpers
   const scrollRef = useScrollToTop();
   useKeyboardInset();
-
   const { userToken } = useAuth();
 
   const [routines, setRoutines] = useState<UserRoutine[]>([]);
   const [isLoadingRoutines, setIsLoadingRoutines] = useState(true);
   const [routinesError, setRoutinesError] = useState<string | null>(null);
 
-  // Bottom sheet state
+  // only need exercise counts for time (10 min per exercise)
+  const [exerciseCounts, setExerciseCounts] = useState<Record<number, number>>({});
+  const [loadingCounts, setLoadingCounts] = useState(false);
+
+  // bottom-sheet
   const [actionRoutine, setActionRoutine] = useState<UserRoutine | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Step tracking
-  const {
-    steps,
-    goal,
-    progressPercentage,
-    isLoading: isLoadingSteps,
-  } = useStepTracking(true);
+  const { steps, goal, progressPercentage, isLoading: isLoadingSteps } =
+    useStepTracking(true);
 
   const reloadRoutines = async () => {
-    try {
-      const data = await supabaseAPI.getUserRoutines();
-      setRoutines(data);
-    } catch (e) {
-      setRoutinesError(e instanceof Error ? e.message : "Failed to load routines");
-    }
+    const data = await supabaseAPI.getUserRoutines();
+    setRoutines(data);
   };
 
-  // Load routines
+  // initial routines
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const fetchInitial = async () => {
       if (!userToken) return;
       setIsLoadingRoutines(true);
+      setRoutinesError(null);
       try {
         await reloadRoutines();
       } catch (error) {
-        if (error instanceof Error && error.message === "UNAUTHORIZED") {
-          toast.error("Session expired. Please sign in.");
-        }
+        console.error(error);
+        setRoutinesError(
+          error instanceof Error ? error.message : "Failed to load routines"
+        );
       } finally {
         setIsLoadingRoutines(false);
       }
     };
-    fetchInitialData();
+    fetchInitial();
   }, [userToken]);
 
-  // Ensure nav is restored if component unmounts while sheet is open
+  // compute exercise counts for each routine (for time display)
+  useEffect(() => {
+    let cancelled = false;
+  
+    const fetchExerciseCounts = async () => {
+      if (!userToken || routines.length === 0) {
+        setExerciseCounts({});
+        return;
+      }
+      setLoadingCounts(true);
+      try {
+        const entries: Array<[number, number]> = [];
+        const needsRecompute: number[] = [];
+  
+        // get counts and note which routines lack a summary
+        for (const r of routines) {
+          const list = await supabaseAPI.getUserRoutineExercises(r.routine_template_id);
+          const active = (Array.isArray(list) ? list : []).filter(x => x.is_active !== false);
+          entries.push([r.routine_template_id, active.length]);
+  
+          const summary = (r as any).muscle_group_summary as string | undefined;
+          if (active.length > 0 && (!summary || summary.trim() === "")) {
+            needsRecompute.push(r.routine_template_id);
+          }
+        }
+  
+        if (!cancelled) {
+          setExerciseCounts(Object.fromEntries(entries));
+        }
+  
+        // recompute + persist summaries that are empty but have exercises
+        if (needsRecompute.length > 0) {
+          const results = await Promise.allSettled(
+            needsRecompute.map(id => supabaseAPI.recomputeAndSaveRoutineMuscleSummary(id))
+          );
+  
+          // (optional) update local routines so UI reflects it immediately
+          if (!cancelled) {
+            const summariesById = new Map<number, string>();
+            needsRecompute.forEach((id, i) => {
+              const res = results[i];
+              if (res.status === "fulfilled") summariesById.set(id, res.value || "");
+            });
+            if (summariesById.size) {
+              setRoutines(prev =>
+                prev.map(rt =>
+                  summariesById.has(rt.routine_template_id)
+                    ? ({ ...rt, muscle_group_summary: summariesById.get(rt.routine_template_id) } as any)
+                    : rt
+                )
+              );
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load exercise counts / recompute summaries", e);
+      } finally {
+        if (!cancelled) setLoadingCounts(false);
+      }
+    };
+  
+    fetchExerciseCounts();
+    return () => { cancelled = true; };
+  }, [userToken, routines]);
+  
+
+  // make sure bottom-nav is restored if unmounting with sheet open
   useEffect(() => {
     return () => {
       if (actionRoutine) onOverlayChange?.(false);
@@ -80,38 +149,19 @@ export function WorkoutDashboardScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning!";
-    if (hour < 18) return "Good afternoon!";
-    return "Good evening!";
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays === 1) return "yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
-    return date.toLocaleDateString();
-  };
-
-  // Open/close bottom sheet
   const openActions = (routine: UserRoutine, e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent card navigation
+    e.stopPropagation();
     setActionRoutine(routine);
     setRenaming(false);
     setRenameValue(routine.name);
     setConfirmDelete(false);
-    onOverlayChange?.(true); // NEW
+    onOverlayChange?.(true);
   };
   const closeActions = () => {
     setActionRoutine(null);
     setRenaming(false);
     setConfirmDelete(false);
-    onOverlayChange?.(false); // NEW
+    onOverlayChange?.(false);
   };
 
   const handleRenameSubmit = async () => {
@@ -121,7 +171,6 @@ export function WorkoutDashboardScreen({
       toast.error("Name cannot be empty");
       return;
     }
-
     try {
       await supabaseAPI.renameRoutine(actionRoutine.routine_template_id, nextName);
       await reloadRoutines();
@@ -135,7 +184,7 @@ export function WorkoutDashboardScreen({
   const handleDeleteRoutine = async () => {
     if (!actionRoutine) return;
     try {
-      await supabaseAPI.deleteRoutine(actionRoutine.routine_template_id); // soft delete (is_active=false)
+      await supabaseAPI.deleteRoutine(actionRoutine.routine_template_id);
       await reloadRoutines();
       toast.success("Routine deleted");
       closeActions();
@@ -144,97 +193,133 @@ export function WorkoutDashboardScreen({
     }
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) return "yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString();
+  };
+
   return (
-    <div ref={scrollRef} className="dashboard-bg pt-safe p-6 space-y-6 max-w-md mx-auto pb-20">
-      {/* Greeting */}
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-medium text-[var(--warm-brown)]">
-          {getGreeting()}
+    <div ref={scrollRef} className="pt-safe p-6 space-y-6 max-w-md mx-auto pb-20">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold text-[var(--warm-brown)] mt-1">
+          My Routines
         </h1>
+        <p className="text-sm text-[var(--warm-brown)]/60 mt-1">
+          Select a routine to start your workout
+        </p>
       </div>
 
-      {/* Routines */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium text-[var(--warm-brown)]">MY ROUTINES</h2>
-          <TactileButton
-            onClick={onCreateRoutine}
-            className="bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white px-3 py-1.5 text-sm font-medium"
-          >
-            Create Routine
+      <div className="flex items-center justify-end">
+        <TactileButton
+          onClick={onCreateRoutine}
+          className="bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white px-4 py-2 text-sm font-medium rounded-xl"
+        >
+          Create Routine
+        </TactileButton>
+      </div>
+
+      {isLoadingRoutines ? (
+        <div className="text-center py-8">
+          <div className="animate-spin mx-auto mb-3 w-6 h-6 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full"></div>
+          <p className="text-[var(--warm-brown)]/60 text-sm">Loading routines...</p>
+        </div>
+      ) : routinesError ? (
+        <div className="text-center py-8">
+          <div className="w-12 h-12 mx-auto mb-3 bg-red-100 rounded-full flex items-center justify-center">
+            <AlertCircle className="w-5 h-5 text-red-500" />
+          </div>
+          <p className="text-red-600 text-sm mb-3">{routinesError}</p>
+          <TactileButton onClick={reloadRoutines} variant="secondary" className="px-4 py-2 text-sm">
+            Try Again
           </TactileButton>
         </div>
+      ) : routines.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-[var(--warm-brown)]/60 text-sm mb-3">
+            Start by adding a new routine
+          </p>
+          <TactileButton
+            onClick={onCreateRoutine}
+            className="bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white px-4 py-2 text-sm font-medium rounded-xl"
+          >
+            Create Your First Routine
+          </TactileButton>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {routines.map((routine, idx) => {
+            const palette = avatarPalette[idx % avatarPalette.length];
 
-        {isLoadingRoutines ? (
-          <div className="text-center py-8">
-            <div className="animate-spin mx-auto mb-3 w-6 h-6 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full"></div>
-            <p className="text-[var(--warm-brown)]/60 text-sm">Loading routines...</p>
-          </div>
-        ) : routinesError ? (
-          <div className="text-center py-8">
-            <div className="w-12 h-12 mx-auto mb-3 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-            </div>
-            <p className="text-red-600 text-sm mb-3">{routinesError}</p>
-            <TactileButton
-              onClick={reloadRoutines}
-              variant="secondary"
-              className="px-4 py-2 text-sm"
-            >
-              Try Again
-            </TactileButton>
-          </div>
-        ) : routines.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-[var(--warm-brown)]/60 text-sm mb-3">
-              Start by adding a new routine
-            </p>
-            <TactileButton
-              onClick={onCreateRoutine}
-              className="bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white px-4 py-2 text-sm font-medium"
-            >
-              Create Your First Routine
-            </TactileButton>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {routines.map((routine) => (
+            // precomputed summary string from DB (kept up-to-date when editing)
+            const muscleGroups =
+              ((routine as any).muscle_group_summary as string | undefined)?.trim() || "—";
+
+            // exercise count drives time (10 min per exercise)
+            const exerciseCount = exerciseCounts[routine.routine_template_id] ?? 0;
+            const timeMin = exerciseCount > 0 ? exerciseCount * 10 : null;
+
+            return (
               <div
                 key={routine.routine_template_id}
-                onClick={() => onSelectRoutine(routine.routine_template_id, routine.name)}
-                className="relative bg-white/80 backdrop-blur-sm rounded-2xl border border-[var(--border)] p-4 shadow-sm hover:shadow-md transition-all cursor-pointer hover:bg-white/90"
+                onClick={() =>
+                  onSelectRoutine(routine.routine_template_id, routine.name)
+                }
+                className="relative flex items-center gap-3 bg-white shadow-sm hover:shadow-md transition-all rounded-2xl p-4 border border-[var(--border)]"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-[var(--warm-brown)] mb-1">
-                      {routine.name}
-                    </h3>
-                    <p className="text-sm text-[var(--warm-brown)]/60">
-                      Created {formatDate(routine.created_at)} • Version {routine.version}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-xs text-[var(--warm-brown)]/40 px-2 py-1 bg-[var(--soft-gray)] rounded-full">
-                      Active
-                    </div>
-                    <TactileButton
-                      variant="secondary"
-                      size="sm"
-                      className="p-2 h-auto"
-                      onClick={(e) => openActions(routine, e)}
-                      aria-label="More options"
-                    >
-                      <MoreVertical size={16} />
-                    </TactileButton>
+                {/* kebab vertically centered */}
+                <button
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-md hover:bg-[var(--soft-gray)]/60"
+                  onClick={(e) => openActions(routine, e)}
+                  aria-label="More options"
+                >
+                  <MoreVertical size={18} className="text-[var(--warm-brown)]/70" />
+                </button>
+
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${palette.bg}`}>
+                  <div className={`w-8 h-8 ${palette.iconBg} rounded-lg grid place-items-center text-white text-lg`}>
+                    <span>{palette.emoji}</span>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
-      {/* Steps */}
+                {/* padding so text doesn't run under kebab */}
+                <div className="flex-1 min-w-0 pr-16">
+                  <h3 className="font-medium text-[var(--warm-brown)] truncate">
+                    {routine.name}
+                  </h3>
+
+                  {/* muscle groups line */}
+                  <p className="text-xs text-[var(--warm-brown)]/60 truncate">
+                    {muscleGroups}
+                  </p>
+
+                  {/* time (10 min/exercise) + exercise count */}
+                  <div className="mt-2 flex items-center gap-4 text-xs text-[var(--warm-brown)]/70">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock size={14} />
+                      {loadingCounts ? "—" : timeMin !== null ? `${timeMin} min` : "—"}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <TrendingUp size={14} />
+                      {loadingCounts ? "—" : `${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}`}
+                    </span>
+                  </div>
+
+                  <p className="mt-1 text-[10px] text-[var(--warm-brown)]/40">
+                    Created {formatDate(routine.created_at)} • v{routine.version}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="space-y-4">
         <StepCounter
           steps={steps}
@@ -244,30 +329,17 @@ export function WorkoutDashboardScreen({
         />
       </div>
 
-      {/* Bottom Sheet Action Menu */}
+      {/* bottom sheet */}
       {actionRoutine && (
-        <div
-          className="fixed inset-0 z-50"
-          aria-modal="true"
-          role="dialog"
-          onClick={closeActions}
-        >
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-50" aria-modal="true" role="dialog" onClick={closeActions}>
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
-
-          {/* Sheet container */}
-          <div
-            className="absolute inset-x-0 bottom-0"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="absolute inset-x-0 bottom-0" onClick={(e) => e.stopPropagation()}>
             <div className="mx-auto w-full max-w-md px-4 pb-[env(safe-area-inset-bottom)]">
               <div className="bg-white rounded-t-2xl shadow-2xl border border-[var(--border)] overflow-hidden">
-                {/* Grip */}
                 <div className="flex justify-center py-2">
                   <div className="h-1.5 w-10 rounded-full bg-gray-200" />
                 </div>
 
-                {/* Header */}
                 <div className="px-4 pb-2">
                   <p className="text-xs text-gray-500">Routine</p>
                   <h3 className="font-medium text-[var(--warm-brown)] truncate">
@@ -277,7 +349,6 @@ export function WorkoutDashboardScreen({
 
                 <div className="h-px bg-[var(--border)]" />
 
-                {/* Content */}
                 {!renaming && !confirmDelete ? (
                   <div className="p-2">
                     <button
@@ -305,7 +376,6 @@ export function WorkoutDashboardScreen({
                   </div>
                 ) : null}
 
-                {/* Rename UI */}
                 {renaming && !confirmDelete && (
                   <div className="p-4 space-y-3">
                     <label className="text-sm text-gray-600">New name</label>
@@ -335,7 +405,6 @@ export function WorkoutDashboardScreen({
                   </div>
                 )}
 
-                {/* Confirm Delete UI */}
                 {confirmDelete && (
                   <div className="p-4 space-y-3">
                     <p className="text-sm text-gray-700">

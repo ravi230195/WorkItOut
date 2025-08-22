@@ -180,6 +180,9 @@ export function ExerciseSetupScreen({
         setsToSave
       );
 
+      // Recompute and save the muscle summary
+      await supabaseAPI.recomputeAndSaveRoutineMuscleSummary(routineId);
+
       toast.success(`Added ${currentExercise.name} with ${validSets.length} sets`);
       await refreshSavedExercises();
 

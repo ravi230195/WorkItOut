@@ -564,6 +564,49 @@ export class SupabaseAPI {
     const steps = await response.json();
     return steps.length > 0 ? steps[0].goal : goal;
   }
+  /** Recompute and store muscle_group_summary for a routine */
+  async recomputeAndSaveRoutineMuscleSummary(routineTemplateId: number): Promise<string> {
+    // 1) Pull active routine exercises with their muscle_group
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/user_routine_exercises_data` +
+        `?routine_template_id=eq.${routineTemplateId}` +
+        `&is_active=eq.true&select=exercise_id,exercises(muscle_group)`,
+      { headers: this.getHeaders(true) }
+    );
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`Failed to load muscle groups: ${res.status} ${res.statusText}. ${t}`);
+    }
+    const rows: Array<{ exercises?: { muscle_group?: string } }> = await res.json();
+
+    // 2) Build frequency map → sorted unique list (most frequent first)
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      const g = (r.exercises?.muscle_group || "").trim();
+      if (!g) continue;
+      counts.set(g, (counts.get(g) || 0) + 1);
+    }
+    const summary = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([g]) => g)
+      .join(" • ");
+
+    // 3) Persist to user_routines
+    const up = await fetch(
+      `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`,
+      {
+        method: "PATCH",
+        headers: this.getHeaders(true, true, "return=minimal"),
+        body: JSON.stringify({ muscle_group_summary: summary || null }),
+      }
+    );
+    if (!up.ok) {
+      const t = await up.text();
+      throw new Error(`Failed to update routine summary: ${up.status} ${up.statusText}. ${t}`);
+    }
+
+    return summary;
+  }
 }
 
 // Create a singleton instance
