@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabaseAPI, Workout } from '../utils/supabase-api';
+import { supabaseAPI, Workout } from '../utils/supabase/supabase-api';
 import { useAuth } from '../components/AuthContext';
 import { toast } from 'sonner';
 

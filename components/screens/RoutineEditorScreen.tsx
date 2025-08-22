@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, MoreHorizontal, X, Trash2 } from "lucide-react";
 import { TactileButton } from "../TactileButton";
 import { Input } from "../ui/input";
-import { supabaseAPI, Exercise, UserRoutineExercise } from "../../utils/supabase-api";
+import { supabaseAPI, Exercise, UserRoutineExercise } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { ImageWithFallback } from "../figma/ImageWithFallback";

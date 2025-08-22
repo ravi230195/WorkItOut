@@ -4,7 +4,7 @@ import { TrendChart } from "../TrendChart";
 import { Progress } from "../ui/progress";
 import { TrendingUp, Calendar, Target, Award, Zap, Medal, Trophy } from "lucide-react";
 import { Badge } from "../ui/badge";
-import { supabaseAPI, Workout } from "../../utils/supabase-api";
+import { supabaseAPI, Workout } from "../../utils/supabase/supabase-api";
 import { useState, useEffect } from "react";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";

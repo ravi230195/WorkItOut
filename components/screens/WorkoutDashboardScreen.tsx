@@ -5,7 +5,7 @@ import { MoreVertical, AlertCircle, Clock3 as Clock, TrendingUp} from "lucide-re
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
-import { supabaseAPI, UserRoutine } from "../../utils/supabase-api";
+import { supabaseAPI, UserRoutine } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 
@@ -205,7 +205,7 @@ export function WorkoutDashboardScreen({
   };
 
   return (
-    <div ref={scrollRef} className="pt-safe p-6 space-y-6 max-w-md mx-auto pb-20">
+    <div ref={scrollRef} className="min-h-[100dvh] pt-safe p-6 space-y-6 max-w-md mx-auto pb-20 pb-safe">
       <div className="text-center">
         <h1 className="text-2xl font-semibold text-[var(--warm-brown)] mt-1">
           My Routines

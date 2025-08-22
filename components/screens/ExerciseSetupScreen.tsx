@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, X, Trash2, MoreVertical, ChevronUp } from "lucide-react";
 import { TactileButton } from "../TactileButton";
 import { Input } from "../ui/input";
-import { supabaseAPI, Exercise, UserRoutineExercise, UserRoutineExerciseSet } from "../../utils/supabase-api";
+import { supabaseAPI, Exercise, UserRoutineExercise, UserRoutineExerciseSet } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
@@ -440,9 +440,9 @@ export function ExerciseSetupScreen({
   };
 
   return (
-    <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex flex-col kb-aware">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex flex-col kb-aware">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 pt-12 bg-gradient-to-r from-[var(--background)] to-[var(--warm-cream)]/20 sticky top-0 z-10 border-b border-[var(--border)]">
+      <div className="flex items-center justify-between p-4 safe-area-pt-12 bg-gradient-to-r from-[var(--background)] to-[var(--warm-cream)]/20 sticky top-0 z-10 border-b border-[var(--border)]">
         <TactileButton
           variant="secondary"
           size="sm"
@@ -798,7 +798,7 @@ export function ExerciseSetupScreen({
 
       {/* Bottom Save/Cancel bar when editing inline */}
       {hasUnsavedChanges && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4">
+        <div className="fixed-bottom-safe bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4">
           <div className="flex gap-3">
             <TactileButton
               variant="secondary"

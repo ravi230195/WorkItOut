@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabaseAPI } from "../utils/supabase-api";
+import { supabaseAPI } from "../utils/supabase/supabase-api";
 
 interface AuthContextType {
   userToken: string | null;

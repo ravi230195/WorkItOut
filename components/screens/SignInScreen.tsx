@@ -4,7 +4,7 @@ import { TactileButton } from "../TactileButton";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
-import { supabaseAPI } from "../../utils/supabase-api";
+import { supabaseAPI } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 

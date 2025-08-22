@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAuth } from "../components/AuthContext";
-import { supabaseAPI } from "../utils/supabase-api";
+import { supabaseAPI } from "../utils/supabase/supabase-api";
 import { AppView } from "../utils/navigation";
 import { toast } from "sonner";
 

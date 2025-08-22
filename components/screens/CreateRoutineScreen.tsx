@@ -5,7 +5,7 @@ import { TactileButton } from "../TactileButton";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
-import { supabaseAPI } from "../../utils/supabase-api";
+import { supabaseAPI } from "../../utils/supabase/supabase-api";
 
 interface CreateRoutineScreenProps {
   onBack: () => void;

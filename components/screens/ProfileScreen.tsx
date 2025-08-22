@@ -15,7 +15,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useAuth } from "../AuthContext";
-import { supabaseAPI, Profile } from "../../utils/supabase-api";
+import { supabaseAPI, Profile } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { useScrollToTop } from "../../hooks/useScrollToTop";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";

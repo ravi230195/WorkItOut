@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabaseAPI, Exercise } from '../utils/supabase-api';
+import { supabaseAPI, Exercise } from '../utils/supabase/supabase-api';
 import { toast } from 'sonner';
 
 export function useExerciseData() {

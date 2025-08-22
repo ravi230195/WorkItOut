@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Exercise } from "../utils/supabase-api";
+import { Exercise } from "../utils/supabase/supabase-api";
 import { ViewType } from "../utils/navigation";
 import { toast } from "sonner";
 

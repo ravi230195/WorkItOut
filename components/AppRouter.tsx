@@ -9,7 +9,7 @@ import { SignInScreen } from "./screens/SignInScreen";
 import { SignUpScreen } from "./screens/SignUpScreen";
 
 import { AppView } from "../utils/navigation";
-import { Exercise } from "../utils/supabase-api";
+import { Exercise } from "../utils/supabase/supabase-api";
 
 interface AppRouterProps {
   currentView: AppView;
@@ -95,7 +95,7 @@ export function AppRouter({
   }
 
   return (
-    <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
       {currentView === "workouts" && (
         <WorkoutDashboardScreen
           onCreateRoutine={onCreateRoutine}

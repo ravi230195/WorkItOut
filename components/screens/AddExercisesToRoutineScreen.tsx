@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Search, Plus, Filter } from "lucide-react";
 import { Input } from "../ui/input";
 import { TactileButton } from "../TactileButton";
-import { supabaseAPI, Exercise } from "../../utils/supabase-api";
+import { supabaseAPI, Exercise } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
@@ -91,7 +91,7 @@ export function AddExercisesToRoutineScreen({
   };
 
   return (
-    <div className="bg-background flex flex-col pt-safe">
+    <div className="min-h-[100dvh] bg-background flex flex-col pt-safe">
       {/* Header */}
       <div className="flex items-center p-4 bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
         <TactileButton variant="secondary" size="sm" onClick={onBack} className="p-2 h-auto">
@@ -127,7 +127,7 @@ export function AddExercisesToRoutineScreen({
       </div>
 
       {/* Exercise List */}
-      <div className="overflow-y-auto px-4 pb-24">
+      <div className="overflow-y-auto px-4 pb-24 pb-safe">
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin mx-auto mb-2 w-8 h-8 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full" />
@@ -178,8 +178,7 @@ export function AddExercisesToRoutineScreen({
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4 pb-[env(safe-area-inset-bottom)]">
-        <div className="flex gap-3">
+      <div className="fixed-bottom-safe bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4">        <div className="flex gap-3">
           <TactileButton
             variant="secondary"
             className="flex-1 h-12 bg-transparent border-[var(--warm-brown)]/20 text-[var(--warm-brown)]/60 hover:bg-[var(--soft-gray)] font-medium"
