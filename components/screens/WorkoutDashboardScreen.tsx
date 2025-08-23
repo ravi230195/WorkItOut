@@ -14,7 +14,7 @@ interface WorkoutDashboardScreenProps {
   onOverlayChange?: (open: boolean) => void;
 }
 
-/* ---------- Inline Whoop-style progress rings (no external import) ---------- */
+/* ---------- CircularStat (with text overrides) ---------- */
 function CircularStat({
   value,
   max = 100,
@@ -26,6 +26,8 @@ function CircularStat({
   trackColor = "#e5e7eb",     // gray-200
   progressColor = "#e07a5f",  // warm coral
   textColor = "#3d2914",      // warm brown
+  primaryTextOverride, // If provided, replaces the large number text in the center */
+  secondaryTextOverride, // If provided, replaces the small unit text below the number */
 }: {
   value: number | null | undefined;
   max?: number;
@@ -37,8 +39,11 @@ function CircularStat({
   trackColor?: string;
   progressColor?: string;
   textColor?: string;
+  primaryTextOverride?: string | null;
+  secondaryTextOverride?: string | null;
 }) {
-  const safeValue = typeof value === "number" && isFinite(value) ? Math.max(0, Math.min(value, max)) : null;
+  const safeValue =
+    typeof value === "number" && isFinite(value) ? Math.max(0, Math.min(value, max)) : null;
   const radius = (size - strokeWidth) / 2;
   const C = 2 * Math.PI * radius;
   const progress = safeValue == null ? 0 : safeValue / max;
@@ -86,7 +91,7 @@ function CircularStat({
             dominantBaseline="central"
             style={{ fontSize: size * 0.24, fontWeight: 700, fill: textColor }}
           >
-            {safeValue == null ? "—" : safeValue.toFixed(decimals)}
+            {primaryTextOverride ?? (safeValue == null ? "—" : safeValue.toFixed(decimals))}
           </text>
           <text
             y={size * 0.18}
@@ -94,15 +99,18 @@ function CircularStat({
             dominantBaseline="hanging"
             style={{ fontSize: size * 0.14, fontWeight: 600, fill: textColor, opacity: 0.5 }}
           >
-            {unit}
+            {secondaryTextOverride ?? unit}
           </text>
         </g>
       </svg>
-      <div className="mt-2 text-xs" style={{ color: textColor, opacity: 0.75 }}>{label}</div>
+      <div className="mt-2 text-xs" style={{ color: textColor, opacity: 0.75 }}>
+        {label}
+      </div>
     </div>
   );
 }
 
+/* ---------- ProgressRings (Steps shows "steps / goal" while ring still uses %) ---------- */
 function ProgressRings({
   steps,
   goal,
@@ -120,18 +128,22 @@ function ProgressRings({
   onRecoveryClick?: () => void;
   onStrainClick?: () => void;
 }) {
-  const css = (typeof window !== "undefined" && typeof document !== "undefined")
-    ? getComputedStyle(document.documentElement)
-    : null;
+  const css =
+    typeof window !== "undefined" && typeof document !== "undefined"
+      ? getComputedStyle(document.documentElement)
+      : null;
   const warmBrown = css?.getPropertyValue("--foreground")?.trim() || "#3d2914";
   const warmCoral = css?.getPropertyValue("--primary")?.trim() || "#e07a5f";
   const accentBlue = css?.getPropertyValue("--accent-blue")?.trim() || "#4aa3df";
 
-  const percent = steps != null && goal != null ? Math.round((steps / Math.max(goal, 1)) * 100) : null;
+  const percent =
+    steps != null && goal != null ? Math.round((steps / Math.max(goal, 1)) * 100) : null;
+  const fmt = (n: number | null | undefined) => (n == null ? "—" : n.toLocaleString());
 
   return (
     <div className="w-full">
       <div className="flex items-center justify-between gap-3 px-1">
+        {/* Steps: arc based on %, center text shows "steps / goal" */}
         <button className="touch-manipulation" onClick={onStepsClick} aria-label="Steps progress">
           <CircularStat
             value={percent}
@@ -143,8 +155,12 @@ function ProgressRings({
             textColor={warmBrown}
             progressColor={accentBlue}
             trackColor="#d1d5db"
+            primaryTextOverride={fmt(steps)}
+            secondaryTextOverride={`${fmt(goal)}`}
           />
         </button>
+
+        {/* Recovery: unchanged */}
         <button className="touch-manipulation" onClick={onRecoveryClick} aria-label="Recovery progress">
           <CircularStat
             value={recoveryPercent ?? null}
@@ -158,10 +174,12 @@ function ProgressRings({
             trackColor="#d1d5db"
           />
         </button>
+
+        {/* Strain: unchanged */}
         <button className="touch-manipulation" onClick={onStrainClick} aria-label="Strain">
           <CircularStat
             value={strain ?? null}
-            max={10}  // set to 21 if you prefer WHOOP scale
+            max={10} // or 21 if you prefer
             label="Strain"
             unit=""
             size={108}
