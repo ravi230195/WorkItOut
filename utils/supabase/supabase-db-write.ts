@@ -49,27 +49,24 @@ export class SupabaseDBWrite extends SupabaseBase {
     return rows[0] ?? null;
   }
 
-  async renameRoutine(routineTemplateId: number, newName: string): Promise<void> {
+// supabase-db-write.ts
+async renameRoutine(routineTemplateId: number, newName: string): Promise<void> {
     const user = await this.getCurrentUser();
+
     await this.fetchJson(
       `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`,
-      true,
-      "PATCH",
-      { name: newName.trim() },
-      "return=minimal"
+      true, "PATCH", { name: newName.trim() }, "return=representation"
+      // ask PostgREST to return the updated row (avoids 204)
     );
     await this.refreshRoutines(user.id);
   }
+
 
   async deleteRoutine(routineTemplateId: number): Promise<void> {
     const user = await this.getCurrentUser();
     await this.fetchJson(
       `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`,
-      true,
-      "PATCH",
-      { is_active: false },
-      "return=minimal"
-    );
+      true, "PATCH", { is_active: false }, "return=representation");
     await this.refreshRoutines(user.id);
   }
 

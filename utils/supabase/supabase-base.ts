@@ -58,11 +58,25 @@ export class SupabaseBase {
       headers: this.getHeaders(includeAuth, !!prefer, prefer ?? "return=representation"),
       body: body ? JSON.stringify(body) : undefined,
     });
+  
+    // Read text once; needed to safely handle 204 + error payloads
+    const isNoContent = res.status === 204;
+    const text = isNoContent ? "" : await res.text();
+  
     if (!res.ok) {
-      const t = await res.text();
-      throw new Error(`HTTP ${res.status}: ${res.statusText}. ${t}`);
+      // include server error text when present
+      throw new Error(`HTTP ${res.status}: ${res.statusText}${text ? ` — ${text}` : ""}`);
     }
-    return res.json();
+  
+    // No content is fine (e.g., return=minimal)
+    if (!text) return undefined as unknown as T;
+  
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      // In rare cases Supabase might return plain text; pass it through
+      return text as unknown as T;
+    }
   }
 
   /** Read-through cache helper: serve cache if valid; on miss/TTL fetch then cache; fallback to last-known-good on network errors. */
@@ -107,11 +121,17 @@ export class SupabaseBase {
 
   // ---------- Refreshers (keep cache == DB after any write) ----------
   protected async refreshRoutines(userId: string) {
-    const url = `${SUPABASE_URL}/rest/v1/user_routines?user_id=eq.${userId}&is_active=eq.true&select=*`;
-    const key = fullCacheKeyUserRoutines(userId);
-    const rows = await this.fetchJson<any[]>(url, true);
-    localCache.set(key, rows);
-    console.log("♻️ [CACHE REFRESH] routines", key);
+    try {
+      // encode the UUID and use is.true for boolean
+      const url =`${SUPABASE_URL}/rest/v1/user_routines` +`?user_id=eq.${encodeURIComponent(userId)}` +`&is_active=is.true&select=*`;
+      const key = fullCacheKeyUserRoutines(userId);
+      const rows = await this.fetchJson<any[]>(url, true);
+      localCache.set(key, rows);
+      console.log("♻️ [CACHE REFRESH] routines", key);
+    } catch (e) {
+      // Do not break the UI flow if a refresh fails
+      console.warn("⚠️ [CACHE REFRESH routines] skipped due to error:", e);
+    }
   }
   protected async refreshRoutineExercises(userId: string, rtId: number) {
     const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${rtId}&select=*`;
@@ -158,8 +178,7 @@ export class SupabaseBase {
   protected keyExercises = () => fullCacheKeyExercises();
   protected keyUserRoutines = (userId: string) => fullCacheKeyUserRoutines(userId);
   protected keyRoutineExercises = (userId: string, rtId: number) => fullCacheKeyRoutineExercises(userId, rtId);
-  protected keyRoutineExercisesWithDetails = (userId: string, rtId: number) =>
-    fullCacheKeyRoutineExercisesWithDetails(userId, rtId);
+  protected keyRoutineExercisesWithDetails = (userId: string, rtId: number) => fullCacheKeyRoutineExercisesWithDetails(userId, rtId);
   protected keyRoutineSets = (userId: string, rtexId: number) => fullCacheKeyRoutineSets(userId, rtexId);
   protected keyProfile = (userId: string) => fullCacheKeyProfile(userId);
   protected keySteps = (userId: string) => fullCacheKeySteps(userId);
