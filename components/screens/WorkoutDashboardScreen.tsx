@@ -7,195 +7,13 @@ import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { supabaseAPI, UserRoutine } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
+import ProgressRings from "../circularStat/ProgressRings";
 
 interface WorkoutDashboardScreenProps {
   onCreateRoutine: () => void;
   onSelectRoutine: (routineId: number, routineName: string) => void;
   onOverlayChange?: (open: boolean) => void;
 }
-
-/* ---------- CircularStat (with text overrides) ---------- */
-function CircularStat({
-  value,
-  max = 100,
-  label,
-  unit = "%",
-  size = 112,
-  strokeWidth = 10,
-  decimals = 0,
-  trackColor = "#e5e7eb",     // gray-200
-  progressColor = "#e07a5f",  // warm coral
-  textColor = "#3d2914",      // warm brown
-  primaryTextOverride, // If provided, replaces the large number text in the center */
-  secondaryTextOverride, // If provided, replaces the small unit text below the number */
-}: {
-  value: number | null | undefined;
-  max?: number;
-  label: string;
-  unit?: string;
-  size?: number;
-  strokeWidth?: number;
-  decimals?: number;
-  trackColor?: string;
-  progressColor?: string;
-  textColor?: string;
-  primaryTextOverride?: string | null;
-  secondaryTextOverride?: string | null;
-}) {
-  const safeValue =
-    typeof value === "number" && isFinite(value) ? Math.max(0, Math.min(value, max)) : null;
-  const radius = (size - strokeWidth) / 2;
-  const C = 2 * Math.PI * radius;
-  const progress = safeValue == null ? 0 : safeValue / max;
-  const dashOffset = C * (1 - progress);
-  const gradId = `grad-${String(label).replace(/[^a-zA-Z0-9_-]/g, "")}`;
-
-  return (
-    <div className="flex flex-col items-center select-none" role="group" aria-label={`${label} progress`}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={progressColor} />
-            <stop offset="100%" stopColor={progressColor} />
-          </linearGradient>
-        </defs>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={trackColor}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          style={{ opacity: 0.25 }}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={`url(#${gradId})`}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={`${C} ${C}`}
-          strokeDashoffset={dashOffset}
-          strokeLinecap="round"
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          aria-valuemin={0}
-          aria-valuemax={max}
-          aria-valuenow={safeValue ?? undefined}
-          role="progressbar"
-        />
-        <g transform={`translate(${size / 2}, ${size / 2})`}>
-          <text
-            textAnchor="middle"
-            dominantBaseline="central"
-            style={{ fontSize: size * 0.24, fontWeight: 700, fill: textColor }}
-          >
-            {primaryTextOverride ?? (safeValue == null ? "—" : safeValue.toFixed(decimals))}
-          </text>
-          <text
-            y={size * 0.18}
-            textAnchor="middle"
-            dominantBaseline="hanging"
-            style={{ fontSize: size * 0.14, fontWeight: 600, fill: textColor, opacity: 0.5 }}
-          >
-            {secondaryTextOverride ?? unit}
-          </text>
-        </g>
-      </svg>
-      <div className="mt-2 text-xs" style={{ color: textColor, opacity: 0.75 }}>
-        {label}
-      </div>
-    </div>
-  );
-}
-
-/* ---------- ProgressRings (Steps shows "steps / goal" while ring still uses %) ---------- */
-function ProgressRings({
-  steps,
-  goal,
-  recoveryPercent,
-  strain,
-  onStepsClick,
-  onRecoveryClick,
-  onStrainClick,
-}: {
-  steps: number | null | undefined;
-  goal: number | null | undefined;
-  recoveryPercent?: number | null;
-  strain?: number | null;
-  onStepsClick?: () => void;
-  onRecoveryClick?: () => void;
-  onStrainClick?: () => void;
-}) {
-  const css =
-    typeof window !== "undefined" && typeof document !== "undefined"
-      ? getComputedStyle(document.documentElement)
-      : null;
-  const warmBrown = css?.getPropertyValue("--foreground")?.trim() || "#3d2914";
-  const warmCoral = css?.getPropertyValue("--primary")?.trim() || "#e07a5f";
-  const accentBlue = css?.getPropertyValue("--accent-blue")?.trim() || "#4aa3df";
-
-  const percent =
-    steps != null && goal != null ? Math.round((steps / Math.max(goal, 1)) * 100) : null;
-  const fmt = (n: number | null | undefined) => (n == null ? "—" : n.toLocaleString());
-
-  return (
-    <div className="w-full">
-      <div className="flex items-center justify-between gap-3 px-1">
-        {/* Steps: arc based on %, center text shows "steps / goal" */}
-        <button className="touch-manipulation" onClick={onStepsClick} aria-label="Steps progress">
-          <CircularStat
-            value={percent}
-            max={100}
-            label="Steps"
-            unit="%"
-            size={108}
-            strokeWidth={10}
-            textColor={warmBrown}
-            progressColor={accentBlue}
-            trackColor="#d1d5db"
-            primaryTextOverride={fmt(steps)}
-            secondaryTextOverride={`${fmt(goal)}`}
-          />
-        </button>
-
-        {/* Recovery: unchanged */}
-        <button className="touch-manipulation" onClick={onRecoveryClick} aria-label="Recovery progress">
-          <CircularStat
-            value={recoveryPercent ?? null}
-            max={100}
-            label="Recovery"
-            unit="%"
-            size={108}
-            strokeWidth={10}
-            textColor={warmBrown}
-            progressColor={"#f2c94c"}
-            trackColor="#d1d5db"
-          />
-        </button>
-
-        {/* Strain: unchanged */}
-        <button className="touch-manipulation" onClick={onStrainClick} aria-label="Strain">
-          <CircularStat
-            value={strain ?? null}
-            max={10} // or 21 if you prefer
-            label="Strain"
-            unit=""
-            size={108}
-            strokeWidth={10}
-            decimals={1}
-            textColor={warmBrown}
-            progressColor={warmCoral}
-            trackColor="#d1d5db"
-          />
-        </button>
-      </div>
-      <div className="mt-3 h-px bg-black/5" />
-    </div>
-  );
-}
-/* -------------------------------------------------------------------------- */
 
 /** 🎨 App-palette avatars */
 const avatarPalette = [
@@ -206,7 +24,7 @@ const avatarPalette = [
   { bg: "bg-[var(--soft-gray)]",  iconBg: "bg-[var(--warm-brown)]", emoji: "🔥" },
 ];
 
-export function WorkoutDashboardScreen({
+export default function WorkoutDashboardScreen({
   onCreateRoutine,
   onSelectRoutine,
   onOverlayChange,
@@ -270,7 +88,6 @@ export function WorkoutDashboardScreen({
         const entries: Array<[number, number]> = [];
         const needsRecompute: number[] = [];
 
-        // get counts and note which routines lack a summary
         for (const r of routines) {
           const list = await supabaseAPI.getUserRoutineExercises(r.routine_template_id);
           const active = (Array.isArray(list) ? list : []).filter(x => x.is_active !== false);
@@ -286,13 +103,10 @@ export function WorkoutDashboardScreen({
           setExerciseCounts(Object.fromEntries(entries));
         }
 
-        // recompute + persist summaries that are empty but have exercises
         if (needsRecompute.length > 0) {
           const results = await Promise.allSettled(
             needsRecompute.map(id => supabaseAPI.recomputeAndSaveRoutineMuscleSummary(id))
           );
-
-          // (optional) update local routines so UI reflects it immediately
           if (!cancelled) {
             const summariesById = new Map<number, string>();
             needsRecompute.forEach((id, i) => {
@@ -321,7 +135,6 @@ export function WorkoutDashboardScreen({
     return () => { cancelled = true; };
   }, [userToken, routines]);
 
-  // make sure bottom-nav is restored if unmounting with sheet open
   useEffect(() => {
     return () => {
       if (actionRoutine) onOverlayChange?.(false);
@@ -395,12 +208,12 @@ export function WorkoutDashboardScreen({
         </p>
       </div>
 
-      {/* NEW: Whoop-style progress rings row (placed ABOVE Create Routine) */}
+      {/* Progress rings above Create Routine */}
       <ProgressRings
         steps={isLoadingSteps ? null : steps}
         goal={isLoadingSteps ? null : goal}
-        recoveryPercent={null} // placeholder until you have data
-        strain={null}          // placeholder until you have data
+        recoveryPercent={null}
+        strain={null}
         onStepsClick={() => {}}
         onRecoveryClick={() => {}}
         onStrainClick={() => {}}
@@ -447,11 +260,9 @@ export function WorkoutDashboardScreen({
           {routines.map((routine, idx) => {
             const palette = avatarPalette[idx % avatarPalette.length];
 
-            // precomputed summary string from DB (kept up-to-date when editing)
             const muscleGroups =
               ((routine as any).muscle_group_summary as string | undefined)?.trim() || "—";
 
-            // exercise count drives time (10 min per exercise)
             const exerciseCount = exerciseCounts[routine.routine_template_id] ?? 0;
             const timeMin = exerciseCount > 0 ? exerciseCount * 10 : null;
 
@@ -484,12 +295,10 @@ export function WorkoutDashboardScreen({
                     {routine.name}
                   </h3>
 
-                  {/* muscle groups line */}
                   <p className="text-xs text-[var(--warm-brown)]/60 truncate">
                     {muscleGroups}
                   </p>
 
-                  {/* time (10 min/exercise) + exercise count */}
                   <div className="mt-2 flex items-center gap-4 text-xs text-[var(--warm-brown)]/70">
                     <span className="inline-flex items-center gap-1">
                       <Clock size={14} />
@@ -502,7 +311,8 @@ export function WorkoutDashboardScreen({
                   </div>
 
                   <p className="mt-1 text-[10px] text-[var(--warm-brown)]/40">
-                    Created {formatDate(routine.created_at)} • v{routine.version}
+                    Created {new Date(routine.created_at).toLocaleDateString()}
+                    {" "}• v{routine.version}
                   </p>
                 </div>
               </div>
