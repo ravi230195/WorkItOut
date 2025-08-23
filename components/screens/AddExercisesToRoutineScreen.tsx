@@ -15,10 +15,10 @@ interface AddExercisesToRoutineScreenProps {
   isFromExerciseSetup?: boolean;   // usually true in this flow
 }
 
-export function AddExercisesToRoutineScreen({ 
-  routineId, 
-  routineName, 
-  onBack, 
+export function AddExercisesToRoutineScreen({
+  routineId,
+  routineName,
+  onBack,
   onExerciseSelected,
   isFromExerciseSetup = true,
 }: AddExercisesToRoutineScreenProps) {
@@ -127,7 +127,7 @@ export function AddExercisesToRoutineScreen({
       </div>
 
       {/* Exercise List */}
-      <div className="overflow-y-auto px-4 pb-24 pb-safe">
+      <div className="overflow-y-auto px-4 pb-[calc(96px+env(safe-area-inset-bottom))]">
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin mx-auto mb-2 w-8 h-8 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full" />
@@ -143,32 +143,40 @@ export function AddExercisesToRoutineScreen({
                 {groupedExercises[letter].map((exercise) => {
                   const isSelected = selectedExercise?.exercise_id === exercise.exercise_id;
                   const initials = exercise.name.substring(0, 2).toUpperCase();
+
                   return (
-                    <TactileButton
+                    <button
                       key={exercise.exercise_id}
-                      variant="secondary"
+                      type="button"
                       onClick={() => handleSelectExercise(exercise)}
-                      className={`w-full p-4 rounded-xl border transition-all ${
-                        isSelected
-                          ? "bg-white border-[var(--warm-coral)] shadow-lg ring-2 ring-[var(--warm-coral)]/20"
-                          : "bg-[var(--soft-gray)]/50 border-[var(--border)] hover:bg-white hover:border-[var(--warm-coral)]/30 hover:shadow-md"
-                      }`}
+                      className="w-full text-left focus:outline-none"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-[var(--warm-brown)]/10 rounded-lg flex items-center justify-center">
-                          <span className="font-medium text-[var(--warm-brown)]/60">{initials}</span>
-                        </div>
-                        <div className="flex-1 text-left">
-                          <h3 className="font-medium text-[var(--warm-brown)]">{exercise.name}</h3>
-                          <p className="text-[var(--warm-brown)]/60">{exercise.equipment}</p>
-                        </div>
-                        <div className="text-[var(--warm-brown)]/40">
-                          <div className="w-6 h-6 rounded-full border border-[var(--warm-brown)]/20 flex items-center justify-center">
-                            <div>ⓘ</div>
+                      <div
+                        className={[
+                          "p-4 rounded-xl border transition-all",
+                          isSelected
+                            ? "bg-[var(--warm-coral)]/100 border-[var(--warm-coral)] shadow-md"
+                            : "bg-white border-[var(--border)] hover:bg-[var(--soft-gray)]/50 hover:border-[var(--warm-coral)]/30 hover:shadow-md",
+                        ].join(" ")}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-[var(--warm-brown)]/10 rounded-lg flex items-center justify-center">
+                            <span className="font-medium text-[var(--warm-brown)]/60">
+                              {initials}
+                            </span>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-medium text-[var(--warm-brown)]">{exercise.name}</h3>
+                            <p className="text-[var(--warm-brown)]/60">{exercise.equipment}</p>
+                          </div>
+                          <div className="text-[var(--warm-brown)]/40">
+                            <div className="w-6 h-6 rounded-full border border-[var(--warm-brown)]/20 flex items-center justify-center">
+                              <div>ⓘ</div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </TactileButton>
+                    </button>
                   );
                 })}
               </div>
@@ -178,7 +186,8 @@ export function AddExercisesToRoutineScreen({
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="fixed-bottom-safe bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4">        <div className="flex gap-3">
+      <div className="fixed-bottom-safe bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4 pb-[env(safe-area-inset-bottom)]">
+        <div className="flex gap-3">
           <TactileButton
             variant="secondary"
             className="flex-1 h-12 bg-transparent border-[var(--warm-brown)]/20 text-[var(--warm-brown)]/60 hover:bg-[var(--soft-gray)] font-medium"
@@ -189,11 +198,10 @@ export function AddExercisesToRoutineScreen({
           <TactileButton
             onClick={handleAddExercise}
             disabled={!selectedExercise || isAddingExercise}
-            className={`flex-1 h-12 font-medium border-0 transition-all ${
-              selectedExercise
+            className={`flex-1 h-12 font-medium border-0 transition-all ${selectedExercise
                 ? "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
                 : "bg-[var(--warm-brown)]/20 text-[var(--warm-brown)]/40 cursor-not-allowed"
-            }`}
+              }`}
           >
             {isAddingExercise ? "ADDING..." : selectedExercise ? "ADD (1)" : "ADD"}
           </TactileButton>
