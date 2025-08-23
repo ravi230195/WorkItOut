@@ -17,11 +17,11 @@ interface WorkoutDashboardScreenProps {
 
 /** 🎨 App-palette avatars */
 const avatarPalette = [
-  { bg: "bg-[var(--soft-gray)]",  iconBg: "bg-[var(--warm-coral)]", emoji: "🏋️" },
+  { bg: "bg-[var(--soft-gray)]", iconBg: "bg-[var(--warm-coral)]", emoji: "🏋️" },
   { bg: "bg-[var(--warm-cream)]", iconBg: "bg-[var(--warm-brown)]", emoji: "🏃" },
-  { bg: "bg-[var(--soft-gray)]",  iconBg: "bg-[var(--warm-sage)]",  emoji: "🧘" },
+  { bg: "bg-[var(--soft-gray)]", iconBg: "bg-[var(--warm-sage)]", emoji: "🧘" },
   { bg: "bg-[var(--warm-cream)]", iconBg: "bg-[var(--warm-coral)]", emoji: "🤸" },
-  { bg: "bg-[var(--soft-gray)]",  iconBg: "bg-[var(--warm-brown)]", emoji: "🔥" },
+  { bg: "bg-[var(--soft-gray)]", iconBg: "bg-[var(--warm-brown)]", emoji: "🔥" },
 ];
 
 export default function WorkoutDashboardScreen({
@@ -214,9 +214,9 @@ export default function WorkoutDashboardScreen({
         goal={isLoadingSteps ? null : goal}
         recoveryPercent={null}
         strain={null}
-        onStepsClick={() => {}}
-        onRecoveryClick={() => {}}
-        onStrainClick={() => {}}
+        onStepsClick={() => { }}
+        onRecoveryClick={() => { }}
+        onStrainClick={() => { }}
       />
 
       <div className="flex items-center justify-end">
@@ -326,17 +326,20 @@ export default function WorkoutDashboardScreen({
         <div className="fixed inset-0 z-50" aria-modal="true" role="dialog" onClick={closeActions}>
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
           <div className="absolute inset-x-0 bottom-0" onClick={(e) => e.stopPropagation()}>
-            <div className="mx-auto w-full max-w-md px-4 pb-[env(safe-area-inset-bottom)]">
-              <div className="bg-white rounded-t-2xl shadow-2xl border-t border-x border-[var(--border)] overflow-hidden">
+            <div className="mx-auto w-full max-w-md px-4">
+              <div className="bg-white rounded-t-2xl shadow-2xl border-t border-x border-[var(--border)] overflow-hidden"
+                style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + var(--kb-inset, var(--keyboard-inset, 0px)) + 12px)", }}>
                 <div className="flex justify-center py-2">
                   <div className="h-1.5 w-10 rounded-full bg-gray-200" />
                 </div>
 
-                <div className="px-4 pb-2">
-                  <p className="text-xs text-gray-500">Routine</p>
-                  <h3 className="font-medium text-[var(--warm-brown)] truncate">
-                    {actionRoutine.name}
-                  </h3>
+                <div className="max-h-[70vh] overflow-y-auto">
+                  <div className="px-4 pb-2">
+                    <p className="text-xs text-gray-500">Routine</p>
+                    <h3 className="font-medium text-[var(--warm-brown)] truncate">
+                      {actionRoutine.name}
+                    </h3>
+                  </div>
                 </div>
 
                 <div className="h-px bg-[var(--border)]" />
