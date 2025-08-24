@@ -5,14 +5,17 @@ import { useAuthEffects } from "./hooks/useAuthEffects";
 import { useAppNavigation } from "./hooks/useAppNavigation";
 import { useMobileSetup } from "./hooks/useMobileSetup";
 import { Toaster } from "./components/ui/sonner";
-import { useState } from 'react'
+import { useState } from "react";
 
 import { BottomNavigation, TabType } from "./components/BottomNavigation";
 import { VIEWS_WITHOUT_BOTTOM_NAV } from "./utils/navigation";
 
+// ✅ add this (path to your boundary component)
+import ErrorBoundary from "./components/system/ErrorBoundary";
+
 function AppContent() {
   const { setUserToken } = useAuth();
-  
+
   // Handle all mobile device setup (viewport, safe areas)
   useMobileSetup();
 
@@ -35,7 +38,6 @@ function AppContent() {
     handleExerciseSelected,
     closeExerciseSetup,
     handleExerciseSetupComplete,
-  
     showExerciseSetupEmpty,
     closeExerciseSetupToRoutines,
     returnToExerciseSetup
@@ -72,14 +74,12 @@ function AppContent() {
           onExerciseSelected={handleExerciseSelected}
           onCloseExerciseSetup={closeExerciseSetup}
           onExerciseSetupComplete={handleExerciseSetupComplete}
-  
           onSelectRoutine={showExerciseSetupEmpty}
           onCloseExerciseSetupToRoutines={closeExerciseSetupToRoutines}
           onReturnToExerciseSetup={returnToExerciseSetup}
           onOverlayChange={setOverlayOpen}
         />
       </main>
-
 
       {showNav && (
         <BottomNavigation
@@ -94,7 +94,9 @@ function AppContent() {
 function AppWithToaster() {
   return (
     <>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
       <Toaster />
     </>
   );

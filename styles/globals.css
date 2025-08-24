@@ -81,6 +81,15 @@
   --space-16: 4rem;
   --space-20: 5rem;
   
+  /* --- Spacing tokens for Spacer/Stack (fluid + steps) --- */
+  --space-xss: clamp(4px, 0.6vw, 8px);
+  --space-xs:  clamp(6px, 0.9vw, 12px);
+  --space-sm:  clamp(10px, 1.6vw, 16px);
+  --space-md:  clamp(14px, 2.2vw, 22px);
+  --space-lg:  clamp(20px, 3.2vw, 28px);
+  --space-xl:  clamp(28px, 4.2vw, 40px);
+  --space-fluid: clamp(12px, 2.8vw, 24px);
+
   /* Transitions */
   --transition-fast: 150ms ease-out;
   --transition-normal: 250ms ease-out;
@@ -689,3 +698,4 @@
   transform: none !important;
   will-change: auto !important;
 }
+

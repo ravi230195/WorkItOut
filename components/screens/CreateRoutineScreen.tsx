@@ -1,3 +1,4 @@
+// components/screens/CreateRoutineScreen.tsx
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Input } from "../ui/input";
@@ -6,7 +7,7 @@ import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
-import ScreenHeader from "../ScreenHeader";
+import { AppScreen, ScreenHeader, Section, Stack, Spacer } from "../layouts";
 
 interface CreateRoutineScreenProps {
   onBack: () => void;
@@ -14,7 +15,10 @@ interface CreateRoutineScreenProps {
   onRoutineCreated: (routineName: string, routineId: number) => void;
 }
 
-export function CreateRoutineScreen({ onBack, onRoutineCreated }: CreateRoutineScreenProps) {
+export default function CreateRoutineScreen({
+  onBack,
+  onRoutineCreated,
+}: CreateRoutineScreenProps) {
   useKeyboardInset();
 
   const [routineName, setRoutineName] = useState("");
@@ -22,7 +26,8 @@ export function CreateRoutineScreen({ onBack, onRoutineCreated }: CreateRoutineS
   const { userToken } = useAuth();
 
   const handleCreateRoutine = async () => {
-    if (!routineName.trim()) {
+    const name = routineName.trim();
+    if (!name) {
       toast.error("Please enter a routine name");
       return;
     }
@@ -33,13 +38,9 @@ export function CreateRoutineScreen({ onBack, onRoutineCreated }: CreateRoutineS
 
     try {
       setIsCreating(true);
-      // Create in DB now
-      const newRoutine = await supabaseAPI.createUserRoutine(routineName);
+      const newRoutine = await supabaseAPI.createUserRoutine(name);
       if (!newRoutine) throw new Error("Failed to create routine");
-
-      const routineId = newRoutine.routine_template_id;
-      // Navigate to ExerciseSetup (empty)
-      onRoutineCreated(routineName, routineId);
+      onRoutineCreated(name, newRoutine.routine_template_id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to create routine";
       toast.error(msg);
@@ -49,13 +50,18 @@ export function CreateRoutineScreen({ onBack, onRoutineCreated }: CreateRoutineS
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col">
-      {/* Header */}
-      <ScreenHeader title ="" onBack={onBack} />
+    <AppScreen
+      header={<ScreenHeader title="Create Routine" onBack={onBack} showBorder={false} denseSmall />}
+      maxContent="responsive"
+      showHeaderBorder={false}
+      showBottomBarBorder={false}    
+      contentClassName="pb-20" // leave room for your tab bar (same pattern as dashboard)
+    >
+      <Stack gap="fluid">
+        <Spacer y="sm" />
 
-      {/* Content */}
-      <div className="px-4 py-8 space-y-8">
-        <div>
+        {/* Input card */}
+        <Section variant="card" padding="md" className="space-y-3">
           <Input
             value={routineName}
             onChange={(e) => setRoutineName(e.target.value)}
@@ -65,9 +71,12 @@ export function CreateRoutineScreen({ onBack, onRoutineCreated }: CreateRoutineS
             autoFocus
             disabled={isCreating}
           />
-        </div>
+        </Section>
 
-        <div>
+        <Spacer y="sm" />
+
+        {/* Primary action (inline, full-width) */}
+        <Section variant="plain" padding="none">
           <TactileButton
             onClick={handleCreateRoutine}
             disabled={!routineName.trim() || isCreating}
@@ -78,8 +87,10 @@ export function CreateRoutineScreen({ onBack, onRoutineCreated }: CreateRoutineS
               {isCreating ? "CREATING..." : "ADD ROUTINE"}
             </div>
           </TactileButton>
-        </div>
-      </div>
-    </div>
+        </Section>
+
+        <Spacer y="xss" />
+      </Stack>
+    </AppScreen>
   );
 }

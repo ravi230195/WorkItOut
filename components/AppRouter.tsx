@@ -1,6 +1,6 @@
 import  WorkoutDashboardScreen  from "./screens/WorkoutDashboardScreen";
-import { CreateRoutineScreen } from "./screens/CreateRoutineScreen";
-import { AddExercisesToRoutineScreen } from "./screens/AddExercisesToRoutineScreen";
+import CreateRoutineScreen  from "./screens/CreateRoutineScreen";
+import { AddExercisesToRoutineScreen }  from "./screens/AddExercisesToRoutineScreen";
 import { ExerciseSetupScreen } from "./screens/ExerciseSetupScreen";
 
 import { ProgressScreen } from "./screens/ProgressScreen";

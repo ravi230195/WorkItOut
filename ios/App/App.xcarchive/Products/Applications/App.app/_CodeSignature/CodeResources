@@ -38,7 +38,7 @@
 		</data>
 		<key>Frameworks/Capacitor.framework/Capacitor</key>
 		<data>
-		v0RlkTrm6zg7M/7ms2FhsTaykLY=
+		2BwDFDDR+SiLtZMHBKnpyg76kng=
 		</data>
 		<key>Frameworks/Capacitor.framework/Info.plist</key>
 		<data>
@@ -58,7 +58,7 @@
 		</data>
 		<key>Frameworks/CapacitorApp.framework/CapacitorApp</key>
 		<data>
-		h+0ylnOS0rda4BnP2XEev3X1B6Q=
+		V3rSwje7p4A0bsqyy+i9S7pK2Bw=
 		</data>
 		<key>Frameworks/CapacitorApp.framework/Info.plist</key>
 		<data>
@@ -70,7 +70,7 @@
 		</data>
 		<key>Frameworks/CapacitorDevice.framework/CapacitorDevice</key>
 		<data>
-		U6LO88K8pIomaWY/DbetFKdS0Rw=
+		3lM4HtFJb4VASHSPaS+LzrwxnWc=
 		</data>
 		<key>Frameworks/CapacitorDevice.framework/Info.plist</key>
 		<data>
@@ -82,7 +82,7 @@
 		</data>
 		<key>Frameworks/CapacitorHaptics.framework/CapacitorHaptics</key>
 		<data>
-		PjYL11tcAQ68IZPC3afTTqLWzmw=
+		Ii2DnunPhO/nJrqYCHkZWmLtkhE=
 		</data>
 		<key>Frameworks/CapacitorHaptics.framework/Info.plist</key>
 		<data>
@@ -94,7 +94,7 @@
 		</data>
 		<key>Frameworks/CapacitorHealth.framework/CapacitorHealth</key>
 		<data>
-		OH6gDBM3/F5HopY18BXH+Pv49OY=
+		Wfj9Tad9M8Lg80Apt9GPg5+Z9Jw=
 		</data>
 		<key>Frameworks/CapacitorHealth.framework/Info.plist</key>
 		<data>
@@ -106,7 +106,7 @@
 		</data>
 		<key>Frameworks/CapacitorKeyboard.framework/CapacitorKeyboard</key>
 		<data>
-		+X2hvjzEGqOAvdRNNIl616Rl0Nc=
+		4Bfczk0jxMMnUI7s6BS1rRMV/L4=
 		</data>
 		<key>Frameworks/CapacitorKeyboard.framework/Info.plist</key>
 		<data>
@@ -118,7 +118,7 @@
 		</data>
 		<key>Frameworks/CapacitorNetwork.framework/CapacitorNetwork</key>
 		<data>
-		7Way3vc/ZVhfZCTH/lHDmim4F4E=
+		CgUhGfOuSsS/UY8noqgbcITZ1oc=
 		</data>
 		<key>Frameworks/CapacitorNetwork.framework/Info.plist</key>
 		<data>
@@ -130,7 +130,7 @@
 		</data>
 		<key>Frameworks/CapacitorPreferences.framework/CapacitorPreferences</key>
 		<data>
-		oc24tNwzu054IH5OPw1CyVe6TQo=
+		zTa2vhKiw31mBx+OMvZRk/uekVo=
 		</data>
 		<key>Frameworks/CapacitorPreferences.framework/Info.plist</key>
 		<data>
@@ -142,7 +142,7 @@
 		</data>
 		<key>Frameworks/CapacitorPushNotifications.framework/CapacitorPushNotifications</key>
 		<data>
-		uWE/LeRyJto07zFhgpKmhewRbLA=
+		AmXljw0tuZtPOQbz7uBhndNoP9c=
 		</data>
 		<key>Frameworks/CapacitorPushNotifications.framework/Info.plist</key>
 		<data>
@@ -154,7 +154,7 @@
 		</data>
 		<key>Frameworks/CapacitorSplashScreen.framework/CapacitorSplashScreen</key>
 		<data>
-		QSzj+twf6cjwu0wsdVuwNPuxjbs=
+		9F2o3MxJaExYAvV0/ZXxPPdboW8=
 		</data>
 		<key>Frameworks/CapacitorSplashScreen.framework/Info.plist</key>
 		<data>
@@ -166,7 +166,7 @@
 		</data>
 		<key>Frameworks/CapacitorStatusBar.framework/CapacitorStatusBar</key>
 		<data>
-		rFlUfln1Z4MDGBt2QHqPhQ4dSqI=
+		pu8X/9aT38vl76LJzEJZ+d7f1VU=
 		</data>
 		<key>Frameworks/CapacitorStatusBar.framework/Info.plist</key>
 		<data>
@@ -178,7 +178,7 @@
 		</data>
 		<key>Frameworks/Cordova.framework/Cordova</key>
 		<data>
-		qeiRw8pp/znrfC+87mMOVC4rIrE=
+		Jc7i5jHDX9BrnWBAa7P/wni8Mug=
 		</data>
 		<key>Frameworks/Cordova.framework/Info.plist</key>
 		<data>
@@ -220,13 +220,13 @@
 		<data>
 		SC+etJl5q99+EZya77G1sd90Bio=
 		</data>
-		<key>public/assets/index-BKRwc_-Z.js</key>
-		<data>
-		NHM2HD0nfPNDDIcILYRdjvfAs9A=
-		</data>
 		<key>public/assets/index-BUs1Yw0f.js</key>
 		<data>
 		xa4Mv17jJ0GECzj5NeREFDbvxtM=
+		</data>
+		<key>public/assets/index-BghgC435.css</key>
+		<data>
+		V9OwgZBBTeFPIdMldxYJ6L+MpcY=
 		</data>
 		<key>public/assets/index-DBk1AC7Q.js</key>
 		<data>
@@ -240,13 +240,13 @@
 		<data>
 		yAs5EF7oRxGtG9TBLDEUCf06RDs=
 		</data>
-		<key>public/assets/index-nsSpiEdP.css</key>
+		<key>public/assets/index-Dljq3cns.js</key>
 		<data>
-		dz9VdLWPAqdykDaVGneALPCVEEQ=
+		hMCW0rckvMJRLGML6xqb2+To/FU=
 		</data>
-		<key>public/assets/ui-C4bQzNaw.js</key>
+		<key>public/assets/ui-C4dkm97K.js</key>
 		<data>
-		9pD3ZEmWANMC8wwZLSsyBV4vIto=
+		+YsMWc7kOo1cQljKoe2gBEMknLE=
 		</data>
 		<key>public/assets/vendor-DLlxo1H4.js</key>
 		<data>
@@ -306,7 +306,7 @@
 		</data>
 		<key>public/index.html</key>
 		<data>
-		ZO6+xu+qCdSbRF1zOjGgrbeepLU=
+		T9tadZYUwdN3f4ewpnn7gqhr4Sk=
 		</data>
 		<key>public/manifest.json</key>
 		<data>
@@ -375,7 +375,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			77B1dLuHSpn8G6iu1eqZaBpQI2nJy2Em0YExRO7kSvE=
+			KcRymVoduUZ1OSkHhG2fy227h26bn8Z6KXNUAze5LmY=
 			</data>
 		</dict>
 		<key>Frameworks/Capacitor.framework/Info.plist</key>
@@ -410,7 +410,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			LR9GBN6mzD+p0kasMO08eG66zW8iLZCQBFNLkBoFcEU=
+			QchTMJrfIuMgwu4eLOWgDyeHE5uudJDF1AmmGODXQjE=
 			</data>
 		</dict>
 		<key>Frameworks/CapacitorApp.framework/Info.plist</key>
@@ -431,7 +431,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			sy9Kav0r3ekr+AoUZsI8CYfMVB83R8ZMLr/G7PjHlUA=
+			UmPlVOBQ6D2w7/3sH8Vr/ejJ9ziyr6QksVBAKuw/788=
 			</data>
 		</dict>
 		<key>Frameworks/CapacitorDevice.framework/Info.plist</key>
@@ -452,7 +452,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			hsyUL0d5Me8ifIO+IPcBrBBGjp7nOmHqVrCBxbA/KTM=
+			6HYw1k9Dk20zV9MuRJHX5Av+lE1iyz5PqRiKPMhRt5E=
 			</data>
 		</dict>
 		<key>Frameworks/CapacitorHaptics.framework/Info.plist</key>
@@ -473,7 +473,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			D7FlbWnKu73+mydpS5V4mzhsP4OwcXHJ5CugXohB3RA=
+			SBRhTePgabrdMLz8Y9hmAjHSAiAacK69R5xpDFMZsUI=
 			</data>
 		</dict>
 		<key>Frameworks/CapacitorHealth.framework/Info.plist</key>
@@ -494,7 +494,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			GDKx55UDyZrUBlZhac5zffteQntc8VbG+8w4K/ie8Qw=
+			besLlHGkEHR+32U0QavruMxPV6So6HjXSbY6BHTtyyE=
 			</data>
 		</dict>
 		<key>Frameworks/CapacitorKeyboard.framework/Info.plist</key>
@@ -515,7 +515,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			h5vnBR3MtKlN2ucPT8bcV8va1gBjQzSuSke+lE3slcQ=
+			cXYkclMwVGVu9coSagEoqsdWLfvMl/KBtTnv6jZ+cq4=
 			</data>
 		</dict>
 		<key>Frameworks/CapacitorNetwork.framework/Info.plist</key>
@@ -536,7 +536,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			kClewpUmMYuYphfYgdBJ9/lpzKWi5IZUohcnJgf/+3o=
+			vdCI0uLJj2Sx/2ptdulhShc+UGjYxVi9DaNWEDueIwo=
 			</data>
 		</dict>
 		<key>Frameworks/CapacitorPreferences.framework/Info.plist</key>
@@ -557,7 +557,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			vehdybncmEZCn5VZiBj/wydhlmwj5iH572M69uT8ZKc=
+			yb/yMwR7t7oYHL2/PXmFv5sQnG0wbYUftYtfXH9HfP0=
 			</data>
 		</dict>
 		<key>Frameworks/CapacitorPushNotifications.framework/Info.plist</key>
@@ -578,7 +578,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			ZTUH0fBMQ4G+2dir7g+3VqDkB62EdMWINmCveg0PnQ8=
+			ChKBZ1AyZ6Do4oEmluE5c2cWdrfMRIfoMDg3mM6EcmE=
 			</data>
 		</dict>
 		<key>Frameworks/CapacitorSplashScreen.framework/Info.plist</key>
@@ -599,7 +599,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			tBLMJGidaeBomyOTBMX0ExxRkVGb7V1Kx0MDOZRU3G4=
+			IQYirzKtc3BDaeS+iLayJTp6FTxZFOhAYXVTypgbI9w=
 			</data>
 		</dict>
 		<key>Frameworks/CapacitorStatusBar.framework/Info.plist</key>
@@ -620,7 +620,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			0J86CWC576V1gPQV98KzOPyAXADfiKR2qCQLATb6eM4=
+			HuZhBO2vCd19HDphSHtFmT7zSovmZOAY7qg66t6nyc4=
 			</data>
 		</dict>
 		<key>Frameworks/Cordova.framework/Info.plist</key>
@@ -679,18 +679,18 @@
 			r+sQUgUQrNAPyXSlRhOrd1Aa/S2JkyQQVwwQJlgld0g=
 			</data>
 		</dict>
-		<key>public/assets/index-BKRwc_-Z.js</key>
-		<dict>
-			<key>hash2</key>
-			<data>
-			PSPrj/o+1E8WnjrE5t/5x2oMd/PkUjVkS7YeVJNGUzU=
-			</data>
-		</dict>
 		<key>public/assets/index-BUs1Yw0f.js</key>
 		<dict>
 			<key>hash2</key>
 			<data>
 			XwC079FCZ+WfHYejIc/eRYrQiA6DG8XwJl4f6FSJj9s=
+			</data>
+		</dict>
+		<key>public/assets/index-BghgC435.css</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			N/XHG4K17FljN9TNlutlBMJQOdRGSlDrcUu/A4Mxd+o=
 			</data>
 		</dict>
 		<key>public/assets/index-DBk1AC7Q.js</key>
@@ -714,18 +714,18 @@
 			wKt02opE8j/nnTR16T2Pa3TqWaDehe35e6fyCqyRyx4=
 			</data>
 		</dict>
-		<key>public/assets/index-nsSpiEdP.css</key>
+		<key>public/assets/index-Dljq3cns.js</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			IWxSLnVqMl0Nrfm0/7Bs91cj4mc5ASL0h5AMkL7emik=
+			kr6q4qxYm9hm8U5BO3Vmlc2Uh4uBbAju8WBKE9C85eE=
 			</data>
 		</dict>
-		<key>public/assets/ui-C4bQzNaw.js</key>
+		<key>public/assets/ui-C4dkm97K.js</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			XndJbGPmz3m2jhAFCYDQgiN5kO73t4EKUDjgdN0yxEs=
+			TCN2op6VRaCezS98tg9ScTc7++JX97G2mIEoVF+3Z/g=
 			</data>
 		</dict>
 		<key>public/assets/vendor-DLlxo1H4.js</key>
@@ -830,7 +830,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			pE5nYoDqzd+VWlBfti23kt8ty8PjCP6zqq7qSDSvYzU=
+			ZQ55TCeAySYVnsCYGEQcizy6sZ7KTku2ZNUI7islwkI=
 			</data>
 		</dict>
 		<key>public/manifest.json</key>

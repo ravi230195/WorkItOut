@@ -1,5 +1,4 @@
 // src/components/BackButton.tsx
-import React from "react";
 import { ArrowLeft } from "lucide-react";
 import { TactileButton } from "./TactileButton";
 

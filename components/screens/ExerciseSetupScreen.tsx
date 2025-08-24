@@ -1,12 +1,18 @@
+// components/screens/ExerciseSetupScreen.tsx
 import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, X, Trash2, MoreVertical, ChevronUp } from "lucide-react";
+import { Plus, X, Trash2, MoreVertical, ChevronUp } from "lucide-react";
 import { TactileButton } from "../TactileButton";
 import { Input } from "../ui/input";
-import { supabaseAPI, Exercise, UserRoutineExercise, UserRoutineExerciseSet } from "../../utils/supabase/supabase-api";
+import {
+  supabaseAPI,
+  Exercise,
+  UserRoutineExercise,
+  UserRoutineExerciseSet,
+} from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
-import ScreenHeader from "../ScreenHeader";
+import { AppScreen, Section, ScreenHeader, FooterBar, Stack, Spacer } from "../layouts";
 
 interface ExerciseSet {
   id: string;
@@ -43,24 +49,28 @@ export function ExerciseSetupScreen({
   onSave,
   onAddMoreExercises,
   isEditingExistingRoutine = false,
-  onShowExerciseSelector
+  onShowExerciseSelector,
 }: ExerciseSetupScreenProps) {
   useKeyboardInset();
 
   const [sets, setSets] = useState<ExerciseSet[]>([
     { id: "1", reps: "0", weight: "0" },
     { id: "2", reps: "0", weight: "0" },
-    { id: "3", reps: "0", weight: "0" }
+    { id: "3", reps: "0", weight: "0" },
   ]);
   const [isSaving, setIsSaving] = useState(false);
   const [savedExercises, setSavedExercises] = useState<SavedExerciseWithDetails[]>([]);
   const [isLoadingSaved, setIsLoadingSaved] = useState(true);
   const [currentExercise, setCurrentExercise] = useState<Exercise | undefined>(exercise);
   const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
-  const [exerciseSetsData, setExerciseSetsData] = useState<Record<number, UserRoutineExerciseSet[]>>({});
+  const [exerciseSetsData, setExerciseSetsData] = useState<
+    Record<number, UserRoutineExerciseSet[]>
+  >({});
   const [loadingSets, setLoadingSets] = useState<Record<number, boolean>>({});
   const [editingExercises, setEditingExercises] = useState(new Set<number>());
-  const [editingSets, setEditingSets] = useState<Record<number, { reps: string; weight: string }>>({});
+  const [editingSets, setEditingSets] = useState<
+    Record<number, { reps: string; weight: string }>
+  >({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [savingAllChanges, setSavingAllChanges] = useState(false);
 
@@ -102,12 +112,12 @@ export function ExerciseSetupScreen({
 
   const addSet = () => {
     const newId = (sets.length + 1).toString();
-    setSets([...sets, { id: newId, reps: "0", weight: "0" }]);
+    setSets((prev) => [...prev, { id: newId, reps: "0", weight: "0" }]);
   };
 
   const removeSet = (setId: string) => {
     if (sets.length > 1) {
-      setSets(sets.filter((s) => s.id !== setId));
+      setSets((prev) => prev.filter((s) => s.id !== setId));
     }
   };
 
@@ -119,7 +129,7 @@ export function ExerciseSetupScreen({
     setSets([
       { id: "1", reps: "0", weight: "0" },
       { id: "2", reps: "0", weight: "0" },
-      { id: "3", reps: "0", weight: "0" }
+      { id: "3", reps: "0", weight: "0" },
     ]);
   };
 
@@ -132,16 +142,19 @@ export function ExerciseSetupScreen({
     }
   };
 
-  // TOREMOVE
-
   // Pretty, safe chunk logger (avoids WebKit/Xcode truncation)
   function logChunks(label: string, data: unknown, chunkSize = 4000) {
     let s: string;
-    try { s = typeof data === "string" ? data : JSON.stringify(data, null, 2); }
-    catch { s = String(data); }
+    try {
+      s = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    } catch {
+      s = String(data);
+    }
     for (let i = 0; i < s.length; i += chunkSize) {
-      // keep label short; some consoles cut very long prefixes
-      console.debug(`${label} [${i}-${Math.min(i + chunkSize, s.length)}/${s.length}]`, s.slice(i, i + chunkSize));
+      console.debug(
+        `${label} [${i}-${Math.min(i + chunkSize, s.length)}/${s.length}]`,
+        s.slice(i, i + chunkSize)
+      );
     }
   }
 
@@ -149,13 +162,17 @@ export function ExerciseSetupScreen({
   function validateSetsPayload(rows: Array<{ reps: number; weight: number; set_order: number }>) {
     const errors: string[] = [];
     rows.forEach((r, i) => {
-      if (!Number.isInteger(r.reps) || r.reps < 0) errors.push(`row ${i}: reps must be int ≥ 0 (got ${r.reps})`);
-      if (!(Number.isFinite(r.weight) && r.weight >= 0)) errors.push(`row ${i}: weight must be number ≥ 0 (got ${r.weight})`);
-      if (!Number.isInteger(r.set_order) || r.set_order <= 0) errors.push(`row ${i}: set_order must be int ≥ 1 (got ${r.set_order})`);
+      if (!Number.isInteger(r.reps) || r.reps < 0)
+        errors.push(`row ${i}: reps must be int ≥ 0 (got ${r.reps})`);
+      if (!(Number.isFinite(r.weight) && r.weight >= 0))
+        errors.push(`row ${i}: weight must be number ≥ 0 (got ${r.weight})`);
+      if (!Number.isInteger(r.set_order) || r.set_order <= 0)
+        errors.push(`row ${i}: set_order must be int ≥ 1 (got ${r.set_order})`);
     });
     const expectedSeq = rows.map((_, i) => i + 1).join(",");
-    const actualSeq = rows.map(r => r.set_order).join(",");
-    if (expectedSeq !== actualSeq) errors.push(`set_order sequence mismatch. expected [${expectedSeq}] got [${actualSeq}]`);
+    const actualSeq = rows.map((r) => r.set_order).join(",");
+    if (expectedSeq !== actualSeq)
+      errors.push(`set_order sequence mismatch. expected [${expectedSeq}] got [${actualSeq}]`);
     return errors;
   }
 
@@ -186,7 +203,6 @@ export function ExerciseSetupScreen({
     try {
       const exerciseOrder = savedExercises.length + 1;
 
-      // 🧪 Context + raw sets
       console.debug("🧪 [SAVE] context", {
         routineId,
         exerciseOrder,
@@ -195,7 +211,9 @@ export function ExerciseSetupScreen({
       });
       logChunks("🧪 [SAVE] raw sets", sets);
 
-      const validSets = sets.filter((s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0);
+      const validSets = sets.filter(
+        (s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0
+      );
       logChunks("🧪 [SAVE] validSets", validSets);
 
       const savedExercise = await supabaseAPI.addExerciseToRoutine(
@@ -205,35 +223,33 @@ export function ExerciseSetupScreen({
       );
       if (!savedExercise) throw new Error("Failed to save exercise to routine");
 
-      // ✅ Confirm what the server returned
       console.debug("✅ [addExerciseToRoutine] ok", {
         routine_template_id: routineId,
         routine_template_exercise_id: savedExercise.routine_template_exercise_id,
         exercise_id: currentExercise.exercise_id,
       });
 
-      // Include explicit set_order (1..n) so DB doesn't default to 1
       const setsToSave = validSets.map((s, idx) => ({
         reps: parseInt(s.reps) || 0,
         weight: parseFloat(s.weight) || 0,
-        set_order: idx + 1
+        set_order: idx + 1,
       }));
 
-      // 🧪 Validate mapped payload (client-side)
       const valErrors = validateSetsPayload(setsToSave);
       if (valErrors.length) console.warn("⚠️ [SETS VALIDATION ERRORS]", valErrors);
       console.table(setsToSave);
       logChunks("🧪 [SAVE] setsToSave (payload to API)", setsToSave);
 
-      // Heads-up: if your API expects planned_* columns, this will warn you.
       if (setsToSave.length && !("planned_reps" in setsToSave[0])) {
-        console.warn("ℹ️ Your setsToSave use keys {reps, weight, set_order}. If API expects {planned_reps, planned_weight_kg}, this will fail.");
+        console.warn(
+          "ℹ️ Your setsToSave use keys {reps, weight, set_order}. If API expects {planned_reps, planned_weight_kg}, this will fail."
+        );
       }
 
       console.debug("➡️ [addExerciseSetsToRoutine] sending", {
         rtexId: savedExercise.routine_template_exercise_id,
         exerciseId: currentExercise.exercise_id,
-        count: setsToSave.length
+        count: setsToSave.length,
       });
 
       await supabaseAPI.addExerciseSetsToRoutine(
@@ -244,9 +260,8 @@ export function ExerciseSetupScreen({
 
       console.debug("✅ [addExerciseSetsToRoutine] ok");
 
-      // Recompute and save the muscle summary
+      // Update muscle summary
       await supabaseAPI.recomputeAndSaveRoutineMuscleSummary(routineId);
-      console.debug("♻️ [recomputeAndSaveRoutineMuscleSummary] ok");
 
       toast.success(`Added ${currentExercise.name} with ${validSets.length} sets`);
       await refreshSavedExercises();
@@ -255,21 +270,26 @@ export function ExerciseSetupScreen({
       resetForm();
       onSave();
     } catch (error) {
-      // ❌ Rich error output
       console.error("❌ [handleSave] Failed to save exercise", {
         errorMessage: error instanceof Error ? error.message : String(error),
         errorObj: error,
       });
       toast.error(
-        error instanceof Error ? `Failed to save exercise: ${error.message}` : "Failed to save exercise. Please try again."
+        error instanceof Error
+          ? `Failed to save exercise: ${error.message}`
+          : "Failed to save exercise. Please try again."
       );
     } finally {
       setIsSaving(false);
     }
   };
 
+  const { userToken: _token } = useAuth(); // keep hook count stable
 
-  const handleKebabClick = async (savedExercise: SavedExerciseWithDetails, e: React.MouseEvent) => {
+  const handleKebabClick = async (
+    savedExercise: SavedExerciseWithDetails,
+    e: React.MouseEvent
+  ) => {
     e.stopPropagation();
     const exerciseTemplateId = savedExercise.routine_template_exercise_id;
 
@@ -305,12 +325,12 @@ export function ExerciseSetupScreen({
     setsData.forEach((s) => {
       newEditing[s.routine_template_exercise_set_id] = {
         reps: s.planned_reps?.toString() || "0",
-        weight: s.planned_weight_kg?.toString() || "0"
+        weight: s.planned_weight_kg?.toString() || "0",
       };
     });
     setEditingSets((prev) => ({ ...prev, ...newEditing }));
 
-    setHasUnsavedChanges(true); // mark dirty as soon as edit mode starts
+    setHasUnsavedChanges(true);
   };
 
   const handleCancelAllEdits = () => {
@@ -323,15 +343,13 @@ export function ExerciseSetupScreen({
   const updateEditingSet = (setId: number, field: "reps" | "weight", value: string) => {
     setEditingSets((prev) => ({
       ...prev,
-      [setId]: { ...prev[setId], [field]: value }
+      [setId]: { ...prev[setId], [field]: value },
     }));
     setHasUnsavedChanges(true);
   };
 
-  // Add a new inline set (edit mode) with correct next set_order
   const addSetToExercise = (exerciseTemplateId: number) => {
     const setsData = exerciseSetsData[exerciseTemplateId] || [];
-    // next order based on max existing (avoids duplicates after deletes)
     const maxOrder = setsData.reduce((m, s) => Math.max(m, s.set_order || 0), 0);
     const newSetOrder = maxOrder + 1;
 
@@ -339,36 +357,36 @@ export function ExerciseSetupScreen({
 
     setEditingSets((prev) => ({
       ...prev,
-      [tempSetId]: { reps: "0", weight: "0" }
+      [tempSetId]: { reps: "0", weight: "0" },
     }));
 
     const tempSet: UserRoutineExerciseSet = {
       routine_template_exercise_set_id: tempSetId,
       routine_template_exercise_id: exerciseTemplateId,
-      exercise_id: 0, // will be supplied at save
+      exercise_id: 0,
       set_order: newSetOrder,
       is_active: true,
       planned_reps: 0,
-      planned_weight_kg: 0
+      planned_weight_kg: 0,
     };
 
     setExerciseSetsData((prev) => ({
       ...prev,
-      [exerciseTemplateId]: [...(prev[exerciseTemplateId] || []), tempSet]
+      [exerciseTemplateId]: [...(prev[exerciseTemplateId] || []), tempSet],
     }));
 
     setHasUnsavedChanges(true);
   };
 
-  // Local reindex helper (1..N) for a routine exercise — keeps UI compact immediately
-  const reindexLocalSetOrders = (exerciseTemplateId: number, setsArr: UserRoutineExerciseSet[]) => {
+  const reindexLocalSetOrders = (
+    exerciseTemplateId: number,
+    setsArr: UserRoutineExerciseSet[]
+  ) => {
     const sorted = [...setsArr].sort((a, b) => (a.set_order || 0) - (b.set_order || 0));
     return sorted.map((s, idx) => ({ ...s, set_order: idx + 1 }));
   };
 
-  // Remove inline set (edit mode)
   const removeSetFromExercise = (exerciseTemplateId: number, setId: number) => {
-    // queue deletion for persisted sets
     if (setId > 0) {
       setDeletedSetIds((prev) => {
         const next = new Set(prev);
@@ -383,7 +401,6 @@ export function ExerciseSetupScreen({
       return next;
     });
 
-    // remove locally and reindex remaining 1..N so labels look right
     setExerciseSetsData((prev) => {
       const remaining = (prev[exerciseTemplateId] || []).filter(
         (s) => s.routine_template_exercise_set_id !== setId
@@ -395,7 +412,6 @@ export function ExerciseSetupScreen({
     setHasUnsavedChanges(true);
   };
 
-  // Persist all edit-mode changes (delete → update values → reindex orders → create new)
   const handleSaveAllChanges = async () => {
     if (!userToken) {
       toast.error("Please sign in to save changes");
@@ -407,18 +423,19 @@ export function ExerciseSetupScreen({
       for (const exerciseTemplateId of Array.from(editingExercises)) {
         const setsData = exerciseSetsData[exerciseTemplateId] || [];
 
-        // 1) Process deletions (soft delete)
+        // (1) Deletions (soft delete)
         if (deletedSetIds.size) {
-          // operate on ids that were actually deleted from this exercise
           const deletionsForThisExercise = Array.from(deletedSetIds).filter((id) =>
             setsData.every((s) => s.routine_template_exercise_set_id !== id)
           );
           if (deletionsForThisExercise.length) {
-            await Promise.all(deletionsForThisExercise.map((id) => supabaseAPI.deleteExerciseSet(id)));
+            await Promise.all(
+              deletionsForThisExercise.map((id) => supabaseAPI.deleteExerciseSet(id))
+            );
           }
         }
 
-        // 2) Update planned reps/weight for existing sets
+        // (2) Update values for existing sets
         const existingSets = setsData.filter((s) => s.routine_template_exercise_set_id > 0);
         await Promise.all(
           existingSets.map(async (s) => {
@@ -427,13 +444,17 @@ export function ExerciseSetupScreen({
             const reps = parseInt(edit.reps) || 0;
             const weight = parseFloat(edit.weight) || 0;
             if (reps !== (s.planned_reps || 0) || weight !== (s.planned_weight_kg || 0)) {
-              return await supabaseAPI.updateExerciseSet(s.routine_template_exercise_set_id, reps, weight);
+              return await supabaseAPI.updateExerciseSet(
+                s.routine_template_exercise_set_id,
+                reps,
+                weight
+              );
             }
             return s;
           })
         );
 
-        // 3) Reindex orders for remaining existing sets to 1..K and persist
+        // (3) Reindex existing set_order to 1..K
         const stillExisting = (exerciseSetsData[exerciseTemplateId] || []).filter(
           (s) => s.routine_template_exercise_set_id > 0
         );
@@ -443,12 +464,15 @@ export function ExerciseSetupScreen({
           reindexedExisting.map(async (s, idx) => {
             const desiredOrder = idx + 1;
             if (s.set_order !== desiredOrder) {
-              await supabaseAPI.updateExerciseSetOrder(s.routine_template_exercise_set_id, desiredOrder);
+              await supabaseAPI.updateExerciseSetOrder(
+                s.routine_template_exercise_set_id,
+                desiredOrder
+              );
             }
           })
         );
 
-        // 4) Create new sets (temp id < 0) appended after reindexed existing
+        // (4) Create new sets (temp ids < 0)
         const newTempSets = (exerciseSetsData[exerciseTemplateId] || [])
           .filter((s) => s.routine_template_exercise_set_id < 0)
           .sort((a, b) => (a.set_order || 0) - (b.set_order || 0));
@@ -473,14 +497,18 @@ export function ExerciseSetupScreen({
               reindexedExisting[0]?.exercise_id ?? getExerciseIdForTemplate(exerciseTemplateId);
 
             if (fallbackExerciseId) {
-              await supabaseAPI.addExerciseSetsToRoutine(exerciseTemplateId, fallbackExerciseId, newSetsData);
+              await supabaseAPI.addExerciseSetsToRoutine(
+                exerciseTemplateId,
+                fallbackExerciseId,
+                newSetsData
+              );
             } else {
               console.warn("No exercise_id found for template", exerciseTemplateId);
             }
           }
         }
 
-        // 5) Refresh this exercise's sets from DB (source of truth)
+        // (5) Refresh from DB
         const updated = await supabaseAPI.getExerciseSetsForRoutine(exerciseTemplateId);
         setExerciseSetsData((prev) => ({ ...prev, [exerciseTemplateId]: updated }));
       }
@@ -510,232 +538,327 @@ export function ExerciseSetupScreen({
   };
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex flex-col kb-aware">
-      <ScreenHeader
-        title={routineName || "Routine"}
-        onBack={onBack}
-        onAdd={() => {
-          if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
-          else onAddMoreExercises();
-        }}
-      />
-
-      <div className="flex-1">
-        {/* Saved Exercises */}
-        <div className="mx-4 mt-6 mb-6">
-          <h3 className="text-sm text-[var(--muted-foreground)] uppercase tracking-wider mb-3">
-            EXERCISES IN ROUTINE ({savedExercises.length})
-          </h3>
-
-          {isLoadingSaved ? (
-            <div className="space-y-3">
-              {[1, 2].map((i) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-white/50 rounded-xl animate-pulse">
-                  <div className="w-10 h-10 bg-[var(--muted)] rounded-lg"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-[var(--muted)] rounded w-3/4"></div>
-                    <div className="h-3 bg-[var(--muted)] rounded w-1/2"></div>
-                  </div>
-                </div>
-              ))}
+    <AppScreen
+      header={
+        <ScreenHeader
+          title={routineName || "Routine"}
+          onBack={onBack}
+          onAdd={() => {
+            if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
+            else onAddMoreExercises();
+          }}
+          showBorder={false}
+          denseSmall
+        />
+      }
+      maxContent="responsive"
+      // leave room only when the Save/Cancel footer is present
+      contentClassName={`pb-20 ${hasUnsavedChanges ? "pb-24" : ""}`}
+      bottomBar={
+        hasUnsavedChanges ? (
+          <FooterBar
+            size="md"
+            bg="translucent"
+            align="between"
+            maxContent="responsive"
+            // give the inner row some breathing room like your old px-4
+            innerClassName="w-full gap-3"
+          >
+            <div className="flex w-full gap-3">
+              <TactileButton
+                variant="secondary"
+                onClick={handleCancelAllEdits}
+                className="flex-1 h-12 bg-transparent border-[var(--warm-brown)]/20 text-[var(--warm-brown)]/60 hover:bg-[var(--soft-gray)] font-medium"
+              >
+                CANCEL ALL
+              </TactileButton>
+              <TactileButton
+                onClick={handleSaveAllChanges}
+                disabled={savingAllChanges}
+                className="flex-1 h-12 font-medium border-0 transition-all bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
+              >
+                {savingAllChanges ? "SAVING..." : `SAVE ALL (${editingExercises.size})`}
+              </TactileButton>
             </div>
-          ) : savedExercises.length > 0 ? (
-            <div className="space-y-3">
-              {savedExercises.map((savedExercise, index) => {
-                const isExpanded = expandedExercise === savedExercise.routine_template_exercise_id;
-                const setsData = exerciseSetsData[savedExercise.routine_template_exercise_id] || [];
-                const isLoadingSetsData = loadingSets[savedExercise.routine_template_exercise_id] || false;
-                const isEditing = editingExercises.has(savedExercise.routine_template_exercise_id);
+          </FooterBar>
+        ) : null
+      }
+      bottomBarSticky
+    >
+      <Stack gap="fluid">
+        <Spacer y="sm" />
 
-                // always sort by set_order to keep UI stable
-                const sortedSets = [...setsData].sort(
-                  (a, b) => (a.set_order || 0) - (b.set_order || 0)
-                );
+        {/* Saved Exercises */}
+        <Section variant="plain" padding="none" className="mx-0 sm:mx-0">
+          <div className="mx-4 mt-2 mb-6">
+            <h3 className="text-sm text-[var(--muted-foreground)] uppercase tracking-wider mb-3">
+              EXERCISES IN ROUTINE ({savedExercises.length})
+            </h3>
 
-                return (
-                  <div key={savedExercise.routine_template_exercise_id || index} className="space-y-2">
-                    <div
-                      className={`flex items-center gap-3 p-3 border rounded-xl transition-all cursor-pointer ${isEditing
-                        ? "bg-[var(--warm-coral)]/5 border-[var(--warm-coral)]/30"
-                        : "bg-white/70 border-[var(--border)] hover:bg-white/90"
-                        }`}
-                      onClick={(e) => handleKebabClick(savedExercise, e)}
-                    >
-                      <div className="w-10 h-10 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
-                        <span className="text-sm font-medium text-[var(--muted-foreground)]">
-                          {(savedExercise.exercise_name || "").substring(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-[var(--foreground)]">{savedExercise.exercise_name}</p>
-                        <p className="text-sm text-[var(--muted-foreground)]">
-                          Exercise #{savedExercise.exercise_order} • {savedExercise.category || "Exercise"}
-                          {isEditing && <span className="text-[var(--warm-coral)] ml-2">• Editing</span>}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <TactileButton
-                          variant="secondary"
-                          size="sm"
-                          onClick={(e) => handleKebabClick(savedExercise, e)}
-                          className={`p-2 h-auto bg-transparent hover:bg-[var(--warm-brown)]/10 text-[var(--warm-brown)]/60 hover:text-[var(--warm-brown)] ${isEditing ? "ring-2 ring-[var(--warm-coral)]/30" : ""
-                            }`}
-                        >
-                          {isExpanded ? <ChevronUp size={16} /> : <MoreVertical size={16} />}
-                        </TactileButton>
-                      </div>
+            {isLoadingSaved ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 p-3 bg-white/50 rounded-xl animate-pulse"
+                  >
+                    <div className="w-10 h-10 bg-[var(--muted)] rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-[var(--muted)] rounded w-3/4" />
+                      <div className="h-3 bg-[var(--muted)] rounded w-1/2" />
                     </div>
+                  </div>
+                ))}
+              </div>
+            ) : savedExercises.length > 0 ? (
+              <div className="space-y-3">
+                {savedExercises.map((savedExercise, index) => {
+                  const isExpanded =
+                    expandedExercise === savedExercise.routine_template_exercise_id;
+                  const setsData =
+                    exerciseSetsData[savedExercise.routine_template_exercise_id] || [];
+                  const isLoadingSetsData =
+                    loadingSets[savedExercise.routine_template_exercise_id] || false;
+                  const isEditing = editingExercises.has(
+                    savedExercise.routine_template_exercise_id
+                  );
 
-                    {/* Sets Data Dropdown */}
-                    {isExpanded && (
-                      <div className="bg-white/80 border border-[var(--border)] rounded-lg p-3 ml-4 mr-2 transition-all duration-200">
-                        {isLoadingSetsData ? (
-                          <div className="flex items-center justify-center py-4">
-                            <div className="animate-spin w-4 h-4 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full"></div>
-                            <span className="ml-2 text-sm text-[var(--warm-brown)]/60">Loading sets...</span>
-                          </div>
-                        ) : sortedSets.length > 0 ? (
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-sm font-medium text-[var(--warm-brown)]">Sets in this Routine</h4>
+                  const sortedSets = [...setsData].sort(
+                    (a, b) => (a.set_order || 0) - (b.set_order || 0)
+                  );
+
+                  return (
+                    <div
+                      key={savedExercise.routine_template_exercise_id || index}
+                      className="space-y-2"
+                    >
+                      <div
+                        className={`flex items-center gap-3 p-3 border rounded-xl transition-all cursor-pointer ${
+                          isEditing
+                            ? "bg-[var(--warm-coral)]/5 border-[var(--warm-coral)]/30"
+                            : "bg-white/70 border-[var(--border)] hover:bg-white/90"
+                        }`}
+                        onClick={(e) => handleKebabClick(savedExercise, e)}
+                      >
+                        <div className="w-10 h-10 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
+                          <span className="text-sm font-medium text-[var(--muted-foreground)]">
+                            {(savedExercise.exercise_name || "")
+                              .substring(0, 2)
+                              .toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-[var(--foreground)]">
+                            {savedExercise.exercise_name}
+                          </p>
+                          <p className="text-sm text-[var(--muted-foreground)]">
+                            Exercise #{savedExercise.exercise_order} •{" "}
+                            {savedExercise.category || "Exercise"}
+                            {isEditing && (
+                              <span className="text-[var(--warm-coral)] ml-2">• Editing</span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <TactileButton
+                            variant="secondary"
+                            size="sm"
+                            onClick={(e) => handleKebabClick(savedExercise, e)}
+                            className={`p-2 h-auto bg-transparent hover:bg-[var(--warm-brown)]/10 text-[var(--warm-brown)]/60 hover:text-[var(--warm-brown)] ${
+                              isEditing ? "ring-2 ring-[var(--warm-coral)]/30" : ""
+                            }`}
+                          >
+                            {isExpanded ? <ChevronUp size={16} /> : <MoreVertical size={16} />}
+                          </TactileButton>
+                        </div>
+                      </div>
+
+                      {/* Sets Data Dropdown */}
+                      {isExpanded && (
+                        <div className="bg-white/80 border border-[var(--border)] rounded-lg p-3 ml-4 mr-2 transition-all duration-200">
+                          {isLoadingSetsData ? (
+                            <div className="flex items-center justify-center py-4">
+                              <div className="animate-spin w-4 h-4 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full" />
+                              <span className="ml-2 text-sm text-[var(--warm-brown)]/60">
+                                Loading sets...
+                              </span>
+                            </div>
+                          ) : sortedSets.length > 0 ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-medium text-[var(--warm-brown)]">
+                                  Sets in this Routine
+                                </h4>
+                                {!isEditing && (
+                                  <TactileButton
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleEditSets(
+                                        savedExercise.routine_template_exercise_id
+                                      )
+                                    }
+                                    className="px-3 py-1 text-xs bg-[var(--warm-coral)]/10 text-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/20 border-[var(--warm-coral)]/30"
+                                  >
+                                    Edit Sets
+                                  </TactileButton>
+                                )}
+                              </div>
+
+                              {isEditing ? (
+                                <div className="space-y-3">
+                                  <div className="grid grid-cols-4 gap-3 text-xs text-[var(--warm-brown)]/60 uppercase tracking-wider">
+                                    <span>Set</span>
+                                    <span className="text-center">Reps</span>
+                                    <span className="text-center">Weight (kg)</span>
+                                    <span></span>
+                                  </div>
+
+                                  {sortedSets.map((s) => (
+                                    <div
+                                      key={s.routine_template_exercise_set_id}
+                                      className="grid grid-cols-4 gap-3 items-center py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20"
+                                    >
+                                      <span className="text-sm font-medium text-[var(--warm-brown)]/80">
+                                        {s.set_order}
+                                      </span>
+                                      <Input
+                                        type="number"
+                                        value={
+                                          editingSets[s.routine_template_exercise_set_id]?.reps ||
+                                          "0"
+                                        }
+                                        onChange={(e) =>
+                                          updateEditingSet(
+                                            s.routine_template_exercise_set_id,
+                                            "reps",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="bg-white border-[var(--border)] text-[var(--foreground)] text-center h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm"
+                                        min="0"
+                                      />
+                                      <Input
+                                        type="number"
+                                        step="0.5"
+                                        value={
+                                          editingSets[s.routine_template_exercise_set_id]?.weight ||
+                                          "0"
+                                        }
+                                        onChange={(e) =>
+                                          updateEditingSet(
+                                            s.routine_template_exercise_set_id,
+                                            "weight",
+                                            e.target.value
+                                          )
+                                        }
+                                        className="bg-white border-[var(--border)] text-[var(--foreground)] text-center h-8 rounded-md focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 text-sm"
+                                        min="0"
+                                      />
+                                      <TactileButton
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() =>
+                                          removeSetFromExercise(
+                                            savedExercise.routine_template_exercise_id,
+                                            s.routine_template_exercise_set_id
+                                          )
+                                        }
+                                        disabled={sortedSets.length <= 1}
+                                        className={`p-1 h-auto ${
+                                          sortedSets.length <= 1
+                                            ? "opacity-30 cursor-not-allowed"
+                                            : "bg-red-50 text-red-500 hover:bg-red-100"
+                                        }`}
+                                        title="Remove this set"
+                                      >
+                                        <X size={14} />
+                                      </TactileButton>
+                                    </div>
+                                  ))}
+
+                                  <TactileButton
+                                    onClick={() =>
+                                      addSetToExercise(
+                                        savedExercise.routine_template_exercise_id
+                                      )
+                                    }
+                                    className="w-full py-2 text-sm bg-[var(--warm-sage)]/10 text-[var(--warm-sage)] hover:bg-[var(--warm-sage)]/20 border-2 border-dashed border-[var(--warm-sage)]/30 rounded-lg"
+                                  >
+                                    <Plus size={16} className="mr-2" />
+                                    Add Set
+                                  </TactileButton>
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  {sortedSets.map((s) => (
+                                    <div
+                                      key={s.routine_template_exercise_set_id}
+                                      className="flex items-center justify-between py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20"
+                                    >
+                                      <span className="text-sm font-medium text-[var(--warm-brown)]/80">
+                                        Set {s.set_order}
+                                      </span>
+                                      <div className="flex items-center gap-3 text-sm text-[var(--warm-brown)]">
+                                        {s.planned_reps ? (
+                                          <span className="bg-[var(--warm-sage)]/20 text-[var(--warm-sage)] px-2 py-1 rounded-md">
+                                            {s.planned_reps} reps
+                                          </span>
+                                        ) : null}
+                                        {s.planned_weight_kg ? (
+                                          <span className="bg-[var(--warm-coral)]/20 text-[var(--warm-coral)] px-2 py-1 rounded-md">
+                                            {s.planned_weight_kg}kg
+                                          </span>
+                                        ) : null}
+                                        {!s.planned_reps && !s.planned_weight_kg && (
+                                          <span className="text-[var(--warm-brown)]/50 italic">
+                                            No data
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-center py-3">
+                              <p className="text-sm text-[var(--warm-brown)]/60">
+                                No sets data found
+                              </p>
                               {!isEditing && (
                                 <TactileButton
                                   variant="secondary"
                                   size="sm"
-                                  onClick={() => handleEditSets(savedExercise.routine_template_exercise_id)}
-                                  className="px-3 py-1 text-xs bg-[var(--warm-coral)]/10 text-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/20 border-[var(--warm-coral)]/30"
+                                  onClick={() =>
+                                    handleEditSets(savedExercise.routine_template_exercise_id)
+                                  }
+                                  className="mt-2 px-3 py-1 text-xs bg-[var(--warm-coral)]/10 text-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/20 border-[var(--warm-coral)]/30"
                                 >
-                                  Edit Sets
+                                  Add Sets
                                 </TactileButton>
                               )}
                             </div>
-
-                            {isEditing ? (
-                              <div className="space-y-3">
-                                <div className="grid grid-cols-4 gap-3 text-xs text-[var(--warm-brown)]/60 uppercase tracking-wider">
-                                  <span>Set</span>
-                                  <span className="text-center">Reps</span>
-                                  <span className="text-center">Weight (kg)</span>
-                                  <span></span>
-                                </div>
-
-                                {sortedSets.map((s) => (
-                                  <div
-                                    key={s.routine_template_exercise_set_id}
-                                    className="grid grid-cols-4 gap-3 items-center py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20"
-                                  >
-                                    <span className="text-sm font-medium text-[var(--warm-brown)]/80">
-                                      {s.set_order}
-                                    </span>
-                                    <Input
-                                      type="number"
-                                      value={editingSets[s.routine_template_exercise_set_id]?.reps || "0"}
-                                      onChange={(e) =>
-                                        updateEditingSet(s.routine_template_exercise_set_id, "reps", e.target.value)
-                                      }
-                                      className="bg-white border-[var(--border)] text-[var(--foreground)] text-center h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm"
-                                      min="0"
-                                    />
-                                    <Input
-                                      type="number"
-                                      step="0.5"
-                                      value={editingSets[s.routine_template_exercise_set_id]?.weight || "0"}
-                                      onChange={(e) =>
-                                        updateEditingSet(s.routine_template_exercise_set_id, "weight", e.target.value)
-                                      }
-                                      className="bg-white border-[var(--border)] text-[var(--foreground)] text-center h-8 rounded-md focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 text-sm"
-                                      min="0"
-                                    />
-                                    <TactileButton
-                                      variant="secondary"
-                                      size="sm"
-                                      onClick={() =>
-                                        removeSetFromExercise(
-                                          savedExercise.routine_template_exercise_id,
-                                          s.routine_template_exercise_set_id
-                                        )
-                                      }
-                                      disabled={sortedSets.length <= 1}
-                                      className={`p-1 h-auto ${sortedSets.length <= 1
-                                        ? "opacity-30 cursor-not-allowed"
-                                        : "bg-red-50 text-red-500 hover:bg-red-100"
-                                        }`}
-                                      title="Remove this set"
-                                    >
-                                      <X size={14} />
-                                    </TactileButton>
-                                  </div>
-                                ))}
-
-                                <TactileButton
-                                  onClick={() => addSetToExercise(savedExercise.routine_template_exercise_id)}
-                                  className="w-full py-2 text-sm bg-[var(--warm-sage)]/10 text-[var(--warm-sage)] hover:bg-[var(--warm-sage)]/20 border-2 border-dashed border-[var(--warm-sage)]/30 rounded-lg"
-                                >
-                                  <Plus size={16} className="mr-2" />
-                                  Add Set
-                                </TactileButton>
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                {sortedSets.map((s) => (
-                                  <div
-                                    key={s.routine_template_exercise_set_id}
-                                    className="flex items-center justify-between py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20"
-                                  >
-                                    <span className="text-sm font-medium text-[var(--warm-brown)]/80">
-                                      Set {s.set_order}
-                                    </span>
-                                    <div className="flex items-center gap-3 text-sm text-[var(--warm-brown)]">
-                                      {s.planned_reps ? (
-                                        <span className="bg-[var(--warm-sage)]/20 text-[var(--warm-sage)] px-2 py-1 rounded-md">
-                                          {s.planned_reps} reps
-                                        </span>
-                                      ) : null}
-                                      {s.planned_weight_kg ? (
-                                        <span className="bg-[var(--warm-coral)]/20 text-[var(--warm-coral)] px-2 py-1 rounded-md">
-                                          {s.planned_weight_kg}kg
-                                        </span>
-                                      ) : null}
-                                      {!s.planned_reps && !s.planned_weight_kg && (
-                                        <span className="text-[var(--warm-brown)]/50 italic">No data</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-center py-3">
-                            <p className="text-sm text-[var(--warm-brown)]/60">No sets data found</p>
-                            {!isEditing && (
-                              <TactileButton
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleEditSets(savedExercise.routine_template_exercise_id)}
-                                className="mt-2 px-3 py-1 text-xs bg-[var(--warm-coral)]/10 text-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/20 border-[var(--warm-coral)]/30"
-                              >
-                                Add Sets
-                              </TactileButton>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-[var(--muted-foreground)]">Ready to add exercises to this routine</p>
-            </div>
-          )}
-        </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-[var(--muted-foreground)]">
+                  Ready to add exercises to this routine
+                </p>
+              </div>
+            )}
+          </div>
+        </Section>
 
         {/* Configure Card (only when a new exercise is selected) */}
         {currentExercise && (
-          <div className="mx-4 mb-6 p-4 bg-white/70 border border-[var(--border)] rounded-2xl shadow-sm">
+          <Section variant="card" padding="md" className="mx-4 mb-6">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-12 h-12 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
                 <span className="text-lg font-medium text-[var(--muted-foreground)]">
@@ -743,7 +866,9 @@ export function ExerciseSetupScreen({
                 </span>
               </div>
               <div className="flex-1">
-                <h2 className="font-medium text-[var(--foreground)] mb-1">{currentExercise.name}</h2>
+                <h2 className="font-medium text-[var(--foreground)] mb-1">
+                  {currentExercise.name}
+                </h2>
                 <p className="text-sm text-[var(--muted-foreground)]">{sets.length} Sets</p>
               </div>
               <span className="text-xs bg-[var(--warm-coral)]/20 text-[var(--warm-coral)] px-2 py-1 rounded-full">
@@ -760,10 +885,14 @@ export function ExerciseSetupScreen({
             <div className="grid grid-cols-3 gap-4 mb-4">
               <div></div>
               <div className="text-center">
-                <h3 className="text-xs text-[var(--muted-foreground)] uppercase tracking-wider mb-2">REPS</h3>
+                <h3 className="text-xs text-[var(--muted-foreground)] uppercase tracking-wider mb-2">
+                  REPS
+                </h3>
               </div>
               <div className="text-center">
-                <h3 className="text-xs text-[var(--muted-foreground)] uppercase tracking-wider mb-2">WEIGHT (KG)</h3>
+                <h3 className="text-xs text-[var(--muted-foreground)] uppercase tracking-wider mb-2">
+                  WEIGHT (KG)
+                </h3>
               </div>
             </div>
 
@@ -771,7 +900,9 @@ export function ExerciseSetupScreen({
               {sets.map((s, index) => (
                 <div key={s.id} className="grid grid-cols-3 gap-4 items-center">
                   <div className="flex items-center justify-center">
-                    <span className="text-lg font-medium text-[var(--foreground)]">{index + 1}</span>
+                    <span className="text-lg font-medium text-[var(--foreground)]">
+                      {index + 1}
+                    </span>
                   </div>
                   <div>
                     <Input
@@ -796,8 +927,9 @@ export function ExerciseSetupScreen({
                       size="sm"
                       onClick={() => removeSet(s.id)}
                       disabled={sets.length <= 1}
-                      className={`p-2 h-auto bg-white/70 border-[var(--border)] hover:bg-red-50 ${sets.length <= 1 ? "opacity-30 cursor-not-allowed" : "text-red-500"
-                        }`}
+                      className={`p-2 h-auto bg-white/70 border-[var(--border)] hover:bg-red-50 ${
+                        sets.length <= 1 ? "opacity-30 cursor-not-allowed" : "text-red-500"
+                      }`}
                     >
                       <X size={16} />
                     </TactileButton>
@@ -838,31 +970,9 @@ export function ExerciseSetupScreen({
                 {isSaving ? "SAVING..." : "SAVE EXERCISE"}
               </TactileButton>
             </div>
-          </div>
+          </Section>
         )}
-      </div>
-
-      {/* Bottom Save/Cancel bar when editing inline */}
-      {hasUnsavedChanges && (
-        <div className="fixed-bottom-safe bg-white/95 backdrop-blur-sm border-t border-[var(--border)] z-50 px-4 pt-4">
-          <div className="flex gap-3">
-            <TactileButton
-              variant="secondary"
-              onClick={handleCancelAllEdits}
-              className="flex-1 h-12 bg-transparent border-[var(--warm-brown)]/20 text-[var(--warm-brown)]/60 hover:bg-[var(--soft-gray)] font-medium"
-            >
-              CANCEL ALL
-            </TactileButton>
-            <TactileButton
-              onClick={handleSaveAllChanges}
-              disabled={savingAllChanges}
-              className="flex-1 h-12 font-medium border-0 transition-all bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
-            >
-              {savingAllChanges ? "SAVING..." : `SAVE ALL (${editingExercises.size})`}
-            </TactileButton>
-          </div>
-        </div>
-      )}
-    </div>
+      </Stack>
+    </AppScreen>
   );
 }
