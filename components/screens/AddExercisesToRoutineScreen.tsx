@@ -6,7 +6,7 @@ import { supabaseAPI, Exercise } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
-import BackButton from "../BackButton";
+import ScreenHeader from "../ScreenHeader";
 
 interface AddExercisesToRoutineScreenProps {
   routineId?: number;               // context only
@@ -99,21 +99,10 @@ export function AddExercisesToRoutineScreen({
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col">
-      {/* Header – same pattern as Create Routine (no absolute, no sticky) */}
-      <div className="flex items-center p-4 bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
-        {/* Left */}
-        <BackButton onClick={onBack} />
-
-        {/* Center (one line, auto-size, truncates) */}
-        <div className="flex-1 min-w-0 text-center">
-          <h1 className="font-medium text-[var(--warm-brown)] truncate text-[clamp(16px,4.2vw,20px)]">
-            Select exercises
-          </h1>
-        </div>
-
-        {/* Right spacer to balance left button */}
-        <div className="w-10" />
-      </div>
+      <ScreenHeader
+        title="Select exercises"
+        onBack={onBack}
+      />
 
       {/* Search + Filter */}
       <div className="px-4 py-2 bg-white border-b border-[var(--border)]">
@@ -133,7 +122,7 @@ export function AddExercisesToRoutineScreen({
       </div>
 
       {/* Exercise List */}
-      <div className="overflow-y-auto px-4 pb-[calc(104px+env(safe-area-inset-bottom))]">
+      <div className="overflow-y-auto px-4 pb-[calc(96px+env(safe-area-inset-bottom))]">
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin mx-auto mb-2 w-8 h-8 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full" />
@@ -161,6 +150,7 @@ export function AddExercisesToRoutineScreen({
                       <button
                         key={exercise.exercise_id}
                         type="button"
+                        aria-pressed={isSelected}
                         onClick={() => handleSelectExercise(exercise)}
                         className="w-full text-left focus:outline-none"
                       >
@@ -209,8 +199,8 @@ export function AddExercisesToRoutineScreen({
             onClick={handleAddExercise}
             disabled={!selectedExercise || isAddingExercise}
             className={`h-14 px-8 min-w-[220px] sm:min-w-[260px] font-medium border-0 transition-all ${selectedExercise
-                ? "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
-                : "bg-[var(--warm-brown)]/20 text-[var(--warm-brown)]/40 cursor-not-allowed"
+              ? "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
+              : "bg-[var(--warm-brown)]/20 text-[var(--warm-brown)]/40 cursor-not-allowed"
               }`}
           >
             {isAddingExercise ? "ADDING..." : selectedExercise ? "ADD (1)" : "ADD"}

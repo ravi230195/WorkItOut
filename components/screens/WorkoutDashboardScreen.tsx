@@ -330,7 +330,7 @@ export default function WorkoutDashboardScreen({
                 <div className="max-h-[70vh] overflow-y-auto">
                   <div className="px-4 pb-2">
                     <p className="text-xs text-gray-500">Routine</p>
-                    <h3 className="font-medium text-[var(--warm-brown)] truncate">
+                    <h3 className="font-medium text-[var(--warm-brown)] truncate text-[clamp(14px,3.8vw,18px)]">
                       {actionRoutine.name}
                     </h3>
                   </div>

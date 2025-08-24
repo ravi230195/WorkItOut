@@ -6,7 +6,7 @@ import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
-import BackButton from "../BackButton";
+import ScreenHeader from "../ScreenHeader";
 
 interface CreateRoutineScreenProps {
   onBack: () => void;
@@ -49,14 +49,9 @@ export function CreateRoutineScreen({ onBack, onRoutineCreated }: CreateRoutineS
   };
 
   return (
-    <div className="bg-background flex flex-col pt-safe">
+    <div className="min-h-[100dvh] bg-background flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm">
-        <BackButton onClick={onBack} />
-        <h1 className="absolute left-1/2 -translate-x-1/2 font-medium text-[var(--warm-brown)] tracking-wide">
-        </h1>
-        <div className="w-10" />
-      </div>
+      <ScreenHeader title ="" onBack={onBack} />
 
       {/* Content */}
       <div className="px-4 py-8 space-y-8">

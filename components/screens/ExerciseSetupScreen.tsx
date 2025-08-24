@@ -6,7 +6,7 @@ import { supabaseAPI, Exercise, UserRoutineExercise, UserRoutineExerciseSet } fr
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
-import BackButton from "../BackButton";
+import ScreenHeader from "../ScreenHeader";
 
 interface ExerciseSet {
   id: string;
@@ -511,22 +511,14 @@ export function ExerciseSetupScreen({
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex flex-col kb-aware">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 safe-area-pt-12 bg-gradient-to-r from-[var(--background)] to-[var(--warm-cream)]/20 sticky top-0 z-10 border-b border-[var(--border)]">
-        <BackButton onClick={onBack} />
-        <h1 className="font-medium text-[var(--warm-brown)]">
-          {routineName || "Routine"}
-        </h1>
-        <TactileButton variant="secondary" size="sm" onClick={() => {
-          if (isEditingExistingRoutine && onShowExerciseSelector) {
-            onShowExerciseSelector();
-          } else {
-            onAddMoreExercises();
-          }
-        }}>
-          <Plus size={20} />
-        </TactileButton>
-      </div>
+      <ScreenHeader
+        title={routineName || "Routine"}
+        onBack={onBack}
+        onAdd={() => {
+          if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
+          else onAddMoreExercises();
+        }}
+      />
 
       <div className="flex-1">
         {/* Saved Exercises */}
