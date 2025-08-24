@@ -7,6 +7,7 @@ import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
+import BackButton from "../BackButton";
 
 interface RoutineEditorScreenProps {
   routineId: number;
@@ -25,16 +26,16 @@ interface ExerciseWithSets {
   }[];
 }
 
-export function RoutineEditorScreen({ 
-  routineId, 
-  routineName, 
-  onBack, 
-  onAddExercise, 
-  onSave 
+export function RoutineEditorScreen({
+  routineId,
+  routineName,
+  onBack,
+  onAddExercise,
+  onSave
 }: RoutineEditorScreenProps) {
   // Keyboard-aware scrolling
   useKeyboardInset();
-  
+
   const [exercises, setExercises] = useState<ExerciseWithSets[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,18 +51,18 @@ export function RoutineEditorScreen({
     try {
       // Get routine exercises
       const routineExercises = await supabaseAPI.getUserRoutineExercises(routineId);
-      
+
       // Get all exercises to map names
       const allExercises = await supabaseAPI.getExercises();
-      
+
       // Combine the data
       const exercisesWithSets: ExerciseWithSets[] = [];
-      
+
       for (const routineExercise of routineExercises) {
-        const exercise = allExercises.find(ex => 
+        const exercise = allExercises.find(ex =>
           (typeof ex.id === 'number' ? ex.id : parseInt(ex.id)) === routineExercise.exercise_id
         );
-        
+
         if (exercise) {
           exercisesWithSets.push({
             exercise,
@@ -74,7 +75,7 @@ export function RoutineEditorScreen({
           });
         }
       }
-      
+
       setExercises(exercisesWithSets);
     } catch (error) {
       console.error("Failed to load routine exercises:", error);
@@ -150,15 +151,9 @@ export function RoutineEditorScreen({
     <div className="bg-background flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-12 bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
-        <TactileButton 
-          variant="secondary"
-          size="sm"
-          onClick={onBack}
-        >
-          <ArrowLeft size={20} />
-        </TactileButton>
+        <BackButton onClick={onBack} />
         <h1 className="font-medium text-[var(--warm-brown)] uppercase tracking-wide">{routineName}</h1>
-        <TactileButton 
+        <TactileButton
           variant="secondary"
           size="sm"
           onClick={onAddExercise}
@@ -172,7 +167,7 @@ export function RoutineEditorScreen({
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
         <div className="space-y-6">
           {exercises.map((exerciseData, exerciseIndex) => (
-            <div 
+            <div
               key={exerciseData.routineExercise.routine_template_exercise_id}
               className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-[var(--border)]"
             >
@@ -180,7 +175,7 @@ export function RoutineEditorScreen({
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 bg-[var(--soft-gray)] rounded-lg flex items-center justify-center overflow-hidden">
                   {exerciseData.exercise.name.includes('Press') ? (
-                    <ImageWithFallback 
+                    <ImageWithFallback
                       src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=100&h=100&fit=crop&crop=center"
                       alt={exerciseData.exercise.name}
                       className="w-full h-full object-cover"
@@ -195,8 +190,8 @@ export function RoutineEditorScreen({
                   <h3 className="font-medium text-[var(--warm-brown)]">{exerciseData.exercise.name}</h3>
                   <p className="text-sm text-[var(--warm-brown)]/60">{exerciseData.sets.length} sets</p>
                 </div>
-                <TactileButton 
-                  variant="secondary" 
+                <TactileButton
+                  variant="secondary"
                   size="sm"
                   className="p-2 h-auto"
                 >

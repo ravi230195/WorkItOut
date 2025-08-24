@@ -248,12 +248,6 @@ export default function WorkoutDashboardScreen({
           <p className="text-[var(--warm-brown)]/60 text-sm mb-3">
             Start by adding a new routine
           </p>
-          <TactileButton
-            onClick={onCreateRoutine}
-            className="bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white px-4 py-2 text-sm font-medium rounded-xl"
-          >
-            Create Your First Routine
-          </TactileButton>
         </div>
       ) : (
         <div className="space-y-3">

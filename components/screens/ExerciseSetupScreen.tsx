@@ -6,6 +6,7 @@ import { supabaseAPI, Exercise, UserRoutineExercise, UserRoutineExerciseSet } fr
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
+import BackButton from "../BackButton";
 
 interface ExerciseSet {
   id: string;
@@ -134,138 +135,138 @@ export function ExerciseSetupScreen({
   // TOREMOVE
 
   // Pretty, safe chunk logger (avoids WebKit/Xcode truncation)
-function logChunks(label: string, data: unknown, chunkSize = 4000) {
-  let s: string;
-  try { s = typeof data === "string" ? data : JSON.stringify(data, null, 2); }
-  catch { s = String(data); }
-  for (let i = 0; i < s.length; i += chunkSize) {
-    // keep label short; some consoles cut very long prefixes
-    console.debug(`${label} [${i}-${Math.min(i + chunkSize, s.length)}/${s.length}]`, s.slice(i, i + chunkSize));
+  function logChunks(label: string, data: unknown, chunkSize = 4000) {
+    let s: string;
+    try { s = typeof data === "string" ? data : JSON.stringify(data, null, 2); }
+    catch { s = String(data); }
+    for (let i = 0; i < s.length; i += chunkSize) {
+      // keep label short; some consoles cut very long prefixes
+      console.debug(`${label} [${i}-${Math.min(i + chunkSize, s.length)}/${s.length}]`, s.slice(i, i + chunkSize));
+    }
   }
-}
 
-// Sanity checks for sets payload before sending to DB
-function validateSetsPayload(rows: Array<{ reps: number; weight: number; set_order: number }>) {
-  const errors: string[] = [];
-  rows.forEach((r, i) => {
-    if (!Number.isInteger(r.reps) || r.reps < 0) errors.push(`row ${i}: reps must be int ≥ 0 (got ${r.reps})`);
-    if (!(Number.isFinite(r.weight) && r.weight >= 0)) errors.push(`row ${i}: weight must be number ≥ 0 (got ${r.weight})`);
-    if (!Number.isInteger(r.set_order) || r.set_order <= 0) errors.push(`row ${i}: set_order must be int ≥ 1 (got ${r.set_order})`);
-  });
-  const expectedSeq = rows.map((_, i) => i + 1).join(",");
-  const actualSeq = rows.map(r => r.set_order).join(",");
-  if (expectedSeq !== actualSeq) errors.push(`set_order sequence mismatch. expected [${expectedSeq}] got [${actualSeq}]`);
-  return errors;
-}
+  // Sanity checks for sets payload before sending to DB
+  function validateSetsPayload(rows: Array<{ reps: number; weight: number; set_order: number }>) {
+    const errors: string[] = [];
+    rows.forEach((r, i) => {
+      if (!Number.isInteger(r.reps) || r.reps < 0) errors.push(`row ${i}: reps must be int ≥ 0 (got ${r.reps})`);
+      if (!(Number.isFinite(r.weight) && r.weight >= 0)) errors.push(`row ${i}: weight must be number ≥ 0 (got ${r.weight})`);
+      if (!Number.isInteger(r.set_order) || r.set_order <= 0) errors.push(`row ${i}: set_order must be int ≥ 1 (got ${r.set_order})`);
+    });
+    const expectedSeq = rows.map((_, i) => i + 1).join(",");
+    const actualSeq = rows.map(r => r.set_order).join(",");
+    if (expectedSeq !== actualSeq) errors.push(`set_order sequence mismatch. expected [${expectedSeq}] got [${actualSeq}]`);
+    return errors;
+  }
 
   // Helper to find exercise_id when creating new sets (no existing rows)
   const getExerciseIdForTemplate = (templateId: number) => {
     const row = savedExercises.find((e) => e.routine_template_exercise_id === templateId);
     return row?.exercise_id ?? null;
-    };
+  };
 
-// Save the configure-card (newly selected exercise)
-const handleSave = async () => {
-  if (!currentExercise) {
-    toast.error("No exercise selected");
-    return;
-  }
-  if (!userToken) {
-    toast.error("Please sign in to save exercise");
-    return;
-  }
-
-  const hasValidSet = sets.some((s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0);
-  if (!hasValidSet) {
-    toast.error("Please add at least one set with reps or weight");
-    return;
-  }
-
-  setIsSaving(true);
-  try {
-    const exerciseOrder = savedExercises.length + 1;
-
-    // 🧪 Context + raw sets
-    console.debug("🧪 [SAVE] context", {
-      routineId,
-      exerciseOrder,
-      currentExercise: { id: currentExercise.exercise_id, name: currentExercise.name },
-      savedExercisesLen: savedExercises.length,
-    });
-    logChunks("🧪 [SAVE] raw sets", sets);
-
-    const validSets = sets.filter((s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0);
-    logChunks("🧪 [SAVE] validSets", validSets);
-
-    const savedExercise = await supabaseAPI.addExerciseToRoutine(
-      routineId,
-      currentExercise.exercise_id,
-      exerciseOrder
-    );
-    if (!savedExercise) throw new Error("Failed to save exercise to routine");
-
-    // ✅ Confirm what the server returned
-    console.debug("✅ [addExerciseToRoutine] ok", {
-      routine_template_id: routineId,
-      routine_template_exercise_id: savedExercise.routine_template_exercise_id,
-      exercise_id: currentExercise.exercise_id,
-    });
-
-    // Include explicit set_order (1..n) so DB doesn't default to 1
-    const setsToSave = validSets.map((s, idx) => ({
-      reps: parseInt(s.reps) || 0,
-      weight: parseFloat(s.weight) || 0,
-      set_order: idx + 1
-    }));
-
-    // 🧪 Validate mapped payload (client-side)
-    const valErrors = validateSetsPayload(setsToSave);
-    if (valErrors.length) console.warn("⚠️ [SETS VALIDATION ERRORS]", valErrors);
-    console.table(setsToSave);
-    logChunks("🧪 [SAVE] setsToSave (payload to API)", setsToSave);
-
-    // Heads-up: if your API expects planned_* columns, this will warn you.
-    if (setsToSave.length && !("planned_reps" in setsToSave[0])) {
-      console.warn("ℹ️ Your setsToSave use keys {reps, weight, set_order}. If API expects {planned_reps, planned_weight_kg}, this will fail.");
+  // Save the configure-card (newly selected exercise)
+  const handleSave = async () => {
+    if (!currentExercise) {
+      toast.error("No exercise selected");
+      return;
+    }
+    if (!userToken) {
+      toast.error("Please sign in to save exercise");
+      return;
     }
 
-    console.debug("➡️ [addExerciseSetsToRoutine] sending", {
-      rtexId: savedExercise.routine_template_exercise_id,
-      exerciseId: currentExercise.exercise_id,
-      count: setsToSave.length
-    });
+    const hasValidSet = sets.some((s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0);
+    if (!hasValidSet) {
+      toast.error("Please add at least one set with reps or weight");
+      return;
+    }
 
-    await supabaseAPI.addExerciseSetsToRoutine(
-      savedExercise.routine_template_exercise_id,
-      currentExercise.exercise_id,
-      setsToSave
-    );
+    setIsSaving(true);
+    try {
+      const exerciseOrder = savedExercises.length + 1;
 
-    console.debug("✅ [addExerciseSetsToRoutine] ok");
+      // 🧪 Context + raw sets
+      console.debug("🧪 [SAVE] context", {
+        routineId,
+        exerciseOrder,
+        currentExercise: { id: currentExercise.exercise_id, name: currentExercise.name },
+        savedExercisesLen: savedExercises.length,
+      });
+      logChunks("🧪 [SAVE] raw sets", sets);
 
-    // Recompute and save the muscle summary
-    await supabaseAPI.recomputeAndSaveRoutineMuscleSummary(routineId);
-    console.debug("♻️ [recomputeAndSaveRoutineMuscleSummary] ok");
+      const validSets = sets.filter((s) => parseInt(s.reps) > 0 || parseFloat(s.weight) > 0);
+      logChunks("🧪 [SAVE] validSets", validSets);
 
-    toast.success(`Added ${currentExercise.name} with ${validSets.length} sets`);
-    await refreshSavedExercises();
+      const savedExercise = await supabaseAPI.addExerciseToRoutine(
+        routineId,
+        currentExercise.exercise_id,
+        exerciseOrder
+      );
+      if (!savedExercise) throw new Error("Failed to save exercise to routine");
 
-    setCurrentExercise(undefined);
-    resetForm();
-    onSave();
-  } catch (error) {
-    // ❌ Rich error output
-    console.error("❌ [handleSave] Failed to save exercise", {
-      errorMessage: error instanceof Error ? error.message : String(error),
-      errorObj: error,
-    });
-    toast.error(
-      error instanceof Error ? `Failed to save exercise: ${error.message}` : "Failed to save exercise. Please try again."
-    );
-  } finally {
-    setIsSaving(false);
-  }
-};
+      // ✅ Confirm what the server returned
+      console.debug("✅ [addExerciseToRoutine] ok", {
+        routine_template_id: routineId,
+        routine_template_exercise_id: savedExercise.routine_template_exercise_id,
+        exercise_id: currentExercise.exercise_id,
+      });
+
+      // Include explicit set_order (1..n) so DB doesn't default to 1
+      const setsToSave = validSets.map((s, idx) => ({
+        reps: parseInt(s.reps) || 0,
+        weight: parseFloat(s.weight) || 0,
+        set_order: idx + 1
+      }));
+
+      // 🧪 Validate mapped payload (client-side)
+      const valErrors = validateSetsPayload(setsToSave);
+      if (valErrors.length) console.warn("⚠️ [SETS VALIDATION ERRORS]", valErrors);
+      console.table(setsToSave);
+      logChunks("🧪 [SAVE] setsToSave (payload to API)", setsToSave);
+
+      // Heads-up: if your API expects planned_* columns, this will warn you.
+      if (setsToSave.length && !("planned_reps" in setsToSave[0])) {
+        console.warn("ℹ️ Your setsToSave use keys {reps, weight, set_order}. If API expects {planned_reps, planned_weight_kg}, this will fail.");
+      }
+
+      console.debug("➡️ [addExerciseSetsToRoutine] sending", {
+        rtexId: savedExercise.routine_template_exercise_id,
+        exerciseId: currentExercise.exercise_id,
+        count: setsToSave.length
+      });
+
+      await supabaseAPI.addExerciseSetsToRoutine(
+        savedExercise.routine_template_exercise_id,
+        currentExercise.exercise_id,
+        setsToSave
+      );
+
+      console.debug("✅ [addExerciseSetsToRoutine] ok");
+
+      // Recompute and save the muscle summary
+      await supabaseAPI.recomputeAndSaveRoutineMuscleSummary(routineId);
+      console.debug("♻️ [recomputeAndSaveRoutineMuscleSummary] ok");
+
+      toast.success(`Added ${currentExercise.name} with ${validSets.length} sets`);
+      await refreshSavedExercises();
+
+      setCurrentExercise(undefined);
+      resetForm();
+      onSave();
+    } catch (error) {
+      // ❌ Rich error output
+      console.error("❌ [handleSave] Failed to save exercise", {
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorObj: error,
+      });
+      toast.error(
+        error instanceof Error ? `Failed to save exercise: ${error.message}` : "Failed to save exercise. Please try again."
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
 
   const handleKebabClick = async (savedExercise: SavedExerciseWithDetails, e: React.MouseEvent) => {
@@ -512,29 +513,17 @@ const handleSave = async () => {
     <div className="min-h-[100dvh] bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex flex-col kb-aware">
       {/* Header */}
       <div className="flex items-center justify-between p-4 safe-area-pt-12 bg-gradient-to-r from-[var(--background)] to-[var(--warm-cream)]/20 sticky top-0 z-10 border-b border-[var(--border)]">
-        <TactileButton
-          variant="secondary"
-          size="sm"
-          onClick={onBack}
-          className="p-2 h-auto bg-white/70 border-[var(--border)] text-[var(--foreground)] hover:bg-white btn-tactile"
-        >
-          <ArrowLeft size={20} />
-        </TactileButton>
-        <h1 className="font-medium text-[var(--foreground)] uppercase tracking-wide">
-          {routineName || "ROUTINE"}
+        <BackButton onClick={onBack} />
+        <h1 className="font-medium text-[var(--warm-brown)]">
+          {routineName || "Routine"}
         </h1>
-        <TactileButton
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            if (isEditingExistingRoutine && onShowExerciseSelector) {
-              onShowExerciseSelector();
-            } else {
-              onAddMoreExercises();
-            }
-          }}
-          className="p-2 h-auto bg-green-500 border-green-600 text-white hover:bg-green-600 btn-tactile-sage"
-        >
+        <TactileButton variant="secondary" size="sm" onClick={() => {
+          if (isEditingExistingRoutine && onShowExerciseSelector) {
+            onShowExerciseSelector();
+          } else {
+            onAddMoreExercises();
+          }
+        }}>
           <Plus size={20} />
         </TactileButton>
       </div>
@@ -574,11 +563,10 @@ const handleSave = async () => {
                 return (
                   <div key={savedExercise.routine_template_exercise_id || index} className="space-y-2">
                     <div
-                      className={`flex items-center gap-3 p-3 border rounded-xl transition-all cursor-pointer ${
-                        isEditing
-                          ? "bg-[var(--warm-coral)]/5 border-[var(--warm-coral)]/30"
-                          : "bg-white/70 border-[var(--border)] hover:bg-white/90"
-                      }`}
+                      className={`flex items-center gap-3 p-3 border rounded-xl transition-all cursor-pointer ${isEditing
+                        ? "bg-[var(--warm-coral)]/5 border-[var(--warm-coral)]/30"
+                        : "bg-white/70 border-[var(--border)] hover:bg-white/90"
+                        }`}
                       onClick={(e) => handleKebabClick(savedExercise, e)}
                     >
                       <div className="w-10 h-10 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
@@ -598,9 +586,8 @@ const handleSave = async () => {
                           variant="secondary"
                           size="sm"
                           onClick={(e) => handleKebabClick(savedExercise, e)}
-                          className={`p-2 h-auto bg-transparent hover:bg-[var(--warm-brown)]/10 text-[var(--warm-brown)]/60 hover:text-[var(--warm-brown)] ${
-                            isEditing ? "ring-2 ring-[var(--warm-coral)]/30" : ""
-                          }`}
+                          className={`p-2 h-auto bg-transparent hover:bg-[var(--warm-brown)]/10 text-[var(--warm-brown)]/60 hover:text-[var(--warm-brown)] ${isEditing ? "ring-2 ring-[var(--warm-coral)]/30" : ""
+                            }`}
                         >
                           {isExpanded ? <ChevronUp size={16} /> : <MoreVertical size={16} />}
                         </TactileButton>
@@ -677,11 +664,10 @@ const handleSave = async () => {
                                         )
                                       }
                                       disabled={sortedSets.length <= 1}
-                                      className={`p-1 h-auto ${
-                                        sortedSets.length <= 1
-                                          ? "opacity-30 cursor-not-allowed"
-                                          : "bg-red-50 text-red-500 hover:bg-red-100"
-                                      }`}
+                                      className={`p-1 h-auto ${sortedSets.length <= 1
+                                        ? "opacity-30 cursor-not-allowed"
+                                        : "bg-red-50 text-red-500 hover:bg-red-100"
+                                        }`}
                                       title="Remove this set"
                                     >
                                       <X size={14} />
@@ -818,9 +804,8 @@ const handleSave = async () => {
                       size="sm"
                       onClick={() => removeSet(s.id)}
                       disabled={sets.length <= 1}
-                      className={`p-2 h-auto bg-white/70 border-[var(--border)] hover:bg-red-50 ${
-                        sets.length <= 1 ? "opacity-30 cursor-not-allowed" : "text-red-500"
-                      }`}
+                      className={`p-2 h-auto bg-white/70 border-[var(--border)] hover:bg-red-50 ${sets.length <= 1 ? "opacity-30 cursor-not-allowed" : "text-red-500"
+                        }`}
                     >
                       <X size={16} />
                     </TactileButton>

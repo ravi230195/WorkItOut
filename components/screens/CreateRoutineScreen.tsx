@@ -6,6 +6,7 @@ import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
+import BackButton from "../BackButton";
 
 interface CreateRoutineScreenProps {
   onBack: () => void;
@@ -51,11 +52,8 @@ export function CreateRoutineScreen({ onBack, onRoutineCreated }: CreateRoutineS
     <div className="bg-background flex flex-col pt-safe">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm">
-        <TactileButton variant="secondary" size="sm" onClick={onBack}>
-          <ArrowLeft size={20} />
-        </TactileButton>
+        <BackButton onClick={onBack} />
         <h1 className="absolute left-1/2 -translate-x-1/2 font-medium text-[var(--warm-brown)] tracking-wide">
-        NAME YOUR WORKOUT
         </h1>
         <div className="w-10" />
       </div>
