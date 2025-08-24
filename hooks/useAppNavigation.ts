@@ -95,7 +95,7 @@ export function useAppNavigation() {
     // no navigation; screen handles UI refresh
   };
 
-  const closeRoutineEditor = () => setCurrentView("add-exercises-to-routine");
+
   const closeCreateRoutine = () => setCurrentView("workouts");
 
   const completeRoutineCreation = () => {
@@ -141,7 +141,7 @@ export function useAppNavigation() {
     handleExerciseSelected,
     closeExerciseSetup,
     handleExerciseSetupComplete,
-    closeRoutineEditor,
+
     showExerciseSetupEmpty,
     closeExerciseSetupToRoutines,
     handleUnauthorizedError,

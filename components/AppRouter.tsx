@@ -2,7 +2,7 @@ import  WorkoutDashboardScreen  from "./screens/WorkoutDashboardScreen";
 import { CreateRoutineScreen } from "./screens/CreateRoutineScreen";
 import { AddExercisesToRoutineScreen } from "./screens/AddExercisesToRoutineScreen";
 import { ExerciseSetupScreen } from "./screens/ExerciseSetupScreen";
-import { RoutineEditorScreen } from "./screens/RoutineEditorScreen";
+
 import { ProgressScreen } from "./screens/ProgressScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { SignInScreen } from "./screens/SignInScreen";
@@ -35,7 +35,7 @@ interface AppRouterProps {
   onCloseExerciseSetup: () => void;
   onExerciseSetupComplete: () => void;
 
-  onCloseRoutineEditor: () => void;
+
   onSelectRoutine: (routineId: number, routineName: string) => void;
 
   onCloseExerciseSetupToRoutines: () => void;
@@ -67,7 +67,7 @@ export function AppRouter({
   onCloseExerciseSetup,
   onExerciseSetupComplete,
 
-  onCloseRoutineEditor,
+
   onSelectRoutine,
 
   onCloseExerciseSetupToRoutines,
@@ -142,16 +142,6 @@ export function AppRouter({
             onShowExerciseSelector={onCloseExerciseSetup}
           />
         )}
-
-      {currentView === "routine-editor" && currentRoutineId && (
-        <RoutineEditorScreen
-          routineId={currentRoutineId}
-          routineName={currentRoutineName}
-          onBack={onCloseRoutineEditor}
-          onAddExercise={onCloseRoutineEditor}
-          onSave={onCompleteRoutineCreation}
-        />
-      )}
 
       {currentView === "progress" && <ProgressScreen />}
       {currentView === "profile" && <ProfileScreen />}

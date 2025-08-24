@@ -23,7 +23,7 @@ components/screens/
 ├── CreateRoutineScreen.tsx (Routine Creation)
 ├── AddExercisesToRoutineScreen.tsx (Exercise Selection)
 ├── ExerciseSetupScreen.tsx (Exercise Configuration)
-├── RoutineEditorScreen.tsx (Routine Editing)
+
 ├── SignInScreen.tsx (Authentication)
 └── SignUpScreen.tsx (User Registration)
 ```
@@ -172,7 +172,7 @@ selectedExerciseForSetup: Exercise | null
 - `"create-routine"` → `CreateRoutineScreen`
 - `"add-exercises-to-routine"` → `AddExercisesToRoutineScreen`
 - `"exercise-setup"` → `ExerciseSetupScreen`
-- `"routine-editor"` → `RoutineEditorScreen`
+
 
 ### **Navigation Rules:**
 1. **Back Button Consistency:** ExerciseSetupScreen always returns to main routines view

@@ -35,7 +35,7 @@ function AppContent() {
     handleExerciseSelected,
     closeExerciseSetup,
     handleExerciseSetupComplete,
-    closeRoutineEditor,
+  
     showExerciseSetupEmpty,
     closeExerciseSetupToRoutines,
     returnToExerciseSetup
@@ -72,7 +72,7 @@ function AppContent() {
           onExerciseSelected={handleExerciseSelected}
           onCloseExerciseSetup={closeExerciseSetup}
           onExerciseSetupComplete={handleExerciseSetupComplete}
-          onCloseRoutineEditor={closeRoutineEditor}
+  
           onSelectRoutine={showExerciseSetupEmpty}
           onCloseExerciseSetupToRoutines={closeExerciseSetupToRoutines}
           onReturnToExerciseSetup={returnToExerciseSetup}

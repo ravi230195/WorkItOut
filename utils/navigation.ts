@@ -5,7 +5,7 @@ export type AppView =
   | "create-routine"
   | "add-exercises-to-routine"
   | "exercise-setup"
-  | "routine-editor"
+
   | "progress"
   | "profile";
 
@@ -15,7 +15,7 @@ export const VIEWS_WITHOUT_BOTTOM_NAV: AppView[] = [
   "create-routine",
   "add-exercises-to-routine",
   "exercise-setup",
-  "routine-editor"
+
 ];
 
 export type ViewType = AppView;
