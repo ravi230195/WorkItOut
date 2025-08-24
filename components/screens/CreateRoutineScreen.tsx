@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Input } from "../ui/input";
 import { TactileButton } from "../TactileButton";
 import { useAuth } from "../AuthContext";
