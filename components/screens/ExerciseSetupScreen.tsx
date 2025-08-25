@@ -58,8 +58,6 @@ export function ExerciseSetupScreen({
 
   const [sets, setSets] = useState<ExerciseSet[]>([
     { id: "1", reps: "0", weight: "0" },
-    { id: "2", reps: "0", weight: "0" },
-    { id: "3", reps: "0", weight: "0" },
   ]);
   const [isSaving, setIsSaving] = useState(false);
   const [savedExercises, setSavedExercises] = useState<SavedExerciseWithDetails[]>([]);

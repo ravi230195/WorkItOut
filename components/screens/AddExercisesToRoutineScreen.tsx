@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Search } from "lucide-react";
 import { Input } from "../ui/input";
 import { TactileButton } from "../TactileButton";
+import SegmentedToggle from "../segmented/SegmentedToggle";
 import { supabaseAPI, Exercise } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
@@ -17,6 +18,10 @@ interface AddExercisesToRoutineScreenProps {
   isFromExerciseSetup?: boolean;
 }
 
+type MuscleFilter = "all" | string;
+
+const OTHER_GROUP = "Other";
+
 export function AddExercisesToRoutineScreen({
   routineId,
   routineName,
@@ -29,12 +34,12 @@ export function AddExercisesToRoutineScreen({
   const { userToken } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>("all") // 👈 default = ALL
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingExercise, setIsAddingExercise] = useState(false);
 
-  // load exercises
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -56,12 +61,35 @@ export function AddExercisesToRoutineScreen({
     };
   }, []);
 
-  // filter + group (memo)
-  const grouped = useMemo(() => {
+  // unique muscle groups (built once per fetch)
+  const muscleGroups = useMemo(() => {
+    const s = new Set<string>();
+    for (const ex of exercises) {
+      const g = (ex.muscle_group || "").trim();
+      s.add(g || OTHER_GROUP);
+    }
+    return Array.from(s).sort((a, b) => a.localeCompare(b));
+  }, [exercises]);
+
+  // pre-index by muscle group for fast toggling
+  const byGroup = useMemo(() => {
+    const map = new Map<string, Exercise[]>();
+    for (const ex of exercises) {
+      const key = (ex.muscle_group || "").trim() || OTHER_GROUP;
+      (map.get(key) ?? map.set(key, []).get(key)!).push(ex);
+    }
+    return map;
+  }, [exercises]);
+
+  // compose the base list from muscleFilter, then apply search, then group A–Z
+  const groupedAZ = useMemo(() => {
+    const base =
+      muscleFilter === "all" ? exercises : (byGroup.get(muscleFilter) ?? []);
+
     const q = searchQuery.trim().toLowerCase();
     const filtered = q
-      ? exercises.filter((ex) => ex.name.toLowerCase().includes(q))
-      : exercises;
+      ? base.filter((ex) => ex.name.toLowerCase().includes(q))
+      : base;
 
     const out: Record<string, Exercise[]> = {};
     for (const ex of filtered) {
@@ -69,7 +97,7 @@ export function AddExercisesToRoutineScreen({
       (out[k] ||= []).push(ex);
     }
     return out;
-  }, [exercises, searchQuery]);
+  }, [exercises, byGroup, muscleFilter, searchQuery]);
 
   const handleSelectExercise = (exercise: Exercise) => {
     setSelectedExercise((prev) =>
@@ -97,10 +125,18 @@ export function AddExercisesToRoutineScreen({
     }
   };
 
+  // segmented options: ALL + one per muscle group present
+  const segmentOptions = useMemo(
+    () => [
+      { value: "all" as MuscleFilter, label: "ALL" },
+      ...muscleGroups.map((g) => ({ value: g as MuscleFilter, label: g })),
+    ],
+    [muscleGroups]
+  );
+
   return (
     <AppScreen
       header={<ScreenHeader title="Select exercises" onBack={onBack} denseSmall />}
-      // Wider on tablets; AppScreen provides responsive gutters
       maxContent="responsive"
       padContent={false}
       contentClassName="pb-24"
@@ -111,7 +147,7 @@ export function AddExercisesToRoutineScreen({
           <TactileButton
             onClick={handleAddExercise}
             disabled={!selectedExercise || isAddingExercise}
-            className={`h-12 md:h-14  sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
+            className={`h-12 md:h-14 sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
               selectedExercise
                 ? "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
                 : "bg-[var(--warm-brown)]/20 text-[var(--warm-brown)]/40 cursor-not-allowed"
@@ -124,6 +160,23 @@ export function AddExercisesToRoutineScreen({
       bottomBarSticky
     >
       <Stack gap="fluid">
+        <Spacer y="xss" />
+
+        {/* Segmented muscle-group filter */}
+        <Section variant="plain" padding="none">
+          <div className="overflow-x-auto no-scrollbar">
+            <SegmentedToggle<MuscleFilter>
+              value={muscleFilter}
+              onChange={setMuscleFilter}
+              options={segmentOptions}
+              size="sm"
+              variant="filled"
+              tone="accent"
+              className="min-w-max"
+            />
+          </div>
+        </Section>
+
         <Spacer y="xss" />
 
         {/* Search */}
@@ -154,12 +207,14 @@ export function AddExercisesToRoutineScreen({
         >
           {!isLoading && (
             <>
-              {Object.keys(grouped).length === 0 ? (
+              {Object.keys(groupedAZ).length === 0 ? (
                 <Section variant="card" className="text-center">
-                  <p className="text-[var(--warm-brown)]/60">No exercises found</p>
+                  <p className="text-[var(--warm-brown)]/60">
+                    No exercises found
+                  </p>
                 </Section>
               ) : (
-                Object.keys(grouped)
+                Object.keys(groupedAZ)
                   .sort((a, b) => a.localeCompare(b))
                   .map((letter) => (
                     <div key={letter}>
@@ -167,7 +222,7 @@ export function AddExercisesToRoutineScreen({
                         {letter}
                       </h2>
                       <div className="space-y-2">
-                        {grouped[letter].map((exercise) => {
+                        {groupedAZ[letter].map((exercise) => {
                           const isSelected =
                             selectedExercise?.exercise_id === exercise.exercise_id;
                           const initials = exercise.name.substring(0, 2).toUpperCase();
@@ -199,7 +254,7 @@ export function AddExercisesToRoutineScreen({
                                       {exercise.name}
                                     </h3>
                                     <p className="text-xs md:text-sm text-[var(--warm-brown)]/60 truncate">
-                                      {exercise.muscle_group}
+                                      {(exercise.muscle_group || "").trim() || OTHER_GROUP}
                                     </p>
                                   </div>
                                   <div className="text-[var(--warm-brown)]/40">
