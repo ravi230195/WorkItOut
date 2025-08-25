@@ -68,7 +68,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp }: SignInScreen
       // gutters for small screens; allow internal scroll if needed
       contentClassName="w-full px-6 py-6"
       // use a narrower content width for auth flows
-      maxContent="sm"
+      maxContent="responsive"
     >
       <Card
         className="

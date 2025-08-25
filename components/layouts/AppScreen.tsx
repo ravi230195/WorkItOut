@@ -5,47 +5,37 @@ import { classForMaxContent } from "./layout-types";
 
 export type AppScreenProps = React.PropsWithChildren<{
   header?: React.ReactNode | null;
-  /** Make the header stick to the top of the viewport. */
   stickyHeader?: boolean;
 
   bottomBar?: React.ReactNode | null;
-  /** Make the bottom bar stick to the bottom (above safe-area/keyboard). */
   bottomBarSticky?: boolean;
 
-  /** Control whether the AppScreen shell shows a bottom border under the header. */
-  showHeaderBorder?: boolean;        // NEW (default true)
-  /** Control whether the AppScreen shell shows a top border above the bottom bar. */
-  showBottomBarBorder?: boolean;     // NEW (default true)
+  showHeaderBorder?: boolean;
+  showBottomBarBorder?: boolean;
 
-  /** Constrain inner content width (Tailwind presets). */
   maxContent?: MaxContent;
-  /** Explicit pixel max width for content (overrides Tailwind presets). */
   maxContentPx?: number;
-  /** Extra classes applied to the width-capped wrapper. */
   maxContentClassName?: string;
 
-  /** Apply default padding to the scrollable content area. */
+  /** Old knobs (kept for compatibility) */
   padContent?: boolean;
-  /** Apply default padding to the header inner wrapper. */
   padHeader?: boolean;
-  /** Apply default padding to the bottom bar inner wrapper. */
   padBottomBar?: boolean;
 
-  /** CSS var name (without var()) used for keyboard inset. */
   keyboardInsetVarName?: string;
 
-  /** Utility classes for the outer shell. */
   className?: string;
-  /** Utility classes for the content inner wrapper. */
   contentClassName?: string;
-  /** Utility classes for the scroll area container. */
   scrollAreaClassName?: string;
-  /** Utility classes for the header shell (outside of width wrapper). */
   headerShellClassName?: string;
-  /** Utility classes for the bottom bar shell (outside of width wrapper). */
   bottomBarShellClassName?: string;
-  /** Let AppScreen add top safe-area above the header shell. */
   padHeaderSafeArea?: boolean;
+
+  /** NEW: consistent responsive gutters for content */
+  contentGuttersPreset?: "none" | "compact" | "responsive";
+
+  /** NEW: reserve bottom space (e.g. tab bar / sticky footer) without redoing gutters */
+  contentBottomPaddingClassName?: string; // e.g., "pb-20" or "pb-24"
 }>;
 
 const cx = (...xs: Array<string | undefined | null | false>) =>
@@ -58,13 +48,14 @@ export default function AppScreen({
   bottomBar,
   bottomBarSticky = true,
 
-  showHeaderBorder = true,       // NEW
-  showBottomBarBorder = true,    // NEW
+  showHeaderBorder = true,
+  showBottomBarBorder = true,
 
   maxContent = "md",
   maxContentPx,
   maxContentClassName,
 
+  // legacy
   padContent = true,
   padHeader = true,
   padBottomBar = true,
@@ -77,6 +68,11 @@ export default function AppScreen({
   headerShellClassName = "",
   bottomBarShellClassName = "",
   padHeaderSafeArea = false,
+
+  // NEW
+  contentGuttersPreset = "responsive",
+  contentBottomPaddingClassName = "",
+
   children,
 }: AppScreenProps) {
   const shouldCenter = maxContent !== "none" || typeof maxContentPx === "number";
@@ -97,6 +93,16 @@ export default function AppScreen({
 
   const kbInsetChain = `var(${keyboardInsetVarName}, var(--kb-inset, var(--keyboard-inset, 0px)))`;
 
+  // Decide content gutters once, globally
+  const contentGutters =
+    contentGuttersPreset === "responsive"
+      ? "px-4 py-6 sm:px-6 md:px-8 md:py-8"
+      : contentGuttersPreset === "compact"
+      ? "px-4 py-4"
+      : padContent
+      ? "px-4" // backward-compat if someone opts into padContent manually
+      : "";
+
   return (
     <div
       className={cx("min-h-[100dvh] flex flex-col bg-background", className)}
@@ -114,7 +120,6 @@ export default function AppScreen({
             headerShellClassName
           )}
           style={{
-            // Only add if you explicitly want AppScreen to handle it
             paddingTop: padHeaderSafeArea ? "max(env(safe-area-inset-top), 0px)" : undefined,
           }}
         >
@@ -124,10 +129,14 @@ export default function AppScreen({
         </div>
       ) : null}
 
-
       <div className={cx("flex-1 overflow-y-auto w-full", scrollAreaClassName)}>
         <div
-          className={cx(innerWidthClasses, padContent && "px-4", contentClassName)}
+          className={cx(
+            innerWidthClasses,
+            contentGutters,                 // <-- unified gutters here
+            contentBottomPaddingClassName,  // <-- bottom reserve only
+            contentClassName                // any last-mile overrides
+          )}
           style={innerWidthStyle}
         >
           {children}
@@ -139,17 +148,14 @@ export default function AppScreen({
           className={cx(
             bottomBarSticky && "sticky bottom-0 z-30",
             "bg-white/95 backdrop-blur-sm",
-            showBottomBarBorder && "border-t border-[var(--border)]", // NEW
+            showBottomBarBorder && "border-t border-[var(--border)]",
             bottomBarShellClassName
           )}
           style={{
             paddingBottom: `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
           }}
         >
-          <div
-            className={cx(innerWidthClasses, padBottomBar && "px-4 pt-4")}
-            style={innerWidthStyle}
-          >
+          <div className={cx(innerWidthClasses, padBottomBar && "px-4 pt-4")} style={innerWidthStyle}>
             {bottomBar}
           </div>
         </div>

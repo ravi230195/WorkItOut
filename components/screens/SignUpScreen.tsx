@@ -102,9 +102,9 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn }: SignUpScreen
       // Center the card; allow the page (not the card) to manage the primary scroll
       scrollAreaClassName="grid place-items-center"
       // Safe gutters in the content wrapper
-      contentClassName="w-full px-6 py-6"
+      contentClassName="pb-20"
       // Slightly narrower max width than default for auth flows
-      maxContent="sm"
+      maxContent="responsive"
     >
       <Card
         className="

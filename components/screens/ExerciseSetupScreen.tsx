@@ -152,11 +152,13 @@ export function ExerciseSetupScreen({
     }
     for (let i = 0; i < s.length; i += chunkSize) {
       console.debug(
-        `${label} [${i}-${Math.min(i + chunkSize, s.length)}/${s.length}]`,
+        `${label} [${i}-${mathMin(i + chunkSize, s.length)}/${s.length}]`,
         s.slice(i, i + chunkSize)
       );
     }
   }
+  // small helper to avoid TS complaining about Math.min in template literal
+  const mathMin = (a: number, b: number) => Math.min(a, b);
 
   // Sanity checks for sets payload before sending to DB
   function validateSetsPayload(rows: Array<{ reps: number; weight: number; set_order: number }>) {
@@ -551,9 +553,10 @@ export function ExerciseSetupScreen({
           denseSmall
         />
       }
+      // Wider on big devices, but still centered; we own horizontal gutters here
       maxContent="responsive"
-      // leave room only when the Save/Cancel footer is present
-      contentClassName={`pb-20 ${hasUnsavedChanges ? "pb-24" : ""}`}
+      padContent={false}
+      contentClassName={hasUnsavedChanges ? "pb-24" : "pb-20"}
       bottomBar={
         hasUnsavedChanges ? (
           <FooterBar
@@ -561,21 +564,20 @@ export function ExerciseSetupScreen({
             bg="translucent"
             align="between"
             maxContent="responsive"
-            // give the inner row some breathing room like your old px-4
             innerClassName="w-full gap-3"
           >
             <div className="flex w-full gap-3">
               <TactileButton
                 variant="secondary"
                 onClick={handleCancelAllEdits}
-                className="flex-1 h-12 bg-transparent border-[var(--warm-brown)]/20 text-[var(--warm-brown)]/60 hover:bg-[var(--soft-gray)] font-medium"
+                className="flex-1 h-11 md:h-12 bg-transparent border-[var(--warm-brown)]/20 text-[var(--warm-brown)]/60 hover:bg-[var(--soft-gray)] font-medium"
               >
                 CANCEL ALL
               </TactileButton>
               <TactileButton
                 onClick={handleSaveAllChanges}
                 disabled={savingAllChanges}
-                className="flex-1 h-12 font-medium border-0 transition-all bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
+                className="flex-1 h-11 md:h-12 font-medium border-0 transition-all bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
               >
                 {savingAllChanges ? "SAVING..." : `SAVE ALL (${editingExercises.size})`}
               </TactileButton>
@@ -589,9 +591,9 @@ export function ExerciseSetupScreen({
         <Spacer y="sm" />
 
         {/* Saved Exercises */}
-        <Section variant="plain" padding="none" className="mx-0 sm:mx-0">
-          <div className="mx-4 mt-2 mb-6">
-            <h3 className="text-sm text-[var(--muted-foreground)] uppercase tracking-wider mb-3">
+        <Section variant="plain" padding="none">
+          <div className="mt-2 mb-6">
+            <h3 className="text-xs md:text-sm text-[var(--muted-foreground)] uppercase tracking-wider mb-3">
               EXERCISES IN ROUTINE ({savedExercises.length})
             </h3>
 
@@ -602,7 +604,7 @@ export function ExerciseSetupScreen({
                     key={i}
                     className="flex items-center gap-3 p-3 bg-white/50 rounded-xl animate-pulse"
                   >
-                    <div className="w-10 h-10 bg-[var(--muted)] rounded-lg" />
+                    <div className="w-9 h-9 md:w-10 md:h-10 bg-[var(--muted)] rounded-lg" />
                     <div className="flex-1 space-y-2">
                       <div className="h-4 bg-[var(--muted)] rounded w-3/4" />
                       <div className="h-3 bg-[var(--muted)] rounded w-1/2" />
@@ -633,25 +635,25 @@ export function ExerciseSetupScreen({
                       className="space-y-2"
                     >
                       <div
-                        className={`flex items-center gap-3 p-3 border rounded-xl transition-all cursor-pointer ${
+                        className={`flex items-center gap-3 p-3 border rounded-xl transition-all ${
                           isEditing
                             ? "bg-[var(--warm-coral)]/5 border-[var(--warm-coral)]/30"
-                            : "bg-white/70 border-[var(--border)] hover:bg-white/90"
+                            : "bg-white/70 border-[var(--border)]"
                         }`}
                         onClick={(e) => handleKebabClick(savedExercise, e)}
                       >
-                        <div className="w-10 h-10 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
-                          <span className="text-sm font-medium text-[var(--muted-foreground)]">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
+                          <span className="text-sm md:text-base font-medium text-[var(--muted-foreground)]">
                             {(savedExercise.exercise_name || "")
                               .substring(0, 2)
                               .toUpperCase()}
                           </span>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-[var(--foreground)]">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-[var(--foreground)] truncate">
                             {savedExercise.exercise_name}
                           </p>
-                          <p className="text-sm text-[var(--muted-foreground)]">
+                          <p className="text-xs md:text-sm text-[var(--muted-foreground)] truncate">
                             Exercise #{savedExercise.exercise_order} •{" "}
                             {savedExercise.category || "Exercise"}
                             {isEditing && (
@@ -659,23 +661,21 @@ export function ExerciseSetupScreen({
                             )}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <TactileButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={(e) => handleKebabClick(savedExercise, e)}
-                            className={`p-2 h-auto bg-transparent hover:bg-[var(--warm-brown)]/10 text-[var(--warm-brown)]/60 hover:text-[var(--warm-brown)] ${
-                              isEditing ? "ring-2 ring-[var(--warm-coral)]/30" : ""
-                            }`}
-                          >
-                            {isExpanded ? <ChevronUp size={16} /> : <MoreVertical size={16} />}
-                          </TactileButton>
-                        </div>
+                        <TactileButton
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => handleKebabClick(savedExercise, e)}
+                          className={`p-2 h-auto bg-transparent hover:bg-[var(--warm-brown)]/10 text-[var(--warm-brown)]/60 hover:text-[var(--warm-brown)] ${
+                            isEditing ? "ring-2 ring-[var(--warm-coral)]/30" : ""
+                          }`}
+                        >
+                          {isExpanded ? <ChevronUp size={16} /> : <MoreVertical size={16} />}
+                        </TactileButton>
                       </div>
 
                       {/* Sets Data Dropdown */}
                       {isExpanded && (
-                        <div className="bg-white/80 border border-[var(--border)] rounded-lg p-3 ml-4 mr-2 transition-all duration-200">
+                        <div className="bg-white/80 border border-[var(--border)] rounded-lg p-3 transition-all duration-200">
                           {isLoadingSetsData ? (
                             <div className="flex items-center justify-center py-4">
                               <div className="animate-spin w-4 h-4 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full" />
@@ -698,7 +698,7 @@ export function ExerciseSetupScreen({
                                         savedExercise.routine_template_exercise_id
                                       )
                                     }
-                                    className="px-3 py-1 text-xs bg-[var(--warm-coral)]/10 text-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/20 border-[var(--warm-coral)]/30"
+                                    className="px-3 py-1 text-xs md:text-sm bg-[var(--warm-coral)]/10 text-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/20 border-[var(--warm-coral)]/30"
                                   >
                                     Edit Sets
                                   </TactileButton>
@@ -707,7 +707,7 @@ export function ExerciseSetupScreen({
 
                               {isEditing ? (
                                 <div className="space-y-3">
-                                  <div className="grid grid-cols-4 gap-3 text-xs text-[var(--warm-brown)]/60 uppercase tracking-wider">
+                                  <div className="grid grid-cols-4 gap-3 md:gap-4 text-[10px] md:text-xs text-[var(--warm-brown)]/60 uppercase tracking-wider">
                                     <span>Set</span>
                                     <span className="text-center">Reps</span>
                                     <span className="text-center">Weight (kg)</span>
@@ -717,7 +717,7 @@ export function ExerciseSetupScreen({
                                   {sortedSets.map((s) => (
                                     <div
                                       key={s.routine_template_exercise_set_id}
-                                      className="grid grid-cols-4 gap-3 items-center py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20"
+                                      className="grid grid-cols-4 gap-3 md:gap-4 items-center py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20"
                                     >
                                       <span className="text-sm font-medium text-[var(--warm-brown)]/80">
                                         {s.set_order}
@@ -735,7 +735,7 @@ export function ExerciseSetupScreen({
                                             e.target.value
                                           )
                                         }
-                                        className="bg-white border-[var(--border)] text-[var(--foreground)] text-center h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm"
+                                        className="bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm"
                                         min="0"
                                       />
                                       <Input
@@ -752,7 +752,7 @@ export function ExerciseSetupScreen({
                                             e.target.value
                                           )
                                         }
-                                        className="bg-white border-[var(--border)] text-[var(--foreground)] text-center h-8 rounded-md focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 text-sm"
+                                        className="bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 text-sm"
                                         min="0"
                                       />
                                       <TactileButton
@@ -783,7 +783,7 @@ export function ExerciseSetupScreen({
                                         savedExercise.routine_template_exercise_id
                                       )
                                     }
-                                    className="w-full py-2 text-sm bg-[var(--warm-sage)]/10 text-[var(--warm-sage)] hover:bg-[var(--warm-sage)]/20 border-2 border-dashed border-[var(--warm-sage)]/30 rounded-lg"
+                                    className="w-full py-2 text-xs md:text-sm bg-[var(--warm-sage)]/10 text-[var(--warm-sage)] hover:bg-[var(--warm-sage)]/20 border-2 border-dashed border-[var(--warm-sage)]/30 rounded-lg"
                                   >
                                     <Plus size={16} className="mr-2" />
                                     Add Set
@@ -833,7 +833,7 @@ export function ExerciseSetupScreen({
                                   onClick={() =>
                                     handleEditSets(savedExercise.routine_template_exercise_id)
                                   }
-                                  className="mt-2 px-3 py-1 text-xs bg-[var(--warm-coral)]/10 text-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/20 border-[var(--warm-coral)]/30"
+                                  className="mt-2 px-3 py-1 text-xs md:text-sm bg-[var(--warm-coral)]/10 text-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/20 border-[var(--warm-coral)]/30"
                                 >
                                   Add Sets
                                 </TactileButton>
@@ -858,49 +858,51 @@ export function ExerciseSetupScreen({
 
         {/* Configure Card (only when a new exercise is selected) */}
         {currentExercise && (
-          <Section variant="card" padding="md" className="mx-4 mb-6">
+          <Section variant="card" padding="md" className="mb-6">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
-                <span className="text-lg font-medium text-[var(--muted-foreground)]">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
+                <span className="text-base md:text-lg font-medium text-[var(--muted-foreground)]">
                   {currentExercise.name.substring(0, 2).toUpperCase()}
                 </span>
               </div>
-              <div className="flex-1">
-                <h2 className="font-medium text-[var(--foreground)] mb-1">
+              <div className="flex-1 min-w-0">
+                <h2 className="font-medium text-[var(--foreground)] mb-1 truncate">
                   {currentExercise.name}
                 </h2>
-                <p className="text-sm text-[var(--muted-foreground)]">{sets.length} Sets</p>
+                <p className="text-xs md:text-sm text-[var(--muted-foreground)]">
+                  {sets.length} Sets
+                </p>
               </div>
-              <span className="text-xs bg-[var(--warm-coral)]/20 text-[var(--warm-coral)] px-2 py-1 rounded-full">
+              <span className="text-[10px] md:text-xs bg-[var(--warm-coral)]/20 text-[var(--warm-coral)] px-2 py-1 rounded-full">
                 CONFIGURING
               </span>
             </div>
 
             {getExerciseNote() && (
-              <p className="text-sm text-[var(--muted-foreground)] mb-4 italic bg-[var(--warm-cream)]/50 p-3 rounded-lg">
+              <p className="text-xs md:text-sm text-[var(--muted-foreground)] mb-4 italic bg-[var(--warm-cream)]/50 p-3 rounded-lg">
                 {getExerciseNote()}
               </p>
             )}
 
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div></div>
+            <div className="grid grid-cols-3 gap-3 md:gap-4 mb-4">
+              <div />
               <div className="text-center">
-                <h3 className="text-xs text-[var(--muted-foreground)] uppercase tracking-wider mb-2">
+                <h3 className="text-[10px] md:text-xs text-[var(--muted-foreground)] uppercase tracking-wider mb-2">
                   REPS
                 </h3>
               </div>
               <div className="text-center">
-                <h3 className="text-xs text-[var(--muted-foreground)] uppercase tracking-wider mb-2">
+                <h3 className="text-[10px] md:text-xs text-[var(--muted-foreground)] uppercase tracking-wider mb-2">
                   WEIGHT (KG)
                 </h3>
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 md:space-y-4">
               {sets.map((s, index) => (
-                <div key={s.id} className="grid grid-cols-3 gap-4 items-center">
+                <div key={s.id} className="grid grid-cols-3 gap-3 md:gap-4 items-center">
                   <div className="flex items-center justify-center">
-                    <span className="text-lg font-medium text-[var(--foreground)]">
+                    <span className="text-base md:text-lg font-medium text-[var(--foreground)]">
                       {index + 1}
                     </span>
                   </div>
@@ -909,7 +911,7 @@ export function ExerciseSetupScreen({
                       type="number"
                       value={s.reps}
                       onChange={(e) => updateSet(s.id, "reps", e.target.value)}
-                      className="bg-[var(--input-background)] border-[var(--border)] text-[var(--foreground)] text-center h-12 rounded-lg focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
+                      className="bg-[var(--input-background)] border-[var(--border)] text-[var(--foreground)] text-center h-11 md:h-12 rounded-lg focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
                       min="0"
                     />
                   </div>
@@ -919,7 +921,7 @@ export function ExerciseSetupScreen({
                       step="0.5"
                       value={s.weight}
                       onChange={(e) => updateSet(s.id, "weight", e.target.value)}
-                      className="bg-[var(--input-background)] border-[var(--border)] text-[var(--foreground)] text-center h-12 rounded-lg focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
+                      className="bg-[var(--input-background)] border-[var(--border)] text-[var(--foreground)] text-center h-11 md:h-12 rounded-lg focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
                       min="0"
                     />
                     <TactileButton
@@ -944,7 +946,9 @@ export function ExerciseSetupScreen({
                 className="flex items-center gap-2 bg-white/70 border-[var(--border)] text-[var(--foreground)] hover:bg-white px-4 py-2 rounded-lg btn-tactile"
               >
                 <Plus size={16} />
-                <span className="text-sm font-medium uppercase tracking-wider">Add Set</span>
+                <span className="text-xs md:text-sm font-medium uppercase tracking-wider">
+                  Add Set
+                </span>
               </TactileButton>
 
               {/* Trash cancels configure */}
@@ -965,7 +969,7 @@ export function ExerciseSetupScreen({
               <TactileButton
                 onClick={handleSave}
                 disabled={isSaving}
-                className="w-full h-14 bg-[var(--warm-coral)] text-white font-medium rounded-full hover:bg-[var(--warm-coral)]/90 btn-tactile"
+                className="w-full h-12 md:h-14 bg-[var(--warm-coral)] text-white font-medium rounded-full hover:bg-[var(--warm-coral)]/90 btn-tactile"
               >
                 {isSaving ? "SAVING..." : "SAVE EXERCISE"}
               </TactileButton>

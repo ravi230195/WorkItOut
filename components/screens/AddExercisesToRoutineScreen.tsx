@@ -1,3 +1,4 @@
+// components/screens/AddExercisesToRoutineScreen.tsx
 import { useState, useEffect, useMemo } from "react";
 import { Search } from "lucide-react";
 import { Input } from "../ui/input";
@@ -6,16 +7,14 @@ import { supabaseAPI, Exercise } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
-
-// Layout system
 import { AppScreen, ScreenHeader, Section, FooterBar, Stack, Spacer } from "../layouts";
 
 interface AddExercisesToRoutineScreenProps {
-  routineId?: number;               // context only
-  routineName: string;              // display only
-  onBack: () => void;               // parent decides where back goes
-  onExerciseSelected: (exercise: Exercise) => void; // tell parent to open configure
-  isFromExerciseSetup?: boolean;    // usually true in this flow
+  routineId?: number;
+  routineName: string;
+  onBack: () => void;
+  onExerciseSelected: (exercise: Exercise) => void;
+  isFromExerciseSetup?: boolean;
 }
 
 export function AddExercisesToRoutineScreen({
@@ -57,7 +56,7 @@ export function AddExercisesToRoutineScreen({
     };
   }, []);
 
-  // filter + group (memo to avoid recompute)
+  // filter + group (memo)
   const grouped = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const filtered = q
@@ -72,7 +71,6 @@ export function AddExercisesToRoutineScreen({
     return out;
   }, [exercises, searchQuery]);
 
-  // handlers
   const handleSelectExercise = (exercise: Exercise) => {
     setSelectedExercise((prev) =>
       prev?.exercise_id === exercise.exercise_id ? null : exercise
@@ -90,7 +88,7 @@ export function AddExercisesToRoutineScreen({
     }
     setIsAddingExercise(true);
     try {
-      onExerciseSelected(selectedExercise); // parent navigates to configure
+      onExerciseSelected(selectedExercise);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Please try again.";
       toast.error(`Failed to proceed: ${msg}`);
@@ -102,7 +100,10 @@ export function AddExercisesToRoutineScreen({
   return (
     <AppScreen
       header={<ScreenHeader title="Select exercises" onBack={onBack} denseSmall />}
+      // Wider on tablets; AppScreen provides responsive gutters
       maxContent="responsive"
+      padContent={false}
+      contentClassName="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 pb-24"
       showHeaderBorder={false}
       showBottomBarBorder={false}
       bottomBar={
@@ -110,21 +111,22 @@ export function AddExercisesToRoutineScreen({
           <TactileButton
             onClick={handleAddExercise}
             disabled={!selectedExercise || isAddingExercise}
-            className={`h-14 px-8 min-w-[220px] sm:min-w-[260px] font-medium border-0 transition-all ${selectedExercise
+            // Full-width on small screens, auto on larger
+            className={`h-12 md:h-14 w-full sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
+              selectedExercise
                 ? "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
                 : "bg-[var(--warm-brown)]/20 text-[var(--warm-brown)]/40 cursor-not-allowed"
-              }`}
+            }`}
           >
             {isAddingExercise ? "ADDING..." : selectedExercise ? "ADD (1)" : "ADD"}
           </TactileButton>
         </FooterBar>
       }
       bottomBarSticky
-      contentClassName="pb-20"
     >
       <Stack gap="fluid">
         <Spacer y="xss" />
-      
+
         {/* Search */}
         <Section variant="plain" padding="none">
           <div className="relative">
@@ -136,7 +138,7 @@ export function AddExercisesToRoutineScreen({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for an exercise..."
-              className="bg-[var(--input-background)] border-[var(--border)] text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/60 h-12 pl-10 pr-4 rounded-xl focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
+              className="bg-[var(--input-background)] border-[var(--border)] text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/60 h-12 md:h-12 pl-10 pr-4 rounded-xl focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
             />
           </div>
         </Section>
@@ -162,7 +164,7 @@ export function AddExercisesToRoutineScreen({
                   .sort((a, b) => a.localeCompare(b))
                   .map((letter) => (
                     <div key={letter}>
-                      <h2 className="text-[var(--warm-brown)]/60 font-medium mb-3 px-2 tracking-wide">
+                      <h2 className="text-xs md:text-sm text-[var(--warm-brown)]/60 font-medium mb-3 px-2 tracking-wide">
                         {letter}
                       </h2>
                       <div className="space-y-2">
@@ -181,23 +183,23 @@ export function AddExercisesToRoutineScreen({
                             >
                               <div
                                 className={[
-                                  "p-4 rounded-xl border transition-all",
+                                  "p-3 md:p-4 rounded-xl border transition-all",
                                   isSelected
                                     ? "bg-[var(--warm-coral)]/100 border-[var(--warm-coral)] shadow-md"
                                     : "bg-white border-[var(--border)] hover:bg-[var(--soft-gray)]/50 hover:border-[var(--warm-coral)]/30 hover:shadow-md",
                                 ].join(" ")}
                               >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-12 h-12 bg-[var(--warm-brown)]/10 rounded-lg flex items-center justify-center">
-                                    <span className="font-medium text-[var(--warm-brown)]/60">
+                                <div className="flex items-center gap-3 md:gap-4">
+                                  <div className="w-10 h-10 md:w-12 md:h-12 bg-[var(--warm-brown)]/10 rounded-lg grid place-items-center">
+                                    <span className="text-sm md:text-base font-medium text-[var(--warm-brown)]/60">
                                       {initials}
                                     </span>
                                   </div>
-                                  <div className="flex-1">
-                                    <h3 className="font-medium text-[var(--warm-brown)]">
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-medium text-[var(--warm-brown)] truncate">
                                       {exercise.name}
                                     </h3>
-                                    <p className="text-[var(--warm-brown)]/60">
+                                    <p className="text-xs md:text-sm text-[var(--warm-brown)]/60 truncate">
                                       {exercise.muscle_group}
                                     </p>
                                   </div>
@@ -219,7 +221,6 @@ export function AddExercisesToRoutineScreen({
           )}
         </Section>
 
-        {/* Add a tiny spacer before the footer bar’s sticky region if you like */}
         <Spacer y="xs" />
       </Stack>
     </AppScreen>

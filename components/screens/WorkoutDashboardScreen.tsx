@@ -1,3 +1,4 @@
+// components/screens/WorkoutDashboardScreen.tsx
 import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
 import { MoreVertical, AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
@@ -61,9 +62,7 @@ export default function WorkoutDashboardScreen({
         await reloadRoutines();
       } catch (error) {
         console.error(error);
-        setRoutinesError(
-          error instanceof Error ? error.message : "Failed to load routines"
-        );
+        setRoutinesError(error instanceof Error ? error.message : "Failed to load routines");
       } finally {
         setIsLoadingRoutines(false);
       }
@@ -74,7 +73,6 @@ export default function WorkoutDashboardScreen({
   // compute exercise counts for each routine (for time display)
   useEffect(() => {
     let cancelled = false;
-
     const fetchExerciseCounts = async () => {
       if (!userToken || routines.length === 0) {
         setExerciseCounts({});
@@ -96,9 +94,7 @@ export default function WorkoutDashboardScreen({
           }
         }
 
-        if (!cancelled) {
-          setExerciseCounts(Object.fromEntries(entries));
-        }
+        if (!cancelled) setExerciseCounts(Object.fromEntries(entries));
 
         if (needsRecompute.length > 0) {
           const results = await Promise.allSettled(
@@ -149,27 +145,15 @@ export default function WorkoutDashboardScreen({
     onOverlayChange?.(false);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays === 1) return "yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
-    return date.toLocaleDateString();
-  };
-
   return (
     <AppScreen
       header={<ScreenHeader title="My Routines" denseSmall />}
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}
-      contentClassName="pb-20" // leave room for your tab bar
+      contentClassName="pb-20"
     >
       <Stack gap="fluid">
-
         <Spacer y="sm" />
 
         {/* subtitle (title is in header) */}
@@ -186,15 +170,15 @@ export default function WorkoutDashboardScreen({
             goal={isLoadingSteps ? null : goal}
             recoveryPercent={null}
             strain={null}
-            onStepsClick={() => { }}
-            onRecoveryClick={() => { }}
-            onStrainClick={() => { }}
+            onStepsClick={() => {}}
+            onRecoveryClick={() => {}}
+            onStrainClick={() => {}}
           />
         </Section>
 
         <Spacer y="sm" />
 
-        {/* right-aligned create button (inline, original design) */}
+        {/* right-aligned create button */}
         <Section variant="plain" padding="none" className="flex justify-end">
           <TactileButton
             onClick={onCreateRoutine}
@@ -221,11 +205,7 @@ export default function WorkoutDashboardScreen({
                   variant="card"
                   title="Error Loading Routines"
                   actions={
-                    <TactileButton
-                      onClick={reloadRoutines}
-                      variant="secondary"
-                      className="px-4 py-2 text-sm"
-                    >
+                    <TactileButton onClick={reloadRoutines} variant="secondary" className="px-4 py-2 text-sm">
                       Try Again
                     </TactileButton>
                   }
@@ -255,55 +235,73 @@ export default function WorkoutDashboardScreen({
                     const timeMin = exerciseCount > 0 ? exerciseCount * 10 : null;
 
                     return (
-                      <div
+                      <button
                         key={routine.routine_template_id}
                         onClick={() =>
                           onSelectRoutine(routine.routine_template_id, routine.name)
                         }
-                        className="relative flex items-center gap-3 bg-white shadow-sm hover:shadow-md transition-all rounded-2xl p-4 border border-[var(--border)]"
+                        className="
+                          w-full
+                          rounded-2xl border border-[var(--border)]
+                          bg-white shadow-sm hover:shadow-md transition-all
+                          p-4
+                        "
                       >
-                        {/* kebab vertically centered */}
-                        <button
-                          className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-md hover:bg-[var(--soft-gray)]/60"
-                          onClick={(e) => openActions(routine, e)}
-                          aria-label="More options"
-                        >
-                          <MoreVertical size={18} className="text-[var(--warm-brown)]/70" />
-                        </button>
+                        <div className="flex items-center justify-between gap-3">
+                          {/* left cluster */}
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${palette.bg}`}>
+                              <div className={`w-8 h-8 ${palette.iconBg} rounded-lg grid place-items-center text-white text-lg`}>
+                                <span>{palette.emoji}</span>
+                              </div>
+                            </div>
 
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${palette.bg}`}>
-                          <div className={`w-8 h-8 ${palette.iconBg} rounded-lg grid place-items-center text-white text-lg`}>
-                            <span>{palette.emoji}</span>
+                            <div className="min-w-0">
+                              <h3
+                                className="
+                                  font-medium text-[var(--warm-brown)] truncate
+                                  text-[clamp(15px,3.8vw,17px)]
+                                "
+                              >
+                                {routine.name}
+                              </h3>
+
+                              <p className="text-[clamp(11px,3.2vw,12px)] text-[var(--warm-brown)]/60 truncate">
+                                {muscleGroups}
+                              </p>
+
+                              <div className="mt-2 flex items-center gap-4 text-[clamp(11px,3.2vw,12px)] text-[var(--warm-brown)]/70">
+                                <span className="inline-flex items-center gap-1">
+                                  <Clock size={14} />
+                                  {loadingCounts ? "—" : timeMin !== null ? `${timeMin} min` : "—"}
+                                </span>
+                                <span className="inline-flex items-center gap-1">
+                                  <TrendingUp size={14} />
+                                  {loadingCounts ? "—" : `${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}`}
+                                </span>
+                              </div>
+
+                              <p className="mt-1 text-[10px] text-[var(--warm-brown)]/40">
+                                Created {new Date(routine.created_at).toLocaleDateString()} • v{routine.version}
+                              </p>
+                            </div>
                           </div>
+
+                          {/* right: kebab, no absolute positioning */}
+                          <TactileButton
+                            variant="secondary"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openActions(routine, e);
+                            }}
+                            className="shrink-0 p-2 h-auto bg-transparent hover:bg-[var(--soft-gray)]/60 text-[var(--warm-brown)]/70"
+                            aria-label="More options"
+                          >
+                            <MoreVertical size={18} />
+                          </TactileButton>
                         </div>
-
-                        {/* padding so text doesn't run under kebab */}
-                        <div className="flex-1 min-w-0 pr-16">
-                          <h3 className="font-medium text-[var(--warm-brown)] truncate">
-                            {routine.name}
-                          </h3>
-
-                          <p className="text-xs text-[var(--warm-brown)]/60 truncate">
-                            {muscleGroups}
-                          </p>
-
-                          <div className="mt-2 flex items-center gap-4 text-xs text-[var(--warm-brown)]/70">
-                            <span className="inline-flex items-center gap-1">
-                              <Clock size={14} />
-                              {loadingCounts ? "—" : timeMin !== null ? `${timeMin} min` : "—"}
-                            </span>
-                            <span className="inline-flex items-center gap-1">
-                              <TrendingUp size={14} />
-                              {loadingCounts ? "—" : `${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}`}
-                            </span>
-                          </div>
-
-                          <p className="mt-1 text-[10px] text-[var(--warm-brown)]/40">
-                            Created {new Date(routine.created_at).toLocaleDateString()}
-                            {" "}• v{routine.version}
-                          </p>
-                        </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
