@@ -27,6 +27,7 @@ function AppContent() {
     currentRoutineName,
     selectedExerciseForSetup,
     setSelectedExerciseForSetup,
+    routineAccess,
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,
@@ -38,7 +39,7 @@ function AppContent() {
     handleExerciseSelected,
     closeExerciseSetup,
     handleExerciseSetupComplete,
-    showExerciseSetupEmpty,
+    onRoutineSelection,
     closeExerciseSetupToRoutines,
     returnToExerciseSetup
   } = useAppNavigation();
@@ -61,6 +62,7 @@ function AppContent() {
           currentView={currentView}
           currentRoutineId={currentRoutineId}
           currentRoutineName={currentRoutineName}
+          routineAccess={routineAccess}
           selectedExerciseForSetup={selectedExerciseForSetup}
           setSelectedExerciseForSetup={setSelectedExerciseForSetup}
           isAuthenticated={isAuthenticated}
@@ -74,7 +76,7 @@ function AppContent() {
           onExerciseSelected={handleExerciseSelected}
           onCloseExerciseSetup={closeExerciseSetup}
           onExerciseSetupComplete={handleExerciseSetupComplete}
-          onSelectRoutine={showExerciseSetupEmpty}
+          onSelectRoutine={onRoutineSelection}
           onCloseExerciseSetupToRoutines={closeExerciseSetupToRoutines}
           onReturnToExerciseSetup={returnToExerciseSetup}
           onOverlayChange={setOverlayOpen}

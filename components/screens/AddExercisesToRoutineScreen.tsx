@@ -103,7 +103,7 @@ export function AddExercisesToRoutineScreen({
       // Wider on tablets; AppScreen provides responsive gutters
       maxContent="responsive"
       padContent={false}
-      contentClassName="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 pb-24"
+      contentClassName="pb-24"
       showHeaderBorder={false}
       showBottomBarBorder={false}
       bottomBar={
@@ -111,8 +111,7 @@ export function AddExercisesToRoutineScreen({
           <TactileButton
             onClick={handleAddExercise}
             disabled={!selectedExercise || isAddingExercise}
-            // Full-width on small screens, auto on larger
-            className={`h-12 md:h-14 w-full sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
+            className={`h-12 md:h-14  sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
               selectedExercise
                 ? "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
                 : "bg-[var(--warm-brown)]/20 text-[var(--warm-brown)]/40 cursor-not-allowed"

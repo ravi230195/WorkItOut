@@ -10,11 +10,13 @@ import { SignUpScreen } from "./screens/SignUpScreen";
 
 import { AppView } from "../utils/navigation";
 import { Exercise } from "../utils/supabase/supabase-api";
+import { RoutineAccess } from "../hooks/useAppNavigation";
 
 interface AppRouterProps {
   currentView: AppView;
   currentRoutineId: number | null;
   currentRoutineName: string;
+  routineAccess: RoutineAccess;
 
   selectedExerciseForSetup: Exercise | null;
   setSelectedExerciseForSetup: (exercise: Exercise | null) => void;
@@ -36,7 +38,7 @@ interface AppRouterProps {
   onExerciseSetupComplete: () => void;
 
 
-  onSelectRoutine: (routineId: number, routineName: string) => void;
+  onSelectRoutine: (routineId: number, routineName: string, access?: RoutineAccess) => void;
 
   onCloseExerciseSetupToRoutines: () => void;
   onReturnToExerciseSetup: (exercise: Exercise) => void;
@@ -49,6 +51,7 @@ export function AppRouter({
   currentView,
   currentRoutineId,
   currentRoutineName,
+  routineAccess,
 
   selectedExerciseForSetup,
   setSelectedExerciseForSetup,
@@ -135,11 +138,12 @@ export function AppRouter({
             routineName={currentRoutineName}
             selectedExerciseForSetup={selectedExerciseForSetup}
             setSelectedExerciseForSetup={setSelectedExerciseForSetup}
-            onBack={onCloseExerciseSetupToRoutines}   // back to routines list
-            onSave={onExerciseSetupComplete}          // stay on setup
-            onAddMoreExercises={onCloseExerciseSetup} // “+” opens exercise picker
+            onBack={onCloseExerciseSetupToRoutines}
+            onSave={onExerciseSetupComplete}
+            onAddMoreExercises={onCloseExerciseSetup}
             isEditingExistingRoutine={true}
             onShowExerciseSelector={onCloseExerciseSetup}
+            access={routineAccess}
           />
         )}
 

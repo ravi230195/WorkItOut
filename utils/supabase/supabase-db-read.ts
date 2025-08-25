@@ -24,6 +24,14 @@ export class SupabaseDBRead extends SupabaseBase {
     return this.getOrFetchAndCache<UserRoutine[]>(url, key, CACHE_TTL.routines, true);
   }
 
+  // Routines (per user)
+  async getSampleRoutines(): Promise<UserRoutine[]> {
+    const user = "58b39a78-0284-445f-8c88-4fed2944c8be"
+    const url = `${SUPABASE_URL}/rest/v1/user_routines?user_id=eq.${user}&is_active=eq.true&select=*`;
+    const key = this.keyUserRoutines(user);
+    return this.getOrFetchAndCache<UserRoutine[]>(url, key, CACHE_TTL.routines, true);
+  }
+
   // Routine exercises (per routine)
   async getUserRoutineExercises(routineTemplateId: number): Promise<UserRoutineExercise[]> {
     const user = await this.getCurrentUser();

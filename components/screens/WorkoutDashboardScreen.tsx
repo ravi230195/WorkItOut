@@ -1,4 +1,3 @@
-// components/screens/WorkoutDashboardScreen.tsx
 import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
 import { MoreVertical, AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
@@ -10,11 +9,18 @@ import { toast } from "sonner";
 import ProgressRings from "../circularStat/ProgressRings";
 import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
 import RoutineActionsSheet from "../sheets/RoutineActionsSheets";
+import SegmentedToggle from "../segmented/SegmentedToggle";
+import { RoutineAccess } from "../../hooks/useAppNavigation";
 
 interface WorkoutDashboardScreenProps {
   onCreateRoutine: () => void;
-  onSelectRoutine: (routineId: number, routineName: string) => void;
+  onSelectRoutine: (routineId: number, routineName: string, access?: RoutineAccess) => void;
   onOverlayChange?: (open: boolean) => void;
+}
+
+export enum RoutinesView {
+  My = "my",
+  Sample = "sample",
 }
 
 /** 🎨 App-palette avatars */
@@ -34,6 +40,7 @@ export default function WorkoutDashboardScreen({
   useKeyboardInset();
   const { userToken } = useAuth();
 
+  const [view, setView] = useState<RoutinesView>(RoutinesView.My);
   const [routines, setRoutines] = useState<UserRoutine[]>([]);
   const [isLoadingRoutines, setIsLoadingRoutines] = useState(true);
   const [routinesError, setRoutinesError] = useState<string | null>(null);
@@ -47,34 +54,41 @@ export default function WorkoutDashboardScreen({
 
   const { steps, goal, isLoading: isLoadingSteps } = useStepTracking(true);
 
-  const reloadRoutines = async () => {
-    const data = await supabaseAPI.getUserRoutines();
-    setRoutines(data);
+  const canEdit = view === RoutinesView.My;
+
+  const reloadRoutines = async (which: RoutinesView = view) => {
+    setIsLoadingRoutines(true);
+    setRoutinesError(null);
+    try {
+      const data =
+        which === RoutinesView.My
+          ? await supabaseAPI.getUserRoutines()
+          : await supabaseAPI.getSampleRoutines();
+
+      setRoutines(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
+      setRoutinesError(error instanceof Error ? error.message : "Failed to load routines");
+    } finally {
+      setIsLoadingRoutines(false);
+    }
   };
 
-  // initial routines
+  // initial + on view/user change
   useEffect(() => {
-    const fetchInitial = async () => {
-      if (!userToken) return;
-      setIsLoadingRoutines(true);
-      setRoutinesError(null);
-      try {
-        await reloadRoutines();
-      } catch (error) {
-        console.error(error);
-        setRoutinesError(error instanceof Error ? error.message : "Failed to load routines");
-      } finally {
-        setIsLoadingRoutines(false);
-      }
-    };
-    fetchInitial();
-  }, [userToken]);
+    if (view === RoutinesView.My && !userToken) {
+      setRoutines([]);
+      return;
+    }
+    reloadRoutines(view);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, userToken]);
 
   // compute exercise counts for each routine (for time display)
   useEffect(() => {
     let cancelled = false;
     const fetchExerciseCounts = async () => {
-      if (!userToken || routines.length === 0) {
+      if (routines.length === 0) {
         setExerciseCounts({});
         return;
       }
@@ -85,20 +99,23 @@ export default function WorkoutDashboardScreen({
 
         for (const r of routines) {
           const list = await supabaseAPI.getUserRoutineExercises(r.routine_template_id);
-          const active = (Array.isArray(list) ? list : []).filter(x => x.is_active !== false);
+          const active = (Array.isArray(list) ? list : []).filter((x) => x.is_active !== false);
           entries.push([r.routine_template_id, active.length]);
 
-          const summary = (r as any).muscle_group_summary as string | undefined;
-          if (active.length > 0 && (!summary || summary.trim() === "")) {
-            needsRecompute.push(r.routine_template_id);
+          if (canEdit) {
+            const summary = (r as any).muscle_group_summary as string | undefined;
+            if (active.length > 0 && (!summary || summary.trim() === "")) {
+              needsRecompute.push(r.routine_template_id);
+            }
           }
         }
 
         if (!cancelled) setExerciseCounts(Object.fromEntries(entries));
 
-        if (needsRecompute.length > 0) {
+        // only recompute summaries for "my" data
+        if (canEdit && needsRecompute.length > 0) {
           const results = await Promise.allSettled(
-            needsRecompute.map(id => supabaseAPI.recomputeAndSaveRoutineMuscleSummary(id))
+            needsRecompute.map((id) => supabaseAPI.recomputeAndSaveRoutineMuscleSummary(id))
           );
           if (!cancelled) {
             const summariesById = new Map<number, string>();
@@ -107,8 +124,8 @@ export default function WorkoutDashboardScreen({
               if (res.status === "fulfilled") summariesById.set(id, res.value || "");
             });
             if (summariesById.size) {
-              setRoutines(prev =>
-                prev.map(rt =>
+              setRoutines((prev) =>
+                prev.map((rt) =>
                   summariesById.has(rt.routine_template_id)
                     ? ({ ...rt, muscle_group_summary: summariesById.get(rt.routine_template_id) } as any)
                     : rt
@@ -125,8 +142,10 @@ export default function WorkoutDashboardScreen({
     };
 
     fetchExerciseCounts();
-    return () => { cancelled = true; };
-  }, [userToken, routines]);
+    return () => {
+      cancelled = true;
+    };
+  }, [routines, canEdit]);
 
   useEffect(() => {
     return () => {
@@ -136,6 +155,7 @@ export default function WorkoutDashboardScreen({
   }, []);
 
   const openActions = (routine: UserRoutine, e: React.MouseEvent) => {
+    if (!canEdit) return; // hide in sample view
     e.stopPropagation();
     setActionRoutine(routine);
     onOverlayChange?.(true);
@@ -147,21 +167,24 @@ export default function WorkoutDashboardScreen({
 
   return (
     <AppScreen
-      header={<ScreenHeader title="My Routines" denseSmall />}
+      header={<ScreenHeader title={"My Routines"} denseSmall />}
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}
       contentClassName="pb-20"
     >
       <Stack gap="fluid">
-        <Spacer y="sm" />
 
         {/* subtitle (title is in header) */}
         <Section variant="plain" padding="none" className="text-center">
           <p className="text-sm text-[var(--warm-brown)]/60 mt-1">
-            Select a routine to start your workout
+            {view === "my"
+              ? "Select a routine to start your workout"
+              : "Explore prebuilt routines to get started"}
           </p>
         </Section>
+
+        <Spacer y="sm" />
 
         {/* Progress rings */}
         <Section variant="plain" padding="none">
@@ -170,25 +193,41 @@ export default function WorkoutDashboardScreen({
             goal={isLoadingSteps ? null : goal}
             recoveryPercent={null}
             strain={null}
-            onStepsClick={() => {}}
-            onRecoveryClick={() => {}}
-            onStrainClick={() => {}}
+            onStepsClick={() => { }}
+            onRecoveryClick={() => { }}
+            onStrainClick={() => { }}
           />
         </Section>
 
-        <Spacer y="sm" />
+        <Spacer y="xss" />
 
-        {/* right-aligned create button */}
-        <Section variant="plain" padding="none" className="flex justify-end">
-          <TactileButton
+        {/* top row: view toggle + create */}
+        <Section
+          variant="plain"
+          padding="none"
+          className="flex items-center justify-between gap-3"
+        >
+          <SegmentedToggle
+            value={view}
+            onChange={setView}
+            options={[
+              { value: RoutinesView.Sample, label: "Sample routines" },
+              { value: RoutinesView.My, label: "My routines" },
+            ]}
+            size="sm"
+            /* Light warm highlight when selected */
+            className="data-[checked=true]:bg-[var(--warm-coral)]/20 data-[checked=true]:text-[var(--warm-brown)]"
+            variant="filled"
+            tone="accent"
+          />
+
+          {canEdit && <TactileButton
             onClick={onCreateRoutine}
             className="bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white px-4 py-2 text-sm font-medium rounded-xl"
           >
             Create Routine
-          </TactileButton>
+          </TactileButton>}
         </Section>
-
-        <Spacer y="xss" />
 
         {/* routines list with Section loading state */}
         <Section
@@ -205,7 +244,7 @@ export default function WorkoutDashboardScreen({
                   variant="card"
                   title="Error Loading Routines"
                   actions={
-                    <TactileButton onClick={reloadRoutines} variant="secondary" className="px-4 py-2 text-sm">
+                    <TactileButton onClick={() => reloadRoutines()} variant="secondary" className="px-4 py-2 text-sm">
                       Try Again
                     </TactileButton>
                   }
@@ -220,7 +259,7 @@ export default function WorkoutDashboardScreen({
               ) : routines.length === 0 ? (
                 <Section variant="card" className="text-center">
                   <p className="text-[var(--warm-brown)]/60 text-sm">
-                    Start by adding a new routine
+                    {view === "my" ? "Start by adding a new routine" : "No sample routines found"}
                   </p>
                 </Section>
               ) : (
@@ -238,17 +277,18 @@ export default function WorkoutDashboardScreen({
                       <button
                         key={routine.routine_template_id}
                         onClick={() =>
-                          onSelectRoutine(routine.routine_template_id, routine.name)
+                          onSelectRoutine(routine.routine_template_id, routine.name,
+                            view === RoutinesView.My ? RoutineAccess.Editable : RoutineAccess.ReadOnly)
                         }
                         className="
                           w-full
                           rounded-2xl border border-[var(--border)]
                           bg-white shadow-sm hover:shadow-md transition-all
                           p-4
+                          text-left
                         "
                       >
                         <div className="flex items-center justify-between gap-3">
-                          {/* left cluster */}
                           <div className="flex items-center gap-3 min-w-0">
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${palette.bg}`}>
                               <div className={`w-8 h-8 ${palette.iconBg} rounded-lg grid place-items-center text-white text-lg`}>
@@ -259,18 +299,22 @@ export default function WorkoutDashboardScreen({
                             <div className="min-w-0">
                               <h3
                                 className="
-                                  font-medium text-[var(--warm-brown)] truncate
-                                  text-[clamp(15px,3.8vw,17px)]
+                                  font-medium text-[var(--warm-brown)] truncate 
+                                  text-[clamp(16px,4.5vw,19px)] 
+                                  text-left 
                                 "
                               >
                                 {routine.name}
                               </h3>
 
-                              <p className="text-[clamp(11px,3.2vw,12px)] text-[var(--warm-brown)]/60 truncate">
+                              <p className="text-[clamp(11px,3.2vw,12px)] text-[var(--warm-brown)]/60 truncate text-left">
                                 {muscleGroups}
                               </p>
 
-                              <div className="mt-2 flex items-center gap-4 text-[clamp(11px,3.2vw,12px)] text-[var(--warm-brown)]/70">
+                              <div className="
+                              mt-2 flex items-center gap-4 
+                              text-[clamp(11px,3.2vw,12px)] 
+                              text-[var(--warm-brown)]/70">
                                 <span className="inline-flex items-center gap-1">
                                   <Clock size={14} />
                                   {loadingCounts ? "—" : timeMin !== null ? `${timeMin} min` : "—"}
@@ -281,25 +325,27 @@ export default function WorkoutDashboardScreen({
                                 </span>
                               </div>
 
-                              <p className="mt-1 text-[10px] text-[var(--warm-brown)]/40">
+                              {/*<p className="mt-1 text-[10px] text-[var(--warm-brown)]/40">
                                 Created {new Date(routine.created_at).toLocaleDateString()} • v{routine.version}
-                              </p>
+                              </p>*/}
                             </div>
                           </div>
 
-                          {/* right: kebab, no absolute positioning */}
-                          <TactileButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openActions(routine, e);
-                            }}
-                            className="shrink-0 p-2 h-auto bg-transparent hover:bg-[var(--soft-gray)]/60 text-[var(--warm-brown)]/70"
-                            aria-label="More options"
-                          >
-                            <MoreVertical size={18} />
-                          </TactileButton>
+                          {/* right: kebab only when editable */}
+                          {canEdit && (
+                            <TactileButton
+                              variant="secondary"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openActions(routine, e);
+                              }}
+                              className="shrink-0 p-2 h-auto bg-transparent hover:bg-[var(--soft-gray)]/60 text-[var(--warm-brown)]/70"
+                              aria-label="More options"
+                            >
+                              <MoreVertical size={18} />
+                            </TactileButton>
+                          )}
                         </div>
                       </button>
                     );
@@ -310,8 +356,10 @@ export default function WorkoutDashboardScreen({
           )}
         </Section>
 
-        {/* bottom sheet */}
-        {actionRoutine && (
+        <Spacer y="xs" />
+
+        {/* bottom sheet (only when editing user's own routines) */}
+        {canEdit && actionRoutine && (
           <RoutineActionsSheet
             open={!!actionRoutine}
             routineName={actionRoutine?.name ?? ""}
@@ -319,14 +367,14 @@ export default function WorkoutDashboardScreen({
             onRequestRename={async (newName) => {
               if (!actionRoutine) return;
               await supabaseAPI.renameRoutine(actionRoutine.routine_template_id, newName);
-              await reloadRoutines();
+              await reloadRoutines(RoutinesView.My);
               toast.success("Routine renamed");
               closeActions();
             }}
             onRequestDelete={async () => {
               if (!actionRoutine) return;
               await supabaseAPI.deleteRoutine(actionRoutine.routine_template_id);
-              await reloadRoutines();
+              await reloadRoutines(RoutinesView.My);
               toast.success("Routine deleted");
               closeActions();
             }}

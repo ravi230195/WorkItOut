@@ -3,6 +3,11 @@ import { Exercise } from "../utils/supabase/supabase-api";
 import { ViewType } from "../utils/navigation";
 import { toast } from "sonner";
 
+export enum RoutineAccess {
+  Editable = "editable",
+  ReadOnly = "readonly",
+}
+
 export function useAppNavigation() {
   const [currentView, setCurrentView] = useState<ViewType>("workouts");
   const [activeTab, setActiveTab] = useState<"workouts" | "progress" | "profile">("workouts");
@@ -13,6 +18,8 @@ export function useAppNavigation() {
 
   // When picker returns, ExerciseSetup uses this to open configure form
   const [selectedExerciseForSetup, setSelectedExerciseForSetup] = useState<Exercise | null>(null);
+  const [routineAccess, setRoutineAccess] = useState<RoutineAccess>(RoutineAccess.Editable);
+
 
   const handleUnauthorizedError = (error: Error) => {
     if (error.message === "UNAUTHORIZED") {
@@ -54,6 +61,7 @@ export function useAppNavigation() {
     setCurrentRoutineName(routineName);
     if (routineId) setCurrentRoutineId(routineId);
     setSelectedExerciseForSetup(null); // start empty
+    setRoutineAccess(RoutineAccess.Editable);
     setCurrentView("exercise-setup");
   };
 
@@ -61,13 +69,6 @@ export function useAppNavigation() {
   const handleExerciseSelected = (exercise: Exercise, createdRoutineId?: number) => {
     if (createdRoutineId) setCurrentRoutineId(createdRoutineId);
     setSelectedExerciseForSetup(exercise);
-    setCurrentView("exercise-setup");
-  };
-
-  const showExerciseSetupEmpty = (routineId: number, routineName: string) => {
-    setCurrentRoutineId(routineId);
-    setCurrentRoutineName(routineName);
-    setSelectedExerciseForSetup(null);
     setCurrentView("exercise-setup");
   };
 
@@ -94,6 +95,14 @@ export function useAppNavigation() {
   const handleExerciseSetupComplete = () => {
     // no navigation; screen handles UI refresh
   };
+
+  /** When user selects a routine from a list (defaults to editable) */
+  const onRoutineSelection = (routineId: number, routineName: string, access?: RoutineAccess) => {
+    setCurrentRoutineId(routineId);
+    setCurrentRoutineName(routineName);
+    setSelectedExerciseForSetup(null);
+    setRoutineAccess(access || RoutineAccess.Editable);
+    setCurrentView("exercise-setup");  };
 
 
   const closeCreateRoutine = () => setCurrentView("workouts");
@@ -127,6 +136,8 @@ export function useAppNavigation() {
     refreshTrigger,
     selectedExerciseForSetup,
     setSelectedExerciseForSetup,
+    routineAccess,
+    setRoutineAccess,
 
     handleAuthSuccess,
     navigateToSignUp,
@@ -141,8 +152,8 @@ export function useAppNavigation() {
     handleExerciseSelected,
     closeExerciseSetup,
     handleExerciseSetupComplete,
+    onRoutineSelection,
 
-    showExerciseSetupEmpty,
     closeExerciseSetupToRoutines,
     handleUnauthorizedError,
     safeNavigate,

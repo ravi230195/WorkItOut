@@ -55,7 +55,7 @@ export default function CreateRoutineScreen({
       // Wider on tablets; let AppScreen own horizontal gutters
       maxContent="responsive"
       padContent={false}
-      contentClassName="w-full px-4 sm:px-6 md:px-8 py-6 md:py-8 pb-20"
+      contentClassName="pb-20"
       showHeaderBorder={false}
       showBottomBarBorder={false}
     >

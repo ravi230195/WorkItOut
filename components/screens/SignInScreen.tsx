@@ -66,7 +66,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp }: SignInScreen
       className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30"
       scrollAreaClassName="grid place-items-center"
       // gutters for small screens; allow internal scroll if needed
-      contentClassName="w-full px-6 py-6"
+      contentClassName="pb-20"
       // use a narrower content width for auth flows
       maxContent="responsive"
     >
