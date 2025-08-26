@@ -42,7 +42,7 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
               }`}
             onClick={() => onTabChange(tab.id)}
           >
-            <tab.icon size={18} />
+            <tab.icon size={14} />
             <span className="text-xs">{tab.label}</span>
           </TactileButton>
         ))}

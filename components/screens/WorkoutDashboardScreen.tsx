@@ -58,23 +58,6 @@ export default function WorkoutDashboardScreen({
 
   const canEdit = view === RoutinesView.My;
 
-  // DEBUG: Add useEffect to check container dimensions
-  useEffect(() => {
-    const container = document.querySelector('.AppScreen') as HTMLElement;
-    const content = document.querySelector('.content') as HTMLElement;
-    const main = document.querySelector('main') as HTMLElement;
-    
-    console.log('🔍 DEBUG CONTAINER DIMENSIONS:');
-    console.log('AppScreen height:', container?.offsetHeight);
-    console.log('Main height:', main?.offsetHeight);
-    console.log('Content height:', content?.offsetHeight);
-    console.log('Window height:', window.innerHeight);
-    console.log('AppScreen scroll height:', container?.scrollHeight);
-    console.log('Main scroll height:', main?.scrollHeight);
-    console.log('Content scroll height:', content?.scrollHeight);
-    console.log('---');
-  }, []);
-
   const reloadRoutines = async (which: RoutinesView = view) => {
     setIsLoadingRoutines(true);
     setRoutinesError(null);
@@ -186,7 +169,7 @@ export default function WorkoutDashboardScreen({
 
   return (
     <AppScreen
-      header={<ScreenHeader title={"My Routines"} denseSmall />}
+      header={<ScreenHeader title={"My Routines"} showBorder={false} denseSmall />}
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}
@@ -196,6 +179,14 @@ export default function WorkoutDashboardScreen({
     >
       <Stack gap="fluid">
 
+      <Section variant="plain" padding="none" className="text-center">
+          <p className="text-sm text-[var(--warm-brown)]/60 mt-1">
+            Welcome back !
+          </p>
+        </Section>
+
+        <Spacer y="sm" />
+        
         {/* subtitle (title is in header) */}
         <Section variant="plain" padding="none" className="text-center">
           <p className="text-sm text-[var(--warm-brown)]/60 mt-1">

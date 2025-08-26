@@ -108,7 +108,7 @@ export default function AppScreen({
       style={{
         paddingLeft: "max(env(safe-area-inset-left), 0px)",
         paddingRight: "max(env(safe-area-inset-right), 0px)",
-        border: "2px solid red", // TEMPORARY DEBUG: Add red border to see container boundaries
+        border: "2px solid red", // TEMPORARY DEBUG RAVI: Add red border to see container boundaries
       }}
     >
       {header ? (
@@ -137,7 +137,7 @@ export default function AppScreen({
             contentGutters,                 // <-- unified gutters here
             contentBottomPaddingClassName,  // <-- bottom reserve only
             contentClassName,               // any last-mile overrides
-            "bg-green-200"                 // TEMPORARY DEBUG: Add green background to see content area
+            "bg-green-200"                 // TEMPORARY DEBUG RAVI: Add green background to see content area
           )}
           style={innerWidthStyle}
         >

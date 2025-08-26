@@ -179,8 +179,6 @@ export function AddExercisesToRoutineScreen({
           </div>
         </Section>
 
-        <Spacer y="xss" />
-
         {/* Search */}
         <Section variant="plain" padding="none">
           <div className="relative">
