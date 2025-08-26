@@ -16,6 +16,7 @@ interface WorkoutDashboardScreenProps {
   onCreateRoutine: () => void;
   onSelectRoutine: (routineId: number, routineName: string, access?: RoutineAccess) => void;
   onOverlayChange?: (open: boolean) => void;
+  bottomBar?: React.ReactNode;
 }
 
 export enum RoutinesView {
@@ -36,6 +37,7 @@ export default function WorkoutDashboardScreen({
   onCreateRoutine,
   onSelectRoutine,
   onOverlayChange,
+  bottomBar
 }: WorkoutDashboardScreenProps) {
   useKeyboardInset();
   const { userToken } = useAuth();
@@ -55,6 +57,23 @@ export default function WorkoutDashboardScreen({
   const { steps, goal, isLoading: isLoadingSteps } = useStepTracking(true);
 
   const canEdit = view === RoutinesView.My;
+
+  // DEBUG: Add useEffect to check container dimensions
+  useEffect(() => {
+    const container = document.querySelector('.AppScreen') as HTMLElement;
+    const content = document.querySelector('.content') as HTMLElement;
+    const main = document.querySelector('main') as HTMLElement;
+    
+    console.log('🔍 DEBUG CONTAINER DIMENSIONS:');
+    console.log('AppScreen height:', container?.offsetHeight);
+    console.log('Main height:', main?.offsetHeight);
+    console.log('Content height:', content?.offsetHeight);
+    console.log('Window height:', window.innerHeight);
+    console.log('AppScreen scroll height:', container?.scrollHeight);
+    console.log('Main scroll height:', main?.scrollHeight);
+    console.log('Content scroll height:', content?.scrollHeight);
+    console.log('---');
+  }, []);
 
   const reloadRoutines = async (which: RoutinesView = view) => {
     setIsLoadingRoutines(true);
@@ -171,7 +190,9 @@ export default function WorkoutDashboardScreen({
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}
-      contentClassName="pb-20"
+      bottomBar={bottomBar}
+      bottomBarSticky
+      contentClassName=""
     >
       <Stack gap="fluid">
 
@@ -355,8 +376,6 @@ export default function WorkoutDashboardScreen({
             </>
           )}
         </Section>
-
-        <Spacer y="xs" />
 
         {/* bottom sheet (only when editing user's own routines) */}
         {canEdit && actionRoutine && (

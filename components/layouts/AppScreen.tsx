@@ -98,22 +98,23 @@ export default function AppScreen({
     contentGuttersPreset === "responsive"
       ? "px-4 py-6 sm:px-6 md:px-8 md:py-8"
       : contentGuttersPreset === "compact"
-      ? "px-4 py-4"
-      : padContent
-      ? "px-4" // backward-compat if someone opts into padContent manually
-      : "";
+        ? "px-4 py-4"
+        : padContent
+          ? "px-4" // backward-compat if someone opts into padContent manually
+          : "";
 
   return (
-    <div
-      className={cx("min-h-[100dvh] flex flex-col bg-background", className)}
+    <div className={cx("h-dvh flex flex-col overflow-hidden bg-background", className)}
       style={{
         paddingLeft: "max(env(safe-area-inset-left), 0px)",
         paddingRight: "max(env(safe-area-inset-right), 0px)",
+        border: "2px solid red", // TEMPORARY DEBUG: Add red border to see container boundaries
       }}
     >
       {header ? (
         <div
           className={cx(
+            "shrink-0",
             stickyHeader && "sticky top-0 z-30",
             "bg-white/80 backdrop-blur-sm",
             showHeaderBorder && "border-b border-[var(--border)]",
@@ -129,13 +130,14 @@ export default function AppScreen({
         </div>
       ) : null}
 
-      <div className={cx("flex-1 overflow-y-auto w-full", scrollAreaClassName)}>
+      <div className={cx("flex-1 min-h-0 overflow-y-auto w-full", scrollAreaClassName)}>
         <div
           className={cx(
             innerWidthClasses,
             contentGutters,                 // <-- unified gutters here
             contentBottomPaddingClassName,  // <-- bottom reserve only
-            contentClassName                // any last-mile overrides
+            contentClassName,               // any last-mile overrides
+            "bg-green-200"                 // TEMPORARY DEBUG: Add green background to see content area
           )}
           style={innerWidthStyle}
         >
@@ -146,6 +148,7 @@ export default function AppScreen({
       {bottomBar ? (
         <div
           className={cx(
+            "shrink-0",
             bottomBarSticky && "sticky bottom-0 z-30",
             "bg-white/95 backdrop-blur-sm",
             showBottomBarBorder && "border-t border-[var(--border)]",

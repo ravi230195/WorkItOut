@@ -1,5 +1,3 @@
-import React from "react";
-
 export type CircularStatProps = {
   value: number | null | undefined;
   max?: number;

@@ -49,15 +49,15 @@ function AppContent() {
   const [overlayOpen, setOverlayOpen] = useState(false);
 
   const showNav = isAuthenticated && showBottomNav && !overlayOpen;
-
+  const bottomBarEl = showNav ? (
+    <BottomNavigation
+      activeTab={activeTab as TabType}
+      onTabChange={handleTabChange}
+    />
+  ) : null;
   return (
-    <div id="app" className="h-[100dvh] grid grid-rows-[1fr_auto] overflow-hidden">
-      <main
-        className={
-          "overflow-auto overscroll-contain " +
-          (showNav ? "pb-[calc(72px+env(safe-area-inset-bottom))]" : "")
-        }
-      >
+    <div id="app" className="h-dvh flex flex-col overflow-hidden">
+      <main className="flex-1 min-h-0 overflow-hidden">
         <AppRouter
           currentView={currentView}
           currentRoutineId={currentRoutineId}
@@ -79,16 +79,10 @@ function AppContent() {
           onSelectRoutine={onRoutineSelection}
           onCloseExerciseSetupToRoutines={closeExerciseSetupToRoutines}
           onReturnToExerciseSetup={returnToExerciseSetup}
+          bottomBar={bottomBarEl}
           onOverlayChange={setOverlayOpen}
         />
       </main>
-
-      {showNav && (
-        <BottomNavigation
-          activeTab={activeTab as TabType}
-          onTabChange={handleTabChange}
-        />
-      )}
     </div>
   );
 }

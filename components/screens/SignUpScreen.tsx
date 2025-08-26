@@ -10,9 +10,10 @@ import { AppScreen, Stack, Spacer } from "../layouts";
 interface SignUpScreenProps {
   onAuthSuccess: (token: string) => void;
   onNavigateToSignIn: () => void;
+  bottomBar?: React.ReactNode;
 }
 
-export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn }: SignUpScreenProps) {
+export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: SignUpScreenProps) {
   // Keyboard-aware insets (updates --kb-inset)
   useKeyboardInset();
 
@@ -101,10 +102,10 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn }: SignUpScreen
       className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30"
       // Center the card; allow the page (not the card) to manage the primary scroll
       scrollAreaClassName="grid place-items-center"
-      // Safe gutters in the content wrapper
-      contentClassName="pb-20"
       // Slightly narrower max width than default for auth flows
       maxContent="responsive"
+      bottomBar={bottomBar}
+      contentClassName=""
     >
       <Card
         className="

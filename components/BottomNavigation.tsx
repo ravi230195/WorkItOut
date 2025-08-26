@@ -18,7 +18,7 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
     },
     {
       id: "progress" as TabType,
-      label: "Progress", 
+      label: "Progress",
       icon: TrendingUp,
       variant: activeTab === "progress" ? "sage" : "secondary"
     },
@@ -31,19 +31,15 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
   ] as const;
 
   return (
-    <div 
-      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-[var(--border)] px-4 z-[9999] force-fixed-bottom pb-[env(safe-area-inset-bottom)]" 
-      /* ↑ ADDED: pb-[env(safe-area-inset-bottom)] */
-    >
+    <div className="w-full">
       <div className="flex justify-center gap-2 max-w-md mx-auto">
         {tabs.map((tab) => (
           <TactileButton
             key={tab.id}
             variant={tab.variant}
             size="md"
-            className={`flex-1 flex flex-col items-center gap-1 py-2 ${
-              activeTab === tab.id ? "" : "shadow-sm"
-            }`}
+            className={`flex-1 flex flex-col items-center gap-1 py-2 ${activeTab === tab.id ? "" : "shadow-sm"
+              }`}
             onClick={() => onTabChange(tab.id)}
           >
             <tab.icon size={18} />

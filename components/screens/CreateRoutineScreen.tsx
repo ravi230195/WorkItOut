@@ -13,11 +13,13 @@ interface CreateRoutineScreenProps {
   onBack: () => void;
   /** Pass both name and created routineId to parent */
   onRoutineCreated: (routineName: string, routineId: number) => void;
+  bottomBar?: React.ReactNode;
 }
 
 export default function CreateRoutineScreen({
   onBack,
   onRoutineCreated,
+  bottomBar
 }: CreateRoutineScreenProps) {
   useKeyboardInset();
 
@@ -55,9 +57,11 @@ export default function CreateRoutineScreen({
       // Wider on tablets; let AppScreen own horizontal gutters
       maxContent="responsive"
       padContent={false}
-      contentClassName="pb-20"
       showHeaderBorder={false}
       showBottomBarBorder={false}
+      bottomBar={bottomBar}
+      bottomBarSticky
+      contentClassName=""
     >
       <Stack gap="fluid">
         <Spacer y="sm" />
@@ -90,8 +94,6 @@ export default function CreateRoutineScreen({
             </div>
           </TactileButton>
         </Section>
-
-        <Spacer y="xss" />
       </Stack>
     </AppScreen>
   );

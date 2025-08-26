@@ -13,9 +13,10 @@ import { AppScreen, Stack, Spacer } from "../layouts";
 interface SignInScreenProps {
   onAuthSuccess: (token: string) => void;
   onNavigateToSignUp: () => void;
+  bottomBar?: React.ReactNode;
 }
 
-export function SignInScreen({ onAuthSuccess, onNavigateToSignUp }: SignInScreenProps) {
+export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: SignInScreenProps) {
   // keep keyboard-safe insets
   useKeyboardInset();
 
@@ -66,7 +67,8 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp }: SignInScreen
       className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30"
       scrollAreaClassName="grid place-items-center"
       // gutters for small screens; allow internal scroll if needed
-      contentClassName="pb-20"
+      bottomBar={bottomBar}
+      contentClassName=""
       // use a narrower content width for auth flows
       maxContent="responsive"
     >

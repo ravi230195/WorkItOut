@@ -16,6 +16,7 @@ interface AddExercisesToRoutineScreenProps {
   onBack: () => void;
   onExerciseSelected: (exercise: Exercise) => void;
   isFromExerciseSetup?: boolean;
+  bottomBar?: React.ReactNode;
 }
 
 type MuscleFilter = "all" | string;
@@ -28,6 +29,7 @@ export function AddExercisesToRoutineScreen({
   onBack,
   onExerciseSelected,
   isFromExerciseSetup = true,
+  bottomBar
 }: AddExercisesToRoutineScreenProps) {
   useKeyboardInset();
 
@@ -139,7 +141,6 @@ export function AddExercisesToRoutineScreen({
       header={<ScreenHeader title="Select exercises" onBack={onBack} denseSmall />}
       maxContent="responsive"
       padContent={false}
-      contentClassName="pb-24"
       showHeaderBorder={false}
       showBottomBarBorder={false}
       bottomBar={
@@ -158,6 +159,7 @@ export function AddExercisesToRoutineScreen({
         </FooterBar>
       }
       bottomBarSticky
+      contentClassName=""
     >
       <Stack gap="fluid">
         <Spacer y="xss" />
@@ -275,7 +277,7 @@ export function AddExercisesToRoutineScreen({
           )}
         </Section>
 
-        <Spacer y="xs" />
+        <Spacer y="xl" />
       </Stack>
     </AppScreen>
   );

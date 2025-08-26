@@ -42,7 +42,7 @@ interface AppRouterProps {
 
   onCloseExerciseSetupToRoutines: () => void;
   onReturnToExerciseSetup: (exercise: Exercise) => void;
-
+  bottomBar?: React.ReactNode;
   /** notify App when a modal/sheet is open so it can hide BottomNavigation */
   onOverlayChange?: (open: boolean) => void;
 }
@@ -75,7 +75,7 @@ export function AppRouter({
 
   onCloseExerciseSetupToRoutines,
   onReturnToExerciseSetup,
-
+  bottomBar,
   onOverlayChange,
 }: AppRouterProps) {
   console.log(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
@@ -86,6 +86,7 @@ export function AppRouter({
         <SignUpScreen
           onAuthSuccess={onAuthSuccess}
           onNavigateToSignIn={onNavigateToSignIn}
+          bottomBar={bottomBar}
         />
       );
     }
@@ -93,6 +94,7 @@ export function AppRouter({
       <SignInScreen
         onAuthSuccess={onAuthSuccess}
         onNavigateToSignUp={onNavigateToSignUp}
+        bottomBar={bottomBar}
       />
     );
   }
@@ -105,6 +107,7 @@ export function AppRouter({
           onSelectRoutine={onSelectRoutine}
           // ⬇️ forward overlay visibility changes to App (to hide bottom nav)
           onOverlayChange={onOverlayChange}
+          bottomBar={bottomBar}
         />
       )}
 
@@ -112,6 +115,7 @@ export function AppRouter({
         <CreateRoutineScreen
           onBack={onCloseCreateRoutine}
           onRoutineCreated={onRoutineCreated} // (name, id)
+          bottomBar={bottomBar}
         />
       )}
 
@@ -127,6 +131,7 @@ export function AppRouter({
                   onExerciseSelected(exercise, routineId)
           }
           isFromExerciseSetup={!!currentRoutineId}
+          bottomBar={bottomBar}
         />
       )}
 
@@ -144,11 +149,12 @@ export function AppRouter({
             isEditingExistingRoutine={true}
             onShowExerciseSelector={onCloseExerciseSetup}
             access={routineAccess}
+            bottomBar={bottomBar}
           />
         )}
 
-      {currentView === "progress" && <ProgressScreen />}
-      {currentView === "profile" && <ProfileScreen />}
+      {currentView === "progress" && <ProgressScreen bottomBar={bottomBar}/>}
+      {currentView === "profile" && <ProfileScreen bottomBar={bottomBar}/>}
     </div>
   );
 }

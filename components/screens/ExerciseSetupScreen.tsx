@@ -32,7 +32,8 @@ interface ExerciseSetupScreenProps {
   onAddMoreExercises: () => void;
   isEditingExistingRoutine?: boolean;
   onShowExerciseSelector?: () => void;
-  access?: RoutineAccess; // Add access control
+  access?: RoutineAccess; // Add access 
+  bottomBar?: React.ReactNode;
 }
 
 interface SavedExerciseWithDetails extends UserRoutineExercise {
@@ -53,12 +54,11 @@ export function ExerciseSetupScreen({
   isEditingExistingRoutine = false,
   onShowExerciseSelector,
   access = RoutineAccess.Editable, // Default to editable
+  bottomBar
 }: ExerciseSetupScreenProps) {
   useKeyboardInset();
 
-  const [sets, setSets] = useState<ExerciseSet[]>([
-    { id: "1", reps: "0", weight: "0" },
-  ]);
+  const [sets, setSets] = useState<ExerciseSet[]>([{ id: "1", reps: "0", weight: "0" }]);
   const [isSaving, setIsSaving] = useState(false);
   const [savedExercises, setSavedExercises] = useState<SavedExerciseWithDetails[]>([]);
   const [isLoadingSaved, setIsLoadingSaved] = useState(true);
@@ -79,6 +79,13 @@ export function ExerciseSetupScreen({
   const [deletedSetIds, setDeletedSetIds] = useState<Set<number>>(new Set());
 
   const { userToken } = useAuth();
+
+  // Keep focus helper so fields scroll into view when keyboard opens
+  const onFocusScroll: React.FocusEventHandler<HTMLInputElement> = (e) => {
+    setTimeout(() => {
+      e.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 60);
+  };
 
   // Wire currentExercise from prop
   useEffect(() => {
@@ -127,11 +134,7 @@ export function ExerciseSetupScreen({
   };
 
   const resetForm = () => {
-    setSets([
-      { id: "1", reps: "0", weight: "0" },
-      { id: "2", reps: "0", weight: "0" },
-      { id: "3", reps: "0", weight: "0" },
-    ]);
+    setSets([{ id: "1", reps: "0", weight: "0" }]);
   };
 
   const refreshSavedExercises = async () => {
@@ -548,11 +551,11 @@ export function ExerciseSetupScreen({
           onBack={onBack}
           {...(access === RoutineAccess.Editable
             ? {
-              onAdd: () => {
-                if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
-                else onAddMoreExercises();
-              },
-            }
+                onAdd: () => {
+                  if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
+                  else onAddMoreExercises();
+                },
+              }
             : {})}
           showBorder={false}
           denseSmall
@@ -561,7 +564,9 @@ export function ExerciseSetupScreen({
       // Wider on big devices, but still centered; we own horizontal gutters here
       maxContent="responsive"
       padContent={false}
-      contentClassName={hasUnsavedChanges ? "pb-24" : "pb-20"}
+      // ✅ Let AppScreen be the only scroll area; only add extra bottom padding
+      //     when the sticky Save bar is showing.
+      contentBottomPaddingClassName={hasUnsavedChanges ? "pb-24" : ""}
       bottomBar={
         hasUnsavedChanges ? (
           <FooterBar
@@ -576,20 +581,22 @@ export function ExerciseSetupScreen({
                 variant="secondary"
                 onClick={handleCancelAllEdits}
                 disabled={access === RoutineAccess.ReadOnly}
-                className={`flex-1 h-11 md:h-12 ${access === RoutineAccess.ReadOnly
+                className={`flex-1 h-11 md:h-12 ${
+                  access === RoutineAccess.ReadOnly
                     ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
                     : "bg-transparent border-[var(--warm-brown)]/20 text-[var(--warm-brown)]/60 hover:bg-[var(--soft-gray)]"
-                  } font-medium`}
+                } font-medium`}
               >
                 CANCEL ALL
               </TactileButton>
               <TactileButton
                 onClick={handleSaveAllChanges}
                 disabled={savingAllChanges || access === RoutineAccess.ReadOnly}
-                className={`flex-1 h-11 md:h-12 font-medium border-0 transition-all ${access === RoutineAccess.ReadOnly
+                className={`flex-1 h-11 md:h-12 font-medium border-0 transition-all ${
+                  access === RoutineAccess.ReadOnly
                     ? "opacity-50 cursor-not-allowed bg-gray-400"
                     : "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
-                  }`}
+                }`}
               >
                 {savingAllChanges ? "SAVING..." : `SAVE ALL (${editingExercises.size})`}
               </TactileButton>
@@ -597,8 +604,9 @@ export function ExerciseSetupScreen({
           </FooterBar>
         ) : null
       }
-      bottomBarSticky
+      contentClassName=""
     >
+      {/* ✅ No extra wrapper with min-h/overflow; AppScreen scrolls */}
       <Stack gap="fluid">
         <Spacer y="sm" />
 
@@ -647,10 +655,11 @@ export function ExerciseSetupScreen({
                       className="space-y-2"
                     >
                       <div
-                        className={`flex items-center gap-3 p-3 border rounded-xl transition-all ${isEditing
+                        className={`flex items-center gap-3 p-3 border rounded-xl transition-all ${
+                          isEditing
                             ? "bg-[var(--warm-coral)]/5 border-[var(--warm-coral)]/30"
                             : "bg-white/70 border-[var(--border)]"
-                          }`}
+                        }`}
                         onClick={(e) => handleKebabClick(savedExercise, e)}
                       >
                         <div className="w-10 h-10 md:w-12 md:h-12 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
@@ -676,8 +685,9 @@ export function ExerciseSetupScreen({
                           variant="secondary"
                           size="sm"
                           onClick={(e) => handleKebabClick(savedExercise, e)}
-                          className={`p-2 h-auto bg-transparent hover:bg-[var(--warm-brown)]/10 text-[var(--warm-brown)]/60 hover:text-[var(--warm-brown)] ${isEditing ? "ring-2 ring-[var(--warm-coral)]/30" : ""
-                            }`}
+                          className={`p-2 h-auto bg-transparent hover:bg-[var(--warm-brown)]/10 text-[var(--warm-brown)]/60 hover:text-[var(--warm-brown)] ${
+                            isEditing ? "ring-2 ring-[var(--warm-coral)]/30" : ""
+                          }`}
                         >
                           {isExpanded ? <ChevronUp size={16} /> : <MoreVertical size={16} />}
                         </TactileButton>
@@ -709,10 +719,11 @@ export function ExerciseSetupScreen({
                                       )
                                     }
                                     disabled={access === RoutineAccess.ReadOnly}
-                                    className={`px-3 py-1 text-xs md:text-sm ${access === RoutineAccess.ReadOnly
+                                    className={`px-3 py-1 text-xs md:text-sm ${
+                                      access === RoutineAccess.ReadOnly
                                         ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
                                         : "bg-[var(--warm-coral)]/10 text-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/20 border-[var(--warm-coral)]/30"
-                                      }`}
+                                    }`}
                                   >
                                     Edit Sets
                                   </TactileButton>
@@ -738,6 +749,7 @@ export function ExerciseSetupScreen({
                                       </span>
                                       <Input
                                         type="number"
+                                        onFocus={onFocusScroll}
                                         value={
                                           editingSets[s.routine_template_exercise_set_id]?.reps ||
                                           "0"
@@ -750,13 +762,17 @@ export function ExerciseSetupScreen({
                                           )
                                         }
                                         disabled={access === RoutineAccess.ReadOnly}
-                                        className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm ${access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
-                                          }`}
+                                        className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm ${
+                                          access === RoutineAccess.ReadOnly
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : ""
+                                        }`}
                                         min="0"
                                       />
                                       <Input
                                         type="number"
                                         step="0.5"
+                                        onFocus={onFocusScroll}
                                         value={
                                           editingSets[s.routine_template_exercise_set_id]?.weight ||
                                           "0"
@@ -769,8 +785,11 @@ export function ExerciseSetupScreen({
                                           )
                                         }
                                         disabled={access === RoutineAccess.ReadOnly}
-                                        className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 text-sm ${access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
-                                          }`}
+                                        className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 text-sm ${
+                                          access === RoutineAccess.ReadOnly
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : ""
+                                        }`}
                                         min="0"
                                       />
                                       <TactileButton
@@ -782,11 +801,16 @@ export function ExerciseSetupScreen({
                                             s.routine_template_exercise_set_id
                                           )
                                         }
-                                        disabled={sortedSets.length <= 1 || access === RoutineAccess.ReadOnly}
-                                        className={`p-1 h-auto ${sortedSets.length <= 1 || access === RoutineAccess.ReadOnly
+                                        disabled={
+                                          sortedSets.length <= 1 ||
+                                          access === RoutineAccess.ReadOnly
+                                        }
+                                        className={`p-1 h-auto ${
+                                          sortedSets.length <= 1 ||
+                                          access === RoutineAccess.ReadOnly
                                             ? "opacity-30 cursor-not-allowed"
                                             : "bg-red-50 text-red-500 hover:bg-red-100"
-                                          }`}
+                                        }`}
                                         title="Remove this set"
                                       >
                                         <X size={14} />
@@ -801,10 +825,11 @@ export function ExerciseSetupScreen({
                                       )
                                     }
                                     disabled={access === RoutineAccess.ReadOnly}
-                                    className={`w-full py-2 text-xs md:text-sm ${access === RoutineAccess.ReadOnly
+                                    className={`w-full py-2 text-xs md:text-sm ${
+                                      access === RoutineAccess.ReadOnly
                                         ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
                                         : "bg-[var(--warm-sage)]/10 text-[var(--warm-sage)] hover:bg-[var(--warm-sage)]/20 border-2 border-dashed border-[var(--warm-sage)]/30"
-                                      } rounded-lg`}
+                                    } rounded-lg`}
                                   >
                                     <Plus size={16} className="mr-2" />
                                     Add Set
@@ -855,10 +880,11 @@ export function ExerciseSetupScreen({
                                     handleEditSets(savedExercise.routine_template_exercise_id)
                                   }
                                   disabled={access === RoutineAccess.ReadOnly}
-                                  className={`mt-2 px-3 py-1 text-xs md:text-sm ${access === RoutineAccess.ReadOnly
+                                  className={`mt-2 px-3 py-1 text-xs md:text-sm ${
+                                    access === RoutineAccess.ReadOnly
                                       ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
                                       : "bg-[var(--warm-coral)]/10 text-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/20 border-[var(--warm-coral)]/30"
-                                    }`}
+                                  }`}
                                 >
                                   Add Sets
                                 </TactileButton>
@@ -935,10 +961,12 @@ export function ExerciseSetupScreen({
                     <Input
                       type="number"
                       value={s.reps}
+                      onFocus={onFocusScroll}
                       onChange={(e) => updateSet(s.id, "reps", e.target.value)}
                       disabled={access === RoutineAccess.ReadOnly}
-                      className={`bg-[var(--input-background)] border-[var(--border)] text-[var(--foreground)] text-center h-11 md:h-12 rounded-lg focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 ${access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
+                      className={`bg-[var(--input-background)] border-[var(--border)] text-[var(--foreground)] text-center h-11 md:h-12 rounded-lg focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 ${
+                        access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                       min="0"
                     />
                   </div>
@@ -946,11 +974,13 @@ export function ExerciseSetupScreen({
                     <Input
                       type="number"
                       step="0.5"
+                      onFocus={onFocusScroll}
                       value={s.weight}
                       onChange={(e) => updateSet(s.id, "weight", e.target.value)}
                       disabled={access === RoutineAccess.ReadOnly}
-                      className={`bg-[var(--input-background)] border-[var(--border)] text-[var(--foreground)] text-center h-11 md:h-12 rounded-lg focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 ${access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
+                      className={`bg-[var(--input-background)] border-[var(--border)] text-[var(--foreground)] text-center h-11 md:h-12 rounded-lg focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 ${
+                        access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                       min="0"
                     />
                     <TactileButton
@@ -958,8 +988,11 @@ export function ExerciseSetupScreen({
                       size="sm"
                       onClick={() => removeSet(s.id)}
                       disabled={sets.length <= 1 || access === RoutineAccess.ReadOnly}
-                      className={`p-2 h-auto bg-white/70 border-[var(--border)] hover:bg-red-50 ${sets.length <= 1 || access === RoutineAccess.ReadOnly ? "opacity-30 cursor-not-allowed" : "text-red-500"
-                        }`}
+                      className={`p-2 h-auto bg-white/70 border-[var(--border)] hover:bg-red-50 ${
+                        sets.length <= 1 || access === RoutineAccess.ReadOnly
+                          ? "opacity-30 cursor-not-allowed"
+                          : "text-red-500"
+                      }`}
                     >
                       <X size={16} />
                     </TactileButton>
@@ -972,8 +1005,9 @@ export function ExerciseSetupScreen({
               <TactileButton
                 onClick={addSet}
                 disabled={access === RoutineAccess.ReadOnly}
-                className={`flex items-center gap-2 bg-white/70 border-[var(--border)] text-[var(--foreground)] hover:bg-white px-4 py-2 rounded-lg btn-tactile ${access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                className={`flex items-center gap-2 bg-white/70 border-[var(--border)] text-[var(--foreground)] hover:bg-white px-4 py-2 rounded-lg btn-tactile ${
+                  access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 <Plus size={16} />
                 <span className="text-xs md:text-sm font-medium uppercase tracking-wider">
@@ -990,8 +1024,9 @@ export function ExerciseSetupScreen({
                   resetForm();
                 }}
                 disabled={access === RoutineAccess.ReadOnly}
-                className={`p-3 h-auto bg-white/70 border-red-200 text-red-500 hover:bg-red-50 btn-tactile ${access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                className={`p-3 h-auto bg-white/70 border-red-200 text-red-500 hover:bg-red-50 btn-tactile ${
+                  access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 <Trash2 size={18} />
               </TactileButton>
@@ -1001,8 +1036,9 @@ export function ExerciseSetupScreen({
               <TactileButton
                 onClick={handleSave}
                 disabled={isSaving || access === RoutineAccess.ReadOnly}
-                className={`w-full h-12 md:h-14 bg-[var(--warm-coral)] text-white font-medium rounded-full hover:bg-[var(--warm-coral)]/90 btn-tactile ${access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                className={`w-full h-12 md:h-14 bg-[var(--warm-coral)] text-white font-medium rounded-full hover:bg-[var(--warm-coral)]/90 btn-tactile ${
+                  access === RoutineAccess.ReadOnly ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 {isSaving ? "SAVING..." : "SAVE EXERCISE"}
               </TactileButton>
