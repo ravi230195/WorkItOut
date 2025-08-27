@@ -105,11 +105,15 @@
   --warm-lavender: #d4a4eb;
   --soft-gray: #f7f3f0;
   --warm-brown: #8b7766;
+
+  --app-header-h: 56px; 
+  --app-bottom-h: 64px;
+  
 }
 
 @layer base {
-  html, body, #root, #__next { height: 100%; }
-  body { margin: 0; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  #root, #app { height: 100%; }
 
   * { box-sizing: border-box; }
   html {

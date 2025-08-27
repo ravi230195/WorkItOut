@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader } from "../ui/card";
 import { TactileButton } from "../TactileButton";
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
-import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { AppScreen, Stack, Spacer } from "../layouts";
 
 interface SignUpScreenProps {
@@ -15,7 +14,6 @@ interface SignUpScreenProps {
 
 export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: SignUpScreenProps) {
   // Keyboard-aware insets (updates --kb-inset)
-  useKeyboardInset();
 
   const [firstName, setFirstName]   = useState("");
   const [lastName, setLastName]     = useState("");

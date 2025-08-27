@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+// hooks/useAuthEffects.ts
+import { useEffect, useState } from "react";
 import { useAuth } from "../components/AuthContext";
 import { supabaseAPI } from "../utils/supabase/supabase-api";
 import { AppView } from "../utils/navigation";
@@ -12,23 +13,43 @@ interface UseAuthEffectsProps {
 export function useAuthEffects({ currentView, setCurrentView }: UseAuthEffectsProps) {
   const { isAuthenticated, userToken, signOut } = useAuth();
 
-  // Update API token when auth state changes
+  // ✅ new: gate initial render until auth is initialized
+  const [authReady, setAuthReady] = useState(false);
+
+  // Keep API token synced
   useEffect(() => {
     supabaseAPI.setToken(userToken);
   }, [userToken]);
 
-  // Auth guard - redirect to signin if not authenticated
+  // Mark auth as ready once on mount (or after your own async session check if you have one)
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // If your AuthContext does async session probing, await it here.
+        // Otherwise, this just flips ready on next tick to avoid a flash.
+        await Promise.resolve();
+      } finally {
+        if (!cancelled) setAuthReady(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Route guard – only redirect after authReady is true
+  useEffect(() => {
+    if (!authReady) return;
+
     if (!isAuthenticated) {
       if (currentView !== "signin" && currentView !== "signup") {
         setCurrentView("signin");
       }
     } else if (currentView === "signin" || currentView === "signup") {
-      setCurrentView("dashboard");
+      setCurrentView("workouts");
     }
-  }, [isAuthenticated, currentView, setCurrentView]);
+  }, [authReady, isAuthenticated, currentView, setCurrentView]);
 
-  // Handle unauthorized errors globally
+  // Global unauthorized handling (unchanged)
   useEffect(() => {
     const handleUnauthorizedError = (error: Error) => {
       if (error.message === "UNAUTHORIZED") {
@@ -36,42 +57,29 @@ export function useAuthEffects({ currentView, setCurrentView }: UseAuthEffectsPr
         signOut();
       }
     };
-
     const handleRejection = (event: PromiseRejectionEvent) => {
-      if (event.reason instanceof Error) {
-        handleUnauthorizedError(event.reason);
-      }
+      if (event.reason instanceof Error) handleUnauthorizedError(event.reason);
     };
 
-    // Listen for unhandled promise rejections (API errors)
-    window.addEventListener('unhandledrejection', handleRejection);
+    window.addEventListener("unhandledrejection", handleRejection);
 
-    // Also create a global error handler for fetch failures
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
-      try {
-        const response = await originalFetch(...args);
-        
-        // Check for 401/403 responses
-        if ((response.status === 401 || response.status === 403) && userToken) {
-          const url = args[0] as string;
-          // Only handle auth errors for our API calls
-          if (url.includes('/rest/v1/') || url.includes('/auth/v1/') || url.includes('/api/')) {
-            handleUnauthorizedError(new Error("UNAUTHORIZED"));
-          }
+      const res = await originalFetch(...args);
+      if ((res.status === 401 || res.status === 403) && userToken) {
+        const url = String(args[0]);
+        if (url.includes("/rest/v1/") || url.includes("/auth/v1/") || url.includes("/api/")) {
+          handleUnauthorizedError(new Error("UNAUTHORIZED"));
         }
-        
-        return response;
-      } catch (error) {
-        throw error;
       }
+      return res;
     };
 
     return () => {
-      window.removeEventListener('unhandledrejection', handleRejection);
+      window.removeEventListener("unhandledrejection", handleRejection);
       window.fetch = originalFetch;
     };
   }, [signOut, userToken]);
 
-  return { isAuthenticated };
+  return { isAuthenticated, authReady };
 }

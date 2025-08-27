@@ -1,3 +1,4 @@
+// components/sheets/RoutineActionsSheets.tsx
 import * as React from "react";
 import BottomSheet from "../sheets/BottomSheets";
 import { TactileButton } from "../TactileButton";
@@ -5,14 +6,9 @@ import { TactileButton } from "../TactileButton";
 export type RoutineActionsSheetProps = {
   open: boolean;
   routineName: string;
-
   onClose: () => void;
-
-  /** Parent performs the actual rename and delete. */
   onRequestRename: (newName: string) => Promise<void> | void;
   onRequestDelete: () => Promise<void> | void;
-
-  /** Optional loading flags while parent is doing work */
   renameLoading?: boolean;
   deleteLoading?: boolean;
 };
@@ -51,37 +47,35 @@ export default function RoutineActionsSheet({
       open={open}
       onClose={onClose}
       header={header}
-      zIndex={60} // above FooterBar's z-50
+      zIndex={60}
+      fullWidth
     >
-      {/* default mode */}
+      {/* DEFAULT MODE — edge-to-edge action rows */}
       {mode === "default" && (
-        <div className="p-2">
-          <button
-            className="w-full text-left px-3 py-3 rounded-lg hover:bg-gray-50"
-            onClick={() => setMode("renaming")}
-          >
-            Rename
-          </button>
-          <button
-            className="w-full text-left px-3 py-3 rounded-lg hover:bg-red-50 text-red-600"
-            onClick={() => setMode("confirmDelete")}
-          >
-            Delete
-          </button>
-
-          <div className="pt-1">
-            <TactileButton
-              variant="secondary"
-              className="w-full py-3"
-              onClick={onClose}
+        <>
+          <div>
+            <button
+              className="w-full text-left px-4 py-4 hover:bg-gray-50"
+              onClick={() => setMode("renaming")}
             >
+              Rename
+            </button>
+            <button
+              className="w-full text-left px-4 py-4 hover:bg-red-50 text-red-600"
+              onClick={() => setMode("confirmDelete")}
+            >
+              Delete
+            </button>
+          </div>
+          <div className="px-4 pt-2">
+            <TactileButton variant="secondary" className="w-full py-3" onClick={onClose}>
               Cancel
             </TactileButton>
           </div>
-        </div>
+        </>
       )}
 
-      {/* renaming */}
+      {/* RENAMING */}
       {mode === "renaming" && (
         <div className="p-4 space-y-3">
           <label className="text-sm text-gray-600">New name</label>
@@ -91,6 +85,13 @@ export default function RoutineActionsSheet({
             onChange={(e) => setRenameValue(e.target.value)}
             className="w-full rounded-lg border border-[var(--border)] px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
             placeholder="Enter routine name"
+            onKeyDown={async (e) => {
+              if (e.key === "Enter") {
+                const v = renameValue.trim();
+                if (!v || renameLoading) return;
+                await onRequestRename(v);
+              }
+            }}
           />
           <div className="flex gap-3 pt-1">
             <TactileButton
@@ -116,7 +117,7 @@ export default function RoutineActionsSheet({
         </div>
       )}
 
-      {/* confirm delete */}
+      {/* CONFIRM DELETE */}
       {mode === "confirmDelete" && (
         <div className="p-4 space-y-3">
           <p className="text-sm text-gray-700">

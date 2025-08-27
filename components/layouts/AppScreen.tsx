@@ -2,6 +2,7 @@
 import * as React from "react";
 import type { MaxContent } from "./layout-types";
 import { classForMaxContent } from "./layout-types";
+import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 
 export type AppScreenProps = React.PropsWithChildren<{
   header?: React.ReactNode | null;
@@ -17,11 +18,11 @@ export type AppScreenProps = React.PropsWithChildren<{
   maxContentPx?: number;
   maxContentClassName?: string;
 
-  /** Old knobs (kept for compatibility) */
   padContent?: boolean;
   padHeader?: boolean;
   padBottomBar?: boolean;
 
+  /** Name of the CSS var that carries keyboard inset (defaults to --app-kb-inset; falls back to --kb-inset / --keyboard-inset). */
   keyboardInsetVarName?: string;
 
   className?: string;
@@ -29,13 +30,11 @@ export type AppScreenProps = React.PropsWithChildren<{
   scrollAreaClassName?: string;
   headerShellClassName?: string;
   bottomBarShellClassName?: string;
+
   padHeaderSafeArea?: boolean;
 
-  /** NEW: consistent responsive gutters for content */
   contentGuttersPreset?: "none" | "compact" | "responsive";
-
-  /** NEW: reserve bottom space (e.g. tab bar / sticky footer) without redoing gutters */
-  contentBottomPaddingClassName?: string; // e.g., "pb-20" or "pb-24"
+  contentBottomPaddingClassName?: string;
 }>;
 
 const cx = (...xs: Array<string | undefined | null | false>) =>
@@ -55,7 +54,6 @@ export default function AppScreen({
   maxContentPx,
   maxContentClassName,
 
-  // legacy
   padContent = true,
   padHeader = true,
   padBottomBar = true,
@@ -69,12 +67,37 @@ export default function AppScreen({
   bottomBarShellClassName = "",
   padHeaderSafeArea = false,
 
-  // NEW
   contentGuttersPreset = "responsive",
   contentBottomPaddingClassName = "",
 
   children,
 }: AppScreenProps) {
+  // Single global provider of --app-kb-inset / --kb-inset / --keyboard-inset
+  useKeyboardInset();
+
+  const rootRef = React.useRef<HTMLDivElement>(null);
+  const headerRef = React.useRef<HTMLDivElement>(null);
+  const bottomRef = React.useRef<HTMLDivElement>(null);
+
+  /** Measure header/bottom heights and publish CSS vars */
+  React.useLayoutEffect(() => {
+    if (!rootRef.current) return;
+
+    const updateVars = () => {
+      const h = headerRef.current?.offsetHeight ?? 0;
+      const b = bottomRef.current?.offsetHeight ?? 0;
+      rootRef.current!.style.setProperty("--app-header-h", `${header ? h : 0}px`);
+      rootRef.current!.style.setProperty("--app-bottom-h", `${bottomBar ? b : 0}px`);
+    };
+
+    const ro = new ResizeObserver(updateVars);
+    if (headerRef.current) ro.observe(headerRef.current);
+    if (bottomRef.current) ro.observe(bottomRef.current);
+
+    updateVars();
+    return () => ro.disconnect();
+  }, [header, bottomBar]);
+
   const shouldCenter = maxContent !== "none" || typeof maxContentPx === "number";
   const maxWidthClass =
     typeof maxContentPx === "number" ? "" : classForMaxContent(maxContent);
@@ -91,28 +114,33 @@ export default function AppScreen({
     [maxContentPx]
   );
 
+  // Var chain for keyboard inset (allows custom var name override)
   const kbInsetChain = `var(${keyboardInsetVarName}, var(--kb-inset, var(--keyboard-inset, 0px)))`;
 
-  // Decide content gutters once, globally
   const contentGutters =
     contentGuttersPreset === "responsive"
       ? "px-4 py-6 sm:px-6 md:px-8 md:py-8"
       : contentGuttersPreset === "compact"
-        ? "px-4 py-4"
-        : padContent
-          ? "px-4" // backward-compat if someone opts into padContent manually
-          : "";
+      ? "px-4 py-4"
+      : padContent
+      ? "px-4"
+      : "";
 
   return (
-    <div className={cx("h-dvh flex flex-col overflow-hidden bg-background", className)}
+    <div
+      ref={rootRef}
+      className={cx(
+        "fixed inset-0 flex flex-col overflow-hidden overscroll-contain bg-background",
+        className
+      )}
       style={{
         paddingLeft: "max(env(safe-area-inset-left), 0px)",
         paddingRight: "max(env(safe-area-inset-right), 0px)",
-        border: "2px solid red", // TEMPORARY DEBUG RAVI: Add red border to see container boundaries
       }}
     >
       {header ? (
         <div
+          ref={headerRef}
           className={cx(
             "shrink-0",
             stickyHeader && "sticky top-0 z-30",
@@ -121,25 +149,35 @@ export default function AppScreen({
             headerShellClassName
           )}
           style={{
-            paddingTop: padHeaderSafeArea ? "max(env(safe-area-inset-top), 0px)" : undefined,
+            paddingTop: padHeaderSafeArea
+              ? "max(env(safe-area-inset-top), 0px)"
+              : undefined,
           }}
         >
-          <div className={cx(innerWidthClasses, padHeader && "px-4")} style={innerWidthStyle}>
+          <div
+            className={cx(innerWidthClasses, padHeader && "px-4")}
+            style={innerWidthStyle}
+          >
             {header}
           </div>
         </div>
       ) : null}
 
+      {/* Scroll area */}
       <div className={cx("flex-1 min-h-0 overflow-y-auto w-full", scrollAreaClassName)}>
         <div
           className={cx(
             innerWidthClasses,
-            contentGutters,                 // <-- unified gutters here
-            contentBottomPaddingClassName,  // <-- bottom reserve only
-            contentClassName,               // any last-mile overrides
-            "bg-green-200"                 // TEMPORARY DEBUG RAVI: Add green background to see content area
+            contentGutters,
+            contentBottomPaddingClassName,
+            contentClassName
           )}
-          style={innerWidthStyle}
+          style={{
+            ...innerWidthStyle,
+            paddingBottom: bottomBar
+              ? `var(--app-bottom-h, 0px)`
+              : `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
+          }}
         >
           {children}
         </div>
@@ -147,6 +185,7 @@ export default function AppScreen({
 
       {bottomBar ? (
         <div
+          ref={bottomRef}
           className={cx(
             "shrink-0",
             bottomBarSticky && "sticky bottom-0 z-30",
@@ -158,7 +197,10 @@ export default function AppScreen({
             paddingBottom: `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
           }}
         >
-          <div className={cx(innerWidthClasses, padBottomBar && "px-4 pt-4")} style={innerWidthStyle}>
+          <div
+            className={cx(innerWidthClasses, padBottomBar && "px-4 pt-4")}
+            style={innerWidthStyle}
+          >
             {bottomBar}
           </div>
         </div>

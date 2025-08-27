@@ -98,7 +98,6 @@ export interface Exercise {
     planned_weight_kg?: number | null;
     notes?: string;
   } 
-
   // src/utils/supabase/supabase-types.ts
 export interface Exercise { /* ... */ }
 export interface Workout { /* ... */ }

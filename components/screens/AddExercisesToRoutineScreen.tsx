@@ -7,7 +7,6 @@ import SegmentedToggle from "../segmented/SegmentedToggle";
 import { supabaseAPI, Exercise } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
-import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { AppScreen, ScreenHeader, Section, FooterBar, Stack, Spacer } from "../layouts";
 
 interface AddExercisesToRoutineScreenProps {
@@ -29,9 +28,7 @@ export function AddExercisesToRoutineScreen({
   onBack,
   onExerciseSelected,
   isFromExerciseSetup = true,
-  bottomBar
 }: AddExercisesToRoutineScreenProps) {
-  useKeyboardInset();
 
   const { userToken } = useAuth();
 
@@ -138,7 +135,12 @@ export function AddExercisesToRoutineScreen({
 
   return (
     <AppScreen
-      header={<ScreenHeader title="Select exercises" onBack={onBack} denseSmall />}
+      header={<ScreenHeader title="Select exercises"
+        onBack={onBack}
+        showBorder={false}
+        denseSmall
+        contentHeightPx={74}
+        titleClassName="text-[17px] font-bold" />}
       maxContent="responsive"
       padContent={false}
       showHeaderBorder={false}
@@ -148,11 +150,10 @@ export function AddExercisesToRoutineScreen({
           <TactileButton
             onClick={handleAddExercise}
             disabled={!selectedExercise || isAddingExercise}
-            className={`h-12 md:h-14 sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
-              selectedExercise
+            className={`h-12 md:h-14 sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${selectedExercise
                 ? "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
                 : "bg-[var(--warm-brown)]/20 text-[var(--warm-brown)]/40 cursor-not-allowed"
-            }`}
+              }`}
           >
             {isAddingExercise ? "ADDING..." : selectedExercise ? "ADD (1)" : "ADD"}
           </TactileButton>

@@ -13,10 +13,9 @@ import { VIEWS_WITHOUT_BOTTOM_NAV } from "./utils/navigation";
 // ✅ add this (path to your boundary component)
 import ErrorBoundary from "./components/system/ErrorBoundary";
 
+// App.tsx
 function AppContent() {
   const { setUserToken } = useAuth();
-
-  // Handle all mobile device setup (viewport, safe areas)
   useMobileSetup();
 
   const {
@@ -44,7 +43,9 @@ function AppContent() {
     returnToExerciseSetup
   } = useAppNavigation();
 
-  const { isAuthenticated } = useAuthEffects({ currentView, setCurrentView });
+  // ⬅️ now includes authReady
+  const { isAuthenticated, authReady } = useAuthEffects({ currentView, setCurrentView });
+
   const showBottomNav = !VIEWS_WITHOUT_BOTTOM_NAV.includes(currentView);
   const [overlayOpen, setOverlayOpen] = useState(false);
 
@@ -55,6 +56,16 @@ function AppContent() {
       onTabChange={handleTabChange}
     />
   ) : null;
+
+  // ✅ block until authReady so cold-start doesn’t flash dashboard
+  if (!authReady) {
+    return (
+      <div className="h-dvh grid place-items-center">
+        <div className="w-5 h-5 animate-spin border-2 border-current border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   return (
     <div id="app" className="h-dvh flex flex-col overflow-hidden">
       <main className="flex-1 min-h-0 overflow-hidden">

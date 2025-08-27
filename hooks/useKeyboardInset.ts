@@ -1,101 +1,104 @@
+// hooks/useKeyboardInset.ts
 import { useLayoutEffect } from "react";
+
+let refCount = 0;
+let globalCleanup: (() => void) | null = null;
 
 export function useKeyboardInset() {
   useLayoutEffect(() => {
-    const root = document.documentElement;
-    let raf = 0;
+    refCount += 1;
 
-    const apply = () => {
-      raf = 0;
-      const vv = window.visualViewport;
-      
-      if (!vv) {
-        root.style.setProperty("--kb-inset", "0px");
-        return;
-      }
+    if (!globalCleanup) {
+      const root = document.documentElement;
+      let raf = 0;
 
-      // Calculate keyboard height
-      const viewportHeight = vv.height;
-      const windowHeight = window.innerHeight;
-      const offsetTop = vv.offsetTop || 0;
-      
-      // Keyboard height is the difference between window height and viewport height
-      const keyboardHeight = Math.max(0, windowHeight - viewportHeight - offsetTop);
-      
-      root.style.setProperty("--kb-inset", `${Math.round(keyboardHeight)}px`);
-    };
-
-    const onChange = () => {
-      if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(apply);
-    };
-
-    // Try to use Capacitor keyboard plugin if available
-    const tryCapacitorKeyboard = async () => {
-      try {
-        // Dynamic import to avoid build issues
-        const { Capacitor } = await import('@capacitor/core');
-        const { Keyboard } = await import('@capacitor/keyboard');
-        
-        if (Capacitor.isNativePlatform()) {
-          const showListener = await Keyboard.addListener('keyboardWillShow', (info) => {
-            const height = info.keyboardHeight || 0;
-            root.style.setProperty("--kb-inset", `${height}px`);
-          });
-          
-          const hideListener = await Keyboard.addListener('keyboardWillHide', () => {
-            root.style.setProperty("--kb-inset", "0px");
-          });
-          
-          // Return cleanup function
-          return () => {
-            showListener.remove();
-            hideListener.remove();
-            root.style.removeProperty("--kb-inset");
-          };
+      const apply = () => {
+        raf = 0;
+        const vv = window.visualViewport;
+        if (!vv) {
+          root.style.setProperty("--kb-inset", "0px");
+          root.style.setProperty("--keyboard-inset", "0px");
+          root.style.setProperty("--app-kb-inset", "0px");
+          return;
         }
-      } catch (error) {
-        // Capacitor not available, using web fallback
-      }
-      return null;
-    };
+        const inset = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+        const px = `${Math.round(inset)}px`;
+        root.style.setProperty("--kb-inset", px);
+        root.style.setProperty("--keyboard-inset", px);
+        root.style.setProperty("--app-kb-inset", px);
+      };
 
-    // Initial application
-    apply();
-    
-    // Try Capacitor first, then fallback to web
-    let cleanup: (() => void) | null = null;
-    
-    tryCapacitorKeyboard().then((capacitorCleanup) => {
-      if (capacitorCleanup) {
-        cleanup = capacitorCleanup;
-      } else {
-        // Fallback to web-based detection
+      const onChange = () => {
+        if (raf) cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(apply);
+      };
+
+      let capCleanup: (() => void) | null = null;
+
+      const attach = async () => {
+        apply();
+        // Try Capacitor first
+        try {
+          const { Capacitor } = await import("@capacitor/core");
+          const { Keyboard } = await import("@capacitor/keyboard");
+          if (Capacitor.isNativePlatform()) {
+            const showListener = await Keyboard.addListener("keyboardWillShow", (info) => {
+              const h = info?.keyboardHeight || 0;
+              const px = `${Math.round(h)}px`;
+              root.style.setProperty("--kb-inset", px);
+              root.style.setProperty("--keyboard-inset", px);
+              root.style.setProperty("--app-kb-inset", px);
+            });
+            const hideListener = await Keyboard.addListener("keyboardWillHide", () => {
+              root.style.setProperty("--kb-inset", "0px");
+              root.style.setProperty("--keyboard-inset", "0px");
+              root.style.setProperty("--app-kb-inset", "0px");
+            });
+            capCleanup = () => {
+              showListener.remove();
+              hideListener.remove();
+            };
+            return;
+          }
+        } catch {
+          /* no-capacitor */
+        }
+
+        // Web fallback
         if (window.visualViewport) {
           window.visualViewport.addEventListener("resize", onChange);
           window.visualViewport.addEventListener("scroll", onChange);
         } else {
           window.addEventListener("resize", onChange);
         }
-      }
-    });
 
-    // Cleanup
+        capCleanup = () => {
+          if (window.visualViewport) {
+            window.visualViewport.removeEventListener("resize", onChange);
+            window.visualViewport.removeEventListener("scroll", onChange);
+          } else {
+            window.removeEventListener("resize", onChange);
+          }
+        };
+      };
+
+      void attach();
+
+      globalCleanup = () => {
+        if (raf) cancelAnimationFrame(raf);
+        capCleanup?.();
+        root.style.removeProperty("--kb-inset");
+        root.style.removeProperty("--keyboard-inset");
+        root.style.removeProperty("--app-kb-inset");
+        globalCleanup = null;
+      };
+    }
+
     return () => {
-      if (raf) cancelAnimationFrame(raf);
-      
-      if (cleanup) {
-        cleanup();
-      } else {
-        if (window.visualViewport) {
-          window.visualViewport.removeEventListener("resize", onChange);
-          window.visualViewport.removeEventListener("scroll", onChange);
-        } else {
-          window.removeEventListener("resize", onChange);
-        }
+      refCount -= 1;
+      if (refCount <= 0 && globalCleanup) {
+        globalCleanup();
       }
-      
-      document.documentElement.style.removeProperty("--kb-inset");
     };
   }, []);
 }

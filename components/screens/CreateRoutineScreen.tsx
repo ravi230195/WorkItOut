@@ -5,7 +5,6 @@ import { Input } from "../ui/input";
 import { TactileButton } from "../TactileButton";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
-import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
 import { AppScreen, ScreenHeader, Section, Stack, Spacer } from "../layouts";
 
@@ -21,7 +20,6 @@ export default function CreateRoutineScreen({
   onRoutineCreated,
   bottomBar
 }: CreateRoutineScreenProps) {
-  useKeyboardInset();
 
   const [routineName, setRoutineName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -53,7 +51,12 @@ export default function CreateRoutineScreen({
 
   return (
     <AppScreen
-      header={<ScreenHeader title="Create Routine" onBack={onBack} showBorder={false} denseSmall />}
+      header={<ScreenHeader title="Create Routine" 
+      onBack={onBack} 
+      showBorder={false} 
+      denseSmall 
+      contentHeightPx={74} 
+      titleClassName="text-[17px] font-bold"/>}
       // Wider on tablets; let AppScreen own horizontal gutters
       maxContent="responsive"
       padContent={false}

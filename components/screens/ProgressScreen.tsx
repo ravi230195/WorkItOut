@@ -7,7 +7,6 @@ import { Progress } from "../ui/progress";
 import { TrendingUp, Calendar, Award, Zap, Medal, Trophy } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { supabaseAPI, Workout } from "../../utils/supabase/supabase-api";
-import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
 
 interface ProgressScreenProps {
@@ -54,7 +53,6 @@ const achievements = [
 ];
 
 export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
-  useKeyboardInset();
 
   const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([]);
   const [workoutStats, setWorkoutStats] = useState({
@@ -102,7 +100,11 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
 
   return (
     <AppScreen
-      header={<ScreenHeader title="Progress" denseSmall />}
+      header={<ScreenHeader title="Progress"
+        showBorder={false}
+        denseSmall
+        contentHeightPx={74} 
+        titleClassName="text-[17px] font-bold"/>}
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}

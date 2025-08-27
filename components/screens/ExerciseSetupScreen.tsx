@@ -11,7 +11,6 @@ import {
 } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
-import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { AppScreen, Section, ScreenHeader, FooterBar, Stack, Spacer } from "../layouts";
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 
@@ -40,6 +39,7 @@ interface SavedExerciseWithDetails extends UserRoutineExercise {
   exercise_name?: string;
   category?: string;
   exercise_id: number; // keep non-optional to avoid TS extends error
+  muscle_group?: string;
 }
 
 export function ExerciseSetupScreen({
@@ -54,9 +54,7 @@ export function ExerciseSetupScreen({
   isEditingExistingRoutine = false,
   onShowExerciseSelector,
   access = RoutineAccess.Editable, // Default to editable
-  bottomBar
 }: ExerciseSetupScreenProps) {
-  useKeyboardInset();
 
   const [sets, setSets] = useState<ExerciseSet[]>([{ id: "1", reps: "0", weight: "0" }]);
   const [isSaving, setIsSaving] = useState(false);
@@ -559,8 +557,8 @@ export function ExerciseSetupScreen({
             : {})}
           showBorder={false}
           denseSmall
-        />
-      }
+          contentHeightPx={74} 
+          titleClassName="text-[17px] font-bold"/>}
       // Wider on big devices, but still centered; we own horizontal gutters here
       maxContent="responsive"
       padContent={false}
@@ -604,6 +602,8 @@ export function ExerciseSetupScreen({
           </FooterBar>
         ) : null
       }
+      showHeaderBorder={false}
+      showBottomBarBorder={false}
       contentClassName=""
     >
       {/* ✅ No extra wrapper with min-h/overflow; AppScreen scrolls */}
@@ -674,8 +674,7 @@ export function ExerciseSetupScreen({
                             {savedExercise.exercise_name}
                           </p>
                           <p className="text-xs md:text-sm text-[var(--muted-foreground)] truncate">
-                            Exercise #{savedExercise.exercise_order} •{" "}
-                            {savedExercise.category || "Exercise"}
+                            {savedExercise.muscle_group || "Unknown"}
                             {isEditing && (
                               <span className="text-[var(--warm-coral)] ml-2">• Editing</span>
                             )}

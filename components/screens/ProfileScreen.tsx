@@ -17,7 +17,6 @@ import {
 import { useAuth } from "../AuthContext";
 import { supabaseAPI, Profile } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
-import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { AppScreen, Section, ScreenHeader, Stack } from "../layouts";
 
 interface PersonalBest {
@@ -32,7 +31,6 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
-  useKeyboardInset();
 
   const { userToken, signOut: authSignOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -104,7 +102,11 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
 
   return (
     <AppScreen
-      header={<ScreenHeader title="Profile" denseSmall />}
+      header={<ScreenHeader title="Profile" 
+      showBorder={false}
+      denseSmall
+      contentHeightPx={74} 
+      titleClassName="text-[17px] font-bold"/>}
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}

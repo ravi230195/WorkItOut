@@ -64,6 +64,7 @@ export class SupabaseDBRead extends SupabaseBase {
       ...ex,
       exercise_name: ex.exercises?.name || "Unknown Exercise",
       category: ex.exercises?.category || "Unknown",
+      muscle_group: ex.exercises?.muscle_group || "Unknown",
     }));
     localCache.set(key, flattened);
     console.log("🗂️ [CACHE WRITE] →", key);

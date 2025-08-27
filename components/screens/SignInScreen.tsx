@@ -7,7 +7,6 @@ import { Label } from "../ui/label";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
-import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { AppScreen, Stack, Spacer } from "../layouts";
 
 interface SignInScreenProps {
@@ -17,9 +16,6 @@ interface SignInScreenProps {
 }
 
 export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: SignInScreenProps) {
-  // keep keyboard-safe insets
-  useKeyboardInset();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -27,14 +23,11 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!email.trim() || !password.trim()) {
       toast.error("Please enter both email and password");
       return;
     }
-
     setIsLoading(true);
-
     try {
       const token = await supabaseAPI.signIn(email, password);
       supabaseAPI.setToken(token);
@@ -60,16 +53,12 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
 
   return (
     <AppScreen
-      // no header/bottom bar on auth screen
       padHeader={false}
       padBottomBar={false}
-      // center the card while keeping safe areas + keyboard support
       className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30"
       scrollAreaClassName="grid place-items-center"
-      // gutters for small screens; allow internal scroll if needed
       bottomBar={bottomBar}
       contentClassName=""
-      // use a narrower content width for auth flows
       maxContent="responsive"
     >
       <Card
@@ -77,8 +66,6 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
           w-full
           bg-white/80 backdrop-blur-sm border-[var(--border)]
           shadow-soft
-          max-h-[100svh] overflow-y-auto
-          pt-safe pb-safe kb-aware
         "
       >
         <CardHeader className="text-center pb-6">
@@ -88,12 +75,8 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
             </div>
 
             <div>
-              <h1 className="text-2xl font-medium text-[var(--warm-brown)]">
-                Welcome Back
-              </h1>
-              <p className="text-[var(--warm-brown)]/60">
-                Sign in to continue your fitness journey
-              </p>
+              <h1 className="text-2xl font-medium text-[var(--warm-brown)]">Welcome Back</h1>
+              <p className="text-[var(--warm-brown)]/60">Sign in to continue your fitness journey</p>
             </div>
           </Stack>
         </CardHeader>
@@ -102,9 +85,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
           <Stack gap="lg">
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[var(--warm-brown)]">
-                  Email
-                </Label>
+                <Label htmlFor="email" className="text-[var(--warm-brown)]">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -118,9 +99,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-[var(--warm-brown)]">
-                  Password
-                </Label>
+                <Label htmlFor="password" className="text-[var(--warm-brown)]">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"

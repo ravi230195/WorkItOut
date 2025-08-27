@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
 import { MoreVertical, AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
-import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { supabaseAPI, UserRoutine } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
@@ -39,7 +38,6 @@ export default function WorkoutDashboardScreen({
   onOverlayChange,
   bottomBar
 }: WorkoutDashboardScreenProps) {
-  useKeyboardInset();
   const { userToken } = useAuth();
 
   const [view, setView] = useState<RoutinesView>(RoutinesView.My);
@@ -169,7 +167,15 @@ export default function WorkoutDashboardScreen({
 
   return (
     <AppScreen
-      header={<ScreenHeader title={"My Routines"} showBorder={false} denseSmall />}
+      header={
+        <ScreenHeader
+          title={"My Routines"}
+          showBorder={false}
+          denseSmall
+          contentHeightPx={74}
+          titleClassName="text-[17px] font-bold"
+        />
+      }
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}
@@ -178,15 +184,14 @@ export default function WorkoutDashboardScreen({
       contentClassName=""
     >
       <Stack gap="fluid">
-
-      <Section variant="plain" padding="none" className="text-center">
+        <Section variant="plain" padding="none" className="text-center">
           <p className="text-sm text-[var(--warm-brown)]/60 mt-1">
             Welcome back !
           </p>
         </Section>
 
         <Spacer y="sm" />
-        
+
         {/* subtitle (title is in header) */}
         <Section variant="plain" padding="none" className="text-center">
           <p className="text-sm text-[var(--warm-brown)]/60 mt-1">
@@ -205,9 +210,9 @@ export default function WorkoutDashboardScreen({
             goal={isLoadingSteps ? null : goal}
             recoveryPercent={null}
             strain={null}
-            onStepsClick={() => { }}
-            onRecoveryClick={() => { }}
-            onStrainClick={() => { }}
+            onStepsClick={() => {}}
+            onRecoveryClick={() => {}}
+            onStrainClick={() => {}}
           />
         </Section>
 
@@ -233,12 +238,14 @@ export default function WorkoutDashboardScreen({
             tone="accent"
           />
 
-          {canEdit && <TactileButton
-            onClick={onCreateRoutine}
-            className="bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white px-4 py-2 text-sm font-medium rounded-xl"
-          >
-            Create Routine
-          </TactileButton>}
+          {canEdit && (
+            <TactileButton
+              onClick={onCreateRoutine}
+              className="bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white px-4 py-2 text-sm font-medium rounded-xl"
+            >
+              Create Routine
+            </TactileButton>
+          )}
         </Section>
 
         {/* routines list with Section loading state */}
@@ -289,8 +296,11 @@ export default function WorkoutDashboardScreen({
                       <button
                         key={routine.routine_template_id}
                         onClick={() =>
-                          onSelectRoutine(routine.routine_template_id, routine.name,
-                            view === RoutinesView.My ? RoutineAccess.Editable : RoutineAccess.ReadOnly)
+                          onSelectRoutine(
+                            routine.routine_template_id,
+                            routine.name,
+                            view === RoutinesView.My ? RoutineAccess.Editable : RoutineAccess.ReadOnly
+                          )
                         }
                         className="
                           w-full
@@ -324,9 +334,9 @@ export default function WorkoutDashboardScreen({
                               </p>
 
                               <div className="
-                              mt-2 flex items-center gap-4 
-                              text-[clamp(11px,3.2vw,12px)] 
-                              text-[var(--warm-brown)]/70">
+                                mt-2 flex items-center gap-4 
+                                text-[clamp(11px,3.2vw,12px)] 
+                                text-[var(--warm-brown)]/70">
                                 <span className="inline-flex items-center gap-1">
                                   <Clock size={14} />
                                   {loadingCounts ? "—" : timeMin !== null ? `${timeMin} min` : "—"}
@@ -336,10 +346,6 @@ export default function WorkoutDashboardScreen({
                                   {loadingCounts ? "—" : `${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}`}
                                 </span>
                               </div>
-
-                              {/*<p className="mt-1 text-[10px] text-[var(--warm-brown)]/40">
-                                Created {new Date(routine.created_at).toLocaleDateString()} • v{routine.version}
-                              </p>*/}
                             </div>
                           </div>
 
@@ -352,7 +358,7 @@ export default function WorkoutDashboardScreen({
                                 e.stopPropagation();
                                 openActions(routine, e);
                               }}
-                              className="shrink-0 p-2 h-auto bg-transparent hover:bg-[var(--soft-gray)]/60 text-[var(--warm-brown)]/70"
+                              className="shrink-0 p-2 h-auto bg-transparent hover:bg=[var(--soft-gray)]/60 text-[var(--warm-brown)]/70"
                               aria-label="More options"
                             >
                               <MoreVertical size={18} />
