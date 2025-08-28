@@ -64,7 +64,7 @@ export default function ScreenHeader({
   const titleMaxWidth = `calc(100% - ${reserveLeftPx + reserveRightPx}px)`;
 
   return (
-    <div className={containerClasses}  style={{ border: "2px solid green" }} >
+    <div className={containerClasses}  /* RAVI style={{ border: "2px solid green" }} */>
       {/* Content row (height excludes safe-area padding) */}
       <div className={rowClasses} style={useFixed ? { height: contentHeightPx } : undefined}>
         {/* Left */}
