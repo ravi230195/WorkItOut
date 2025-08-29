@@ -2,7 +2,7 @@
 import * as React from "react";
 import { Input } from "../ui/input";
 import { TactileButton } from "../TactileButton";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Trash2 } from "lucide-react";
 
 export type SetListMode = "view" | "edit";
 
@@ -24,6 +24,11 @@ export interface SetListProps {
   onRemove?: (key: string | number) => void;
   onAdd?: () => void;
 
+  /** Optional: delete the entire exercise (parent handles actual removal from routine) */
+  onDeleteExercise?: () => void;
+  deleteTitle?: string;
+  deleteDisabled?: boolean;
+
   /** Optional focus helper for keyboard scroll-into-view */
   onFocusScroll?: React.FocusEventHandler<HTMLInputElement>;
 
@@ -39,6 +44,9 @@ const SetList: React.FC<SetListProps> = ({
   onChange,
   onRemove,
   onAdd,
+  onDeleteExercise,
+  deleteTitle = "Remove this exercise from the routine",
+  deleteDisabled = false,
   onFocusScroll,
   disabled = false,
   className = "",
@@ -46,26 +54,73 @@ const SetList: React.FC<SetListProps> = ({
   // Single unified layout. Read-only when disabled OR not in explicit edit mode.
   const readOnly = disabled || mode !== "edit";
 
+  // DEBUG: Log the overall component state
+  React.useEffect(() => {
+    console.log("🔍 SetsList DEBUG: Component state:", {
+      mode,
+      disabled,
+      readOnly,
+      itemsCount: items.length,
+      hasOnRemove: !!onRemove,
+      hasOnChange: !!onChange,
+      hasOnAdd: !!onAdd,
+      hasOnDeleteExercise: !!onDeleteExercise,
+      hasOnFocusScroll: !!onFocusScroll,
+      className
+    });
+  }, [
+    mode,
+    disabled,
+    readOnly,
+    items.length,
+    onRemove,
+    onChange,
+    onAdd,
+    onDeleteExercise,
+    onFocusScroll,
+    className
+  ]);
+
   return (
     <div className={className}>
       {/* Header row — identical to configure card */}
-      <div className="grid grid-cols-4 gap-3 md:gap-4 text-[10px] md:text-xs text-[var(--warm-brown)]/60 uppercase tracking-wider mb-2">
+      <div className="grid grid-cols-4 gap-3 md:gap-4 text-[10px] md:text-xs text-[var(--warm-brown)]/60 uppercase tracking-wider mb-2"
+      style={{ border: "2px solid green" }}>
         <span>Set</span>
         <span className="text-center">Reps</span>
         <span className="text-center">Weight (kg)</span>
         <span />
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3"
+      style={{ border: "2px solid blue" }}>
         {items.map((it) => {
           const canRemove =
             !readOnly && !!onRemove && (it.removable ?? true) && items.length > 1;
+
+          // DEBUG: Log detailed canRemove calculation for each item
+          console.log(`🔍 SetsList DEBUG: Set ${it.order} (key: ${it.key}) canRemove calculation:`, {
+            setOrder: it.order,
+            setKey: it.key,
+            readOnly,
+            hasOnRemove: !!onRemove,
+            itemRemovable: it.removable,
+            itemRemovableDefault: it.removable ?? true,
+            itemsLength: items.length,
+            itemsLengthCheck: items.length > 1,
+            canRemove,
+            condition1_notReadOnly: !readOnly,
+            condition2_hasOnRemove: !!onRemove,
+            condition3_itemRemovable: it.removable ?? true,
+            condition4_itemsLengthGreaterThan1: items.length > 1,
+            finalResult: canRemove
+          });
 
           return (
             <div
               key={it.key}
               className="grid grid-cols-4 gap-3 md:gap-4 items-center py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20"
-            >
+              style={{ border: "2px solid yellow" }}>
               <span className="text-sm font-medium text-[var(--warm-brown)]/80">
                 {it.order}
               </span>
@@ -76,8 +131,9 @@ const SetList: React.FC<SetListProps> = ({
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "reps", e.target.value)}
                 disabled={readOnly}
-                className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm ${
+                  readOnly ? "opacity-50 cursor-not-allowed" : ""
+                }`}
                 min="0"
               />
 
@@ -88,8 +144,9 @@ const SetList: React.FC<SetListProps> = ({
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "weight", e.target.value)}
                 disabled={readOnly}
-                className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
+                className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)]/20 text-sm ${
+                  readOnly ? "opacity-50 cursor-not-allowed" : ""
+                }`}
                 min="0"
               />
 
@@ -112,18 +169,43 @@ const SetList: React.FC<SetListProps> = ({
         })}
       </div>
 
-      {/* Add button only when interactive */}
-      {onAdd && (
-        <div className="mt-3">
-          <TactileButton
-            onClick={onAdd}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg btn-tactile bg-white/70 border-[var(--border)] text-[var(--foreground)] hover:bg-white"
-          >
-            <Plus size={16} />
-            <span className="text-xs md:text-sm font-medium uppercase tracking-wider">
-              Add Set
-            </span>
-          </TactileButton>
+      {/* Bottom action row: Add on the left, Delete Exercise on the right */}
+      {(onAdd || onDeleteExercise) && (
+        <div className="mt-3 flex items-center justify-between">
+          {/* Left: Add Set (only when interactive) */}
+          {onAdd ? (
+            <TactileButton
+              onClick={onAdd}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg btn-tactile bg-white/70 border-[var(--border)] text-[var(--foreground)] hover:bg-white"
+              disabled={readOnly}
+              title={readOnly ? "Editing disabled" : "Add a set"}
+            >
+              <Plus size={16} />
+              <span className="text-xs md:text-sm font-medium uppercase tracking-wider">
+                Add Set
+              </span>
+            </TactileButton>
+          ) : (
+            <div />
+          )}
+
+          {/* Right: Delete Exercise (icon button) */}
+          {onDeleteExercise && (
+            <TactileButton
+              variant="secondary"
+              size="sm"
+              onClick={onDeleteExercise}
+              disabled={deleteDisabled || readOnly}
+              className={`p-2 h-auto rounded-lg ${
+                deleteDisabled || readOnly
+                  ? "opacity-50 cursor-not-allowed"
+                  : "bg-red-50 text-red-600 hover:bg-red-100"
+              }`}
+              title={deleteTitle}
+            >
+              <Trash2 size={16} />
+            </TactileButton>
+          )}
         </div>
       )}
     </div>

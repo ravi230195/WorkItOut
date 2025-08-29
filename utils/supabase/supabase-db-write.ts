@@ -105,6 +105,7 @@ export class SupabaseDBWrite extends SupabaseBase {
             planned_reps: set.reps > 0 ? set.reps : null,
             planned_weight_kg: set.weight > 0 ? set.weight : null,
         }));
+
         const rows = await this.fetchJson<UserRoutineExerciseSet[]>(
             `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data`,
             true,
@@ -112,8 +113,38 @@ export class SupabaseDBWrite extends SupabaseBase {
             setsToInsert,
             "return=representation"
         );
+
         await this.refreshRoutineSets(user.id, routineTemplateExerciseId);
         return rows;
+    }
+
+    // Soft delete routine exercise (sets is_active = false)
+    async deleteRoutineExercise(routineTemplateExerciseId: number): Promise<void> {
+        const user = await this.getCurrentUser();
+        
+        // Soft delete the exercise row
+        await this.fetchJson(
+            `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}`,
+            true,
+            "PATCH",
+            { is_active: false },
+            "return=minimal"
+        );
+
+        // Also soft delete all associated sets
+        await this.fetchJson(
+            `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}`,
+            true,
+            "PATCH",
+            { is_active: false },
+            "return=minimal"
+        );
+
+        // Refresh the data
+        await Promise.all([
+            this.refreshRoutineExercises(user.id, routineTemplateExerciseId),
+            this.refreshRoutineExercisesWithDetails(user.id, routineTemplateExerciseId),
+        ]);
     }
 
     async updateExerciseSet(

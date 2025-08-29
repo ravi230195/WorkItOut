@@ -13,64 +13,44 @@ type Props = {
   onRemove?: (key: string | number) => void;
   onAdd?: () => void;
 
-  // Optional footer actions
-  onCancel?: () => void;                     // show a small trash/cancel icon button if provided
-  onPrimary?: () => void;                    // show primary CTA if provided
-  primaryLabel?: string;
-  primaryDisabled?: boolean;
-
   // Behavior / UI
   disabled?: boolean;
   onFocusScroll?: React.FocusEventHandler<HTMLInputElement>;
   className?: string;
 
-  // NEW: hide the inner title bar (so we don’t double-show the exercise name)
-  showHeader?: boolean;                      // default true
-
   // Optional helper note under header
   note?: string;
+
+  // NEW: delete exercise from routine
+  onDeleteExercise?: () => void;
+  deleteDisabled?: boolean;
+
+  // Optional cancel and primary actions
+  onCancel?: () => void;
+  onPrimary?: () => void;
+  primaryLabel?: string;
+  primaryDisabled?: boolean;
 };
 
 const ExerciseSetEditorCard: React.FC<Props> = ({
-  name,
-  initials,
   items,
   onChange,
   onRemove,
   onAdd,
+  onDeleteExercise,
+  deleteDisabled,
+  disabled = false,
+  onFocusScroll,
+  className = "",
+  note,
   onCancel,
   onPrimary,
   primaryLabel = "Save",
   primaryDisabled = false,
-  disabled = false,
-  onFocusScroll,
-  className = "",
-  showHeader = true,        // <— default is to show header
-  note,
 }) => {
   return (
-    <div className={["rounded-2xl bg-white/70 border border-[var(--border)] p-3 md:p-4", className].join(" ")}>
-      {/* Header (optional) */}
-      {showHeader && (
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
-            <span className="text-base md:text-lg font-medium text-[var(--muted-foreground)]">
-              {initials.substring(0, 2).toUpperCase()}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-medium text-[var(--foreground)] mb-1 truncate">
-              {name}
-            </h2>
-            {!!items?.length && (
-              <p className="text-xs md:text-sm text-[var(--muted-foreground)]">
-                {items.length} {items.length === 1 ? "Set" : "Sets"}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
+    <div className={["rounded-2xl bg-white/70 border border-[var(--border)] p-3 md:p-4", className].join(" ")}
+    style={{ border: "2px solid red" }}>
       {note && (
         <p className="text-xs md:text-sm text-[var(--muted-foreground)] mb-3 italic bg-[var(--warm-cream)]/50 p-3 rounded-lg">
           {note}
@@ -81,6 +61,8 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
       <SetList
         mode="edit"
         items={items}
+        onDeleteExercise={onDeleteExercise}
+        deleteDisabled={deleteDisabled}
         onChange={onChange}
         onRemove={onRemove}
         onAdd={onAdd}
@@ -88,31 +70,38 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
         disabled={disabled}
       />
 
-      {/* Optional small cancel (trash) + primary CTA */}
-      <div className="mt-4 flex justify-between items-center gap-2">
-        {onCancel ? (
+      {/* Secondary row (trash/cancel) */}
+      {onCancel && (
+        <div className="mt-4 flex justify-end items-center gap-2">
           <TactileButton
             variant="secondary"
             size="sm"
             onClick={onCancel}
-            className="p-3 h-auto bg-white/70 border-red-200 text-red-500 hover:bg-red-50 btn-tactile"
+            disabled={disabled}
+            className={`p-3 h-auto bg-white/70 border-red-200 text-red-500 hover:bg-red-50 btn-tactile ${
+              disabled ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            title="Cancel"
           >
             <Trash2 size={18} />
           </TactileButton>
-        ) : <div />}
+        </div>
+      )}
 
-        {onPrimary && (
+      {/* Primary CTA (optional) */}
+      {onPrimary && (
+        <div className="mt-6">
           <TactileButton
             onClick={onPrimary}
-            disabled={primaryDisabled}
-            className={`h-11 md:h-12 px-6 bg-[var(--warm-coral)] text-white font-medium rounded-full hover:bg-[var(--warm-coral)]/90 btn-tactile ${
-              primaryDisabled ? "opacity-50 cursor-not-allowed" : ""
+            disabled={primaryDisabled || disabled}
+            className={`w-full h-12 md:h-14 bg-[var(--warm-coral)] text-white font-medium rounded-full hover:bg-[var(--warm-coral)]/90 btn-tactile ${
+              primaryDisabled || disabled ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {primaryLabel}
           </TactileButton>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

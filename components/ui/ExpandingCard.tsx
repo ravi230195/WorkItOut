@@ -16,7 +16,8 @@ type BaseProps = {
   trailing?: React.ReactNode;
 
   children?: React.ReactNode; // <- fine to keep, but we'll also wrap with PropsWithChildren
-
+  onDeleteExercise?: () => void;
+  deleteDisabled?: boolean;
   variant?: Variant;
   className?: string;
   headerClassName?: string;
