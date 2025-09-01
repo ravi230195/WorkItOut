@@ -155,18 +155,18 @@ export function waitForAuthStateChange(
  * Validate sign up result
  */
 export function validateSignUpResult(result: any): boolean {
-  return result &&
-         typeof result === 'object' &&
-         ((result.access_token && result.refresh_token) || result.success === true || result.user || result.id);
+  return result && 
+         typeof result === 'object' && 
+         (result.success === true || result.user || result.id);
 }
 
 /**
  * Validate sign in result
  */
 export function validateSignInResult(result: any): boolean {
-  return result &&
-         typeof result === 'object' &&
-         ((result.access_token && result.refresh_token) || result.success === true || result.user || result.token);
+  return result && 
+         typeof result === 'object' && 
+         (result.success === true || result.user || result.token);
 }
 
 /**
