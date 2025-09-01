@@ -86,14 +86,11 @@ export default function WorkoutDashboardScreen({
 
   // compute exercise counts for each routine (for time display)
   useEffect(() => {
-    console.log("🔍 DGB [DASHBOARD] useEffect triggered - dependencies changed");
-    console.log("🔍 DGB [DASHBOARD] routines count:", routines.length, "canEdit:", canEdit);
-    console.log("🔍 DGB [DASHBOARD] useEffect stack trace:", new Error().stack);
-    
+
     let cancelled = false;
     const fetchExerciseCounts = async () => {
       if (routines.length === 0) {
-        console.log("🔍 DGB [DASHBOARD] No routines, skipping");
+        console.log("🔍 DGB [WORKOUT_SCREEN] No routines, skipping");
         setExerciseCounts({});
         return;
       }
@@ -103,14 +100,14 @@ export default function WorkoutDashboardScreen({
         const needsRecompute: number[] = [];
 
         for (const r of routines) {
-          console.log("🔍 DGB [DASHBOARD] Processing routine:", r.routine_template_id, "name:", r.name);
+          console.log("🔍 DGB [WORKOUT_SCREEN] Processing routine:", r.routine_template_id, "name:", r.name);
           const list = await supabaseAPI.getUserRoutineExercises(r.routine_template_id);
-          console.log("🔍 DGB [DASHBOARD] Raw list from API:", list);
-          console.log("🔍 DGB [DASHBOARD] List length:", list?.length, "isArray:", Array.isArray(list));
+          console.log("🔍 DGB [WORKOUT_SCREEN] Raw list from API:", list);
+          console.log("🔍 DGB [WORKOUT_SCREEN] List length:", list?.length, "isArray:", Array.isArray(list));
           
           const active = (Array.isArray(list) ? list : []).filter((x) => x.is_active !== false);
-          console.log("🔍 DGB [DASHBOARD] After filtering for active:", active);
-          console.log("🔍 DGB [DASHBOARD] Active count:", active.length);
+          console.log("🔍 DGB [WORKOUT_SCREEN] After filtering for active:", active);
+          console.log("🔍 DGB [WORKOUT_SCREEN] Active count:", active.length);
           
           entries.push([r.routine_template_id, active.length]);
 
@@ -118,10 +115,10 @@ export default function WorkoutDashboardScreen({
             const summary = (r as any).muscle_group_summary as string | undefined;
             // Only recompute if there are active exercises AND no summary
             if (active.length > 0 && (!summary || summary.trim() === "")) {
-              console.log("🔍 DGB [DASHBOARD] Routine needs recompute:", r.routine_template_id, "summary:", summary, "active exercises:", active.length);
+              console.log("🔍 DGB [WORKOUT_SCREEN] Routine needs recompute:", r.routine_template_id, "summary:", summary, "active exercises:", active.length);
               needsRecompute.push(r.routine_template_id);
             } else if (active.length === 0) {
-              console.log("🔍 DGB [DASHBOARD] Routine has 0 active exercises, skipping recompute:", r.routine_template_id, "summary:", summary);
+              console.log("🔍 DGB [WORKOUT_SCREEN] Routine has 0 active exercises, skipping recompute:", r.routine_template_id, "summary:", summary);
             }
           }
         }
@@ -130,24 +127,24 @@ export default function WorkoutDashboardScreen({
 
         // only recompute summaries for "my" data
         if (canEdit && needsRecompute.length > 0) {
-          console.log("🔍 DGB [DASHBOARD] Triggering muscle summary recompute for routines:", needsRecompute);
-          console.log("🔍 DGB [DASHBOARD] canEdit:", canEdit, "needsRecompute count:", needsRecompute.length);
+          console.log("🔍 DGB [WORKOUT_SCREEN] Triggering muscle summary recompute for routines:", needsRecompute);
+          console.log("🔍 DGB [WORKOUT_SCREEN] canEdit:", canEdit, "needsRecompute count:", needsRecompute.length);
           
           const results = await Promise.allSettled(
             needsRecompute.map((id) => {
-              console.log("🔍 DGB [DASHBOARD] Calling recomputeAndSaveRoutineMuscleSummary for routine ID:", id);
+              console.log("🔍 DGB [WORKOUT_SCREEN] Calling recomputeAndSaveRoutineMuscleSummary for routine ID:", id);
               return supabaseAPI.recomputeAndSaveRoutineMuscleSummary(id);
             })
           );
           if (!cancelled) {
-            console.log("🔍 DGB [DASHBOARD] Muscle summary recompute completed, results:", results);
+            console.log("🔍 DGB [WORKOUT_SCREEN] Muscle summary recompute completed, results:", results);
             // Since recomputeAndSaveRoutineMuscleSummary returns void, we just check if it succeeded
             const successfulCount = results.filter(res => res.status === "fulfilled").length;
-            console.log("🔍 DGB [DASHBOARD] Successful recomputes:", successfulCount, "out of", needsRecompute.length);
+            console.log("🔍 DGB [WORKOUT_SCREEN] Successful recomputes:", successfulCount, "out of", needsRecompute.length);
             
             if (successfulCount > 0) {
-              console.log("🔍 DGB [DASHBOARD] Muscle summary recompute completed successfully");
-              console.log("🔍 DGB [DASHBOARD] No need to trigger routine state update - let cache handle it");
+              console.log("🔍 DGB [WORKOUT_SCREEN] Muscle summary recompute completed successfully");
+              console.log("🔍 DGB [WORKOUT_SCREEN] No need to trigger routine state update - let cache handle it");
               // Don't trigger setRoutines here - it causes infinite loop!
             }
           }

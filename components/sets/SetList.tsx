@@ -127,27 +127,28 @@ const SetList: React.FC<SetListProps> = ({
               </span>
 
               <Input
-                type="number"
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={it.reps ?? "0"}
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "reps", e.target.value)}
                 disabled={readOnly}
-                className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm ${
-                  readOnly ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                 min="0"
               />
 
+// Weight: show decimal keypad on iOS (keeps . available)
               <Input
                 type="number"
+                inputMode="decimal"
+                pattern="[0-9]*[.,]?[0-9]*"
                 step="0.5"
                 value={it.weight ?? "0"}
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "weight", e.target.value)}
                 disabled={readOnly}
-                className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)]/20 text-sm ${
-                  readOnly ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)]/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                 min="0"
               />
 
@@ -203,11 +204,10 @@ const SetList: React.FC<SetListProps> = ({
               size="sm"
               onClick={onDeleteExercise}
               disabled={deleteDisabled || readOnly}
-              className={`p-2 h-auto rounded-lg ${
-                deleteDisabled || readOnly
-                  ? "opacity-50 cursor-not-allowed"
-                  : "bg-red-50 text-red-600 hover:bg-red-100"
-              }`}
+              className={`p-2 h-auto rounded-lg ${deleteDisabled || readOnly
+                ? "opacity-50 cursor-not-allowed"
+                : "bg-red-50 text-red-600 hover:bg-red-100"
+                }`}
               title={deleteTitle}
             >
               <Trash2 size={16} />
