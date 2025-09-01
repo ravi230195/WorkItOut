@@ -8,6 +8,7 @@ import { TrendingUp, Calendar, Award, Zap, Medal, Trophy } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { supabaseAPI, Workout } from "../../utils/supabase/supabase-api";
 import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
+import { logger } from "../../utils/logging";
 
 interface ProgressScreenProps {
   bottomBar?: React.ReactNode;
@@ -89,7 +90,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           monthlyTarget: 20
         });
       } catch (error) {
-        console.error("Failed to fetch progress data:", error);
+        logger.error("Failed to fetch progress data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -118,7 +119,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         <Section variant="plain" padding="none" className="text-center">
           <div className="flex items-center justify-center gap-2">
             <TrendingUp size={20} className="text-[var(--warm-sage)]" />
-            <p className="text-sm text-[var(--warm-brown)]/70">
+            <p className="text-sm text-warm-brown/70">
               Track your fitness journey
             </p>
           </div>
@@ -132,7 +133,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardContent className="p-6 flex flex-col items-center">
                 {isLoading ? (
-                  <div className="text-[var(--warm-brown)]/60">Loading...</div>
+                  <div className="text-warm-brown/60">Loading...</div>
                 ) : (
                   <CircularProgress
                     value={workoutStats.thisWeekCount}
@@ -149,7 +150,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardContent className="p-6 flex flex-col items-center">
                 {isLoading ? (
-                  <div className="text-[var(--warm-brown)]/60">Loading...</div>
+                  <div className="text-warm-brown/60">Loading...</div>
                 ) : (
                   <CircularProgress
                     value={workoutStats.totalMinutes}
@@ -171,14 +172,14 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Calendar size={20} className="text-[var(--warm-peach)]" />
-                <h2 className="font-medium text-[var(--warm-brown)]">This Month</h2>
+                <h2 className="font-medium text-warm-brown">This Month</h2>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Target vs Completed */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[var(--warm-brown)]/70">
+                  <span className="text-sm text-warm-brown/70">
                     Workouts Progress
                   </span>
                   <Badge className="bg-[var(--warm-sage)]/10 text-[var(--warm-sage)]">
@@ -196,7 +197,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
               {/* Streak */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[var(--warm-brown)]/70">
+                  <span className="text-sm text-warm-brown/70">
                     Current Streak
                   </span>
                   <Badge className="bg-[var(--warm-coral)]/10 text-[var(--warm-coral)]">
@@ -209,10 +210,10 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
               {/* Volume */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[var(--warm-brown)]/70">
+                  <span className="text-sm text-warm-brown/70">
                     Total Volume
                   </span>
-                  <Badge className="bg-[var(--warm-peach)]/10 text-[var(--warm-brown)]">
+                  <Badge className="bg-[var(--warm-peach)]/10 text-warm-brown">
                     24,500 lbs
                   </Badge>
                 </div>
@@ -228,7 +229,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Award size={20} className="text-[var(--warm-mint)]" />
-                <h2 className="font-medium text-[var(--warm-brown)]">
+                <h2 className="font-medium text-warm-brown">
                   Recent Achievements
                 </h2>
               </div>
@@ -249,14 +250,14 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                     />
                   </div>
                   <div className="flex-1">
-                    <div className="font-medium text-[var(--warm-brown)]">
+                    <div className="font-medium text-warm-brown">
                       {achievement.title}
                     </div>
-                    <div className="text-sm text-[var(--warm-brown)]/60">
+                    <div className="text-sm text-warm-brown/60">
                       {achievement.description}
                     </div>
                   </div>
-                  <div className="text-xs text-[var(--warm-brown)]/40">
+                  <div className="text-xs text-warm-brown/40">
                     {achievement.date}
                   </div>
                 </div>
@@ -271,13 +272,13 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <TrendingUp size={20} className="text-[var(--warm-coral)]" />
-                <h2 className="font-medium text-[var(--warm-brown)]">Weekly Trend</h2>
+                <h2 className="font-medium text-warm-brown">Weekly Trend</h2>
               </div>
             </CardHeader>
             <CardContent>
               <TrendChart data={weeklyData} height={120} />
               <div className="mt-4 text-center">
-                <div className="text-sm text-[var(--warm-brown)]/60">
+                <div className="text-sm text-warm-brown/60">
                   You're trending upward! Keep up the great work.
                 </div>
               </div>

@@ -36,7 +36,7 @@ export default function RoutineActionsSheet({
   const header = (
     <div>
       <p className="text-xs text-gray-500">Routine</p>
-      <h3 className="font-medium text-[var(--warm-brown)] truncate text-[clamp(14px,3.8vw,18px)]">
+      <h3 className="font-medium text-warm-brown truncate text-[clamp(14px,3.8vw,18px)]">
         {routineName}
       </h3>
     </div>

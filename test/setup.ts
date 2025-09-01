@@ -5,6 +5,7 @@
  */
 
 import '@testing-library/jest-dom';
+import { logger } from '../utils/logging';
 
 // Mock browser APIs
 Object.defineProperty(window, 'matchMedia', {
@@ -144,4 +145,4 @@ global.sessionStorage = sessionStorageMock as Storage;
   }),
 };
 
-console.log('🧪 Test environment configured successfully!');
+logger.debug('🧪 Test environment configured successfully!');

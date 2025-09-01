@@ -1,10 +1,10 @@
 import { SupabaseBase, SUPABASE_URL } from "./supabase-base";
 import type { UserRoutine, UserRoutineExercise, UserRoutineExerciseSet, Profile } from "./supabase-types";
-
+import { logger } from "../logging";
 
 export class SupabaseDBWrite extends SupabaseBase {
     // Auth
-    async signUp(email: string, password: string): Promise<{ token?: string; needsSignIn?: boolean }> {
+    async signUp(email: string, password: string): Promise<{ token?: string; refresh_token?: string; needsSignIn?: boolean }> {
         const data = await this.fetchJson<any>(
             `${SUPABASE_URL}/auth/v1/signup`,
             false,
@@ -13,12 +13,15 @@ export class SupabaseDBWrite extends SupabaseBase {
         );
         if (data.error) throw new Error(data.error.message);
         if (data.access_token || data.session?.access_token) {
-            return { token: data.access_token || data.session!.access_token };
+            return { 
+                token: data.access_token || data.session!.access_token,
+                refresh_token: data.refresh_token || data.session?.refresh_token
+            };
         }
         return { needsSignIn: true };
     }
 
-    async signIn(email: string, password: string): Promise<string> {
+    async signIn(email: string, password: string): Promise<{ access_token: string; refresh_token: string }> {
         const data = await this.fetchJson<any>(
             `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
             false,
@@ -27,6 +30,25 @@ export class SupabaseDBWrite extends SupabaseBase {
         );
         if (data.error) throw new Error(data.error.message);
         if (!data.access_token) throw new Error("No access token received");
+        if (!data.refresh_token) throw new Error("No refresh token received");
+        
+        return { 
+            access_token: data.access_token, 
+            refresh_token: data.refresh_token 
+        };
+    }
+
+    async refreshToken(refreshToken: string): Promise<string> {
+        const data = await this.fetchJson<any>(
+            `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,
+            false,
+            "POST",
+            { refresh_token: refreshToken }
+        );
+        
+        if (data.error) throw new Error(data.error.message);
+        if (!data.access_token) throw new Error("No access token received");
+        
         return data.access_token;
     }
 
@@ -274,7 +296,7 @@ export class SupabaseDBWrite extends SupabaseBase {
     }
 
     async recomputeAndSaveRoutineMuscleSummary(routineTemplateId: number) {
-        console.log("🔍 DGB [MUSCLE SUMMARY] Starting recompute for routine:", routineTemplateId);
+        logger.debug("🔍 DGB [MUSCLE SUMMARY] Starting recompute for routine:", routineTemplateId);
         
         // Load active exercises → muscle groups
         const urlEx =
@@ -282,14 +304,14 @@ export class SupabaseDBWrite extends SupabaseBase {
             `?routine_template_id=eq.${routineTemplateId}&is_active=eq.true` +
             `&select=exercises(muscle_group)`;
 
-        console.log("🔍 DGB [MUSCLE SUMMARY] Fetching exercises from URL:", urlEx);
+        logger.debug("🔍 DGB [MUSCLE SUMMARY] Fetching exercises from URL:", urlEx);
         const rows = await this.fetchJson<Array<{ exercises?: { muscle_group?: string } }>>(urlEx, true);
-        console.log("🔍 DGB [MUSCLE SUMMARY] Found exercises:", rows.length);
+        logger.debug("🔍 DGB [MUSCLE SUMMARY] Found exercises:", rows.length);
 
         // Early exit if no active exercises - nothing to recompute
         if (rows.length === 0) {
-            console.log("🔍 DGB [MUSCLE SUMMARY] No active exercises found, skipping recomputation");
-            console.log("🔍 DGB [MUSCLE SUMMARY] No database update or cache refresh needed");
+            logger.debug("🔍 DGB [MUSCLE SUMMARY] No active exercises found, skipping recomputation");
+            logger.debug("🔍 DGB [MUSCLE SUMMARY] No database update or cache refresh needed");
             return;
         }
 
@@ -299,15 +321,15 @@ export class SupabaseDBWrite extends SupabaseBase {
             )
         ).sort();
 
-        console.log("🔍 DGB [MUSCLE SUMMARY] Muscle groups found:", groups);
+        logger.debug("🔍 DGB [MUSCLE SUMMARY] Muscle groups found:", groups);
 
         // Use NULL when no groups (avoids DB pattern/CHECK failures on empty string)
         const summary = groups.length ? groups.join(" • ") : null;
-        console.log("🔍 DGB [MUSCLE SUMMARY] Final summary:", summary);
+        logger.debug("🔍 DGB [MUSCLE SUMMARY] Final summary:", summary);
 
         // Patch base table
         const urlPatch = `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`;
-        console.log("🔍 DGB [MUSCLE SUMMARY] Patching routine with URL:", urlPatch);
+        logger.debug("🔍 DGB [MUSCLE SUMMARY] Patching routine with URL:", urlPatch);
         await this.fetchJson<any[]>(
             urlPatch,
             true,
@@ -317,11 +339,11 @@ export class SupabaseDBWrite extends SupabaseBase {
         );
 
         // Refresh routines cache so UI reflects changes
-        console.log("🔍 DGB [MUSCLE SUMMARY] Refreshing routines cache...");
+        logger.debug("🔍 DGB [MUSCLE SUMMARY] Refreshing routines cache...");
         const { id: userId } = await this.getCurrentUser();
-        console.log("🔍 DGB [MUSCLE SUMMARY] User ID for cache refresh:", userId);
+        logger.debug("🔍 DGB [MUSCLE SUMMARY] User ID for cache refresh:", userId);
         await this.refreshRoutines(userId);
-        console.log("🔍 DGB [MUSCLE SUMMARY] Cache refresh completed");
+        logger.debug("🔍 DGB [MUSCLE SUMMARY] Cache refresh completed");
     }
 }
 

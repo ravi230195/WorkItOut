@@ -18,6 +18,7 @@ import { useAuth } from "../AuthContext";
 import { supabaseAPI, Profile } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { AppScreen, Section, ScreenHeader, Stack } from "../layouts";
+import { logger, getLogLevel, setLogLevel, getAvailableLogLevels, type LogLevel } from "../../utils/logging";
 
 interface PersonalBest {
   exercise: string;
@@ -52,7 +53,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         const profileData = await supabaseAPI.getMyProfile();
         setProfile(profileData);
       } catch (error) {
-        console.error("Failed to fetch profile:", error);
+        logger.error("Failed to fetch profile:", error);
         if (error instanceof Error && error.message === "UNAUTHORIZED") {
           toast.error("Session expired. Please sign in.");
         } else {
@@ -75,7 +76,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
       authSignOut();
       toast.success("Signed out successfully");
     } catch (error) {
-      console.error("Sign out failed:", error);
+      logger.error("Sign out failed:", error);
       authSignOut();
       toast.success("Signed out successfully");
     } finally {
@@ -126,14 +127,14 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
               </Avatar>
 
               {isLoading ? (
-                <div className="text-[var(--warm-brown)]/60">Loading profile...</div>
+                <div className="text-warm-brown/60">Loading profile...</div>
               ) : (
                 <>
-                  <h1 className="text-xl font-medium text-[var(--warm-brown)] mb-2">
+                  <h1 className="text-xl font-medium text-warm-brown mb-2">
                     {getDisplayName()}
                   </h1>
                   {profile?.height_cm && profile?.weight_kg && (
-                    <div className="flex justify-center gap-4 text-sm text-[var(--warm-brown)]/60">
+                    <div className="flex justify-center gap-4 text-sm text-warm-brown/60">
                       <span>{profile.height_cm} cm</span>
                       <span>•</span>
                       <span>{profile.weight_kg} kg</span>
@@ -170,8 +171,8 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
                 <div className="w-8 h-8 rounded-full bg-[var(--warm-coral)]/20 flex items-center justify-center mx-auto mb-2">
                   <Dumbbell size={16} className="text-[var(--warm-coral)]" />
                 </div>
-                <div className="text-lg font-medium text-[var(--warm-brown)]">124</div>
-                <div className="text-xs text-[var(--warm-brown)]/60">Workouts</div>
+                <div className="text-lg font-medium text-warm-brown">124</div>
+                <div className="text-xs text-warm-brown/60">Workouts</div>
               </CardContent>
             </Card>
 
@@ -180,8 +181,8 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
                 <div className="w-8 h-8 rounded-full bg-[var(--warm-sage)]/20 flex items-center justify-center mx-auto mb-2">
                   <Calendar size={16} className="text-[var(--warm-sage)]" />
                 </div>
-                <div className="text-lg font-medium text-[var(--warm-brown)]">186</div>
-                <div className="text-xs text-[var(--warm-brown)]/60">Days Active</div>
+                <div className="text-lg font-medium text-warm-brown">186</div>
+                <div className="text-xs text-warm-brown/60">Days Active</div>
               </CardContent>
             </Card>
 
@@ -190,8 +191,8 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
                 <div className="w-8 h-8 rounded-full bg-[var(--warm-peach)]/20 flex items-center justify-center mx-auto mb-2">
                   <TrendingUp size={16} className="text-[var(--warm-peach)]" />
                 </div>
-                <div className="text-lg font-medium text-[var(--warm-brown)]">+12%</div>
-                <div className="text-xs text-[var(--warm-brown)]/60">Strength</div>
+                <div className="text-lg font-medium text-warm-brown">+12%</div>
+                <div className="text-xs text-warm-brown/60">Strength</div>
               </CardContent>
             </Card>
           </div>
@@ -202,7 +203,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Trophy size={20} className="text-[var(--warm-coral)]" />
-              <h2 className="text-lg text-[var(--warm-brown)]">Personal Bests</h2>
+              <h2 className="text-lg text-warm-brown">Personal Bests</h2>
             </div>
 
             <div className="space-y-2">
@@ -211,16 +212,16 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
                   <CardContent className="p-4">
                     <div className="flex justify-between items-center">
                       <div>
-                        <h3 className="font-medium text-[var(--warm-brown)]">
+                        <h3 className="font-medium text-warm-brown">
                           {pb.exercise}
                         </h3>
-                        <p className="text-sm text-[var(--warm-brown)]/60">{pb.date}</p>
+                        <p className="text-sm text-warm-brown/60">{pb.date}</p>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium text-[var(--warm-brown)]">
+                        <div className="font-medium text-warm-brown">
                           {pb.weight} lbs
                         </div>
-                        <div className="text-sm text-[var(--warm-brown)]/60">
+                        <div className="text-sm text-warm-brown/60">
                           {pb.reps} reps
                         </div>
                       </div>
@@ -228,6 +229,36 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          </div>
+        </Section>
+
+        {/* Logging Control */}
+        <Section variant="plain" padding="none">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Settings size={20} className="text-warm-brown" />
+              <h2 className="text-lg text-warm-brown">Logging Level</h2>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              {getAvailableLogLevels().map((level) => (
+                <TactileButton
+                  key={level}
+                  variant={getLogLevel() === level ? "primary" : "secondary"}
+                  className="text-sm"
+                  onClick={() => {
+                    setLogLevel(level);
+                    toast.success(`Log level set to: ${level}`);
+                  }}
+                >
+                  {level.toUpperCase()}
+                </TactileButton>
+              ))}
+            </div>
+            
+            <div className="text-xs text-warm-brown/60 text-center">
+              Current: {getLogLevel().toUpperCase()}
             </div>
           </div>
         </Section>
@@ -263,10 +294,10 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         <Section variant="plain" padding="none">
           <Card className="bg-gradient-to-r from-[var(--warm-sage)]/10 to-[var(--warm-mint)]/10 border-[var(--warm-sage)]/20">
             <CardContent className="p-4 text-center">
-              <div className="text-sm text-[var(--warm-brown)]/60">
+              <div className="text-sm text-warm-brown/60">
                 Workout Tracker v1.0
               </div>
-              <div className="text-xs text-[var(--warm-brown)]/40 mt-1">
+              <div className="text-xs text-warm-brown/40 mt-1">
                 Powered by Supabase
               </div>
             </CardContent>

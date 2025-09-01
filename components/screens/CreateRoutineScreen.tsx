@@ -75,7 +75,7 @@ export default function CreateRoutineScreen({
             value={routineName}
             onChange={(e) => setRoutineName(e.target.value)}
             placeholder="Routine Name"
-            className="bg-[var(--input-background)] border-[var(--border)] text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/60 h-12 md:h-12 text-base md:text-lg rounded-xl focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
+            className="bg-[var(--input-background)] border-[var(--border)] text-warm-brown placeholder:text-warm-brown/60 h-12 md:h-12 text-base md:text-lg rounded-xl focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
             maxLength={50}
             autoFocus
             disabled={isCreating}

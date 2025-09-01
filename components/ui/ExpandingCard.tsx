@@ -119,7 +119,7 @@ export default function ExpandingCard({
             transition={{ type: "spring", stiffness: 300, damping: 24 }}
             className={[
               "ml-1",
-              variant === "glass" ? "text-white/70" : "text-[var(--warm-brown)]/70",
+              variant === "glass" ? "text-white/70" : "text-warm-brown/70",
             ].join(" ")}
           >
             <ChevronDown size={18} />

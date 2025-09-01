@@ -8,6 +8,7 @@ import { supabaseAPI, Exercise } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import { AppScreen, ScreenHeader, Section, FooterBar, Stack, Spacer } from "../layouts";
+import { logger } from "../../utils/logging";
 
 interface AddExercisesToRoutineScreenProps {
   routineId?: number;
@@ -48,7 +49,7 @@ export function AddExercisesToRoutineScreen({
         if (cancelled) return;
         setExercises(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("[AddExercises] fetch error:", error);
+        logger.error("[AddExercises] fetch error:", error);
         toast.error("Failed to load exercises");
         setExercises([]);
       } finally {
@@ -152,7 +153,7 @@ export function AddExercisesToRoutineScreen({
             disabled={!selectedExercise || isAddingExercise}
             className={`h-12 md:h-14 sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${selectedExercise
                 ? "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
-                : "bg-[var(--warm-brown)]/20 text-[var(--warm-brown)]/40 cursor-not-allowed"
+                : "bg-[var(--warm-brown)]/20 text-warm-brown/40 cursor-not-allowed"
               }`}
           >
             {isAddingExercise ? "ADDING..." : selectedExercise ? "ADD (1)" : "ADD"}
@@ -184,14 +185,14 @@ export function AddExercisesToRoutineScreen({
         <Section variant="plain" padding="none">
           <div className="relative">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--warm-brown)]/60"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-brown/60"
               size={20}
             />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for an exercise..."
-              className="bg-[var(--input-background)] border-[var(--border)] text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/60 h-12 md:h-12 pl-10 pr-4 rounded-xl focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
+              className="bg-[var(--input-background)] border-[var(--border)] text-warm-brown placeholder:text-warm-brown/60 h-12 md:h-12 pl-10 pr-4 rounded-xl focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
             />
           </div>
         </Section>
@@ -210,7 +211,7 @@ export function AddExercisesToRoutineScreen({
             <>
               {Object.keys(groupedAZ).length === 0 ? (
                 <Section variant="card" className="text-center">
-                  <p className="text-[var(--warm-brown)]/60">
+                  <p className="text-warm-brown/60">
                     No exercises found
                   </p>
                 </Section>
@@ -219,7 +220,7 @@ export function AddExercisesToRoutineScreen({
                   .sort((a, b) => a.localeCompare(b))
                   .map((letter) => (
                     <div key={letter}>
-                      <h2 className="text-xs md:text-sm text-[var(--warm-brown)]/60 font-medium mb-3 px-2 tracking-wide">
+                      <h2 className="text-xs md:text-sm text-warm-brown/60 font-medium mb-3 px-2 tracking-wide">
                         {letter}
                       </h2>
                       <div className="space-y-2">
@@ -246,19 +247,19 @@ export function AddExercisesToRoutineScreen({
                               >
                                 <div className="flex items-center gap-3 md:gap-4">
                                   <div className="w-10 h-10 md:w-12 md:h-12 bg-[var(--warm-brown)]/10 rounded-lg grid place-items-center">
-                                    <span className="text-sm md:text-base font-medium text-[var(--warm-brown)]/60">
+                                    <span className="text-sm md:text-base font-medium text-warm-brown/60">
                                       {initials}
                                     </span>
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <h3 className="font-medium text-[var(--warm-brown)] truncate">
+                                    <h3 className="font-medium text-warm-brown truncate">
                                       {exercise.name}
                                     </h3>
-                                    <p className="text-xs md:text-sm text-[var(--warm-brown)]/60 truncate">
+                                    <p className="text-xs md:text-sm text-warm-brown/60 truncate">
                                       {(exercise.muscle_group || "").trim() || OTHER_GROUP}
                                     </p>
                                   </div>
-                                  <div className="text-[var(--warm-brown)]/40">
+                                  <div className="text-warm-brown/40">
                                     <div className="w-6 h-6 rounded-full border border-[var(--warm-brown)]/20 grid place-items-center">
                                       <div>ⓘ</div>
                                     </div>

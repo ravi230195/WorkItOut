@@ -10,6 +10,7 @@ import {
   fullCacheKeyUserRoutines,
   fullCacheKeySteps,
 } from "./cache-keys";
+import { logger } from "../logging";
 
 // Config
 export const SUPABASE_URL = "https://lledulwstlcejiholstu.supabase.co";
@@ -43,11 +44,11 @@ export class SupabaseBase {
     
     if (token) {
       // 🔐 [DBG] Token set - Clear cache for fresh user session
-      console.log("🔐 [DBG] Token set - Clearing cache for fresh user session");
+      logger.info("🔐 [DBG] Token set - Clearing cache for fresh user session");
       localCache.clearPrefix();
     } else {
       // 🔐 [DBG] Token cleared - Clear cache on sign out
-      console.log("🔐 [DBG] Token cleared - Clearing cache on sign out");
+      logger.info("🔐 [DBG] Token cleared - Clearing cache on sign out");
       localCache.clearPrefix();
     }
   }
@@ -107,29 +108,28 @@ export class SupabaseBase {
     // Check cache first
     const hit = localCache.get<T>(cacheKey, ttlMs);
     if (hit != null) {
-      console.log("🔍 DGB [CACHE ACCESS] Cache hit - TTL:", ttlMs, "ms");
+      logger.info("🔍 [CACHE ACCESS] Cache hit", cacheKey, " TTL:", ttlMs, "ms");
       
       if (postFilter) {
         const filtered = postFilter(hit);
-        console.log("🔍 DGB [CACHE ACCESS] Post-filter applied to cache hit - Original:", (hit as any).length, "Filtered:", (filtered as any).length);
+        logger.info("🔍 [CACHE ACCESS] Post-filter applied to cache hit - Original:", (hit as any).length, "Filtered:", (filtered as any).length);
         return { data: filtered, status: CacheStatus.CACHE_HIT };  // ✅ Cache hit
       }
       return { data: hit, status: CacheStatus.CACHE_HIT };  // ✅ Cache hit
     }
 
     // Cache miss - fetch from network
-    console.log("🔍 DGB [CACHE ACCESS] Cache miss - fetching from:", url);
+    logger.info("🔍 [CACHE ACCESS] Cache miss - fetching from:", url);
     const data = await this.fetchJson<T>(url, includeAuth);
     
     if (postFilter) {
       const filtered = postFilter(data);
-      console.log("🔍 DGB [CACHE ACCESS] Post-filter applied to fresh data - Original:", (data as any).length, "Filtered:", (filtered as any).length);
+      logger.info("🔍 [CACHE ACCESS] Post-filter applied to fresh data - Original:", (data as any).length, "Filtered:", (filtered as any).length);
       localCache.set(cacheKey, filtered, ttlMs);
       return { data: filtered, status: CacheStatus.FRESH_FETCH };  // ✅ Fresh fetch
     }
     
     localCache.set(cacheKey, data, ttlMs);
-    console.log("🔍 DGB [DATA CACHE FETCHED] Fresh fetch data:", data);
     return { data, status: CacheStatus.FRESH_FETCH };  // ✅ Fresh fetch
   }
 
@@ -148,49 +148,49 @@ export class SupabaseBase {
     try {
       // Debug: Log who's calling this refresh function
       const stackTrace = new Error().stack;
-      console.log("🔍 DGB [CACHE REFRESH TRIGGER] refreshRoutines called by:", stackTrace);
-      console.log("🔍 DGB [CACHE REFRESH TRIGGER] User ID:", userId);
+      logger.info("🔍 [CACHE REFRESH TRIGGER] refreshRoutines called by:", stackTrace);
+      logger.info("🔍 [CACHE REFRESH TRIGGER] User ID:", userId);
       
       // encode the UUID and use is.true for boolean
       const url =`${SUPABASE_URL}/rest/v1/user_routines` +`?user_id=eq.${encodeURIComponent(userId)}` +`&is_active=is.true&select=*`;
       const key = fullCacheKeyUserRoutines(userId);
-      console.log("🔍 DGB [CACHE REFRESH TRIGGER] Cache key:", key);
-      console.log("🔍 DGB [CACHE REFRESH TRIGGER] URL:", url);
+      logger.info("🔍 [CACHE REFRESH TRIGGER] Cache key:", key);
+      logger.info("🔍 [CACHE REFRESH TRIGGER] URL:", url);
       
       const rows = await this.fetchJson<any[]>(url, true);
       localCache.set(key, rows);
-      console.log("♻️ [CACHE REFRESH] routines", key);
-      console.log("🔍 DGB [CACHE REFRESH COMPLETE] Routines refreshed, count:", rows.length);
+      logger.info("♻️ [CACHE REFRESH] routines", key);
+      logger.info("🔍 [CACHE REFRESH COMPLETE] Routines refreshed, count:", rows.length);
     } catch (e) {
       // Do not break the UI flow if a refresh fails
-      console.warn("⚠️ [CACHE REFRESH routines] skipped due to error:", e);
-      console.log("🔍 DGB [CACHE REFRESH ERROR] Stack trace:", new Error().stack);
+      logger.warn("⚠️ [CACHE REFRESH routines] skipped due to error:", e);
+      logger.info("🔍 [CACHE REFRESH ERROR] Stack trace:", new Error().stack);
     }
   }
   protected async refreshRoutineExercises(userId: string, rtId: number) {
     const stackTrace = new Error().stack;
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] refreshRoutineExercises called by:", stackTrace);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] User ID:", userId, "Routine ID:", rtId);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] refreshRoutineExercises called by:", stackTrace);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] User ID:", userId, "Routine ID:", rtId);
     
     const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${rtId}&is_active=is.true&select=*`;
     const key = fullCacheKeyRoutineExercises(userId, rtId);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] Cache key:", key);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] URL:", url);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] Cache key:", key);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] URL:", url);
     
     const rows = await this.fetchJson<any[]>(url, true);
     localCache.set(key, rows);
-    console.log("♻️ [CACHE REFRESH] routine exercises", key);
-    console.log("🔍 DGB [CACHE REFRESH COMPLETE] Routine exercises refreshed, count:", rows.length);
+    logger.info("♻️ [CACHE REFRESH] routine exercises", key);
+    logger.info("🔍 [CACHE REFRESH COMPLETE] Routine exercises refreshed, count:", rows.length);
   }
   protected async refreshRoutineExercisesWithDetails(userId: string, rtId: number) {
     const stackTrace = new Error().stack;
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] refreshRoutineExercisesWithDetails called by:", stackTrace);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] User ID:", userId, "Routine ID:", rtId);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] refreshRoutineExercisesWithDetails called by:", stackTrace);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] User ID:", userId, "Routine ID:", rtId);
     
     const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${rtId}&is_active=is.true&select=*,exercises(name,category)`;
     const key = fullCacheKeyRoutineExercisesWithDetails(userId, rtId);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] Cache key:", key);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] URL:", url);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] Cache key:", key);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] URL:", url);
     
     const raw = await this.fetchJson<any[]>(url, true);
     const flattened = raw.map((ex: any) => ({
@@ -199,54 +199,54 @@ export class SupabaseBase {
       category: ex.exercises?.category || "Unknown",
     }));
     localCache.set(key, flattened);
-    console.log("♻️ [CACHE REFRESH] routine exercises+details", key);
-    console.log("🔍 DGB [CACHE REFRESH COMPLETE] Routine exercises+details refreshed, count:", flattened.length);
+    logger.info("♻️ [CACHE REFRESH] routine exercises+details", key);
+    logger.info("🔍 [CACHE REFRESH COMPLETE] Routine exercises+details refreshed, count:", flattened.length);
   }
   protected async refreshRoutineSets(userId: string, rtexId: number) {
     const stackTrace = new Error().stack;
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] refreshRoutineSets called by:", stackTrace);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] User ID:", userId, "Routine Exercise ID:", rtexId);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] refreshRoutineSets called by:", stackTrace);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] User ID:", userId, "Routine Exercise ID:", rtexId);
     
     const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_id=eq.${rtexId}&is_active=eq.true&order=set_order`;
     const key = fullCacheKeyRoutineSets(userId, rtexId);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] Cache key:", key);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] URL:", url);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] Cache key:", key);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] URL:", url);
     
     const rows = await this.fetchJson<any[]>(url, true);
     localCache.set(key, rows);
-    console.log("♻️ [CACHE REFRESH] routine sets", key);
-    console.log("🔍 DGB [CACHE REFRESH COMPLETE] Routine sets refreshed, count:", rows.length);
+    logger.info("♻️ [CACHE REFRESH] routine sets", key);
+    logger.info("🔍 [CACHE REFRESH COMPLETE] Routine sets refreshed, count:", rows.length);
   }
   protected async refreshProfile(userId: string) {
     const stackTrace = new Error().stack;
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] refreshProfile called by:", stackTrace);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] User ID:", userId);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] refreshProfile called by:", stackTrace);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] User ID:", userId);
     
     const url = `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}&select=*`;
     const key = fullCacheKeyProfile(userId);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] Cache key:", key);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] URL:", url);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] Cache key:", key);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] URL:", url);
     
     const rows = await this.fetchJson<any[]>(url, true);
     localCache.set(key, rows);
-    console.log("♻️ [CACHE REFRESH] profile", key);
-    console.log("🔍 DGB [CACHE REFRESH COMPLETE] Profile refreshed, count:", rows.length);
+    logger.info("♻️ [CACHE REFRESH] profile", key);
+    logger.info("🔍 [CACHE REFRESH COMPLETE] Profile refreshed, count:", rows.length);
   }
   
   protected async refreshSteps(userId: string) {
     const stackTrace = new Error().stack;
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] refreshSteps called by:", stackTrace);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] User ID:", userId);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] refreshSteps called by:", stackTrace);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] User ID:", userId);
     
     const url = `${SUPABASE_URL}/rest/v1/user_steps?user_id=eq.${userId}&select=goal`;
     const key = fullCacheKeySteps(userId);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] Cache key:", key);
-    console.log("🔍 DGB [CACHE REFRESH TRIGGER] URL:", url);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] Cache key:", key);
+    logger.info("🔍 [CACHE REFRESH TRIGGER] URL:", url);
     
     const rows = await this.fetchJson<any[]>(url, true);
     localCache.set(key, rows);
-    console.log("♻️ [CACHE REFRESH] steps", key);
-    console.log("🔍 DGB [CACHE REFRESH COMPLETE] Steps refreshed, count:", rows.length);
+    logger.info("♻️ [CACHE REFRESH] steps", key);
+    logger.info("🔍 [CACHE REFRESH COMPLETE] Steps refreshed, count:", rows.length);
   }
 
   // ---------- Common keys (exported so reads/writes can use) ----------

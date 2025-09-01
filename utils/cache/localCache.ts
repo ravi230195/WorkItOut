@@ -1,4 +1,5 @@
 // src/utils/local-cache.ts
+import { logger } from "../logging";
 export type CacheEntry<T> = {
     storedAtMs: number; // when stored (ms since epoch)
     value: T;           // cached value
@@ -16,28 +17,24 @@ export type CacheEntry<T> = {
       return `${this.prefix}:${key}`;
     }
   
-    private log(...args: any[]) {
-      if (this.debug) console.debug("🗄️ [CACHE]", ...args);
-    }
-  
     get<T>(key: string, maxAgeMs: number): T | null {
       try {
         const storeKey = this.prefixedKey(key);
         const raw = localStorage.getItem(storeKey);
         if (!raw) {
-          this.log("GET (miss)", storeKey);
+          logger.info("GET (miss)", storeKey);
           return null;
         }
         const entry = JSON.parse(raw) as CacheEntry<T>;
         const ageMs = Date.now() - entry.storedAtMs;
         if (ageMs > maxAgeMs) {
-          this.log("GET (stale)", storeKey, { ageMs, maxAgeMs });
+          logger.info("GET (stale)", storeKey, { ageMs, maxAgeMs });
           return null;
         }
-        this.log("GET (hit)", storeKey, { ageMs, maxAgeMs });
+        logger.info("GET (hit)", storeKey, { ageMs, maxAgeMs });
         return entry.value;
       } catch {
-        this.log("GET (error parsing)", key);
+        logger.info("GET (error parsing)", key);
         return null;
       }
     }
@@ -48,12 +45,12 @@ export type CacheEntry<T> = {
         const entry: CacheEntry<T> = { storedAtMs: Date.now(), value, hintTtlMs };
         const raw = JSON.stringify(entry);
         localStorage.setItem(storeKey, raw);
-        this.log("SET", storeKey, { bytes: raw.length, hasTTL: !!hintTtlMs });
+        logger.info("SET", storeKey, { bytes: raw.length, hasTTL: !!hintTtlMs });
         if (this.debug) {
             this.debugDumpValuesChunked(); // false = don't print full values, just metadata
         }
       } catch {
-        this.log("SET (failed)", key);
+        logger.info("SET (failed)", key);
       }
     }
   
@@ -61,12 +58,12 @@ export type CacheEntry<T> = {
       const storeKey = this.prefixedKey(key);
       try {
         localStorage.removeItem(storeKey);
-        this.log("REMOVE", storeKey);
+        logger.info("REMOVE", storeKey);
         if (this.debug) {
             this.debugDumpValuesChunked(); // false = don't print full values, just metadata
         }
       } catch {
-        this.log("REMOVE (failed)", storeKey);
+        logger.info("REMOVE (failed)", storeKey);
       }
     }
   
@@ -111,18 +108,18 @@ export type CacheEntry<T> = {
       const storeKey = this.prefixedKey(key);
       const raw = localStorage.getItem(storeKey);
       if (!raw) {
-        this.log("PEEK (miss)", storeKey);
+        logger.info("PEEK (miss)", storeKey);
         return null;
       }
       try {
         const { value } = JSON.parse(raw) as CacheEntry<unknown>;
         const snap = JSON.stringify(value);
         const out = snap.length > preview ? snap.slice(0, preview) + "…(truncated)" : snap;
-        console.debug("👀 [CACHE PEEK]", storeKey, out);
+        logger.info("👀 [CACHE PEEK]", storeKey, out);
         return value;
       } catch {
         const out = raw.length > preview ? raw.slice(0, preview) + "…(truncated)" : raw;
-        console.debug("👀 [CACHE PEEK RAW]", storeKey, out);
+        logger.info("👀 [CACHE PEEK RAW]", storeKey, out);
         return raw;
       }
     }
@@ -134,18 +131,17 @@ export type CacheEntry<T> = {
       for (let i = 0; i < s.length; i += chunkSize) {
         const end = Math.min(i + chunkSize, s.length);
         // keep label short; Xcode sometimes truncates very long prefixes too
-        console.debug(`${label} [${i}-${end}/${s.length}]`, s.slice(i, end));
+        logger.info(`${label} [${i}-${end}/${s.length}]`, s.slice(i, end));
       }
     }
     
     /** Print values per cache entry, chunked to avoid console truncation. */
     debugDumpValuesChunked(chunkSize = 8000) {
-      /*
       const snap = this.snapshot(true); // includes values
       for (const [k, v] of Object.entries(snap)) {
         const val = (v as any).value;
         // small metadata line
-        console.debug("🧾 [CACHE ENTRY]", k, {
+        logger.info("🧾 [CACHE ENTRY]", k, {
           storedAtMs: (v as any).storedAtMs,
           ageMs: (v as any).ageMs,
           bytes: (v as any).bytes
@@ -153,15 +149,14 @@ export type CacheEntry<T> = {
         // big value, chunked
         this.logChunks("📦 value", val, chunkSize);
       }
-      */
     }
     
   
-    /** Print the whole cache (for this prefix) to the console. */
+    /** Print the whole cache (for this prefix) to the logger. */
     debugDump(includeValues = false) {
       const snap = this.snapshot(includeValues);
       const keys = Object.keys(snap);
-      console.debug("🧾 [CACHE SNAPSHOT]", {
+      logger.info("🧾 [CACHE SNAPSHOT]", {
         prefix: this.prefix,
         count: keys.length,
         entries: snap,
@@ -180,9 +175,9 @@ export type CacheEntry<T> = {
             removed++;
           }
         }
-        this.log("CLEAR_PREFIX", p, { removed });
+        logger.info("CLEAR_PREFIX", p, { removed });
       } catch {
-        this.log("CLEAR_PREFIX (failed)", subPrefix ?? "");
+        logger.info("CLEAR_PREFIX (failed)", subPrefix ?? "");
       }
     }
   }

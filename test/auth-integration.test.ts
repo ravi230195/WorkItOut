@@ -5,6 +5,7 @@
  */
 
 import { TestUser, createTestUser, validateTestUser, logTestUser } from './utils/test-user';
+import { logger } from '../utils/logging';
 import { 
   initSupabaseAPI, 
   verifyUserInDatabase, 
@@ -34,7 +35,7 @@ let authContext: any = null;
  * Initialize test environment
  */
 beforeAll(async () => {
-  console.log('🔐 Initializing Authentication Integration Tests...');
+  logger.debug('🔐 Initializing Authentication Integration Tests...');
   
   try {
     // Import real functions and APIs
@@ -57,9 +58,9 @@ beforeAll(async () => {
     
     logTestUser(AUTH_TEST_CONFIG.testUser, 'Generated');
     
-    console.log('✅ Test environment initialized successfully!');
+    logger.debug('✅ Test environment initialized successfully!');
   } catch (error) {
-    console.error('❌ Failed to initialize test environment:', error);
+    logger.error('❌ Failed to initialize test environment:', error);
     throw error;
   }
 }, AUTH_TEST_CONFIG.timeout);
@@ -68,13 +69,13 @@ beforeAll(async () => {
  * Cleanup after all tests
  */
 afterAll(async () => {
-  console.log('🧹 Cleaning up test environment...');
+  logger.debug('🧹 Cleaning up test environment...');
   
   if (AUTH_TEST_CONFIG.testUser) {
     await cleanupTestUser(AUTH_TEST_CONFIG.testUser);
   }
   
-  console.log('✅ Test environment cleaned up!');
+  logger.debug('✅ Test environment cleaned up!');
 }, AUTH_TEST_CONFIG.cleanupTimeout);
 
 describe('Real Authentication Integration Tests', () => {
@@ -249,7 +250,7 @@ export function setRealAuthFunctions(
   authContext = realAuthContext;
 }
 
-console.log(`
+logger.debug(`
 🔐 Authentication Integration Tests Loaded!
 
 This test suite will test:

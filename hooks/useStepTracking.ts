@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabaseAPI } from '../utils/supabase/supabase-api';
 import { useAuth } from '../components/AuthContext';
+import { logger } from '../utils/logging';
 
 /** Types */
 interface StepData {
@@ -53,7 +54,7 @@ async function readTodayStepsNative(): Promise<number> {
         await Health.requestHealthPermissions({ permissions: ['READ_STEPS'] });
 
         // Debug: Log what we're sending to HealthKit
-        console.log('[steps] Sending to HealthKit:', {
+        logger.debug('[steps] Sending to HealthKit:', {
           startDate: start.toISOString(),
           endDate: end.toISOString(), // ✅ now
           startLocal: start.toLocaleString(),
@@ -68,7 +69,7 @@ async function readTodayStepsNative(): Promise<number> {
         });
 
         // Debug: Log what HealthKit returned
-        console.log('[steps] HealthKit response:', res);
+        logger.debug('[steps] HealthKit response:', res);
 
         const rows: any[] = Array.isArray(res?.aggregatedData) ? res.aggregatedData : [];
         
@@ -78,7 +79,7 @@ async function readTodayStepsNative(): Promise<number> {
           new Date(ms).toLocaleString('en-GB', { timeZone: tz, hour12: false });
         
         rows.forEach((r, index) => {
-          console.log(
+          logger.debug(
             `[steps] Row ${index}:`,
             fmtLocal(r.startDate),
             '→',
@@ -90,7 +91,7 @@ async function readTodayStepsNative(): Promise<number> {
 
         return rows.reduce((sum, row) => sum + (Number(row?.value) || 0), 0);
       } catch (e) {
-        console.warn('[steps] iOS Health read failed:', e);
+        logger.warn('[steps] iOS Health read failed:', e);
         return 0;
       }
     }
@@ -118,13 +119,13 @@ async function readTodayStepsNative(): Promise<number> {
         });
 
         // Debug: Log what Health Connect returned
-        console.log('[steps] Health Connect response:', res);
+        logger.debug('[steps] Health Connect response:', res);
 
         const records: any[] = Array.isArray(res?.records) ? res.records : [];
         
         // Debug: Log each record
         records.forEach((r, index) => {
-          console.log(
+          logger.debug(
             `[steps] Record ${index}:`,
             'Steps:', r?.count,
             'Time:', r?.startTime
@@ -133,14 +134,14 @@ async function readTodayStepsNative(): Promise<number> {
 
         return records.reduce((sum, r) => sum + (Number(r?.count) || 0), 0);
       } catch (e) {
-        console.warn('[steps] Android Health Connect read failed:', e);
+        logger.warn('[steps] Android Health Connect read failed:', e);
         return 0;
       }
     }
 
     return 0;
   } catch (err) {
-    console.warn('[steps] readTodayStepsNative fallback to 0:', err);
+    logger.warn('[steps] readTodayStepsNative fallback to 0:', err);
     return 0;
   }
 }
@@ -174,7 +175,7 @@ export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
       const goal = await supabaseAPI.getUserStepGoal();
       setStepData(prev => ({ ...prev, goal }));
     } catch (error) {
-      console.error('❌ [steps] Error loading step goal:', error);
+      logger.error('❌ [steps] Error loading step goal:', error);
     }
   }, [userToken]);
 
@@ -194,7 +195,7 @@ export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
           goal: prev.goal,
         }));
       } catch (error) {
-        console.error('❌ [steps] Error during read:', error);
+        logger.error('❌ [steps] Error during read:', error);
         setStepData(prev => ({
           steps: 0,
           lastUpdated: Date.now(),

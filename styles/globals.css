@@ -108,6 +108,13 @@
 
   --app-header-h: 56px; 
   --app-bottom-h: 64px;
+
+
+ /* HSL triplets for Tailwind /opacity support */
+ --foreground-hsl: 30.73 50.62% 15.88%;
+ --primary-hsl: 12.56 67.54% 62.55%;
+ --muted-foreground-hsl: 27.57 15.35% 47.25%;
+ --warm-brown-hsl: 27.57 15.35% 47.25%;
   
 }
 
@@ -703,3 +710,11 @@
   will-change: auto !important;
 }
 
+
+.dark {
+  /* dark overrides */
+  --warm-brown-hsl: 28 18% 78%;
+  --muted-foreground-hsl: 28 12% 70%;
+  --foreground-hsl: 28 47% 92%;
+  --primary-hsl: 12.6 68% 63%; /* or tweak for dark */
+}

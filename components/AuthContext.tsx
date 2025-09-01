@@ -1,9 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabaseAPI } from "../utils/supabase/supabase-api";
+import { logger } from "../utils/logging";
 
 interface AuthContextType {
   userToken: string | null;
-  setUserToken: (token: string | null) => void;
+  setUserToken: (token: string | null, refreshToken?: string | null) => void;
   isAuthenticated: boolean;
   signOut: () => void;
 }
@@ -24,28 +25,66 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [userToken, setUserTokenState] = useState<string | null>(null);
+  const [refreshToken, setRefreshTokenState] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Helper function to check token age
+  const getTokenAge = (token: string): number => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const issuedAt = payload.iat * 1000;
+      return Date.now() - issuedAt;
+    } catch {
+      return Infinity;
+    }
+  };
+
+  // Refresh token function
+  const refreshTokenOnAppStart = async (refreshToken: string) => {
+    try {
+      const newToken = await supabaseAPI.refreshToken(refreshToken);
+      setUserToken(newToken, refreshToken);
+    } catch (error) {
+      logger.error("Token refresh failed on app start:", error);
+      setUserToken(null, null);
+    }
+  };
 
   // Initialize auth state from localStorage
   useEffect(() => {
-    const storedToken = localStorage.getItem("USER_TOKEN");
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem("USER_TOKEN");
+      const storedRefreshToken = localStorage.getItem("REFRESH_TOKEN");
 
-    if (storedToken) {
-      setUserTokenState(storedToken);
-      // Set the token in the supabase API client
-      supabaseAPI.setToken(storedToken);
-    }
-    setIsInitialized(true);
+      if (storedToken && storedRefreshToken) {
+        const tokenAge = getTokenAge(storedToken);
+        
+        if (tokenAge > 60 * 60 * 1000) { // Older than 1 hour
+          await refreshTokenOnAppStart(storedRefreshToken);
+        } else {
+          setUserToken(storedToken, storedRefreshToken);
+        }
+      }
+      
+      setIsInitialized(true);
+    };
+
+    initializeAuth();
   }, []);
 
-  const setUserToken = (token: string | null) => {
+  const setUserToken = (token: string | null, refreshToken?: string | null) => {
     setUserTokenState(token);
+    if (refreshToken) setRefreshTokenState(refreshToken);
+    
     // Update both localStorage and supabase API client
     if (token) {
       localStorage.setItem("USER_TOKEN", token);
+      if (refreshToken) localStorage.setItem("REFRESH_TOKEN", refreshToken);
       supabaseAPI.setToken(token);
     } else {
       localStorage.removeItem("USER_TOKEN");
+      localStorage.removeItem("REFRESH_TOKEN");
+      setRefreshTokenState(null);
       supabaseAPI.setToken(null);
     }
   };
@@ -56,12 +95,56 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         await supabaseAPI.signOut();
       } catch (error) {
-        console.error("Failed to sign out from Supabase:", error);
+        logger.error("Failed to sign out from Supabase:", error);
       }
     }
     
-    setUserToken(null);
+    setUserToken(null, null);
   };
+
+  // Active refresh logic - refresh every 45 minutes when app is active
+  useEffect(() => {
+    if (!userToken || !refreshToken) return;
+    
+    const refreshInterval = setInterval(async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const newToken = await supabaseAPI.refreshToken(refreshToken);
+          setUserToken(newToken, refreshToken);
+        } catch (error) {
+          logger.error("Active token refresh failed:", error);
+          setUserToken(null, null);
+        }
+      }
+    }, 45 * 60 * 1000); // Every 45 minutes
+    
+    return () => clearInterval(refreshInterval);
+  }, [userToken, refreshToken]);
+
+  // App resume logic - refresh when app comes back from background
+  useEffect(() => {
+    if (!userToken || !refreshToken) return;
+    
+    const handleAppResume = async () => {
+      try {
+        const newToken = await supabaseAPI.refreshToken(refreshToken);
+        setUserToken(null, null);
+      } catch (error) {
+        logger.error("Token refresh failed on resume:", error);
+        setUserToken(null, null);
+      }
+    };
+    
+    // For web apps - detect visibility changes
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        handleAppResume();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [userToken, refreshToken]);
 
   const isAuthenticated = !!userToken;
 
@@ -69,7 +152,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   if (!isInitialized) {
     return (
       <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex items-center justify-center">
-        <div className="text-[var(--warm-brown)]">Loading...</div>
+        <div className="text-warm-brown">Loading...</div>
       </div>
     );
   }

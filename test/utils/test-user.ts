@@ -88,14 +88,14 @@ export function createTestUserWithEmail(emailPattern: string): TestUser {
  * Logs test user information
  */
 export function logTestUser(user: TestUser, action: string = 'Created'): void {
-  console.log(`🔐 ${action} Test User:`);
-  console.log(`   Email: ${user.email}`);
-  console.log(`   Password: ${user.password}`);
+  logger.debug(`🔐 ${action} Test User:`);
+  logger.debug(`   Email: ${user.email}`);
+  logger.debug(`   Password: ${user.password}`);
   if (user.id) {
-    console.log(`   ID: ${user.id}`);
+    logger.debug(`   ID: ${user.id}`);
   }
   if (user.createdAt) {
-    console.log(`   Created: ${user.createdAt}`);
+    logger.debug(`   Created: ${user.createdAt}`);
   }
-  console.log('');
+  logger.debug('');
 }

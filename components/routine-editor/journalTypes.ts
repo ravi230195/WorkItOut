@@ -1,12 +1,13 @@
 // components/routine-editor/journalTypes.ts
+import { logger } from "../../utils/logging";
 
 // Debug logging utility
 const JNL = (message: string, data?: any) => {
   const timestamp = new Date().toISOString();
   if (data) {
-    console.log(`📝 JNL [${timestamp}] ${message}`, data);
+    logger.debug(`📝 JNL [${timestamp}] ${message}`, data);
   } else {
-    console.log(`📝 JNL [${timestamp}] ${message}`);
+    logger.debug(`📝 JNL [${timestamp}] ${message}`);
   }
 };
 

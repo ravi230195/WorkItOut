@@ -13,6 +13,8 @@ import {
   type UserRoutineExercise,
   type UserRoutineExerciseSet,
 } from "../../utils/supabase/supabase-api";
+import { logger } from "../../utils/logging";
+import { performanceTimer } from "../../utils/performanceTimer";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -123,18 +125,13 @@ export function ExerciseSetupScreen({
   };
 
   const fetchExerciseMeta = async (id: number): Promise<ExerciseMeta | null> => {
-    console.log("🔍 DGB [EXERCISE-SETUP] fetchExerciseMeta called for exercise ID:", id);
     try {
       // Uses supabaseAPI.getExercise(id) which is cached internally
       const metaAny = await supabaseAPI.getExercise(id);
-      console.log(
-        "🔍 DGB [EXERCISE-SETUP] fetchExerciseMeta result:",
-        metaAny ? `Exercise: ${(Array.isArray(metaAny) ? metaAny[0]?.name : (metaAny as any)?.name)}` : "null"
-      );
       const meta = Array.isArray(metaAny) ? (metaAny as any[])[0] : (metaAny as any);
       return (meta ?? null) as ExerciseMeta | null;
     } catch (error) {
-      console.error("🔍 DGB [EXERCISE-SETUP] fetchExerciseMeta error:", error);
+      logger.error("🔍 DGB [EXERCISE-SETUP] fetchExerciseMeta error:", error);
       return null;
     }
   };
@@ -166,15 +163,19 @@ export function ExerciseSetupScreen({
     let cancelled = false;
 
     (async () => {
+      const timer = performanceTimer.start('ExerciseSetup - load saved exercises');
       setLoadingSaved(true);
       try {
         // 1) Fetch the routine's exercises
+        const exerciseTimer = performanceTimer.start('ExerciseSetup - fetch routine exercises');
         const rows = (await supabaseAPI.getUserRoutineExercisesWithDetails(
           routineId
         )) as SavedExerciseWithDetails[];
+        exerciseTimer.endWithLog('debug');
         if (cancelled) return;
 
         // 2) For rows missing name or muscle_group (AFTER normalization), fetch meta (cached)
+        const metaTimer = performanceTimer.start('ExerciseSetup - fetch exercise meta');
         const metaById = new Map<number, ExerciseMeta>();
         await Promise.all(
           rows.map(async (r) => {
@@ -185,12 +186,16 @@ export function ExerciseSetupScreen({
             if (meta) metaById.set(r.exercise_id, meta);
           })
         );
+        metaTimer.endWithLog('debug');
 
         // 3) Eagerly fetch sets for every exercise, in batches
+        const setsTimer = performanceTimer.start('ExerciseSetup - prefetch exercise sets');
         const batches = chunk(rows, SETS_PREFETCH_CONCURRENCY);
         const uiList: UIExercise[] = [];
 
         for (const batch of batches) {
+          const batchTimer = performanceTimer.start(`ExerciseSetup - prefetch batch of ${batch.length} exercises`);
+          
           // show spinner for ids in this batch while fetching (optional visual)
           setLoadingSets((p) => {
             const n = { ...p };
@@ -201,11 +206,13 @@ export function ExerciseSetupScreen({
           const setsBatch = await Promise.all(
             batch.map((r) =>
               fetchSetsFor(r.routine_template_exercise_id).catch((err) => {
-                console.warn("Failed to prefetch sets for", r.routine_template_exercise_id, err);
+                logger.warn("Failed to prefetch sets for", r.routine_template_exercise_id, err);
                 return [] as UISet[];
               })
             )
           );
+          
+          batchTimer.endWithLog('debug');
 
           // map this batch into UI exercises with sets loaded (normalize + fallback to meta when needed)
           batch.forEach((r, idx) => {
@@ -239,11 +246,14 @@ export function ExerciseSetupScreen({
         if (!cancelled) {
           setExercises(uiList);
         }
+        
+        setsTimer.endWithLog('debug');
       } catch (e) {
-        console.error(e);
+        logger.error(String(e));
         toast.error("Failed to load exercises");
       } finally {
         if (!cancelled) setLoadingSaved(false);
+        timer.endWithLog('info'); // Main function timing at INFO level
       }
     })();
 
@@ -265,6 +275,7 @@ export function ExerciseSetupScreen({
     if (!next) return;
 
     (async () => {
+      const timer = performanceTimer.start('ExerciseSetup - add selected exercise');
       await addNewExercise(next);
       queuedSelectionRef.current = null;
       if (selectedExerciseForSetup) setSelectedExerciseForSetup(null);
@@ -273,6 +284,8 @@ export function ExerciseSetupScreen({
       requestAnimationFrame(() =>
         window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
       );
+      
+      timer.endWithLog('debug');
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedExerciseForSetup, exercise, loadingSaved]);
@@ -292,6 +305,8 @@ export function ExerciseSetupScreen({
   const ensureSetsLoaded = async (ex: UIExercise) => {
     // With eager load this will usually be a no-op; keep for safety.
     if (ex.loaded || !ex.templateId) return;
+    
+    const timer = performanceTimer.start(`ExerciseSetup - ensureSetsLoaded for exercise ${ex.id}`);
     setLoadingSets((p) => ({ ...p, [String(ex.id)]: true }));
     try {
       const rows = (await supabaseAPI.getExerciseSetsForRoutine(
@@ -314,7 +329,7 @@ export function ExerciseSetupScreen({
         }
       });
     } catch (e) {
-      console.error(e);
+      logger.error(String(e));
       toast.error("Failed to load sets");
     } finally {
       setLoadingSets((p) => {
@@ -322,6 +337,7 @@ export function ExerciseSetupScreen({
         delete n[String(ex.id)];
         return n;
       });
+      timer.endWithLog('debug');
     }
   };
 
@@ -330,6 +346,7 @@ export function ExerciseSetupScreen({
      ======================================================================================= */
 
   const addNewExercise = async (x: Exercise) => {
+    const timer = performanceTimer.start('ExerciseSetup - addNewExercise');
     const newExId: Id = tempId();
     const initialSetId: Id = tempId();
 
@@ -338,11 +355,13 @@ export function ExerciseSetupScreen({
     let muscle_group = ((x as any).muscle_group || "")?.toString().trim() || "";
 
     if (!name || !muscle_group) {
+      const metaTimer = performanceTimer.start('ExerciseSetup - fetchExerciseMeta in addNewExercise');
       const meta = await fetchExerciseMeta(x.exercise_id);
       if (meta) {
         if (!name) name = normalizeField(meta.name) || name;
         if (!muscle_group) muscle_group = normalizeField(meta.muscle_group) || muscle_group;
       }
+      metaTimer.endWithLog('debug');
     }
 
     // 1) Update UI
@@ -362,6 +381,8 @@ export function ExerciseSetupScreen({
     // 2) Record in journal
     recordExAdd(journalRef.current, newExId, x.exercise_id, name);
     recordSetAdd(journalRef.current, newExId, initialSetId, 1, "0", "0");
+    
+    timer.endWithLog('debug');
   };
 
   const toggleExpanded = async (exId: Id) => {
@@ -562,7 +583,7 @@ export function ExerciseSetupScreen({
 
       setExercises(uiList);
     } catch (e) {
-      console.error(e);
+      logger.error(String(e));
       toast.error("Failed to refresh");
     } finally {
       setLoadingSaved(false);
@@ -600,7 +621,7 @@ export function ExerciseSetupScreen({
       toast.success("All changes saved!");
       onSave?.();
     } catch (e) {
-      console.error(e);
+      logger.error(String(e));
       toast.error("Failed to save changes");
     } finally {
       setSavingAll(false);
@@ -644,7 +665,7 @@ export function ExerciseSetupScreen({
             className={`flex-1 h-11 md:h-12 ${
               access === RoutineAccess.ReadOnly
                 ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
-                : "bg-transparent border-[var(--warm-brown)]/20 text-[var(--warm-brown)]/60 hover:bg-[var(--soft-gray)]"
+                : "bg-transparent border-[var(--warm-brown)]/20 text-warm-brown/60 hover:bg-[var(--soft-gray)]"
             } font-medium`}
           >
             CANCEL ALL
@@ -713,7 +734,7 @@ export function ExerciseSetupScreen({
           {isLoading || !ex.loaded ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin w-4 h-4 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full" />
-              <span className="ml-2 text-sm text-[var(--warm-brown)]/60">Loading sets...</span>
+              <span className="ml-2 text-sm text-warm-brown/60">Loading sets...</span>
             </div>
           ) : (
             <ExerciseSetEditorCard

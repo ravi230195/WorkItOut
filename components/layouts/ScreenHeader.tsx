@@ -75,7 +75,7 @@ export default function ScreenHeader({
         {/* Center: true-centered title */}
         <h1
           className={[
-            "absolute left-1/2 -translate-x-1/2 m-0 font-medium leading-none text-[var(--warm-brown)] truncate",
+            "absolute left-1/2 -translate-x-1/2 m-0 font-medium leading-none text-warm-brown truncate",
             "text-[clamp(16px,4.2vw,20px)]", // default
             titleClassName,                  // ← user overrides last, so it wins
           ].join(" ")}

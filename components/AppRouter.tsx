@@ -11,6 +11,7 @@ import { SignUpScreen } from "./screens/SignUpScreen";
 import { AppView } from "../utils/navigation";
 import { Exercise } from "../utils/supabase/supabase-api";
 import { RoutineAccess } from "../hooks/useAppNavigation";
+import { logger } from "../utils/logging";
 
 interface AppRouterProps {
   currentView: AppView;
@@ -22,7 +23,7 @@ interface AppRouterProps {
   setSelectedExerciseForSetup: (exercise: Exercise | null) => void;
 
   isAuthenticated: boolean;
-  onAuthSuccess: (token: string) => void;
+  onAuthSuccess: (token: string, refreshToken: string) => void;
   onNavigateToSignUp: () => void;
   onNavigateToSignIn: () => void;
 
@@ -78,7 +79,7 @@ export function AppRouter({
   bottomBar,
   onOverlayChange,
 }: AppRouterProps) {
-  console.log(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
+  logger.debug(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
 
   if (!isAuthenticated || currentView === "signin" || currentView === "signup") {
     if (currentView === "signup") {

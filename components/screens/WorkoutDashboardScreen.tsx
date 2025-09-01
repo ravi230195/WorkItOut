@@ -10,6 +10,8 @@ import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
 import RoutineActionsSheet from "../sheets/RoutineActionsSheets";
 import SegmentedToggle from "../segmented/SegmentedToggle";
 import { RoutineAccess } from "../../hooks/useAppNavigation";
+import { logger } from "../../utils/logging";
+import { performanceTimer } from "../../utils/performanceTimer";
 
 interface WorkoutDashboardScreenProps {
   onCreateRoutine: () => void;
@@ -67,7 +69,7 @@ export default function WorkoutDashboardScreen({
 
       setRoutines(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error(error);
+      logger.error(String(error));
       setRoutinesError(error instanceof Error ? error.message : "Failed to load routines");
     } finally {
       setIsLoadingRoutines(false);
@@ -89,9 +91,12 @@ export default function WorkoutDashboardScreen({
 
     let cancelled = false;
     const fetchExerciseCounts = async () => {
+      const timer = performanceTimer.start('fetchExerciseCounts');
+      
       if (routines.length === 0) {
-        console.log("🔍 DGB [WORKOUT_SCREEN] No routines, skipping");
+        logger.debug("🔍 DGB [WORKOUT_SCREEN] No routines, skipping");
         setExerciseCounts({});
+        timer.endWithLog('debug');
         return;
       }
       setLoadingCounts(true);
@@ -100,14 +105,12 @@ export default function WorkoutDashboardScreen({
         const needsRecompute: number[] = [];
 
         for (const r of routines) {
-          console.log("🔍 DGB [WORKOUT_SCREEN] Processing routine:", r.routine_template_id, "name:", r.name);
-          const list = await supabaseAPI.getUserRoutineExercises(r.routine_template_id);
-          console.log("🔍 DGB [WORKOUT_SCREEN] Raw list from API:", list);
-          console.log("🔍 DGB [WORKOUT_SCREEN] List length:", list?.length, "isArray:", Array.isArray(list));
+          const routineTimer = performanceTimer.start(`fetchExerciseCounts - routine ${r.routine_template_id}`);
           
-          const active = (Array.isArray(list) ? list : []).filter((x) => x.is_active !== false);
-          console.log("🔍 DGB [WORKOUT_SCREEN] After filtering for active:", active);
-          console.log("🔍 DGB [WORKOUT_SCREEN] Active count:", active.length);
+          logger.debug("🔍 DGB [WORKOUT_SCREEN] Processing routine:", r.routine_template_id, "name:", r.name);
+          const active = await supabaseAPI.getUserRoutineExercises(r.routine_template_id);
+          //logger.debug("🔍 DGB [WORKOUT_SCREEN] Raw list from API:", active);
+          //logger.debug("🔍 DGB [WORKOUT_SCREEN] List length:", active?.length, "isArray:", Array.isArray(active));
           
           entries.push([r.routine_template_id, active.length]);
 
@@ -115,44 +118,51 @@ export default function WorkoutDashboardScreen({
             const summary = (r as any).muscle_group_summary as string | undefined;
             // Only recompute if there are active exercises AND no summary
             if (active.length > 0 && (!summary || summary.trim() === "")) {
-              console.log("🔍 DGB [WORKOUT_SCREEN] Routine needs recompute:", r.routine_template_id, "summary:", summary, "active exercises:", active.length);
+              logger.info("🔍 DGB [WORKOUT_SCREEN] Routine needs recompute:", r.routine_template_id, "summary:", summary, "active exercises:", active.length);
               needsRecompute.push(r.routine_template_id);
             } else if (active.length === 0) {
-              console.log("🔍 DGB [WORKOUT_SCREEN] Routine has 0 active exercises, skipping recompute:", r.routine_template_id, "summary:", summary);
+              logger.debug("🔍 DGB [WORKOUT_SCREEN] Routine has 0 active exercises, skipping recompute:", r.routine_template_id, "summary:", summary);
             }
           }
+          
+          routineTimer.endWithLog('debug');
         }
 
         if (!cancelled) setExerciseCounts(Object.fromEntries(entries));
 
         // only recompute summaries for "my" data
         if (canEdit && needsRecompute.length > 0) {
-          console.log("🔍 DGB [WORKOUT_SCREEN] Triggering muscle summary recompute for routines:", needsRecompute);
-          console.log("🔍 DGB [WORKOUT_SCREEN] canEdit:", canEdit, "needsRecompute count:", needsRecompute.length);
+          const recomputeTimer = performanceTimer.start('fetchExerciseCounts - muscle summary recompute');
+          
+          logger.debug("🔍 DGB [WORKOUT_SCREEN] Triggering muscle summary recompute for routines:", needsRecompute);
+          logger.debug("🔍 DGB [WORKOUT_SCREEN] canEdit:", canEdit, "needsRecompute count:", needsRecompute.length);
           
           const results = await Promise.allSettled(
             needsRecompute.map((id) => {
-              console.log("🔍 DGB [WORKOUT_SCREEN] Calling recomputeAndSaveRoutineMuscleSummary for routine ID:", id);
+              logger.debug("🔍 DGB [WORKOUT_SCREEN] Calling recomputeAndSaveRoutineMuscleSummary for routine ID:", id);
               return supabaseAPI.recomputeAndSaveRoutineMuscleSummary(id);
             })
           );
           if (!cancelled) {
-            console.log("🔍 DGB [WORKOUT_SCREEN] Muscle summary recompute completed, results:", results);
+            logger.debug("🔍 DGB [WORKOUT_SCREEN] Muscle summary recompute completed, results:", results);
             // Since recomputeAndSaveRoutineMuscleSummary returns void, we just check if it succeeded
             const successfulCount = results.filter(res => res.status === "fulfilled").length;
-            console.log("🔍 DGB [WORKOUT_SCREEN] Successful recomputes:", successfulCount, "out of", needsRecompute.length);
+            logger.debug("🔍 DGB [WORKOUT_SCREEN] Successful recomputes:", successfulCount, "out of", needsRecompute.length);
             
             if (successfulCount > 0) {
-              console.log("🔍 DGB [WORKOUT_SCREEN] Muscle summary recompute completed successfully");
-              console.log("🔍 DGB [WORKOUT_SCREEN] No need to trigger routine state update - let cache handle it");
+              logger.debug("🔍 DGB [WORKOUT_SCREEN] Muscle summary recompute completed successfully");
+              logger.debug("🔍 DGB [WORKOUT_SCREEN] No need to trigger routine state update - let cache handle it");
               // Don't trigger setRoutines here - it causes infinite loop!
             }
           }
+          
+          recomputeTimer.endWithLog('debug');
         }
       } catch (e) {
-        console.error("Failed to load exercise counts / recompute summaries", e);
+        logger.error("Failed to load exercise counts / recompute summaries", e);
       } finally {
         if (!cancelled) setLoadingCounts(false);
+        timer.endWithLog('info'); // Main function timing at INFO level
       }
     };
 
@@ -200,7 +210,7 @@ export default function WorkoutDashboardScreen({
     >
       <Stack gap="fluid">
         <Section variant="plain" padding="none" className="text-center">
-          <p className="text-sm text-[var(--warm-brown)]/60 mt-1">
+          <p className="text-xl text-warm-brown/60 mt-1">
             Welcome back !
           </p>
         </Section>
@@ -209,7 +219,7 @@ export default function WorkoutDashboardScreen({
 
         {/* subtitle (title is in header) */}
         <Section variant="plain" padding="none" className="text-center">
-          <p className="text-sm text-[var(--warm-brown)]/60 mt-1">
+          <p className="text-sm text-warm-brown/60 mt-1">
             {view === "my"
               ? "Select a routine to start your workout"
               : "Explore prebuilt routines to get started"}
@@ -248,7 +258,7 @@ export default function WorkoutDashboardScreen({
             ]}
             size="sm"
             /* Light warm highlight when selected */
-            className="data-[checked=true]:bg-[var(--warm-coral)]/20 data-[checked=true]:text-[var(--warm-brown)]"
+            className="data-[checked=true]:bg-[var(--warm-coral)]/20 data-[checked=true]:text-warm-brown"
             variant="filled"
             tone="accent"
           />
@@ -292,7 +302,7 @@ export default function WorkoutDashboardScreen({
                 </Section>
               ) : routines.length === 0 ? (
                 <Section variant="card" className="text-center">
-                  <p className="text-[var(--warm-brown)]/60 text-sm">
+                  <p className="text-warm-brown/60 text-sm">
                     {view === "my" ? "Start by adding a new routine" : "No sample routines found"}
                   </p>
                 </Section>
@@ -336,7 +346,7 @@ export default function WorkoutDashboardScreen({
                             <div className="min-w-0">
                               <h3
                                 className="
-                                  font-medium text-[var(--warm-brown)] truncate 
+                                  font-medium text-warm-brown truncate 
                                   text-[clamp(16px,4.5vw,19px)] 
                                   text-left 
                                 "
@@ -344,14 +354,14 @@ export default function WorkoutDashboardScreen({
                                 {routine.name}
                               </h3>
 
-                              <p className="text-[clamp(11px,3.2vw,12px)] text-[var(--warm-brown)]/60 truncate text-left">
+                              <p className="text-[clamp(11px,3.2vw,12px)] text-warm-brown/60 truncate text-left">
                                 {muscleGroups}
                               </p>
 
                               <div className="
                                 mt-2 flex items-center gap-4 
                                 text-[clamp(11px,3.2vw,12px)] 
-                                text-[var(--warm-brown)]/70">
+                                text-warm-brown/70">
                                 <span className="inline-flex items-center gap-1">
                                   <Clock size={14} />
                                   {loadingCounts ? "—" : timeMin !== null ? `${timeMin} min` : "—"}
@@ -373,7 +383,7 @@ export default function WorkoutDashboardScreen({
                                 e.stopPropagation();
                                 openActions(routine, e);
                               }}
-                              className="shrink-0 p-2 h-auto bg-transparent hover:bg=[var(--soft-gray)]/60 text-[var(--warm-brown)]/70"
+                              className="shrink-0 p-2 h-auto bg-transparent hover:bg=[var(--soft-gray)]/60 text-warm-brown/70"
                               aria-label="More options"
                             >
                               <MoreVertical size={18} />

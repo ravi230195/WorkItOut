@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { AppScreen, Stack, Spacer } from "../layouts";
 
 interface SignUpScreenProps {
-  onAuthSuccess: (token: string) => void;
+  onAuthSuccess: (token: string, refreshToken: string) => void;
   onNavigateToSignIn: () => void;
   bottomBar?: React.ReactNode;
 }
@@ -49,12 +49,16 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       // 1) Sign up
       const signUpResult = await supabaseAPI.signUp(email, password);
       let token: string;
+      let refreshToken: string;
 
-      if (signUpResult.token) {
+      if (signUpResult.token && signUpResult.refresh_token) {
         token = signUpResult.token;
+        refreshToken = signUpResult.refresh_token;
       } else if (signUpResult.needsSignIn) {
         // 2) Fallback sign-in
-        token = await supabaseAPI.signIn(email, password);
+        const signInResult = await supabaseAPI.signIn(email, password);
+        token = signInResult.access_token;
+        refreshToken = signInResult.refresh_token;
       } else {
         throw new Error("No token received from sign up or sign in");
       }
@@ -66,7 +70,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       await supabaseAPI.upsertProfile(firstName, lastName, displayName, heightCm, weightKg);
 
       // 4) Navigate to home
-      onAuthSuccess(token);
+      onAuthSuccess(token, refreshToken);
       toast.success("Account created successfully!");
     } catch (err) {
       if (err instanceof Error) {
@@ -116,8 +120,8 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       >
         <CardHeader className="text-center">
           <Stack gap="xs">
-            <h1 className="text-2xl font-medium text-[var(--warm-brown)]">Create Account</h1>
-            <p className="text-[var(--warm-brown)]/70">Join and start tracking your workouts</p>
+            <h1 className="text-2xl font-medium text-warm-brown">Create Account</h1>
+            <p className="text-warm-brown/70">Join and start tracking your workouts</p>
           </Stack>
         </CardHeader>
 
@@ -131,7 +135,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="First Name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
                     disabled={isLoading}
                     autoComplete="given-name"
                     required
@@ -143,7 +147,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="Last Name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
                     disabled={isLoading}
                     autoComplete="family-name"
                     required
@@ -157,7 +161,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                   placeholder="Display Name"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
                   disabled={isLoading}
                   autoComplete="nickname"
                   required
@@ -171,7 +175,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="Height (cm)"
                     value={height}
                     onChange={(e) => setHeight(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
                     disabled={isLoading}
                     min="1"
                   />
@@ -182,7 +186,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="Weight (kg)"
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
                     disabled={isLoading}
                     min="1"
                   />
@@ -195,7 +199,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                   placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
                   disabled={isLoading}
                   autoComplete="email"
                   required
@@ -208,7 +212,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                   placeholder="Password (min 6 characters)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-[var(--warm-brown)] placeholder:text-[var(--warm-brown)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
                   disabled={isLoading}
                   autoComplete="new-password"
                   required
@@ -234,7 +238,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
             <Spacer y="xs" />
 
             <div className="text-center">
-              <div className="text-sm text-[var(--warm-brown)]/60">
+              <div className="text-sm text-warm-brown/60">
                 Already have an account?{" "}
                 <button
                   onClick={onNavigateToSignIn}

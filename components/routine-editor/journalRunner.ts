@@ -2,14 +2,15 @@
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
 import type { SavePlan } from "./collapseJournal";
 import type { Id } from "./journalTypes";
+import { logger } from "../../utils/logging";
 
 // Debug logging utility
 const DGB = (message: string, data?: any) => {
   const timestamp = new Date().toISOString();
   if (data) {
-    console.log(`🔍 DGB [${timestamp}] ${message}`, data);
+    logger.debug(`🔍 DGB [${timestamp}] ${message}`, data);
   } else {
-    console.log(`🔍 DGB [${timestamp}] ${message}`);
+    logger.debug(`🔍 DGB [${timestamp}] ${message}`);
   }
 };
 

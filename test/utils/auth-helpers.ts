@@ -5,6 +5,7 @@
  */
 
 import { TestUser } from './test-user';
+import { logger } from '../../utils/logging';
 
 // Mock supabaseAPI for now - we'll import the real one in tests
 let supabaseAPI: any = null;
@@ -34,7 +35,7 @@ export async function verifyUserInDatabase(email: string): Promise<any> {
     
     return data;
   } catch (error) {
-    console.error('Error verifying user in database:', error);
+    logger.error('Error verifying user in database:', error);
     return null;
   }
 }
@@ -44,7 +45,7 @@ export async function verifyUserInDatabase(email: string): Promise<any> {
  */
 export async function cleanupTestUser(user: TestUser): Promise<boolean> {
   if (!supabaseAPI) {
-    console.warn('Supabase API not initialized, skipping cleanup');
+    logger.warn('Supabase API not initialized, skipping cleanup');
     return false;
   }
   
@@ -53,14 +54,14 @@ export async function cleanupTestUser(user: TestUser): Promise<boolean> {
     const { error } = await supabaseAPI.deleteUser(user.email);
     
     if (error) {
-      console.warn('Error cleaning up test user:', error);
+      logger.warn('Error cleaning up test user:', error);
       return false;
     }
     
-    console.log(`✅ Cleaned up test user: ${user.email}`);
+    logger.debug(`✅ Cleaned up test user: ${user.email}`);
     return true;
   } catch (error) {
-    console.warn('Error during test user cleanup:', error);
+    logger.warn('Error during test user cleanup:', error);
     return false;
   }
 }
@@ -69,7 +70,7 @@ export async function cleanupTestUser(user: TestUser): Promise<boolean> {
  * Clean up multiple test users
  */
 export async function cleanupTestUsers(users: TestUser[]): Promise<void> {
-  console.log(`🧹 Cleaning up ${users.length} test users...`);
+  logger.debug(`🧹 Cleaning up ${users.length} test users...`);
   
   const cleanupPromises = users.map(user => cleanupTestUser(user));
   const results = await Promise.allSettled(cleanupPromises);
@@ -77,7 +78,7 @@ export async function cleanupTestUsers(users: TestUser[]): Promise<void> {
   const successful = results.filter(result => result.status === 'fulfilled' && result.value).length;
   const failed = results.length - successful;
   
-  console.log(`✅ Cleanup complete: ${successful} successful, ${failed} failed`);
+  logger.debug(`✅ Cleanup complete: ${successful} successful, ${failed} failed`);
 }
 
 /**
@@ -174,9 +175,9 @@ export function validateSignInResult(result: any): boolean {
  */
 export function logAuthStep(step: string, details?: any): void {
   const timestamp = new Date().toISOString();
-  console.log(`🔐 [${timestamp}] ${step}`);
+  logger.debug(`🔐 [${timestamp}] ${step}`);
   if (details) {
-    console.log('   Details:', details);
+    logger.debug('   Details:', details);
   }
 }
 
@@ -186,9 +187,9 @@ export function logAuthStep(step: string, details?: any): void {
 export function logTestResult(testName: string, passed: boolean, details?: any): void {
   const emoji = passed ? '✅' : '❌';
   const status = passed ? 'PASSED' : 'FAILED';
-  console.log(`${emoji} ${testName}: ${status}`);
+  logger.debug(`${emoji} ${testName}: ${status}`);
   if (details) {
-    console.log('   Details:', details);
+    logger.debug('   Details:', details);
   }
-  console.log('');
+  logger.debug('');
 }

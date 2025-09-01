@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Exercise } from "../utils/supabase/supabase-api";
 import { ViewType } from "../utils/navigation";
 import { toast } from "sonner";
+import { logger } from "../utils/logging";
 
 export enum RoutineAccess {
   Editable = "editable",
@@ -30,8 +31,8 @@ export function useAppNavigation() {
     return false;
   };
 
-  const handleAuthSuccess = (token: string, setUserToken: (token: string) => void) => {
-    setUserToken(token);
+  const handleAuthSuccess = (token: string, refreshToken: string, setUserToken: (token: string | null, refreshToken?: string | null) => void) => {
+    setUserToken(token, refreshToken);
     setCurrentView("workouts");
     setActiveTab("workouts");
   };
@@ -119,7 +120,7 @@ export function useAppNavigation() {
     try {
       await asyncAction();
     } catch (error) {
-      console.error("Navigation action failed:", error);
+      logger.error("Navigation action failed:", error);
       if (error instanceof Error && !handleUnauthorizedError(error)) {
         toast.error("Something went wrong. Please try again.");
         if (fallbackView) setCurrentView(fallbackView);

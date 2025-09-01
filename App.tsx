@@ -77,7 +77,7 @@ function AppContent() {
           selectedExerciseForSetup={selectedExerciseForSetup}
           setSelectedExerciseForSetup={setSelectedExerciseForSetup}
           isAuthenticated={isAuthenticated}
-          onAuthSuccess={(token) => handleAuthSuccess(token, setUserToken)}
+          onAuthSuccess={(token, refreshToken) => handleAuthSuccess(token, refreshToken, setUserToken)}
           onNavigateToSignUp={navigateToSignUp}
           onNavigateToSignIn={navigateToSignIn}
           onCreateRoutine={showCreateRoutine}

@@ -57,7 +57,7 @@ const SetList: React.FC<SetListProps> = ({
 
   // DEBUG: Log the overall component state
   React.useEffect(() => {
-    /*console.log("🔍 SetsList DEBUG: Component state:", {
+    /*logger.debug("🔍 SetsList DEBUG: Component state:", {
       mode,
       disabled,
       readOnly,
@@ -85,7 +85,7 @@ const SetList: React.FC<SetListProps> = ({
   return (
     <div className={className}>
       {/* Header row — identical to configure card */}
-      <div className="grid grid-cols-4 gap-3 md:gap-4 text-[10px] md:text-xs text-[var(--warm-brown)]/60 uppercase tracking-wider mb-2"
+      <div className="grid grid-cols-4 gap-3 md:gap-4 text-[10px] md:text-xs text-warm-brown/60 uppercase tracking-wider mb-2"
       /* RAVI DBG: style={{ border: "2px solid green" }}*/>
         <span>Set</span>
         <span className="text-center">Reps</span>
@@ -100,7 +100,7 @@ const SetList: React.FC<SetListProps> = ({
             !readOnly && !!onRemove && (it.removable ?? true) && items.length > 1;
 
           // DEBUG: Log detailed canRemove calculation for each item
-          /*console.log(`🔍 SetsList DEBUG: Set ${it.order} (key: ${it.key}) canRemove calculation:`, {
+          /*logger.debug(`🔍 SetsList DEBUG: Set ${it.order} (key: ${it.key}) canRemove calculation:`, {
             setOrder: it.order,
             setKey: it.key,
             readOnly,
@@ -122,7 +122,7 @@ const SetList: React.FC<SetListProps> = ({
               key={it.key}
               className="grid grid-cols-4 gap-3 md:gap-4 items-center py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20"
               /*RAVI DBG: style={{ border: "2px solid yellow" }}*/>
-              <span className="text-sm font-medium text-[var(--warm-brown)]/80">
+              <span className="text-sm font-medium text-warm-brown/80">
                 {it.order}
               </span>
 

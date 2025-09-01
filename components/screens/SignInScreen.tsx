@@ -8,9 +8,10 @@ import { Dumbbell, Eye, EyeOff } from "lucide-react";
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { AppScreen, Stack, Spacer } from "../layouts";
+import { logger } from "../../utils/logging";
 
 interface SignInScreenProps {
-  onAuthSuccess: (token: string) => void;
+  onAuthSuccess: (token: string, refreshToken: string) => void;
   onNavigateToSignUp: () => void;
   bottomBar?: React.ReactNode;
 }
@@ -29,12 +30,11 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
     }
     setIsLoading(true);
     try {
-      const token = await supabaseAPI.signIn(email, password);
-      supabaseAPI.setToken(token);
-      onAuthSuccess(token);
+      const { access_token, refresh_token } = await supabaseAPI.signIn(email, password);
+      onAuthSuccess(access_token, refresh_token);
       toast.success("Welcome back!");
     } catch (error) {
-      console.error("Sign in failed:", error);
+      logger.error("Sign in failed:", error);
       if (error instanceof Error) {
         if (error.message.includes("UNAUTHORIZED") || error.message.includes("Invalid")) {
           toast.error("Invalid email or password. Please check your credentials.");
@@ -75,8 +75,8 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
             </div>
 
             <div>
-              <h1 className="text-2xl font-medium text-[var(--warm-brown)]">Welcome Back</h1>
-              <p className="text-[var(--warm-brown)]/60">Sign in to continue your fitness journey</p>
+              <h1 className="text-2xl font-medium text-warm-brown">Welcome Back</h1>
+              <p className="text-warm-brown/60">Sign in to continue your fitness journey</p>
             </div>
           </Stack>
         </CardHeader>
@@ -85,7 +85,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
           <Stack gap="lg">
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[var(--warm-brown)]">Email</Label>
+                <Label htmlFor="email" className="text-warm-brown">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -99,7 +99,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-[var(--warm-brown)]">Password</Label>
+                <Label htmlFor="password" className="text-warm-brown">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -114,7 +114,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--warm-brown)]/60 hover:text-[var(--warm-brown)] transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-brown/60 hover:text-warm-brown transition-colors"
                     disabled={isLoading}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
@@ -150,11 +150,11 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
 
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-px bg-[var(--border)]" />
-                <span className="text-sm text-[var(--warm-brown)]/60">or</span>
+                <span className="text-sm text-warm-brown/60">or</span>
                 <div className="flex-1 h-px bg-[var(--border)]" />
               </div>
 
-              <div className="text-sm text-[var(--warm-brown)]/60">
+              <div className="text-sm text-warm-brown/60">
                 Don&apos;t have an account?{" "}
                 <button
                   onClick={onNavigateToSignUp}

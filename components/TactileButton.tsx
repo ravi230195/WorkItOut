@@ -19,9 +19,9 @@ export function TactileButton({
   
   const variantClasses = {
     primary: "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white",
-    secondary: "bg-[var(--warm-cream)] hover:bg-[var(--warm-cream)]/90 text-[var(--warm-brown)]",
+    secondary: "bg-[var(--warm-cream)] hover:bg-[var(--warm-cream)]/90 text-warm-brown",
     sage: "bg-[var(--warm-sage)] hover:bg-[var(--warm-sage)]/90 text-white btn-tactile-sage",
-    peach: "bg-[var(--warm-peach)] hover:bg-[var(--warm-peach)]/90 text-[var(--warm-brown)]",
+    peach: "bg-[var(--warm-peach)] hover:bg-[var(--warm-peach)]/90 text-warm-brown",
     mint: "bg-[var(--warm-mint)] hover:bg-[var(--warm-mint)]/90 text-white"
   };
 
