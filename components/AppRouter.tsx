@@ -22,7 +22,7 @@ interface AppRouterProps {
   setSelectedExerciseForSetup: (exercise: Exercise | null) => void;
 
   isAuthenticated: boolean;
-  onAuthSuccess: (token: string) => void;
+  onAuthSuccess: (session: { access_token: string; refresh_token: string }) => void;
   onNavigateToSignUp: () => void;
   onNavigateToSignIn: () => void;
 

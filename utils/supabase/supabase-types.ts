@@ -45,6 +45,7 @@ export interface Exercise {
     display_name: string;
     height_cm?: number;
     weight_kg?: number;
+    last_active_at?: string;
   }
   
   export interface AuthUser {

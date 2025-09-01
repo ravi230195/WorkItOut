@@ -4,7 +4,7 @@ import type { UserRoutine, UserRoutineExercise, UserRoutineExerciseSet, Profile 
 
 export class SupabaseDBWrite extends SupabaseBase {
     // Auth
-    async signUp(email: string, password: string): Promise<{ token?: string; needsSignIn?: boolean }> {
+    async signUp(email: string, password: string): Promise<{ access_token?: string; refresh_token?: string; needsSignIn?: boolean }> {
         const data = await this.fetchJson<any>(
             `${SUPABASE_URL}/auth/v1/signup`,
             false,
@@ -12,13 +12,16 @@ export class SupabaseDBWrite extends SupabaseBase {
             { email, password }
         );
         if (data.error) throw new Error(data.error.message);
-        if (data.access_token || data.session?.access_token) {
-            return { token: data.access_token || data.session!.access_token };
+        if ((data.access_token && data.refresh_token) || (data.session?.access_token && data.session?.refresh_token)) {
+            return {
+                access_token: data.access_token || data.session!.access_token,
+                refresh_token: data.refresh_token || data.session!.refresh_token,
+            };
         }
         return { needsSignIn: true };
     }
 
-    async signIn(email: string, password: string): Promise<string> {
+    async signIn(email: string, password: string): Promise<{ access_token: string; refresh_token: string }> {
         const data = await this.fetchJson<any>(
             `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
             false,
@@ -26,13 +29,38 @@ export class SupabaseDBWrite extends SupabaseBase {
             { email, password }
         );
         if (data.error) throw new Error(data.error.message);
-        if (!data.access_token) throw new Error("No access token received");
-        return data.access_token;
+        if (!data.access_token || !data.refresh_token) throw new Error("No tokens received");
+        return { access_token: data.access_token, refresh_token: data.refresh_token };
+    }
+
+    async refreshSession(refreshToken: string): Promise<{ access_token: string; refresh_token: string }> {
+        const data = await this.fetchJson<any>(
+            `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,
+            false,
+            "POST",
+            { refresh_token: refreshToken }
+        );
+        if (data.error) throw new Error(data.error.message);
+        if (!data.access_token || !data.refresh_token) throw new Error("No tokens received");
+        return { access_token: data.access_token, refresh_token: data.refresh_token };
     }
 
     async signOut(): Promise<void> {
         await this.fetchJson(`${SUPABASE_URL}/auth/v1/logout`, true, "POST");
-        this.setToken(null);
+    }
+
+    protected async touchLastActive(): Promise<void> {
+        const user = await this.getCurrentUser();
+        await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
+            method: "PATCH",
+            headers: this.getHeaders(true, true, "return=minimal"),
+            body: JSON.stringify({ last_active_at: new Date().toISOString() })
+        });
+        await this.refreshProfile(user.id);
+    }
+
+    async updateLastActive(): Promise<void> {
+        await this.touchLastActive();
     }
 
     // Routines
