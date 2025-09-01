@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { AppScreen, Stack, Spacer } from "../layouts";
 
 interface SignInScreenProps {
-  onAuthSuccess: (session: { access_token: string; refresh_token: string }) => void;
+  onAuthSuccess: (token: string) => void;
   onNavigateToSignUp: () => void;
   bottomBar?: React.ReactNode;
 }
@@ -29,8 +29,9 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
     }
     setIsLoading(true);
     try {
-      const session = await supabaseAPI.signIn(email, password);
-      onAuthSuccess(session);
+      const token = await supabaseAPI.signIn(email, password);
+      supabaseAPI.setToken(token);
+      onAuthSuccess(token);
       toast.success("Welcome back!");
     } catch (error) {
       console.error("Sign in failed:", error);
@@ -47,7 +48,6 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
       }
     } finally {
       setIsLoading(false);
-      setPassword("");
     }
   };
 

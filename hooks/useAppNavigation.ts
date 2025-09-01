@@ -30,13 +30,8 @@ export function useAppNavigation() {
     return false;
   };
 
-  const handleAuthSuccess = (
-    session: { access_token: string; refresh_token: string },
-    setSession: (accessToken: string, refreshToken: string) => void,
-    updateLastActive: () => void
-  ) => {
-    setSession(session.access_token, session.refresh_token);
-    updateLastActive();
+  const handleAuthSuccess = (token: string, setUserToken: (token: string) => void) => {
+    setUserToken(token);
     setCurrentView("workouts");
     setActiveTab("workouts");
   };
