@@ -3,7 +3,8 @@ import SupabaseDBWrite from "./supabase-db-write";
 
 // Mix the read methods into the write class so one instance exposes both.
 // (Public API remains: `supabaseAPI.method(...)` everywhere.)
-class SupabaseAPIClass extends SupabaseDBWrite {}
+class SupabaseAPI extends SupabaseDBWrite {}
+interface SupabaseAPI extends SupabaseDBRead {}
 function applyMixins(derivedCtor: any, baseCtors: any[]) {
   baseCtors.forEach((baseCtor) => {
     Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
@@ -17,7 +18,7 @@ function applyMixins(derivedCtor: any, baseCtors: any[]) {
     });
   });
 }
-applyMixins(SupabaseAPIClass, [SupabaseDBRead]);
+applyMixins(SupabaseAPI, [SupabaseDBRead]);
 
 // Small helpers you already had
 export const isExerciseMappingReady = (): boolean => true;
@@ -28,8 +29,7 @@ export const getMappingStatus = () => ({
 });
 
 // Export the combined instance (same name you already use)
-export const supabaseAPI = new SupabaseAPIClass() as SupabaseDBWrite & SupabaseDBRead;
-export type SupabaseAPI = typeof supabaseAPI;
+export const supabaseAPI = new SupabaseAPI();
 
 // Re-export types so your existing imports keep working
 export * from "./supabase-types";
