@@ -35,6 +35,7 @@ export type AppScreenProps = React.PropsWithChildren<{
 
   contentGuttersPreset?: "none" | "compact" | "responsive";
   contentBottomPaddingClassName?: string;
+  headerInScrollArea?: boolean;
 }>;
 
 const cx = (...xs: Array<string | undefined | null | false>) =>
@@ -71,6 +72,7 @@ export default function AppScreen({
   contentBottomPaddingClassName = "",
 
   children,
+  headerInScrollArea = false,
 }: AppScreenProps) {
   // Single global provider of --app-kb-inset / --kb-inset / --keyboard-inset
   useKeyboardInset();
@@ -121,10 +123,33 @@ export default function AppScreen({
     contentGuttersPreset === "responsive"
       ? "px-4 py-6 sm:px-6 md:px-8 md:py-8"
       : contentGuttersPreset === "compact"
-      ? "px-4 py-4"
-      : padContent
-      ? "px-4"
-      : "";
+        ? "px-4 py-4"
+        : padContent
+          ? "px-4"
+          : "";
+  const renderHeaderShell = () => (
+    <div
+      ref={headerRef}
+      className={cx(
+        "shrink-0",
+        stickyHeader && "sticky top-0 z-30",
+        "bg-white/80 backdrop-blur-sm",
+        showHeaderBorder && "border-b border-[var(--border)]",
+        headerShellClassName
+      )}
+      style={{
+        paddingTop: padHeaderSafeArea
+          ? "max(env(safe-area-inset-top), 0px)"
+          : undefined,
+          // RAVI: Debug border commented out
+          //border: "2px solid green",
+      }}
+    >
+      <div className={cx(innerWidthClasses, padHeader && "px-4")} style={innerWidthStyle}>
+        {header}
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -138,33 +163,12 @@ export default function AppScreen({
         paddingRight: "max(env(safe-area-inset-right), 0px)",
       }}
     >
-      {header ? (
-        <div
-          ref={headerRef}
-          className={cx(
-            "shrink-0",
-            stickyHeader && "sticky top-0 z-30",
-            "bg-white/80 backdrop-blur-sm",
-            showHeaderBorder && "border-b border-[var(--border)]",
-            headerShellClassName
-          )}
-          style={{
-            paddingTop: padHeaderSafeArea
-              ? "max(env(safe-area-inset-top), 0px)"
-              : undefined,
-          }}
-        >
-          <div
-            className={cx(innerWidthClasses, padHeader && "px-4")}
-            style={innerWidthStyle}
-          >
-            {header}
-          </div>
-        </div>
-      ) : null}
+      {header && !headerInScrollArea ? renderHeaderShell() : null}
 
       {/* Scroll area */}
       <div className={cx("flex-1 min-h-0 overflow-y-auto w-full", scrollAreaClassName)}>
+        {header && headerInScrollArea ? renderHeaderShell() : null}
+
         <div
           className={cx(
             innerWidthClasses,
@@ -177,6 +181,8 @@ export default function AppScreen({
             paddingBottom: bottomBar
               ? `var(--app-bottom-h, 0px)`
               : `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
+              // RAVI: Debug border commented out
+              //border: "2px solid red",
           }}
         >
           {children}
@@ -195,6 +201,8 @@ export default function AppScreen({
           )}
           style={{
             paddingBottom: `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
+            // RAVI: Debug border commented out
+            // border: "2px solid green",
           }}
         >
           <div

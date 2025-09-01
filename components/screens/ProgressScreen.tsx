@@ -112,6 +112,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
       bottomBar={bottomBar}
       bottomBarSticky
       contentClassName=""
+      headerInScrollArea={true}
     // Let AppScreen own scrolling. No extra padding needed here.
     >
       <Stack gap="fluid">

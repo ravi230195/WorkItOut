@@ -207,10 +207,11 @@ export default function WorkoutDashboardScreen({
       bottomBar={bottomBar}
       bottomBarSticky
       contentClassName=""
+      headerInScrollArea={true}
     >
       <Stack gap="fluid">
         <Section variant="plain" padding="none" className="text-center">
-          <p className="text-xl text-warm-brown/60 mt-1">
+          <p className="text-3xl text-warm-brown/60 mt-1">
             Welcome back !
           </p>
         </Section>
