@@ -62,6 +62,9 @@ export class SupabaseBase {
     return headers;
   }
 
+  // Hook for subclasses to update last-active timestamp. No-op by default.
+  protected async touchLastActive(): Promise<void> {}
+
   protected async fetchJson<T>(
     url: string,
     includeAuth = true,
@@ -92,6 +95,15 @@ export class SupabaseBase {
     } catch {
       // In rare cases Supabase might return plain text; pass it through
       return text as unknown as T;
+    }
+    finally {
+      if (includeAuth && this.userToken) {
+        try {
+          await this.touchLastActive();
+        } catch (e) {
+          console.warn("Failed to update last_active_at", e);
+        }
+      }
     }
   }
 
