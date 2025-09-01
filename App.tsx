@@ -15,7 +15,7 @@ import ErrorBoundary from "./components/system/ErrorBoundary";
 
 // App.tsx
 function AppContent() {
-  const { setUserToken } = useAuth();
+  const { setSession, updateLastActive } = useAuth();
   useMobileSetup();
 
   const {
@@ -77,7 +77,7 @@ function AppContent() {
           selectedExerciseForSetup={selectedExerciseForSetup}
           setSelectedExerciseForSetup={setSelectedExerciseForSetup}
           isAuthenticated={isAuthenticated}
-          onAuthSuccess={(token) => handleAuthSuccess(token, setUserToken)}
+          onAuthSuccess={(session) => handleAuthSuccess(session, setSession, updateLastActive)}
           onNavigateToSignUp={navigateToSignUp}
           onNavigateToSignIn={navigateToSignIn}
           onCreateRoutine={showCreateRoutine}
