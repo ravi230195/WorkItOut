@@ -138,7 +138,6 @@ const SetList: React.FC<SetListProps> = ({
                 min="0"
               />
 
-// Weight: show decimal keypad on iOS (keeps . available)
               <Input
                 type="number"
                 inputMode="decimal"
