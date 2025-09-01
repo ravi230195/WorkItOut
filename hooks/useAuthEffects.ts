@@ -11,7 +11,7 @@ interface UseAuthEffectsProps {
 }
 
 export function useAuthEffects({ currentView, setCurrentView }: UseAuthEffectsProps) {
-  const { isAuthenticated, userToken, signOut } = useAuth();
+  const { isAuthenticated, userToken, refreshToken, lastActive, setSession, updateLastActive, signOut } = useAuth();
 
   // ✅ new: gate initial render until auth is initialized
   const [authReady, setAuthReady] = useState(false);
@@ -36,6 +36,29 @@ export function useAuthEffects({ currentView, setCurrentView }: UseAuthEffectsPr
     return () => { cancelled = true; };
   }, []);
 
+  // Refresh session on startup and check inactivity
+  useEffect(() => {
+    if (!authReady || !refreshToken) return;
+
+    const last = lastActive ? new Date(lastActive).getTime() : 0;
+    const sixMonths = 180 * 24 * 60 * 60 * 1000;
+    if (!lastActive || Date.now() - last > sixMonths) {
+      signOut();
+      return;
+    }
+
+    (async () => {
+      try {
+        const session = await supabaseAPI.refreshSession(refreshToken);
+        setSession(session.access_token, session.refresh_token);
+        await updateLastActive();
+      } catch (e) {
+        console.error("Failed to refresh session", e);
+        signOut();
+      }
+    })();
+  }, [authReady, refreshToken, lastActive, setSession, updateLastActive, signOut]);
+
   // Route guard – only redirect after authReady is true
   useEffect(() => {
     if (!authReady) return;
@@ -48,6 +71,21 @@ export function useAuthEffects({ currentView, setCurrentView }: UseAuthEffectsPr
       setCurrentView("workouts");
     }
   }, [authReady, isAuthenticated, currentView, setCurrentView]);
+
+  // Periodic token refresh
+  useEffect(() => {
+    if (!refreshToken) return;
+    const interval = setInterval(async () => {
+      try {
+        const session = await supabaseAPI.refreshSession(refreshToken);
+        setSession(session.access_token, session.refresh_token);
+        await updateLastActive();
+      } catch {
+        signOut();
+      }
+    }, 50 * 60 * 1000); // refresh roughly every 50 minutes
+    return () => clearInterval(interval);
+  }, [refreshToken, setSession, updateLastActive, signOut]);
 
   // Global unauthorized handling (unchanged)
   useEffect(() => {

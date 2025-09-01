@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { AppScreen, Stack, Spacer } from "../layouts";
 
 interface SignUpScreenProps {
-  onAuthSuccess: (token: string) => void;
+  onAuthSuccess: (session: { access_token: string; refresh_token: string }) => void;
   onNavigateToSignIn: () => void;
   bottomBar?: React.ReactNode;
 }
@@ -46,27 +46,27 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
 
     setIsLoading(true);
     try {
-      // 1) Sign up
       const signUpResult = await supabaseAPI.signUp(email, password);
-      let token: string;
+      let session: { access_token: string; refresh_token: string };
 
-      if (signUpResult.token) {
-        token = signUpResult.token;
+      if (signUpResult.access_token && signUpResult.refresh_token) {
+        session = {
+          access_token: signUpResult.access_token,
+          refresh_token: signUpResult.refresh_token,
+        };
       } else if (signUpResult.needsSignIn) {
-        // 2) Fallback sign-in
-        token = await supabaseAPI.signIn(email, password);
+        session = await supabaseAPI.signIn(email, password);
       } else {
-        throw new Error("No token received from sign up or sign in");
+        throw new Error("No tokens received from sign up or sign in");
       }
 
-      // 3) Persist token and upsert profile
-      supabaseAPI.setToken(token);
+      // Use access token temporarily to insert profile
+      supabaseAPI.setToken(session.access_token);
       const heightCm = height ? Number(height) : undefined;
       const weightKg = weight ? Number(weight) : undefined;
       await supabaseAPI.upsertProfile(firstName, lastName, displayName, heightCm, weightKg);
 
-      // 4) Navigate to home
-      onAuthSuccess(token);
+      onAuthSuccess(session);
       toast.success("Account created successfully!");
     } catch (err) {
       if (err instanceof Error) {
