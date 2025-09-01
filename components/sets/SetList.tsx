@@ -53,6 +53,7 @@ const SetList: React.FC<SetListProps> = ({
 }) => {
   // Single unified layout. Read-only when disabled OR not in explicit edit mode.
   const readOnly = disabled || mode !== "edit";
+  const isDisabled = readOnly || deleteDisabled;
 
   // DEBUG: Log the overall component state
   React.useEffect(() => {
@@ -67,7 +68,7 @@ const SetList: React.FC<SetListProps> = ({
       hasOnDeleteExercise: !!onDeleteExercise,
       hasOnFocusScroll: !!onFocusScroll,
       className
-    })*/
+    }) */
   }, [
     mode,
     disabled,
@@ -155,14 +156,14 @@ const SetList: React.FC<SetListProps> = ({
                   variant="secondary"
                   size="sm"
                   onClick={() => onRemove?.(it.key)}
-                  className="p-1 h-auto bg-red-50 text-red-500 hover:bg-red-100"
+                  className="p-1 h-auto bg-red-50 text-red-500 hover:bg-red-100 ml-auto"
                   title="Remove this set"
                 >
                   <X size={14} />
                 </TactileButton>
               ) : (
                 // Spacer keeps grid width identical when read-only / not removable
-                <div className="w-6 h-6" />
+                <div className="w-6 h-6 ml-auto" />
               )}
             </div>
           );
@@ -177,8 +178,14 @@ const SetList: React.FC<SetListProps> = ({
             <TactileButton
               onClick={onAdd}
               className="flex items-center gap-2 px-4 py-2 rounded-lg btn-tactile bg-white/70 border-[var(--border)] text-[var(--foreground)] hover:bg-white"
-              disabled={readOnly}
-              title={readOnly ? "Editing disabled" : "Add a set"}
+              disabled={isDisabled}
+              title={
+                isDisabled
+                  ? readOnly
+                    ? "Editing disabled"
+                    : "Adding sets is disabled"
+                  : "Add a set"
+              }
             >
               <Plus size={16} />
               <span className="text-xs md:text-sm font-medium uppercase tracking-wider">
