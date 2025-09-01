@@ -118,6 +118,19 @@ export class SupabaseDBWrite extends SupabaseBase {
         return rows;
     }
 
+    // Helper function to find routine ID for an exercise
+    private async findRoutineIdForExercise(routineTemplateExerciseId: number): Promise<number> {
+        const lookup = await this.fetchJson<Array<{ routine_template_id: number }>>(
+            `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}&select=routine_template_id`,
+            true
+        );
+        const routineId = lookup[0]?.routine_template_id;
+        if (!routineId) {
+            throw new Error(`Could not find routine ID for exercise ${routineTemplateExerciseId}`);
+        }
+        return routineId;
+    }
+
     // Soft delete routine exercise (sets is_active = false)
     async deleteRoutineExercise(routineTemplateExerciseId: number): Promise<void> {
         const user = await this.getCurrentUser();
@@ -140,10 +153,12 @@ export class SupabaseDBWrite extends SupabaseBase {
             "return=minimal"
         );
 
+        const routineId = await this.findRoutineIdForExercise(routineTemplateExerciseId);
+
         // Refresh the data
         await Promise.all([
-            this.refreshRoutineExercises(user.id, routineTemplateExerciseId),
-            this.refreshRoutineExercisesWithDetails(user.id, routineTemplateExerciseId),
+            this.refreshRoutineExercises(user.id, routineId),        // Routine ID
+            this.refreshRoutineExercisesWithDetails(user.id, routineId), // Routine ID
         ]);
     }
 
@@ -259,13 +274,24 @@ export class SupabaseDBWrite extends SupabaseBase {
     }
 
     async recomputeAndSaveRoutineMuscleSummary(routineTemplateId: number) {
+        console.log("🔍 DGB [MUSCLE SUMMARY] Starting recompute for routine:", routineTemplateId);
+        
         // Load active exercises → muscle groups
         const urlEx =
             `${SUPABASE_URL}/rest/v1/user_routine_exercises_data` +
             `?routine_template_id=eq.${routineTemplateId}&is_active=eq.true` +
             `&select=exercises(muscle_group)`;
 
+        console.log("🔍 DGB [MUSCLE SUMMARY] Fetching exercises from URL:", urlEx);
         const rows = await this.fetchJson<Array<{ exercises?: { muscle_group?: string } }>>(urlEx, true);
+        console.log("🔍 DGB [MUSCLE SUMMARY] Found exercises:", rows.length);
+
+        // Early exit if no active exercises - nothing to recompute
+        if (rows.length === 0) {
+            console.log("🔍 DGB [MUSCLE SUMMARY] No active exercises found, skipping recomputation");
+            console.log("🔍 DGB [MUSCLE SUMMARY] No database update or cache refresh needed");
+            return;
+        }
 
         const groups = Array.from(
             new Set(
@@ -273,11 +299,15 @@ export class SupabaseDBWrite extends SupabaseBase {
             )
         ).sort();
 
+        console.log("🔍 DGB [MUSCLE SUMMARY] Muscle groups found:", groups);
+
         // Use NULL when no groups (avoids DB pattern/CHECK failures on empty string)
         const summary = groups.length ? groups.join(" • ") : null;
+        console.log("🔍 DGB [MUSCLE SUMMARY] Final summary:", summary);
 
         // Patch base table
         const urlPatch = `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`;
+        console.log("🔍 DGB [MUSCLE SUMMARY] Patching routine with URL:", urlPatch);
         await this.fetchJson<any[]>(
             urlPatch,
             true,
@@ -287,8 +317,11 @@ export class SupabaseDBWrite extends SupabaseBase {
         );
 
         // Refresh routines cache so UI reflects changes
+        console.log("🔍 DGB [MUSCLE SUMMARY] Refreshing routines cache...");
         const { id: userId } = await this.getCurrentUser();
+        console.log("🔍 DGB [MUSCLE SUMMARY] User ID for cache refresh:", userId);
         await this.refreshRoutines(userId);
+        console.log("🔍 DGB [MUSCLE SUMMARY] Cache refresh completed");
     }
 }
 

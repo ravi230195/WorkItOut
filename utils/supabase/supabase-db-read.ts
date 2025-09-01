@@ -1,4 +1,4 @@
-import { SupabaseBase, SUPABASE_URL, CACHE_TTL, PREFER_CACHE_ON_READ } from "./supabase-base";
+import { SupabaseBase, SUPABASE_URL, CACHE_TTL, CacheStatus } from "./supabase-base";
 import type {
   Exercise,
   UserRoutine,
@@ -13,7 +13,27 @@ export class SupabaseDBRead extends SupabaseBase {
   async getExercises(): Promise<Exercise[]> {
     const url = `${SUPABASE_URL}/rest/v1/exercises?select=*`;
     const key = this.keyExercises();
-    return this.getOrFetchAndCache<Exercise[]>(url, key, CACHE_TTL.exercises, true);
+    
+    const { data: exercises, status } = await this.getOrFetchAndCache<Exercise[]>(url, key, CACHE_TTL.exercises, true);
+    
+    // ✅ ONLY cache individually if this was a fresh fetch (not cache hit)
+    if (status === CacheStatus.FRESH_FETCH) {
+      exercises.forEach(exercise => {
+        const individualKey = this.keyExercise(exercise.exercise_id);  // ✅ Using correct property name
+        localCache.set(individualKey, exercise, CACHE_TTL.exercises);
+      });
+    }
+    
+    return exercises;
+  }
+
+  // Individual exercise by ID
+  async getExercise(id: number): Promise<Exercise | null> {
+    const url = `${SUPABASE_URL}/rest/v1/exercises?exercise_id=eq.${id}&select=*&limit=1`;
+    const key = this.keyExercise(id);
+
+    const { data: result } = await this.getOrFetchAndCache<Exercise[]>(url, key, CACHE_TTL.exercises, true);
+    return (Array.isArray(result) ? result[0] : result) ?? null;
   }
 
   // Routines (per user)
@@ -21,7 +41,17 @@ export class SupabaseDBRead extends SupabaseBase {
     const user = await this.getCurrentUser();
     const url = `${SUPABASE_URL}/rest/v1/user_routines?user_id=eq.${user.id}&is_active=eq.true&select=*`;
     const key = this.keyUserRoutines(user.id);
-    return this.getOrFetchAndCache<UserRoutine[]>(url, key, CACHE_TTL.routines, true);
+    
+    // Add post-filter for consistency and to handle old cache data with inactive routines
+    const { data: routines } = await this.getOrFetchAndCache<UserRoutine[]>(
+      url, 
+      key, 
+      CACHE_TTL.routines, 
+      true,
+      (data: UserRoutine[]) => data.filter(r => r.is_active === true)
+    );
+    
+    return routines;
   }
 
   // Routines (per user)
@@ -29,15 +59,21 @@ export class SupabaseDBRead extends SupabaseBase {
     const user = "58b39a78-0284-445f-8c88-4fed2944c8be"
     const url = `${SUPABASE_URL}/rest/v1/user_routines?user_id=eq.${user}&is_active=eq.true&select=*`;
     const key = this.keyUserRoutines(user);
-    return this.getOrFetchAndCache<UserRoutine[]>(url, key, CACHE_TTL.routines, true);
+    const { data: routines } = await this.getOrFetchAndCache<UserRoutine[]>(url, key, CACHE_TTL.routines, true);
+    return routines;
   }
 
   // Routine exercises (per routine)
   async getUserRoutineExercises(routineTemplateId: number): Promise<UserRoutineExercise[]> {
     const user = await this.getCurrentUser();
-    const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&select=*`;
+    const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&is_active=is.true&select=*`;
     const key = this.keyRoutineExercises(user.id, routineTemplateId);
-    return this.getOrFetchAndCache<UserRoutineExercise[]>(url, key, CACHE_TTL.routineExercises, true);
+    
+    const { data: result } = await this.getOrFetchAndCache<UserRoutineExercise[]>(url, key, CACHE_TTL.routineExercises, true, 
+      (data: UserRoutineExercise[]) => data.filter(ex => ex.is_active === true)
+    );
+
+    return result;
   }
 
   // Routine exercises with details (flattened)
@@ -48,26 +84,19 @@ export class SupabaseDBRead extends SupabaseBase {
     const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&select=*,exercises(name,category)`;
     const key = this.keyRoutineExercisesWithDetails(user.id, routineTemplateId);
 
-    if (PREFER_CACHE_ON_READ) {
-      const hit = localCache.get<Array<UserRoutineExercise & { exercise_name?: string; category?: string }>>(
-        key,
-        CACHE_TTL.routineExercisesWithDetails
-      );
-      if (hit) {
-        console.log("🗂️ [CACHE HIT]", key);
-        return hit;
-      }
-    }
-    console.log("🌐 [FETCH]", url);
-    const raw = await this.fetchJson<any[]>(url, true);
+    // Use standardized getOrFetchAndCache like other functions with post-filter for active exercises
+    const { data: raw } = await this.getOrFetchAndCache<any[]>(url, key, CACHE_TTL.routineExercisesWithDetails, true,
+      (data: any[]) => data.filter(ex => ex.is_active === true)
+    );
+    
+    // Flatten the data after caching
     const flattened = raw.map((ex: any) => ({
       ...ex,
       exercise_name: ex.exercises?.name || "Unknown Exercise",
       category: ex.exercises?.category || "Unknown",
       muscle_group: ex.exercises?.muscle_group || "Unknown",
     }));
-    localCache.set(key, flattened);
-    console.log("🗂️ [CACHE WRITE] →", key);
+
     return flattened;
   }
 
@@ -76,7 +105,8 @@ export class SupabaseDBRead extends SupabaseBase {
     const user = await this.getCurrentUser();
     const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}&is_active=eq.true&order=set_order`;
     const key = this.keyRoutineSets(user.id, routineTemplateExerciseId);
-    return this.getOrFetchAndCache<UserRoutineExerciseSet[]>(url, key, CACHE_TTL.routineSets, true);
+    const { data: sets } = await this.getOrFetchAndCache<UserRoutineExerciseSet[]>(url, key, CACHE_TTL.routineSets, true);
+    return sets;
   }
 
   // Profile
@@ -84,7 +114,7 @@ export class SupabaseDBRead extends SupabaseBase {
     const user = await this.getCurrentUser();
     const url = `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=*`;
     const key = this.keyProfile(user.id);
-    const rows = await this.getOrFetchAndCache<Profile[]>(url, key, CACHE_TTL.profile, true);
+    const { data: rows } = await this.getOrFetchAndCache<Profile[]>(url, key, CACHE_TTL.profile, true);
     return rows[0] ?? null;
   }
 
@@ -93,7 +123,7 @@ export class SupabaseDBRead extends SupabaseBase {
     const user = await this.getCurrentUser();
     const url = `${SUPABASE_URL}/rest/v1/user_steps?user_id=eq.${user.id}&select=goal`;
     const key = this.keySteps(user.id);
-    const rows = await this.getOrFetchAndCache<{ goal: number }[]>(url, key, CACHE_TTL.steps, true);
+    const { data: rows } = await this.getOrFetchAndCache<{ goal: number }[]>(url, key, CACHE_TTL.steps, true);
     if (rows.length > 0) return rows[0].goal;
 
     // No row yet: create default and refresh cache

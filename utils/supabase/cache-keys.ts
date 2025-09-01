@@ -1,6 +1,7 @@
 // All cache keys renamed to “fullCacheKey*” as requested
 
 export const fullCacheKeyExercises = () => `supabase:exercises`;
+export const fullCacheKeyExercise = (exerciseId: number) => `supabase:exercise:${exerciseId}`;
 
 export const fullCacheKeyUserRoutines = (userId: string) =>
   `supabase:${userId}:routines`;

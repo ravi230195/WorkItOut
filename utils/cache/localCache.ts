@@ -140,6 +140,7 @@ export type CacheEntry<T> = {
     
     /** Print values per cache entry, chunked to avoid console truncation. */
     debugDumpValuesChunked(chunkSize = 8000) {
+      /*
       const snap = this.snapshot(true); // includes values
       for (const [k, v] of Object.entries(snap)) {
         const val = (v as any).value;
@@ -152,6 +153,7 @@ export type CacheEntry<T> = {
         // big value, chunked
         this.logChunks("📦 value", val, chunkSize);
       }
+      */
     }
     
   
