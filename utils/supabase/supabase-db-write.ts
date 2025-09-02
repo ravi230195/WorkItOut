@@ -59,37 +59,37 @@ export class SupabaseDBWrite extends SupabaseBase {
 
     // Routines
     async createUserRoutine(name: string): Promise<UserRoutine | null> {
-        const user = await this.getCurrentUser();
+        const userId = await this.getUserId();
         const rows = await this.fetchJson<UserRoutine[]>(
             `${SUPABASE_URL}/rest/v1/user_routines`,
             true,
             "POST",
-            { user_id: user.id, name: name.trim(), version: 1, is_active: true },
+            { user_id: userId, name: name.trim(), version: 1, is_active: true },
             "return=representation"
         );
-        await this.refreshRoutines(user.id);
+        await this.refreshRoutines(userId);
         return rows[0] ?? null;
     }
 
     // supabase-db-write.ts
     async renameRoutine(routineTemplateId: number, newName: string): Promise<void> {
-        const user = await this.getCurrentUser();
+        const userId = await this.getUserId();
 
         await this.fetchJson(
             `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`,
             true, "PATCH", { name: newName.trim() }, "return=representation"
             // ask PostgREST to return the updated row (avoids 204)
         );
-        await this.refreshRoutines(user.id);
+        await this.refreshRoutines(userId);
     }
 
 
     async deleteRoutine(routineTemplateId: number): Promise<void> {
-        const user = await this.getCurrentUser();
+        const userId = await this.getUserId();
         await this.fetchJson(
             `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`,
             true, "PATCH", { is_active: false }, "return=representation");
-        await this.refreshRoutines(user.id);
+        await this.refreshRoutines(userId);
     }
 
     // Routine exercises and sets
@@ -98,7 +98,7 @@ export class SupabaseDBWrite extends SupabaseBase {
         exerciseId: number,
         exerciseOrder: number
     ): Promise<UserRoutineExercise | null> {
-        const user = await this.getCurrentUser();
+        const userId = await this.getUserId();
         const rows = await this.fetchJson<UserRoutineExercise[]>(
             `${SUPABASE_URL}/rest/v1/user_routine_exercises_data`,
             true,
@@ -107,8 +107,8 @@ export class SupabaseDBWrite extends SupabaseBase {
             "return=representation"
         );
         await Promise.all([
-            this.refreshRoutineExercises(user.id, routineTemplateId),
-            this.refreshRoutineExercisesWithDetails(user.id, routineTemplateId),
+            this.refreshRoutineExercises(userId, routineTemplateId),
+            this.refreshRoutineExercisesWithDetails(userId, routineTemplateId),
         ]);
         return rows[0] ?? null;
     }
@@ -118,7 +118,7 @@ export class SupabaseDBWrite extends SupabaseBase {
         exerciseId: number,
         setsData: { reps: number; weight: number; set_order?: number }[]
     ): Promise<UserRoutineExerciseSet[]> {
-        const user = await this.getCurrentUser();
+        const userId = await this.getUserId();
         const setsToInsert = setsData.map((set, index) => ({
             routine_template_exercise_id: routineTemplateExerciseId,
             exercise_id: exerciseId,
@@ -136,7 +136,7 @@ export class SupabaseDBWrite extends SupabaseBase {
             "return=representation"
         );
 
-        await this.refreshRoutineSets(user.id, routineTemplateExerciseId);
+        await this.refreshRoutineSets(userId, routineTemplateExerciseId);
         return rows;
     }
 
@@ -155,7 +155,7 @@ export class SupabaseDBWrite extends SupabaseBase {
 
     // Soft delete routine exercise (sets is_active = false)
     async deleteRoutineExercise(routineTemplateExerciseId: number): Promise<void> {
-        const user = await this.getCurrentUser();
+        const userId = await this.getUserId();
         
         // Soft delete the exercise row
         await this.fetchJson(
@@ -179,8 +179,8 @@ export class SupabaseDBWrite extends SupabaseBase {
 
         // Refresh the data
         await Promise.all([
-            this.refreshRoutineExercises(user.id, routineId),        // Routine ID
-            this.refreshRoutineExercisesWithDetails(user.id, routineId), // Routine ID
+            this.refreshRoutineExercises(userId, routineId),        // Routine ID
+            this.refreshRoutineExercisesWithDetails(userId, routineId), // Routine ID
         ]);
     }
 
@@ -189,7 +189,7 @@ export class SupabaseDBWrite extends SupabaseBase {
         plannedReps?: number,
         plannedWeightKg?: number
     ): Promise<UserRoutineExerciseSet | null> {
-        const user = await this.getCurrentUser();
+        const userId = await this.getUserId();
 
         // find parent rtex id to know which cache to refresh
         const lookup = await this.fetchJson<Array<{ routine_template_exercise_id: number }>>(
@@ -208,7 +208,7 @@ export class SupabaseDBWrite extends SupabaseBase {
             },
             "return=representation"
         );
-        if (parentId) await this.refreshRoutineSets(user.id, parentId);
+        if (parentId) await this.refreshRoutineSets(userId, parentId);
         return rows[0] ?? null;
     }
 
@@ -216,7 +216,7 @@ export class SupabaseDBWrite extends SupabaseBase {
         routineTemplateExerciseSetId: number,
         newOrder: number
     ): Promise<void> {
-        const user = await this.getCurrentUser();
+        const userId = await this.getUserId();
 
         const lookup = await this.fetchJson<Array<{ routine_template_exercise_id: number }>>(
             `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_set_id=eq.${routineTemplateExerciseSetId}&select=routine_template_exercise_id`,
@@ -231,11 +231,11 @@ export class SupabaseDBWrite extends SupabaseBase {
             { set_order: newOrder },
             "return=minimal"
         );
-        if (parentId) await this.refreshRoutineSets(user.id, parentId);
+        if (parentId) await this.refreshRoutineSets(userId, parentId);
     }
 
     async deleteExerciseSet(routineTemplateExerciseSetId: number): Promise<void> {
-        const user = await this.getCurrentUser();
+        const userId = await this.getUserId();
 
         const lookup = await this.fetchJson<Array<{ routine_template_exercise_id: number }>>(
             `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_set_id=eq.${routineTemplateExerciseSetId}&select=routine_template_exercise_id`,
@@ -250,7 +250,7 @@ export class SupabaseDBWrite extends SupabaseBase {
             { is_active: false },
             "return=minimal"
         );
-        if (parentId) await this.refreshRoutineSets(user.id, parentId);
+        if (parentId) await this.refreshRoutineSets(userId, parentId);
     }
 
     // Profile write
@@ -262,13 +262,13 @@ export class SupabaseDBWrite extends SupabaseBase {
         weightKg?: number,
         userId?: string
     ): Promise<Profile | null> {
-        const user = userId ? { id: userId } : await this.getCurrentUser();
+        const id = userId ?? await this.getUserId();
         const rows = await this.fetchJson<Profile[]>(
             `${SUPABASE_URL}/rest/v1/profiles`,
             true,
             "POST",
             {
-                user_id: user.id,
+                user_id: id,
                 first_name: firstName,
                 last_name: lastName,
                 display_name: displayName,
@@ -277,21 +277,21 @@ export class SupabaseDBWrite extends SupabaseBase {
             },
             "resolution=merge-duplicates"
         );
-        await this.refreshProfile(user.id);
+        await this.refreshProfile(id);
         return rows[0] ?? null;
     }
 
     // Steps write
     async createUserStepGoal(goal: number = 10000): Promise<number> {
-        const user = await this.getCurrentUser();
+        const userId = await this.getUserId();
         const rows = await this.fetchJson<{ goal: number }[]>(
             `${SUPABASE_URL}/rest/v1/user_steps`,
             true,
             "POST",
-            { user_id: user.id, goal },
+            { user_id: userId, goal },
             "return=representation"
         );
-        await this.refreshSteps(user.id);
+        await this.refreshSteps(userId);
         return rows[0]?.goal ?? goal;
     }
 
@@ -340,7 +340,7 @@ export class SupabaseDBWrite extends SupabaseBase {
 
         // Refresh routines cache so UI reflects changes
         logger.debug("🔍 DGB [MUSCLE SUMMARY] Refreshing routines cache...");
-        const { id: userId } = await this.getCurrentUser();
+        const userId = await this.getUserId();
         logger.debug("🔍 DGB [MUSCLE SUMMARY] User ID for cache refresh:", userId);
         await this.refreshRoutines(userId);
         logger.debug("🔍 DGB [MUSCLE SUMMARY] Cache refresh completed");

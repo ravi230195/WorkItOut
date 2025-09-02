@@ -38,10 +38,14 @@ export enum CacheStatus {
 
 export class SupabaseBase {
   protected userToken: string | null = null;
+  private cachedUser: AuthUser | null = null;
 
   setToken(token: string | null) {
+    if (token !== this.userToken) {
+      this.cachedUser = null;
+    }
     this.userToken = token;
-    
+
     if (token) {
       // 🔐 [DBG] Token set - Clear cache for fresh user session
       logger.info("🔐 [DBG] Token set - Clearing cache for fresh user session");
@@ -135,12 +139,20 @@ export class SupabaseBase {
 
   // ---------- Auth shared ----------
   async getCurrentUser(): Promise<AuthUser> {
+    if (this.cachedUser) return this.cachedUser;
+
     const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: this.getHeaders(true),
     });
     if (!response.ok) throw new Error(`Failed to get current user: ${response.statusText}`);
     const user = await response.json();
-    return { id: user.id, email: user.email };
+    this.cachedUser = { id: user.id, email: user.email };
+    return this.cachedUser;
+  }
+
+  protected async getUserId(): Promise<string> {
+    const user = await this.getCurrentUser();
+    return user.id;
   }
 
   // ---------- Refreshers (keep cache == DB after any write) ----------
