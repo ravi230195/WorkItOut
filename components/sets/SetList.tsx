@@ -134,7 +134,7 @@ const SetList: React.FC<SetListProps> = ({
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "reps", e.target.value)}
                 disabled={readOnly}
-                className={`bg-white border-border text-foreground text-center h-10 md:h-8 rounded-md focus:border-warm-sage focus:ring-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`bg-input-background border-border text-foreground text-center h-10 md:h-8 rounded-md focus:border-warm-sage focus:ring-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                 min="0"
               />
 
@@ -147,7 +147,7 @@ const SetList: React.FC<SetListProps> = ({
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "weight", e.target.value)}
                 disabled={readOnly}
-                className={`bg-white border-border text-foreground text-center h-10 md:h-8 rounded-md focus:border-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`bg-input-background border-border text-foreground text-center h-10 md:h-8 rounded-md focus:border-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                 min="0"
               />
 
@@ -156,7 +156,7 @@ const SetList: React.FC<SetListProps> = ({
                   variant="secondary"
                   size="sm"
                   onClick={() => onRemove?.(it.key)}
-                  className="p-1 h-auto bg-red-50 text-red-500 hover:bg-red-100 ml-auto"
+                  className="p-1 h-auto bg-destructive-light text-destructive hover:bg-destructive ml-auto"
                   title="Remove this set"
                 >
                   <X size={14} />
@@ -177,7 +177,7 @@ const SetList: React.FC<SetListProps> = ({
           {onAdd ? (
             <TactileButton
               onClick={onAdd}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg btn-tactile bg-white/70 border-border text-foreground hover:bg-white"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg btn-tactile bg-card/70 border-border text-foreground hover:bg-card"
               disabled={isDisabled}
               title={
                 isDisabled
@@ -205,7 +205,7 @@ const SetList: React.FC<SetListProps> = ({
               disabled={deleteDisabled || readOnly}
               className={`p-2 h-auto rounded-lg ${deleteDisabled || readOnly
                 ? "opacity-50 cursor-not-allowed"
-                : "bg-red-50 text-red-600 hover:bg-red-100"
+                : "bg-destructive-light text-destructive hover:bg-destructive"
                 }`}
               title={deleteTitle}
             >

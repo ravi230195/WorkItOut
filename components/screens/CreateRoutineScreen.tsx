@@ -89,7 +89,7 @@ export default function CreateRoutineScreen({
           <TactileButton
             onClick={handleCreateRoutine}
             disabled={!routineName.trim() || isCreating}
-            className="w-full h-12 md:h-14 bg-warm-coral hover:bg-warm-coral/90 text-white font-medium text-sm md:text-base rounded-full disabled:opacity-50 disabled:cursor-not-allowed border-0"
+            className="w-full h-12 md:h-14 bg-primary hover:bg-primary-hover text-primary-foreground font-medium text-sm md:text-base rounded-full disabled:opacity-50 disabled:cursor-not-allowed border-0"
           >
             <div className="flex items-center justify-center gap-2">
               <Plus size={20} />

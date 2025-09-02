@@ -72,7 +72,7 @@ const ExerciseRow = memo(function ExerciseRow({
           selected
             // toned down selection (less “bright orange”)
             ? "bg-warm-coral/60 border-warm-coral/30 shadow-md"
-            : "bg-white border-border hover:bg-soft-gray/50 hover:border-warm-coral/30 hover:shadow-md",
+            : "bg-card border-border hover:bg-soft-gray/50 hover:border-warm-coral/30 hover:shadow-md",
         ].join(" ")}
       >
         <div className="flex items-center gap-3 md:gap-4">
@@ -292,7 +292,7 @@ export function AddExercisesToRoutineScreen({
             disabled={selectedExercises.length === 0 || isAddingExercise}
             className={`h-12 md:h-14 sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
               selectedExercises.length > 0
-                ? "bg-warm-coral hover:bg-warm-coral/90 text-white/90 btn-tactile"
+                ? "bg-primary hover:bg-primary-hover text-primary-foreground opacity-90 btn-tactile"
                 : "bg-warm-brown/20 text-warm-brown/40 cursor-not-allowed"
             }`}
           >
