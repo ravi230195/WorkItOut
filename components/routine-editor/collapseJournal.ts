@@ -243,6 +243,21 @@ export function collapseJournal(journal: EditJournal): SavePlan {
     }
   }
 
+  // Remove exercises without any set payloads
+  for (const [exIdStr, sets] of Object.entries(plan.createSetsByExercise)) {
+    if (!sets.length) {
+      delete plan.createSetsByExercise[exIdStr as unknown as Id];
+    }
+  }
+  plan.createExercises = plan.createExercises.filter((e) => {
+    const sets = plan.createSetsByExercise[e.tempExId];
+    if (!sets || sets.length === 0) {
+      delete plan.createSetsByExercise[e.tempExId];
+      return false;
+    }
+    return true;
+  });
+
   // Optional: re-index set_order to be contiguous per exercise here,
   // if your backend does not do this as part of an RPC/transaction.
 
