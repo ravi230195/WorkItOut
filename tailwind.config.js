@@ -54,6 +54,9 @@ export default {
         "warm-rose": "hsl(var(--warm-rose-hsl))",
         "warm-lavender": "hsl(var(--warm-lavender-hsl))",
         "soft-gray": "hsl(var(--soft-gray-hsl))",
+        "accent-blue": "hsl(var(--accent-blue-hsl))",
+        "ring-track-gray": "hsl(var(--ring-track-gray-hsl))",
+        "recovery-yellow": "hsl(var(--recovery-yellow-hsl))",
 
         /* Keep raw background/muted as vars (not HSL) if you prefer */
         muted: "var(--muted)",

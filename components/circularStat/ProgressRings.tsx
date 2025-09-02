@@ -50,7 +50,8 @@ function ProgressRings({
   onRecoveryClick,
   onStrainClick,
 }: ProgressRingsProps) {
-  const { warmBrown, warmCoral, accentBlue, trackGray } = useThemeTokens();
+  const { warmBrown, warmCoral, accentBlue, trackGray, recoveryYellow } =
+    useThemeTokens();
   const vw = useViewportWidth();
 
   // scale ring size with viewport width (keeps 3 across on all phones)
@@ -97,7 +98,7 @@ function ProgressRings({
           size={ring}
           strokeWidth={ringStroke}
           textColor={warmBrown}
-          progressColor={"#f2c94c"}
+          progressColor={recoveryYellow}
           trackColor={trackGray}
         />
       ),
@@ -139,7 +140,7 @@ function ProgressRings({
       </div>
 
       {/* subtle divider */}
-      <div className="mt-3 h-px bg-black/5" />
+      <div className="mt-3 h-px bg-foreground/5" />
     </div>
   );
 }
