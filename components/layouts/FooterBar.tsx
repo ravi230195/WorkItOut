@@ -81,7 +81,7 @@ export default function FooterBar({
     sticky ? "fixed inset-x-0 bottom-0 z-50" : "sticky bottom-0 z-40",
     bgMap[bg],
     "pt-3",
-    "pb-[max(env(safe-area-inset-bottom),12px)]",
+    //"pb-[max(env(safe-area-inset-bottom),12px)]",
     className,
   ]
     .filter(Boolean)

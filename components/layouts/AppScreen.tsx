@@ -57,7 +57,7 @@ export default function AppScreen({
 
   padContent = true,
   padHeader = true,
-  padBottomBar = true,
+  padBottomBar = false,
 
   keyboardInsetVarName = "--app-kb-inset",
 
@@ -200,9 +200,10 @@ export default function AppScreen({
             bottomBarShellClassName
           )}
           style={{
-            paddingBottom: `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
+            //paddingBottom: `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
+            paddingBottom: `${kbInsetChain}`,
             // RAVI: Debug border commented out
-            // border: "2px solid green",
+            border: "2px solid green",
           }}
         >
           <div

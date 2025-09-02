@@ -16,8 +16,16 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
   ];
 
   return (
-    <nav aria-label="Bottom navigation" className="w-full">
-      <ul className="flex justify-around">
+    <nav aria-label="Bottom navigation" className="w-full"
+    style={{
+      borderTop: "1px solid red",
+    }}
+    >
+      <ul className="flex justify-around"
+      style={{
+        borderTop: "1px solid green",
+      }}
+      >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
