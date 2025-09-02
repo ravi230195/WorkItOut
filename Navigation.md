@@ -23,7 +23,7 @@ const [activeTab, setActiveTab] = useState<"workouts" | "progress" | "profile">(
 const [currentRoutineId, setCurrentRoutineId] = useState<number | null>(null);
 const [currentRoutineName, setCurrentRoutineName] = useState<string>("");
 const [routineAccess, setRoutineAccess] = useState<RoutineAccess>(RoutineAccess.Editable);
-const [selectedExerciseForSetup, setSelectedExerciseForSetup] = useState<Exercise | null>(null);
+const [selectedExercisesForSetup, setSelectedExercisesForSetup] = useState<Exercise[]>([]);
 ```
 
 ### 2. Screen Routing (`AppRouter`)
@@ -164,7 +164,7 @@ export enum RoutineAccess {
 - `completeRoutineCreation()`: Finalizes routine creation
 
 ### Exercise Management Functions
-- `handleExerciseSelected(exercise, routineId?)`: Processes exercise selection
+- `handleExercisesSelected(exercises, routineId?)`: Processes exercise selection
 - `closeExerciseSetup()`: Opens exercise selector
 - `returnToExerciseSetup(exercise)`: Returns with selected exercise
 - `closeExerciseSetupToRoutines()`: Returns to workouts dashboard
@@ -302,7 +302,7 @@ type TabType = "workouts" | "progress" | "profile";
 │  • activeTab: Manages bottom navigation state                             │
 │  • currentRoutineId: Maintains routine context                            │
 │  • routineAccess: Controls editability (Editable/ReadOnly)                │
-│  • selectedExerciseForSetup: Tracks exercise being configured             │
+│  • selectedExercisesForSetup: Queue of exercises being configured         │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```

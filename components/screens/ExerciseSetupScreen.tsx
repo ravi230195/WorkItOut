@@ -66,11 +66,10 @@ type UIExercise = {
    ======================================================================================= */
 
 interface ExerciseSetupScreenProps {
-  exercise?: Exercise; // optional initial add (same as selectedExerciseForSetup)
   routineId: number;
   routineName: string;
-  selectedExerciseForSetup: Exercise | null;
-  setSelectedExerciseForSetup: (exercise: Exercise | null) => void;
+  selectedExercisesForSetup: Exercise[];
+  setSelectedExercisesForSetup: (exercises: Exercise[]) => void;
   onBack: () => void;
   onSave: () => void;
   onAddMoreExercises: () => void;
@@ -87,11 +86,10 @@ interface ExerciseSetupScreenProps {
 const SETS_PREFETCH_CONCURRENCY = 5;
 
 export function ExerciseSetupScreen({
-  exercise,
   routineId,
   routineName,
-  selectedExerciseForSetup,
-  setSelectedExerciseForSetup,
+  selectedExercisesForSetup,
+  setSelectedExercisesForSetup,
   onBack,
   onSave,
   onAddMoreExercises,
@@ -108,9 +106,6 @@ export function ExerciseSetupScreen({
 
   // Append-only action journal (doesn't trigger re-renders)
   const journalRef = useRef(makeJournal());
-
-  // Queue selection if it arrives before initial load completes
-  const queuedSelectionRef = useRef<Exercise | null>(null);
 
   /* -------------------------------------------------------------------------------------
      Utilities
@@ -263,32 +258,28 @@ export function ExerciseSetupScreen({
   }, [routineId, userToken]);
 
   /* -------------------------------------------------------------------------------------
-     Add a selected exercise AFTER initial load completes (race-proof)
+     Add selected exercises AFTER initial load completes
      ------------------------------------------------------------------------------------- */
   useEffect(() => {
-    const next = selectedExerciseForSetup || exercise || queuedSelectionRef.current;
-    if (loadingSaved) {
-      if (selectedExerciseForSetup) queuedSelectionRef.current = selectedExerciseForSetup;
-      else if (exercise) queuedSelectionRef.current = exercise;
-      return;
-    }
-    if (!next) return;
+    if (loadingSaved) return;
+    if (selectedExercisesForSetup.length === 0) return;
 
     (async () => {
-      const timer = performanceTimer.start('ExerciseSetup - add selected exercise');
-      await addNewExercise(next);
-      queuedSelectionRef.current = null;
-      if (selectedExerciseForSetup) setSelectedExerciseForSetup(null);
+      const timer = performanceTimer.start('ExerciseSetup - add selected exercises');
+      for (const ex of selectedExercisesForSetup) {
+        await addNewExercise(ex);
+      }
+      setSelectedExercisesForSetup([]);
 
-      // Scroll new card into view
+      // Scroll new cards into view
       requestAnimationFrame(() =>
         window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
       );
-      
+
       timer.endWithLog('debug');
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedExerciseForSetup, exercise, loadingSaved]);
+  }, [selectedExercisesForSetup, loadingSaved]);
 
   /* =======================================================================================
      Helpers: update local UI state

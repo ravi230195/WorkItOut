@@ -24,8 +24,8 @@ function AppContent() {
     activeTab,
     currentRoutineId,
     currentRoutineName,
-    selectedExerciseForSetup,
-    setSelectedExerciseForSetup,
+    selectedExercisesForSetup,
+    setSelectedExercisesForSetup,
     routineAccess,
     handleAuthSuccess,
     navigateToSignUp,
@@ -35,7 +35,7 @@ function AppContent() {
     handleRoutineCreated,
     closeCreateRoutine,
     completeRoutineCreation,
-    handleExerciseSelected,
+    handleExercisesSelected,
     closeExerciseSetup,
     handleExerciseSetupComplete,
     onRoutineSelection,
@@ -73,8 +73,8 @@ function AppContent() {
           currentRoutineId={currentRoutineId}
           currentRoutineName={currentRoutineName}
           routineAccess={routineAccess}
-          selectedExerciseForSetup={selectedExerciseForSetup}
-          setSelectedExerciseForSetup={setSelectedExerciseForSetup}
+          selectedExercisesForSetup={selectedExercisesForSetup}
+          setSelectedExercisesForSetup={setSelectedExercisesForSetup}
           isAuthenticated={isAuthenticated}
           onAuthSuccess={(token, refreshToken) => handleAuthSuccess(token, refreshToken, setUserToken)}
           onNavigateToSignUp={navigateToSignUp}
@@ -83,7 +83,7 @@ function AppContent() {
           onRoutineCreated={handleRoutineCreated}
           onCloseCreateRoutine={closeCreateRoutine}
           onCompleteRoutineCreation={completeRoutineCreation}
-          onExerciseSelected={handleExerciseSelected}
+          onExerciseSelected={handleExercisesSelected}
           onCloseExerciseSetup={closeExerciseSetup}
           onExerciseSetupComplete={handleExerciseSetupComplete}
           onSelectRoutine={onRoutineSelection}

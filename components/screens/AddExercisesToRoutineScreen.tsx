@@ -14,7 +14,7 @@ interface AddExercisesToRoutineScreenProps {
   routineId?: number;
   routineName: string;
   onBack: () => void;
-  onExerciseSelected: (exercise: Exercise) => void;
+  onExerciseSelected: (exercises: Exercise[]) => void;
   isFromExerciseSetup?: boolean;
   bottomBar?: React.ReactNode;
 }
@@ -99,12 +99,12 @@ const ExerciseRow = memo(function ExerciseRow({
 const ExerciseGroup = memo(function ExerciseGroup({
   letter,
   items,
-  selectedId,
+  selectedIds,
   onSelect,
 }: {
   letter: string;
   items: Exercise[];
-  selectedId?: number;
+  selectedIds: number[];
   onSelect: (ex: Exercise) => void;
 }) {
   return (
@@ -117,7 +117,7 @@ const ExerciseGroup = memo(function ExerciseGroup({
           <ExerciseRow
             key={exercise.exercise_id}
             exercise={exercise}
-            selected={selectedId === exercise.exercise_id}
+            selected={selectedIds.includes(exercise.exercise_id)}
             onSelect={onSelect}
           />
         ))}
@@ -128,11 +128,11 @@ const ExerciseGroup = memo(function ExerciseGroup({
 
 function ExerciseList({
   groupedAZ,
-  selectedExercise,
+  selectedExercises,
   onSelect,
 }: {
   groupedAZ: Record<string, Exercise[]>;
-  selectedExercise: Exercise | null;
+  selectedExercises: Exercise[];
   onSelect: (ex: Exercise) => void;
 }) {
   const letters = useMemo(
@@ -155,7 +155,7 @@ function ExerciseList({
           key={letter}
           letter={letter}
           items={groupedAZ[letter]}
-          selectedId={selectedExercise?.exercise_id}
+          selectedIds={selectedExercises.map((e) => e.exercise_id)}
           onSelect={onSelect}
         />
       ))}
@@ -178,7 +178,7 @@ export function AddExercisesToRoutineScreen({
   const [searchQuery, setSearchQuery] = useState("");
   const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>("all");
   const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingExercise, setIsAddingExercise] = useState(false);
 
@@ -239,18 +239,20 @@ export function AddExercisesToRoutineScreen({
   }, [exercises, byGroup, muscleFilter, searchQuery]);
 
   const handleSelectExercise = (exercise: Exercise) => {
-    setSelectedExercise((prev) =>
-      prev?.exercise_id === exercise.exercise_id ? null : exercise
-    );
+    setSelectedExercises((prev) => {
+      const exists = prev.find((e) => e.exercise_id === exercise.exercise_id);
+      if (exists) return prev.filter((e) => e.exercise_id !== exercise.exercise_id);
+      return [...prev, exercise];
+    });
   };
 
   const handleAddExercise = async () => {
-    if (!selectedExercise) return toast.error("Please select an exercise");
+    if (selectedExercises.length === 0) return toast.error("Please select an exercise");
     if (!userToken) return toast.error("Please sign in to add exercises");
 
     setIsAddingExercise(true);
     try {
-      onExerciseSelected(selectedExercise);
+      onExerciseSelected(selectedExercises);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Please try again.";
       toast.error(`Failed to proceed: ${msg}`);
@@ -287,14 +289,18 @@ export function AddExercisesToRoutineScreen({
         <FooterBar size="md" bg="solid" align="center" maxContent="responsive">
           <TactileButton
             onClick={handleAddExercise}
-            disabled={!selectedExercise || isAddingExercise}
+            disabled={selectedExercises.length === 0 || isAddingExercise}
             className={`h-12 md:h-14 sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
-              selectedExercise
+              selectedExercises.length > 0
                 ? "bg-warm-coral hover:bg-warm-coral/90 text-white/90 btn-tactile"
                 : "bg-warm-brown/20 text-warm-brown/40 cursor-not-allowed"
             }`}
           >
-            {isAddingExercise ? "ADDING..." : selectedExercise ? "ADD (1)" : "ADD"}
+            {isAddingExercise
+              ? "ADDING..."
+              : selectedExercises.length > 0
+              ? `ADD (${selectedExercises.length})`
+              : "ADD"}
           </TactileButton>
         </FooterBar>
       }
@@ -337,7 +343,7 @@ export function AddExercisesToRoutineScreen({
           {!isLoading && (
             <ExerciseList
               groupedAZ={groupedAZ}
-              selectedExercise={selectedExercise}
+              selectedExercises={selectedExercises}
               onSelect={handleSelectExercise}
             />
           )}
