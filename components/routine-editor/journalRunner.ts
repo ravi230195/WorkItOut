@@ -49,6 +49,11 @@ export async function runJournal(plan: SavePlan, routineId: number, exMap: ExIdM
   DGB(`Creating ${plan.createExercises.length} new exercises:`, plan.createExercises);
   const createdTemplateIds = new Map<Id, number>(); // temp exId -> templateId
   for (const e of plan.createExercises) {
+    const sets = plan.createSetsByExercise[e.tempExId];
+    if (!sets || sets.length === 0) {
+      DGB(`Skipping exercise ${e.tempExId} - no set payloads`);
+      continue;
+    }
     DGB(`Creating exercise:`, e);
     const saved = await supabaseAPI.addExerciseToRoutine(routineId, e.exerciseId, e.order);
     if (saved) {
