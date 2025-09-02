@@ -67,7 +67,7 @@ export default function WorkoutDashboardScreen({
         which === RoutinesView.My
           ? await supabaseAPI.getUserRoutines()
           : await supabaseAPI.getSampleRoutines();
-
+      data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setRoutines(Array.isArray(data) ? data : []);
     } catch (error) {
       logger.error(String(error));

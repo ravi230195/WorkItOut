@@ -513,7 +513,7 @@ export function ExerciseSetupScreen({
         };
         logger.info(" [EXERCISE_SETUP] Workout exercise added for id: " + ex.exerciseId);
         for (const s of ex.sets) {
-          logger.info(" [EXERCISE_SETUP] Workout set added for id: " + wEx.id + "Set order: " + s.set_order + "Reps: " + (Number(s.reps) || 0) + "Weight: " + (Number(s.weight) || 0) + "Done: " + (s.done ? "DONE" : "NOT DONE"));
+          logger.info(" [EXERCISE_SETUP] Workout set added for id: " + wEx.id + " Set order: " + s.set_order + " Reps: " + (Number(s.reps) || 0) + " Weight: " + (Number(s.weight) || 0) + " Done: " + (s.done ? "DONE" : "NOT DONE"));
           /*await supabaseAPI.addWorkoutSet(
             wEx.id,
             s.set_order,
