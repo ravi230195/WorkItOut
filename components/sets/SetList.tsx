@@ -4,7 +4,7 @@ import { Input } from "../ui/input";
 import { TactileButton } from "../TactileButton";
 import { X, Plus, Trash2 } from "lucide-react";
 
-export type SetListMode = "view" | "edit";
+export type SetListMode = "view" | "edit" | "workout";
 
 export interface SetListItem {
   key: string | number;
@@ -12,6 +12,7 @@ export interface SetListItem {
   reps?: string;
   weight?: string;
   removable?: boolean;
+  done?: boolean;
 }
 
 export interface SetListProps {
@@ -23,6 +24,7 @@ export interface SetListProps {
   onChange?: (key: string | number, field: "reps" | "weight", value: string) => void;
   onRemove?: (key: string | number) => void;
   onAdd?: () => void;
+  onToggleDone?: (key: string | number, done: boolean) => void;
 
   /** Optional: delete the entire exercise (parent handles actual removal from routine) */
   onDeleteExercise?: () => void;
@@ -44,6 +46,7 @@ const SetList: React.FC<SetListProps> = ({
   onChange,
   onRemove,
   onAdd,
+  onToggleDone,
   onDeleteExercise,
   deleteTitle = "Remove this exercise from the routine",
   deleteDisabled = false,
@@ -52,7 +55,7 @@ const SetList: React.FC<SetListProps> = ({
   className = "",
 }) => {
   // Single unified layout. Read-only when disabled OR not in explicit edit mode.
-  const readOnly = disabled || mode !== "edit";
+  const readOnly = disabled || mode === "view";
   const isDisabled = readOnly || deleteDisabled;
 
   // DEBUG: Log the overall component state
@@ -97,7 +100,7 @@ const SetList: React.FC<SetListProps> = ({
       /*RAVI DBG:  style={{ border: "2px solid blue" }}*/>
         {items.map((it) => {
           const canRemove =
-            !readOnly && !!onRemove && (it.removable ?? true) && items.length > 1;
+            mode === "edit" && !readOnly && !!onRemove && (it.removable ?? true) && items.length > 1;
 
           // DEBUG: Log detailed canRemove calculation for each item
           /*logger.debug(`🔍 SetsList DEBUG: Set ${it.order} (key: ${it.key}) canRemove calculation:`, {
@@ -120,7 +123,9 @@ const SetList: React.FC<SetListProps> = ({
           return (
             <div
               key={it.key}
-              className="grid grid-cols-4 gap-3 md:gap-4 items-center py-2 px-3 bg-soft-gray/30 rounded-lg border border-border/20"
+              className={`grid grid-cols-4 gap-3 md:gap-4 items-center py-2 px-3 bg-soft-gray/30 rounded-lg border border-border/20 ${
+                mode === "workout" && it.done ? "opacity-60" : ""
+              }`}
               /*RAVI DBG: style={{ border: "2px solid yellow" }}*/>
               <span className="text-sm font-medium text-warm-brown/80">
                 {it.order}
@@ -151,7 +156,16 @@ const SetList: React.FC<SetListProps> = ({
                 min="0"
               />
 
-              {canRemove ? (
+              {mode === "workout" ? (
+                <div className="flex justify-end">
+                  <input
+                    type="checkbox"
+                    checked={!!it.done}
+                    onChange={(e) => onToggleDone?.(it.key, e.target.checked)}
+                    className="w-5 h-5 ml-auto"
+                  />
+                </div>
+              ) : canRemove ? (
                 <TactileButton
                   variant="secondary"
                   size="sm"

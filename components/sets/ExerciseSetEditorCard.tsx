@@ -1,7 +1,7 @@
 // components/sets/ExerciseSetEditorCard.tsx
 import * as React from "react";
 import { TactileButton } from "../TactileButton";
-import SetList, { SetListItem } from "./SetList";
+import SetList, { SetListItem, SetListMode } from "./SetList";
 import { Trash2 } from "lucide-react";
 
 type Props = {
@@ -12,11 +12,14 @@ type Props = {
   onChange?: (key: string | number, field: "reps" | "weight", value: string) => void;
   onRemove?: (key: string | number) => void;
   onAdd?: () => void;
+  onToggleDone?: (key: string | number, done: boolean) => void;
 
   // Behavior / UI
   disabled?: boolean;
   onFocusScroll?: React.FocusEventHandler<HTMLInputElement>;
   className?: string;
+
+  mode?: SetListMode;
 
   // Optional helper note under header
   note?: string;
@@ -37,6 +40,7 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
   onChange,
   onRemove,
   onAdd,
+  onToggleDone,
   onDeleteExercise,
   deleteDisabled,
   disabled = false,
@@ -47,6 +51,7 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
   onPrimary,
   primaryLabel = "Save",
   primaryDisabled = false,
+  mode = "edit",
 }) => {
   return (
     <div className={["rounded-2xl bg-card/70 border border-border p-3 md:p-4", className].join(" ")}
@@ -59,19 +64,20 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
 
       {/* The unified set editor UI */}
       <SetList
-        mode="edit"
+        mode={mode}
         items={items}
-        onDeleteExercise={onDeleteExercise}
+        onDeleteExercise={mode === "workout" ? undefined : onDeleteExercise}
         deleteDisabled={deleteDisabled}
         onChange={onChange}
-        onRemove={onRemove}
+        onRemove={mode === "workout" ? undefined : onRemove}
         onAdd={onAdd}
+        onToggleDone={onToggleDone}
         onFocusScroll={onFocusScroll}
         disabled={disabled}
       />
 
       {/* Secondary row (trash/cancel) */}
-      {onCancel && (
+      {mode !== "workout" && onCancel && (
         <div className="mt-4 flex justify-end items-center gap-2">
           <TactileButton
             variant="secondary"
@@ -89,7 +95,7 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
       )}
 
       {/* Primary CTA (optional) */}
-      {onPrimary && (
+      {mode !== "workout" && onPrimary && (
         <div className="mt-6">
           <TactileButton
             onClick={onPrimary}
