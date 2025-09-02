@@ -141,6 +141,64 @@
 
 }
 
+.dark,
+[data-theme="dark"] {
+  /* Core Colors - Dark Mode */
+  --background: #0f0f0f;
+  --foreground: #f5f5f5;
+  --card: #1a1a1a;
+  --card-foreground: #f5f5f5;
+  --popover: #1a1a1a;
+  --popover-foreground: #f5f5f5;
+
+  /* Primary Brand Colors */
+  --primary: #e07a5f;
+  --primary-foreground: #ffffff;
+  --primary-hover: #cf694f;
+  --primary-light: #4a2a22;
+
+  /* Secondary & Accent */
+  --secondary: #3f3727;
+  --secondary-foreground: #f5f5f5;
+  --accent: #56756b;
+  --accent-foreground: #ffffff;
+  --accent-light: #2d3f36;
+
+  /* Semantic Colors */
+  --success: #3fa969;
+  --success-light: #1e4932;
+  --warning: #e9b949;
+  --warning-light: #4a3d1f;
+  --destructive: #e74c5b;
+  --destructive-light: #4f1f25;
+  --info: #209fb5;
+  --info-light: #163f4a;
+
+  /* Neutral Colors */
+  --muted: #1e1e1e;
+  --muted-foreground: #d4d4d8;
+  --border: rgba(224, 122, 95, 0.3);
+  --border-light: #2d2d2d;
+  --input: #1e1e1e;
+  --input-background: #1e1e1e;
+  --input-border: #3f3f46;
+  --input-focus: #e07a5f;
+
+  /* HSL triplets for Tailwind /opacity support */
+  --foreground-hsl: 0 0% 96%;
+  --primary-hsl: 12.56 67.54% 62.55%;
+  --muted-foreground-hsl: 240 5% 65%;
+  --warm-brown-hsl: 27.57 15.35% 47.25%;
+  --warm-coral-hsl: 12.56 67.54% 62.55%;
+  --warm-sage-hsl: 108.33 23.38% 69.80%;
+  --warm-cream-hsl: 45.88 69.86% 85.69%;
+  --warm-peach-hsl: 36.97 79.20% 75.49%;
+  --warm-mint-hsl: 150.61 24.14% 60.20%;
+  --warm-rose-hsl: 355.38 53.06% 80.78%;
+  --warm-lavender-hsl: 280.56 63.96% 78.24%;
+  --soft-gray-hsl: 0 0% 20%;
+}
+
 @layer base {
 
   html,
