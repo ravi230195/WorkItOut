@@ -46,6 +46,7 @@ const SetList: React.FC<SetListProps> = ({
   onChange,
   onRemove,
   onAdd,
+  onToggleDone,
   onDeleteExercise,
   deleteTitle = "Remove this exercise from the routine",
   deleteDisabled = false,
