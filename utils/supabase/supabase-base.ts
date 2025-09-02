@@ -171,11 +171,11 @@ export class SupabaseBase {
       
       const rows = await this.fetchJson<any[]>(url, true);
       localCache.set(key, rows);
-      logger.info("♻️ [CACHE REFRESH] routines", key);
+      logger.info("🔍 [CACHE REFRESH] routines", key);
       logger.info("🔍 [CACHE REFRESH COMPLETE] Routines refreshed, count:", rows.length);
     } catch (e) {
       // Do not break the UI flow if a refresh fails
-      logger.warn("⚠️ [CACHE REFRESH routines] skipped due to error:", e);
+      logger.warn("🔍 [CACHE REFRESH routines] skipped due to error:", e);
       logger.info("🔍 [CACHE REFRESH ERROR] Stack trace:", new Error().stack);
     }
   }
@@ -191,7 +191,7 @@ export class SupabaseBase {
     
     const rows = await this.fetchJson<any[]>(url, true);
     localCache.set(key, rows);
-    logger.info("♻️ [CACHE REFRESH] routine exercises", key);
+    logger.info("🔍 [CACHE REFRESH] routine exercises", key);
     logger.info("🔍 [CACHE REFRESH COMPLETE] Routine exercises refreshed, count:", rows.length);
   }
   protected async refreshRoutineExercisesWithDetails(userId: string, rtId: number) {
@@ -211,7 +211,7 @@ export class SupabaseBase {
       category: ex.exercises?.category || "Unknown",
     }));
     localCache.set(key, flattened);
-    logger.info("♻️ [CACHE REFRESH] routine exercises+details", key);
+    logger.info("🔍 [CACHE REFRESH] routine exercises+details", key);
     logger.info("🔍 [CACHE REFRESH COMPLETE] Routine exercises+details refreshed, count:", flattened.length);
   }
   protected async refreshRoutineSets(userId: string, rtexId: number) {
@@ -226,7 +226,7 @@ export class SupabaseBase {
     
     const rows = await this.fetchJson<any[]>(url, true);
     localCache.set(key, rows);
-    logger.info("♻️ [CACHE REFRESH] routine sets", key);
+    logger.info("🔍 [CACHE REFRESH] routine sets", key);
     logger.info("🔍 [CACHE REFRESH COMPLETE] Routine sets refreshed, count:", rows.length);
   }
   protected async refreshProfile(userId: string) {
@@ -241,7 +241,7 @@ export class SupabaseBase {
     
     const rows = await this.fetchJson<any[]>(url, true);
     localCache.set(key, rows);
-    logger.info("♻️ [CACHE REFRESH] profile", key);
+    logger.info("🔍 [CACHE REFRESH] profile", key);
     logger.info("🔍 [CACHE REFRESH COMPLETE] Profile refreshed, count:", rows.length);
   }
   
@@ -257,7 +257,7 @@ export class SupabaseBase {
     
     const rows = await this.fetchJson<any[]>(url, true);
     localCache.set(key, rows);
-    logger.info("♻️ [CACHE REFRESH] steps", key);
+    logger.info("🔍 [CACHE REFRESH] steps", key);
     logger.info("🔍 [CACHE REFRESH COMPLETE] Steps refreshed, count:", rows.length);
   }
 
