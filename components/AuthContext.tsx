@@ -23,6 +23,15 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+/**
+ * Manages Supabase authentication state and token lifecycle.
+ *
+ * Access tokens issued by Supabase are valid for 1 hour. We proactively
+ * refresh them every 45 minutes while the app is active, on app startup
+ * if the token is older than 1 hour, and whenever the app returns from
+ * the background. If a refresh fails or no refresh token is available,
+ * the user is signed out.
+ */
 export function AuthProvider({ children }: AuthProviderProps) {
   const [userToken, setUserTokenState] = useState<string | null>(null);
   const [refreshToken, setRefreshTokenState] = useState<string | null>(null);
@@ -128,7 +137,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const handleAppResume = async () => {
       try {
         const newToken = await supabaseAPI.refreshToken(refreshToken);
-        setUserToken(null, null);
+        // Update auth state with the newly refreshed token
+        setUserToken(newToken, refreshToken);
       } catch (error) {
         logger.error("Token refresh failed on resume:", error);
         setUserToken(null, null);
