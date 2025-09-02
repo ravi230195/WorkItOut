@@ -101,32 +101,34 @@ export default function WorkoutDashboardScreen({
       }
       setLoadingCounts(true);
       try {
-        const entries: Array<[number, number]> = [];
-        const needsRecompute: number[] = [];
+        const results = await Promise.all(
+          routines.map(async (r) => {
+            const routineTimer = performanceTimer.start(`fetchExerciseCounts - routine ${r.routine_template_id}`);
 
-        for (const r of routines) {
-          const routineTimer = performanceTimer.start(`fetchExerciseCounts - routine ${r.routine_template_id}`);
-          
-          logger.debug("🔍 DGB [WORKOUT_SCREEN] Processing routine:", r.routine_template_id, "name:", r.name);
-          const active = await supabaseAPI.getUserRoutineExercises(r.routine_template_id);
-          //logger.debug("🔍 DGB [WORKOUT_SCREEN] Raw list from API:", active);
-          //logger.debug("🔍 DGB [WORKOUT_SCREEN] List length:", active?.length, "isArray:", Array.isArray(active));
-          
-          entries.push([r.routine_template_id, active.length]);
+            logger.debug("🔍 DGB [WORKOUT_SCREEN] Processing routine:", r.routine_template_id, "name:", r.name);
+            const active = await supabaseAPI.getUserRoutineExercises(r.routine_template_id);
+            //logger.debug("🔍 DGB [WORKOUT_SCREEN] Raw list from API:", active);
+            //logger.debug("🔍 DGB [WORKOUT_SCREEN] List length:", active?.length, "isArray:", Array.isArray(active));
 
-          if (canEdit) {
-            const summary = (r as any).muscle_group_summary as string | undefined;
-            // Only recompute if there are active exercises AND no summary
-            if (active.length > 0 && (!summary || summary.trim() === "")) {
-              logger.info("🔍 DGB [WORKOUT_SCREEN] Routine needs recompute:", r.routine_template_id, "summary:", summary, "active exercises:", active.length);
-              needsRecompute.push(r.routine_template_id);
-            } else if (active.length === 0) {
-              logger.debug("🔍 DGB [WORKOUT_SCREEN] Routine has 0 active exercises, skipping recompute:", r.routine_template_id, "summary:", summary);
+            let needsRecomp = false;
+            if (canEdit) {
+              const summary = (r as any).muscle_group_summary as string | undefined;
+              // Only recompute if there are active exercises AND no summary
+              if (active.length > 0 && (!summary || summary.trim() === "")) {
+                logger.info("🔍 DGB [WORKOUT_SCREEN] Routine needs recompute:", r.routine_template_id, "summary:", summary, "active exercises:", active.length);
+                needsRecomp = true;
+              } else if (active.length === 0) {
+                logger.debug("🔍 DGB [WORKOUT_SCREEN] Routine has 0 active exercises, skipping recompute:", r.routine_template_id, "summary:", summary);
+              }
             }
-          }
-          
-          routineTimer.endWithLog('debug');
-        }
+
+            routineTimer.endWithLog('debug');
+            return { id: r.routine_template_id, count: active.length, needsRecompute: needsRecomp };
+          })
+        );
+
+        const entries = results.map(({ id, count }) => [id, count] as [number, number]);
+        const needsRecompute = results.filter(r => r.needsRecompute).map(r => r.id);
 
         if (!cancelled) setExerciseCounts(Object.fromEntries(entries));
 
