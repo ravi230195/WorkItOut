@@ -102,6 +102,7 @@ export function ExerciseSetupScreen({
   const [exercises, setExercises] = useState<UIExercise[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [savingAll, setSavingAll] = useState(false);
+  const [savingWorkout, setSavingWorkout] = useState(false);
   const [loadingSets, setLoadingSets] = useState<Record<string, boolean>>({}); // key by exercise id as string
 
   type ScreenMode = "plan" | "workout";
@@ -437,6 +438,8 @@ export function ExerciseSetupScreen({
   };
 
   const startWorkout = () => {
+    // reset any stale journal entries and mark all sets as not done locally
+    journalRef.current = makeJournal();
     setExercises((prev) =>
       prev.map((ex) => ({
         ...ex,
@@ -446,8 +449,54 @@ export function ExerciseSetupScreen({
     setScreenMode("workout");
   };
 
-  const endWorkout = () => {
-    setScreenMode("plan");
+  const endWorkout = async () => {
+    if (!userToken) {
+      toast.error("Please sign in to save workout");
+      return;
+    }
+
+    setSavingWorkout(true);
+    try {
+      // Persist workout session in one go at workout end
+      const workout = await supabaseAPI.startWorkout(routineId);
+
+      for (let i = 0; i < exercises.length; i++) {
+        const ex = exercises[i];
+        const wEx = await supabaseAPI.addWorkoutExercise(workout.id, ex.exerciseId, i + 1);
+        for (const s of ex.sets) {
+          await supabaseAPI.addWorkoutSet(
+            wEx.id,
+            s.set_order,
+            Number(s.reps) || 0,
+            Number(s.weight) || 0,
+            s.done ? new Date().toISOString() : undefined
+          );
+        }
+      }
+
+      await supabaseAPI.endWorkout(workout.id);
+
+      // Apply workout edits to the routine template
+      const journal = journalRef.current;
+      const exIdMap: ExIdMap = {};
+      for (const e of exercises) {
+        exIdMap[e.id] = { templateId: e.templateId, exerciseId: e.exerciseId };
+      }
+      const plan = collapseJournal(journal);
+      if (!journalIsNoop(journal)) {
+        await runJournal(plan, routineId, exIdMap);
+      }
+      journalRef.current = makeJournal();
+
+      await reloadFromDb();
+      toast.success("Workout saved!");
+      setScreenMode("plan");
+    } catch (e) {
+      logger.error(String(e));
+      toast.error("Failed to save workout");
+    } finally {
+      setSavingWorkout(false);
+    }
   };
 
   /* =======================================================================================
@@ -592,9 +641,10 @@ export function ExerciseSetupScreen({
       <FooterBar size="md" bg="translucent" align="center" maxContent="responsive" innerClassName="w-full">
         <TactileButton
           onClick={endWorkout}
+          disabled={savingWorkout}
           className="w-full h-11 md:h-12 bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
         >
-          END WORKOUT
+          {savingWorkout ? "SAVING..." : "END WORKOUT"}
         </TactileButton>
       </FooterBar>
     );
