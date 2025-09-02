@@ -136,7 +136,7 @@ export function ExerciseSetupScreen({
       const meta = Array.isArray(metaAny) ? (metaAny as any[])[0] : (metaAny as any);
       return (meta ?? null) as ExerciseMeta | null;
     } catch (error) {
-      logger.error("🔍 DGB [EXERCISE-SETUP] fetchExerciseMeta error:", error);
+      logger.error(" [EXERCISE_SETUP] fetchExerciseMeta error:", error);
       return null;
     }
   };
@@ -221,7 +221,7 @@ export function ExerciseSetupScreen({
   const ensureSetsLoaded = async (ex: UIExercise) => {
     // With eager load this will usually be a no-op; keep for safety.
     if (ex.loaded || !ex.templateId) return;
-    
+
     const timer = performanceTimer.start(`ExerciseSetup - ensureSetsLoaded for exercise ${ex.id}`);
     setLoadingSets((p) => ({ ...p, [String(ex.id)]: true }));
     try {
@@ -297,7 +297,7 @@ export function ExerciseSetupScreen({
     // 2) Record in journal
     recordExAdd(journalRef.current, newExId, x.exercise_id, name);
     recordSetAdd(journalRef.current, newExId, initialSetId, 1, "0", "0");
-    
+
     timer.endWithLog('debug');
   };
 
@@ -457,6 +457,7 @@ export function ExerciseSetupScreen({
       }))
     );
     updateMode("workout");
+    logger.info(" [EXERCISE_SETUP] Workout started for id: " + routineId);
   };
 
   const endWorkout = async () => {
@@ -468,23 +469,43 @@ export function ExerciseSetupScreen({
     setSavingWorkout(true);
     try {
       // Persist workout session in one go at workout end
-      const workout = await supabaseAPI.startWorkout(routineId);
+      //TODO: Uncomment this when we have a way to start a workout and fetch the workout id
+      // const workout = await supabaseAPI.startWorkout(routineId);
+      logger.info(" [EXERCISE_SETUP] Workout edded for id: " + routineId);
+      // Dummy workout object
+      let workout = {
+        id: "123",
+        template_id: routineId,
+        started_at: new Date().toISOString(),
+        ended_at: new Date().toISOString(),
+      };
 
       for (let i = 0; i < exercises.length; i++) {
         const ex = exercises[i];
-        const wEx = await supabaseAPI.addWorkoutExercise(workout.id, ex.exerciseId, i + 1);
+        //TODO: Uncomment this when we have a way to add a workout exercise
+        //const xEx = await supabaseAPI.addWorkoutExercise(workout.id, ex.exerciseId, i + 1);
+        let wEx = {
+          id: "123",
+          workout_id: workout.id,
+          exercise_id: ex.exerciseId,
+          order_index: i + 1,
+        };
+        logger.info(" [EXERCISE_SETUP] Workout exercise added for id: " + ex.exerciseId);
         for (const s of ex.sets) {
-          await supabaseAPI.addWorkoutSet(
+          logger.info(" [EXERCISE_SETUP] Workout set added for id: " + wEx.id + "Set order: " + s.set_order + "Reps: " + (Number(s.reps) || 0) + "Weight: " + (Number(s.weight) || 0) + "Done: " + (s.done ? "DONE" : "NOT DONE"));
+          /*await supabaseAPI.addWorkoutSet(
             wEx.id,
             s.set_order,
             Number(s.reps) || 0,
             Number(s.weight) || 0,
             s.done ? new Date().toISOString() : undefined
-          );
+          );*/
         }
       }
 
-      await supabaseAPI.endWorkout(workout.id);
+      //TODO: Uncomment this when we have a way to end a workout
+      //await supabaseAPI.endWorkout(workout.id);
+      logger.info(" [EXERCISE_SETUP] Workout ended for id: " + workout.id);
 
       // Apply workout edits to the routine template
       const journal = journalRef.current;
@@ -590,11 +611,11 @@ export function ExerciseSetupScreen({
       onBack={onBack}
       {...(access === RoutineAccess.Editable
         ? {
-            onAdd: () => {
-              if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
-              else onAddMoreExercises();
-            },
-          }
+          onAdd: () => {
+            if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
+            else onAddMoreExercises();
+          },
+        }
         : {})}
       showBorder={false}
       denseSmall
@@ -613,22 +634,20 @@ export function ExerciseSetupScreen({
                 variant="secondary"
                 onClick={onCancelAll}
                 disabled={access === RoutineAccess.ReadOnly}
-                className={`flex-1 h-11 md:h-12 ${
-                  access === RoutineAccess.ReadOnly
+                className={`flex-1 h-11 md:h-12 ${access === RoutineAccess.ReadOnly
                     ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
                     : "bg-transparent border-warm-brown/20 text-warm-brown/60 hover:bg-soft-gray"
-                } font-medium`}
+                  } font-medium`}
               >
                 CANCEL ALL
               </TactileButton>
               <TactileButton
                 onClick={onSaveAll}
                 disabled={savingAll || access === RoutineAccess.ReadOnly}
-                className={`flex-1 h-11 md:h-12 font-medium border-0 transition-all ${
-                  access === RoutineAccess.ReadOnly
+                className={`flex-1 h-11 md:h-12 font-medium border-0 transition-all ${access === RoutineAccess.ReadOnly
                     ? "opacity-50 cursor-not-allowed bg-gray-400"
                     : "bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
-                }`}
+                  }`}
               >
                 {savingAll ? "SAVING..." : `SAVE ALL`}
               </TactileButton>
@@ -637,10 +656,10 @@ export function ExerciseSetupScreen({
         );
       }
       return (
-        <FooterBar size="md" bg="translucent" align="center" maxContent="responsive" innerClassName="w-full">
+        <FooterBar size="md" bg="translucent" align="between" maxContent="responsive" innerClassName="w-full gap-3">
           <TactileButton
             onClick={startWorkout}
-            className="w-full h-11 md:h-12 bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
+            className="flex-1 h-11 md:h-12 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
           >
             START WORKOUT
           </TactileButton>
@@ -648,11 +667,11 @@ export function ExerciseSetupScreen({
       );
     }
     return (
-      <FooterBar size="md" bg="translucent" align="center" maxContent="responsive" innerClassName="w-full">
+      <FooterBar size="md" bg="translucent" align="between" maxContent="responsive" innerClassName="w-full gap-3">
         <TactileButton
           onClick={endWorkout}
           disabled={savingWorkout}
-          className="w-full h-11 md:h-12 bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
+          className="flex-1 h-11 md:h-12 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
         >
           {savingWorkout ? "SAVING..." : "END WORKOUT"}
         </TactileButton>
@@ -665,16 +684,16 @@ export function ExerciseSetupScreen({
 
     const items = ex.loaded
       ? ex.sets
-          .slice()
-          .sort((a, b) => a.set_order - b.set_order)
-          .map((s) => ({
-            key: s.id, // child will pass this back; our resolver also handles order numbers
-            order: s.set_order,
-            reps: s.reps,
-            weight: s.weight,
-            removable: ex.sets.length > 1,
-            done: s.done,
-          }))
+        .slice()
+        .sort((a, b) => a.set_order - b.set_order)
+        .map((s) => ({
+          key: s.id, // child will pass this back; our resolver also handles order numbers
+          order: s.set_order,
+          reps: s.reps,
+          weight: s.weight,
+          removable: ex.sets.length > 1,
+          done: s.done,
+        }))
       : [];
 
     // Subtitle: "<muscle_group> • <N Sets>" (when loaded) or just muscle group while loading.
@@ -727,16 +746,20 @@ export function ExerciseSetupScreen({
               onToggleDone={inWorkout ? (key, done) => onToggleDone(ex.id, key, done) : undefined}
               deleteDisabled={access === RoutineAccess.ReadOnly}
               disabled={access === RoutineAccess.ReadOnly}
-              onFocusScroll={(e) =>
+              onFocusScroll={(e) => {
+                const target = e.currentTarget;
                 setTimeout(
-                  () =>
-                    e.currentTarget.scrollIntoView({
-                      block: "center",
-                      behavior: "smooth",
-                    }),
+                  () => {
+                    if (target && target.scrollIntoView) {
+                      target.scrollIntoView({
+                        block: "center",
+                        behavior: "smooth",
+                      });
+                    }
+                  },
                   60
-                )
-              }
+                );
+              }}
               className="mb-2"
             />
           )}
