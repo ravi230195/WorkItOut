@@ -58,6 +58,10 @@ export default {
         "ring-track-gray": "hsl(var(--ring-track-gray-hsl))",
         "recovery-yellow": "hsl(var(--recovery-yellow-hsl))",
 
+        /* Overlay & shadow colors */
+        overlay: "hsl(var(--overlay-hsl))",
+        shadow: "hsl(var(--shadow-hsl))",
+
         /* Keep raw background/muted as vars (not HSL) if you prefer */
         muted: "var(--muted)",
       },

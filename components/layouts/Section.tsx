@@ -120,11 +120,11 @@ export default function Section<T extends keyof JSX.IntrinsicElements = "section
           <div className="animate-pulse">
             {hasHeader && (
               <div className="mb-3">
-                <div className="h-4 w-1/3 bg-black/10 rounded" />
-                <div className="mt-2 h-3 w-1/2 bg-black/5 rounded" />
+                <div className="h-4 w-1/3 bg-foreground/10 rounded" />
+                <div className="mt-2 h-3 w-1/2 bg-foreground/5 rounded" />
               </div>
             )}
-            <div className="h-24 bg-black/5 rounded" />
+            <div className="h-24 bg-foreground/5 rounded" />
           </div>
         )
       : children;
