@@ -1,3 +1,5 @@
+import { useThemeTokens } from "./useThemeTokens";
+
 export type CircularStatProps = {
   value: number | null | undefined;
   max?: number;
@@ -23,12 +25,16 @@ export default function CircularStat({
   size = 112,
   strokeWidth = 10,
   decimals = 0,
-  trackColor = "#e5e7eb",
-  progressColor = "#e07a5f",
-  textColor = "#3d2914",
+  trackColor,
+  progressColor,
+  textColor,
   primaryTextOverride,
   secondaryTextOverride,
 }: CircularStatProps) {
+  const { warmBrown, warmCoral, trackGray } = useThemeTokens();
+  const resolvedTrack = trackColor ?? trackGray;
+  const resolvedProgress = progressColor ?? warmCoral;
+  const resolvedText = textColor ?? warmBrown;
   const safeValue =
     typeof value === "number" && isFinite(value)
       ? Math.max(0, Math.min(value, max))
@@ -45,8 +51,8 @@ export default function CircularStat({
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor={progressColor} />
-            <stop offset="100%" stopColor={progressColor} />
+            <stop offset="0%" stopColor={resolvedProgress} />
+            <stop offset="100%" stopColor={resolvedProgress} />
           </linearGradient>
         </defs>
 
@@ -54,7 +60,7 @@ export default function CircularStat({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={trackColor}
+          stroke={resolvedTrack}
           strokeWidth={strokeWidth}
           fill="none"
           strokeLinecap="round"
@@ -87,7 +93,7 @@ export default function CircularStat({
           <text
             textAnchor="middle"
             dominantBaseline="central"
-            style={{ fontSize: size * 0.24, fontWeight: 700, fill: textColor }}
+            style={{ fontSize: size * 0.24, fontWeight: 700, fill: resolvedText }}
           >
             {primaryTextOverride ?? (safeValue == null ? "—" : safeValue.toFixed(decimals))}
           </text>
@@ -95,14 +101,14 @@ export default function CircularStat({
             y={size * 0.18}
             textAnchor="middle"
             dominantBaseline="hanging"
-            style={{ fontSize: size * 0.14, fontWeight: 600, fill: textColor, opacity: 0.5 }}
+            style={{ fontSize: size * 0.14, fontWeight: 600, fill: resolvedText, opacity: 0.5 }}
           >
             {secondaryTextOverride ?? unit}
           </text>
         </g>
       </svg>
 
-      <div className="mt-2 text-xs" style={{ color: textColor, opacity: 0.75 }}>
+      <div className="mt-2 text-xs" style={{ color: resolvedText, opacity: 0.75 }}>
         {label}
       </div>
     </div>
