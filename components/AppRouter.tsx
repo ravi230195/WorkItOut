@@ -34,7 +34,7 @@ interface AppRouterProps {
   onCloseCreateRoutine: () => void;
   onCompleteRoutineCreation: () => void;
 
-  onExerciseSelected: (exercise: Exercise, createdRoutineId?: number) => void;
+  onExerciseSelected: (exercise: Exercise) => void;
   onCloseExerciseSetup: () => void;
   onExerciseSetupComplete: () => void;
 
@@ -42,7 +42,6 @@ interface AppRouterProps {
   onSelectRoutine: (routineId: number, routineName: string, access?: RoutineAccess) => void;
 
   onCloseExerciseSetupToRoutines: () => void;
-  onReturnToExerciseSetup: (exercise: Exercise) => void;
   bottomBar?: React.ReactNode;
   /** notify App when a modal/sheet is open so it can hide BottomNavigation */
   onOverlayChange?: (open: boolean) => void;
@@ -75,7 +74,6 @@ export function AppRouter({
   onSelectRoutine,
 
   onCloseExerciseSetupToRoutines,
-  onReturnToExerciseSetup,
   bottomBar,
   onOverlayChange,
 }: AppRouterProps) {
@@ -125,12 +123,7 @@ export function AppRouter({
           routineId={currentRoutineId || undefined}
           routineName={currentRoutineName}
           onBack={currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine}
-          onExerciseSelected={
-            currentRoutineId
-              ? (exercise: Exercise) => onReturnToExerciseSetup(exercise)
-              : (exercise: Exercise, routineId?: number) =>
-                  onExerciseSelected(exercise, routineId)
-          }
+          onExerciseSelected={(exercise: Exercise) => onExerciseSelected(exercise)}
           isFromExerciseSetup={!!currentRoutineId}
           bottomBar={bottomBar}
         />

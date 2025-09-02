@@ -67,8 +67,7 @@ export function useAppNavigation() {
   };
 
   /** When a picker selects an exercise (also used by create flow if needed) */
-  const handleExerciseSelected = (exercise: Exercise, createdRoutineId?: number) => {
-    if (createdRoutineId) setCurrentRoutineId(createdRoutineId);
+  const handleExerciseSelected = (exercise: Exercise) => {
     setSelectedExerciseForSetup(exercise);
     setCurrentView("exercise-setup");
   };
@@ -76,12 +75,6 @@ export function useAppNavigation() {
   /** From ExerciseSetup: the "+" opens the picker */
   const closeExerciseSetup = () => {
     setCurrentView("add-exercises-to-routine");
-  };
-
-  /** Picker returns an exercise → go back to ExerciseSetup with it preloaded */
-  const returnToExerciseSetup = (exercise: Exercise) => {
-    setSelectedExerciseForSetup(exercise);
-    setCurrentView("exercise-setup");
   };
 
   /** Back from ExerciseSetup → Workouts/Routines */
@@ -158,6 +151,5 @@ export function useAppNavigation() {
     closeExerciseSetupToRoutines,
     handleUnauthorizedError,
     safeNavigate,
-    returnToExerciseSetup,
   };
 }

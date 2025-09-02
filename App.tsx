@@ -40,7 +40,6 @@ function AppContent() {
     handleExerciseSetupComplete,
     onRoutineSelection,
     closeExerciseSetupToRoutines,
-    returnToExerciseSetup
   } = useAppNavigation();
 
   // ⬅️ now includes authReady
@@ -89,7 +88,6 @@ function AppContent() {
           onExerciseSetupComplete={handleExerciseSetupComplete}
           onSelectRoutine={onRoutineSelection}
           onCloseExerciseSetupToRoutines={closeExerciseSetupToRoutines}
-          onReturnToExerciseSetup={returnToExerciseSetup}
           bottomBar={bottomBarEl}
           onOverlayChange={setOverlayOpen}
         />
