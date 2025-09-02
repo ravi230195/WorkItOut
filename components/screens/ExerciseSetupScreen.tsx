@@ -49,6 +49,7 @@ type UISet = {
   set_order: number;
   reps: string; // keep strings for controlled inputs
   weight: string;
+  done?: boolean;
 };
 
 type UIExercise = {
@@ -102,6 +103,10 @@ export function ExerciseSetupScreen({
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [savingAll, setSavingAll] = useState(false);
   const [loadingSets, setLoadingSets] = useState<Record<string, boolean>>({}); // key by exercise id as string
+
+  type ScreenMode = "plan" | "workout";
+  const [screenMode, setScreenMode] = useState<ScreenMode>("plan");
+  const inWorkout = screenMode === "workout";
 
   // Append-only action journal (doesn't trigger re-renders)
   const journalRef = useRef(makeJournal());
@@ -279,7 +284,7 @@ export function ExerciseSetupScreen({
         muscle_group: muscle_group || undefined,
         loaded: true,
         expanded: true,
-        sets: [{ id: initialSetId, set_order: 1, reps: "0", weight: "0" }],
+        sets: [{ id: initialSetId, set_order: 1, reps: "0", weight: "0", ...(inWorkout ? { done: false } : {}) }],
       },
     ]);
 
@@ -338,6 +343,7 @@ export function ExerciseSetupScreen({
         set_order: nextOrder,
         reps: initialReps,
         weight: initialWeight,
+        ...(inWorkout ? { done: false } : {}),
       });
 
       recordSetAdd(journalRef.current, exId, newSetId, nextOrder, initialReps, initialWeight);
@@ -417,6 +423,31 @@ export function ExerciseSetupScreen({
     if (access === RoutineAccess.ReadOnly) return;
     setExercises((prev) => prev.filter((e) => e.id !== exId));
     recordExDelete(journalRef.current, exId);
+  };
+
+  const onToggleDone = (exId: Id, rawKey: unknown, done: boolean) => {
+    withExercises((draft) => {
+      const ex = draft.find((d) => d.id === exId);
+      if (!ex) return;
+      const setId = resolveSetId(ex, rawKey);
+      if (setId == null) return;
+      const s = ex.sets.find((st) => st.id === setId);
+      if (s) s.done = done;
+    });
+  };
+
+  const startWorkout = () => {
+    setExercises((prev) =>
+      prev.map((ex) => ({
+        ...ex,
+        sets: ex.sets.map((s) => ({ ...s, done: false })),
+      }))
+    );
+    setScreenMode("workout");
+  };
+
+  const endWorkout = () => {
+    setScreenMode("plan");
   };
 
   /* =======================================================================================
@@ -513,36 +544,61 @@ export function ExerciseSetupScreen({
     />
   );
 
-  const renderBottomBar = () =>
-    hasUnsaved ? (
-      <FooterBar size="md" bg="translucent" align="between" maxContent="responsive" innerClassName="w-full gap-3">
-        <div className="flex w-full gap-3">
+  const renderBottomBar = () => {
+    if (screenMode === "plan") {
+      if (hasUnsaved) {
+        return (
+          <FooterBar size="md" bg="translucent" align="between" maxContent="responsive" innerClassName="w-full gap-3">
+            <div className="flex w-full gap-3">
+              <TactileButton
+                variant="secondary"
+                onClick={onCancelAll}
+                disabled={access === RoutineAccess.ReadOnly}
+                className={`flex-1 h-11 md:h-12 ${
+                  access === RoutineAccess.ReadOnly
+                    ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
+                    : "bg-transparent border-warm-brown/20 text-warm-brown/60 hover:bg-soft-gray"
+                } font-medium`}
+              >
+                CANCEL ALL
+              </TactileButton>
+              <TactileButton
+                onClick={onSaveAll}
+                disabled={savingAll || access === RoutineAccess.ReadOnly}
+                className={`flex-1 h-11 md:h-12 font-medium border-0 transition-all ${
+                  access === RoutineAccess.ReadOnly
+                    ? "opacity-50 cursor-not-allowed bg-gray-400"
+                    : "bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
+                }`}
+              >
+                {savingAll ? "SAVING..." : `SAVE ALL`}
+              </TactileButton>
+            </div>
+          </FooterBar>
+        );
+      }
+      return (
+        <FooterBar size="md" bg="translucent" align="center" maxContent="responsive" innerClassName="w-full">
           <TactileButton
-            variant="secondary"
-            onClick={onCancelAll}
-            disabled={access === RoutineAccess.ReadOnly}
-            className={`flex-1 h-11 md:h-12 ${
-              access === RoutineAccess.ReadOnly
-                ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
-                : "bg-transparent border-warm-brown/20 text-warm-brown/60 hover:bg-soft-gray"
-            } font-medium`}
+            onClick={startWorkout}
+            className="w-full h-11 md:h-12 bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
           >
-            CANCEL ALL
+            START WORKOUT
           </TactileButton>
-          <TactileButton
-            onClick={onSaveAll}
-            disabled={savingAll || access === RoutineAccess.ReadOnly}
-            className={`flex-1 h-11 md:h-12 font-medium border-0 transition-all ${
-              access === RoutineAccess.ReadOnly
-                ? "opacity-50 cursor-not-allowed bg-gray-400"
-                : "bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
-            }`}
-          >
-            {savingAll ? "SAVING..." : `SAVE ALL`}
-          </TactileButton>
-        </div>
+        </FooterBar>
+      );
+    }
+    return (
+      <FooterBar size="md" bg="translucent" align="center" maxContent="responsive" innerClassName="w-full">
+        <TactileButton
+          onClick={endWorkout}
+          className="w-full h-11 md:h-12 bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
+        >
+          END WORKOUT
+        </TactileButton>
       </FooterBar>
-    ) : null;
+    );
+  };
 
   const renderExerciseCard = (ex: UIExercise) => {
     const isLoading = !!loadingSets[String(ex.id)];
@@ -557,6 +613,7 @@ export function ExerciseSetupScreen({
             reps: s.reps,
             weight: s.weight,
             removable: ex.sets.length > 1,
+            done: s.done,
           }))
       : [];
 
@@ -600,12 +657,14 @@ export function ExerciseSetupScreen({
               name={ex.name}
               initials={ex.name.substring(0, 2)}
               items={items}
+              mode={inWorkout ? "workout" : "edit"}
               onChange={(key, field, value) =>
                 onChangeSet(ex.id, key as unknown, field as "reps" | "weight", value)
               }
-              onRemove={(key) => onRemoveSet(ex.id, key as unknown)}
+              onRemove={inWorkout ? undefined : (key) => onRemoveSet(ex.id, key as unknown)}
               onAdd={() => onAddSet(ex.id)}
-              onDeleteExercise={() => onDeleteExercise(ex.id)}
+              onDeleteExercise={inWorkout ? undefined : () => onDeleteExercise(ex.id)}
+              onToggleDone={inWorkout ? (key, done) => onToggleDone(ex.id, key, done) : undefined}
               deleteDisabled={access === RoutineAccess.ReadOnly}
               disabled={access === RoutineAccess.ReadOnly}
               onFocusScroll={(e) =>
@@ -657,7 +716,7 @@ export function ExerciseSetupScreen({
       header={renderHeader()}
       maxContent="responsive"
       padContent={false}
-      contentBottomPaddingClassName={hasUnsaved ? "pb-24" : ""}
+      contentBottomPaddingClassName={hasUnsaved || inWorkout ? "pb-24" : ""}
       bottomBar={renderBottomBar()}
       showHeaderBorder={false}
       showBottomBarBorder={false}
