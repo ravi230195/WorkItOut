@@ -42,17 +42,17 @@ class Timer implements PerformanceTimer {
     switch(level) {
       case 'debug':
         if (shouldLog('DEBUG')) {
-          console.log(`⏱️ [TIMER] ${this.label}: ${result.duration.toFixed(0)}ms`);
+          logger.log(`⏱️ [TIMER] ${this.label}: ${result.duration.toFixed(0)}ms`);
         }
         break;
       case 'info':
         if (shouldLog('INFO')) {
-          console.log(`⏱️ [TIMER] ${this.label}: ${result.duration.toFixed(0)}ms`);
+          logger.log(`⏱️ [TIMER] ${this.label}: ${result.duration.toFixed(0)}ms`);
         }
         break;
       case 'warn':
         if (shouldLog('WARN')) {
-          console.warn(`⏱️ [TIMER] ${this.label}: ${result.duration.toFixed(0)}ms`);
+          logger.warn(`⏱️ [TIMER] ${this.label}: ${result.duration.toFixed(0)}ms`);
         }
         break;
     }

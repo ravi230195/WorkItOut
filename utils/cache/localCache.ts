@@ -22,19 +22,19 @@ export type CacheEntry<T> = {
         const storeKey = this.prefixedKey(key);
         const raw = localStorage.getItem(storeKey);
         if (!raw) {
-          logger.info("GET (miss)", storeKey);
+          logger.info("[CACHE GET] [miss]", storeKey);
           return null;
         }
         const entry = JSON.parse(raw) as CacheEntry<T>;
         const ageMs = Date.now() - entry.storedAtMs;
         if (ageMs > maxAgeMs) {
-          logger.info("GET (stale)", storeKey, { ageMs, maxAgeMs });
+          logger.info("[CACHE GET] [stale]", storeKey, { ageMs, maxAgeMs });
           return null;
         }
-        logger.info("GET (hit)", storeKey, { ageMs, maxAgeMs });
+        logger.info("[CACHE GET] [hit]", storeKey, { ageMs, maxAgeMs });
         return entry.value;
       } catch {
-        logger.info("GET (error parsing)", key);
+        logger.info("[CACHE GET] [error parsing]", key);
         return null;
       }
     }
@@ -45,12 +45,12 @@ export type CacheEntry<T> = {
         const entry: CacheEntry<T> = { storedAtMs: Date.now(), value, hintTtlMs };
         const raw = JSON.stringify(entry);
         localStorage.setItem(storeKey, raw);
-        logger.info("SET", storeKey, { bytes: raw.length, hasTTL: !!hintTtlMs });
+        logger.info("[CACHE SET]", storeKey, { bytes: raw.length, hasTTL: !!hintTtlMs });
         if (this.debug) {
             this.debugDumpValuesChunked(); // false = don't print full values, just metadata
         }
       } catch {
-        logger.info("SET (failed)", key);
+        logger.info("[CACHE SET] [failed]", key);
       }
     }
   
@@ -58,12 +58,12 @@ export type CacheEntry<T> = {
       const storeKey = this.prefixedKey(key);
       try {
         localStorage.removeItem(storeKey);
-        logger.info("REMOVE", storeKey);
+        logger.info("[CACHE REMOVE]", storeKey);
         if (this.debug) {
             this.debugDumpValuesChunked(); // false = don't print full values, just metadata
         }
       } catch {
-        logger.info("REMOVE (failed)", storeKey);
+        logger.info("[CACHE REMOVE] [failed]", storeKey);
       }
     }
   
@@ -108,7 +108,7 @@ export type CacheEntry<T> = {
       const storeKey = this.prefixedKey(key);
       const raw = localStorage.getItem(storeKey);
       if (!raw) {
-        logger.info("PEEK (miss)", storeKey);
+        logger.info("[CACHE PEEK] [miss]", storeKey);
         return null;
       }
       try {
@@ -175,9 +175,9 @@ export type CacheEntry<T> = {
             removed++;
           }
         }
-        logger.info("CLEAR_PREFIX", p, { removed });
+        logger.info("[CACHE CLEAR_PREFIX]", p, { removed });
       } catch {
-        logger.info("CLEAR_PREFIX (failed)", subPrefix ?? "");
+        logger.info("[CACHE CLEAR_PREFIX] [failed]", subPrefix ?? "");
       }
     }
   }
