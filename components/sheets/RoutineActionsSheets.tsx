@@ -61,7 +61,7 @@ export default function RoutineActionsSheet({
               Rename
             </button>
             <button
-              className="w-full text-left px-4 py-4 hover:bg-red-50 text-red-600"
+              className="w-full text-left px-4 py-4 hover:bg-destructive-light text-destructive"
               onClick={() => setMode("confirmDelete")}
             >
               Delete
@@ -127,7 +127,7 @@ export default function RoutineActionsSheet({
           </p>
           <div className="flex gap-3 pt-1">
             <TactileButton
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              className="flex-1 bg-destructive hover:bg-destructive/90 text-primary-foreground"
               onClick={onRequestDelete}
               disabled={deleteLoading}
             >

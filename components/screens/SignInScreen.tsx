@@ -64,14 +64,14 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
       <Card
         className="
           w-full
-          bg-white/80 backdrop-blur-sm border-border
+          bg-card/80 backdrop-blur-sm border-border
           shadow-soft
         "
       >
         <CardHeader className="text-center pb-6">
           <Stack gap="md">
             <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto">
-              <Dumbbell size={32} className="text-white" />
+              <Dumbbell size={32} className="text-primary-foreground" />
             </div>
 
             <div>
@@ -125,12 +125,12 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
 
               <TactileButton
                 type="submit"
-                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-white"
+                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-primary-foreground"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 animate-spin border-2 border-white border-t-transparent rounded-full" />
+                    <div className="w-4 h-4 animate-spin border-2 border-primary-foreground border-t-transparent rounded-full" />
                     Signing In...
                   </div>
                 ) : (

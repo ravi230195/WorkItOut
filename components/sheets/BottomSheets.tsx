@@ -58,13 +58,13 @@ export default function BottomSheet({
         >
           <div
             className={cx(
-              "bg-white rounded-t-2xl shadow-2xl border-t border-x border-border overflow-hidden",
+              "bg-card rounded-t-2xl shadow-2xl border-t border-x border-border overflow-hidden",
               innerClassName
             )}
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div className="flex justify-center py-2">
-              <div className="h-1.5 w-10 rounded-full bg-gray-200" />
+              <div className="h-1.5 w-10 rounded-full bg-border" />
             </div>
 
             {header ? <div className="px-4 pb-2">{header}</div> : null}

@@ -9,7 +9,8 @@
   /* Core Colors - Modern & Accessible */
   --background: #fefcfb;
   --foreground: #3d2914;
-  --card: #ffffff;
+  --card-hsl: 0 0% 100%;
+  --card: hsl(var(--card-hsl));
   --card-foreground: #3d2914;
   --popover: #ffffff;
   --popover-foreground: #3d2914;
@@ -106,6 +107,11 @@
   --soft-gray: #f7f3f0;
   --warm-brown: #8b7766;
 
+  /* Additional tokens for progress components */
+  --accent-blue: #4aa3df;
+  --ring-track-gray: #d1d5db;
+  --recovery-yellow: #f2c94c;
+
   --app-header-h: 56px;
   --app-bottom-h: 64px;
 
@@ -127,6 +133,11 @@
   --warm-rose-hsl: 355.38 53.06% 80.78%;
   --warm-lavender-hsl: 280.56 63.96% 78.24%;
   --soft-gray-hsl: 25.71 30.43% 95.49%;
+
+  /* Progress component HSL tokens */
+  --accent-blue-hsl: 204.16 69.95% 58.24%;
+  --ring-track-gray-hsl: 216 12.2% 83.92%;
+  --recovery-yellow-hsl: 45.18 86.46% 62.35%;
 
 }
 

@@ -32,9 +32,9 @@ type Props = React.PropsWithChildren<BaseProps>;
 
 const containerByVariant: Record<Variant, string> = {
   glass:
-    "rounded-2xl border overflow-hidden backdrop-blur-md bg-white/[0.04] border-white/10 shadow-xl shadow-shadow/40",
+    "rounded-2xl border overflow-hidden backdrop-blur-md bg-card/4 border-border shadow-xl shadow-black/40",
   solid:
-    "rounded-2xl border overflow-hidden bg-white/80 border-border shadow-sm",
+    "rounded-2xl border overflow-hidden bg-card/80 border-border shadow-sm",
   plain: "rounded-2xl overflow-hidden",
 };
 
@@ -68,7 +68,7 @@ export default function ExpandingCard({
       initial={false}
       className={[
         containerByVariant[variant],
-        expanded ? "ring-1 ring-white/[0.06]" : "",
+        expanded ? "ring-1 ring-border" : "",
         className,
       ].join(" ")}
     >
@@ -81,11 +81,11 @@ export default function ExpandingCard({
           "w-full flex items-center gap-3 text-left select-none",
           headerPadBySize[size],
           headerClassName,
-          disabled ? "opacity-60 cursor-default" : "hover:bg-white/[0.03]",
+          disabled ? "opacity-60 cursor-default" : "hover:bg-card/3",
         ].join(" ")}
       >
         {leading && (
-          <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-xl overflow-hidden bg-card/10 flex items-center justify-center shrink-0">
             {leading}
           </div>
         )}
@@ -94,7 +94,7 @@ export default function ExpandingCard({
           <div
             className={[
               "truncate font-semibold",
-              variant === "glass" ? "text-white/95" : "text-foreground",
+              variant === "glass" ? "text-primary-foreground opacity-95" : "text-foreground",
             ].join(" ")}
           >
             {title}
@@ -103,7 +103,7 @@ export default function ExpandingCard({
             <div
               className={[
                 "truncate text-sm",
-                variant === "glass" ? "text-white/60" : "text-muted-foreground",
+                variant === "glass" ? "text-primary-foreground opacity-60" : "text-muted-foreground",
               ].join(" ")}
             >
               {subtitle}
@@ -119,7 +119,7 @@ export default function ExpandingCard({
             transition={{ type: "spring", stiffness: 300, damping: 24 }}
             className={[
               "ml-1",
-              variant === "glass" ? "text-white/70" : "text-warm-brown/70",
+              variant === "glass" ? "text-primary-foreground opacity-70" : "text-warm-brown/70",
             ].join(" ")}
           >
             <ChevronDown size={18} />
@@ -139,7 +139,7 @@ export default function ExpandingCard({
             className={[
               "pt-1 pb-4 px-4",
               bodyClassName,
-              variant === "glass" ? "text-white/90" : "text-foreground",
+              variant === "glass" ? "text-primary-foreground opacity-90" : "text-foreground",
             ].join(" ")}
           >
             {children}

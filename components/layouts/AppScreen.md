@@ -481,7 +481,7 @@ Exact pixel control for specific use cases.
 **Before:**
 ```tsx
 <div className="min-h-[100dvh] bg-background flex flex-col pt-safe">
-  <div className="relative flex items-center p-4 bg-white/80 backdrop-blur-sm border-b border-[var(--border)]">
+  <div className="relative flex items-center p-4 bg-card/80 backdrop-blur-sm border-b border-[var(--border)]">
     <h1>Screen Title</h1>
   </div>
   <div className="px-4 py-4 space-y-3">

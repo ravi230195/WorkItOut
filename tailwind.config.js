@@ -15,7 +15,7 @@ export default {
       colors: {
         /* App surface tokens */
         background: "var(--background)",
-        card: "var(--card)",
+        card: "hsl(var(--card-hsl))",
         "card-foreground": "var(--card-foreground)",
         popover: "var(--popover)",
         "popover-foreground": "var(--popover-foreground)",
@@ -54,6 +54,9 @@ export default {
         "warm-rose": "hsl(var(--warm-rose-hsl))",
         "warm-lavender": "hsl(var(--warm-lavender-hsl))",
         "soft-gray": "hsl(var(--soft-gray-hsl))",
+        "accent-blue": "hsl(var(--accent-blue-hsl))",
+        "ring-track-gray": "hsl(var(--ring-track-gray-hsl))",
+        "recovery-yellow": "hsl(var(--recovery-yellow-hsl))",
 
         /* Overlay & shadow colors */
         overlay: "hsl(var(--overlay-hsl))",
