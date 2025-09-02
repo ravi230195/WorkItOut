@@ -29,9 +29,7 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
               >
                 <span
                   className={
-                    isActive
-                      ? "p-1 rounded-full bg-warm-brown/20"
-                      : "p-1 rounded-full"
+                    isActive ? "p-1 bg-warm-brown/20" : "p-1"
                   }
                 >
                   <tab.icon
