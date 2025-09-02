@@ -9,7 +9,8 @@
   /* Core Colors - Modern & Accessible */
   --background: #fefcfb;
   --foreground: #3d2914;
-  --card: #ffffff;
+  --card-hsl: 0 0% 100%;
+  --card: hsl(var(--card-hsl));
   --card-foreground: #3d2914;
   --popover: #ffffff;
   --popover-foreground: #3d2914;

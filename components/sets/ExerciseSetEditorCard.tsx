@@ -49,7 +49,7 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
   primaryDisabled = false,
 }) => {
   return (
-    <div className={["rounded-2xl bg-white/70 border border-border p-3 md:p-4", className].join(" ")}
+    <div className={["rounded-2xl bg-card/70 border border-border p-3 md:p-4", className].join(" ")}
     /* RAVI DBG: style={{ border: "2px solid red" }}*/>
       {note && (
         <p className="text-xs md:text-sm text-muted-foreground mb-3 italic bg-[var(--warm-cream)]/50 p-3 rounded-lg">
@@ -78,7 +78,7 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
             size="sm"
             onClick={onCancel}
             disabled={disabled}
-            className={`p-3 h-auto bg-white/70 border-red-200 text-red-500 hover:bg-red-50 btn-tactile ${
+            className={`p-3 h-auto bg-card/70 border-destructive-light text-destructive hover:bg-destructive-light btn-tactile ${
               disabled ? "opacity-50 cursor-not-allowed" : ""
             }`}
             title="Cancel"
@@ -94,7 +94,7 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
           <TactileButton
             onClick={onPrimary}
             disabled={primaryDisabled || disabled}
-            className={`w-full h-12 md:h-14 bg-warm-coral text-white font-medium rounded-full hover:bg-warm-coral/90 btn-tactile ${
+            className={`w-full h-12 md:h-14 bg-primary text-primary-foreground font-medium rounded-full hover:bg-primary-hover btn-tactile ${
               primaryDisabled || disabled ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >

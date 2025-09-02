@@ -535,7 +535,7 @@ export function ExerciseSetupScreen({
             className={`flex-1 h-11 md:h-12 font-medium border-0 transition-all ${
               access === RoutineAccess.ReadOnly
                 ? "opacity-50 cursor-not-allowed bg-gray-400"
-                : "bg-warm-coral hover:bg-warm-coral/90 text-white btn-tactile"
+                : "bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
             }`}
           >
             {savingAll ? "SAVING..." : `SAVE ALL`}
@@ -587,7 +587,7 @@ export function ExerciseSetupScreen({
               </span>
             </div>
           }
-          className="bg-white/80 border-border"
+          className="bg-card/80 border-border"
           bodyClassName="pt-2"
         >
           {isLoading || !ex.loaded ? (
@@ -631,7 +631,7 @@ export function ExerciseSetupScreen({
       return (
         <div className="space-y-3">
           {[1, 2].map((i) => (
-            <div key={i} className="flex items-center gap-3 p-3 bg-white/50 rounded-xl animate-pulse">
+            <div key={i} className="flex items-center gap-3 p-3 bg-card/50 rounded-xl animate-pulse">
               <div className="w-9 h-9 md:w-10 md:h-10 bg-muted rounded-lg" />
               <div className="flex-1 space-y-2">
                 <div className="h-4 bg-muted rounded w-3/4" />

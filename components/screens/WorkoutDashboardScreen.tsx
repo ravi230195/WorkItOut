@@ -270,7 +270,7 @@ export default function WorkoutDashboardScreen({
           {canEdit && (
             <TactileButton
               onClick={onCreateRoutine}
-              className="bg-warm-coral hover:bg-warm-coral/90 text-white px-4 py-2 text-sm font-medium rounded-xl"
+              className="bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2 text-sm font-medium rounded-xl"
             >
               Create Routine
             </TactileButton>
@@ -298,10 +298,10 @@ export default function WorkoutDashboardScreen({
                   }
                 >
                   <div className="text-center py-4">
-                    <div className="w-12 h-12 mx-auto mb-3 bg-red-100 rounded-full flex items-center justify-center">
-                      <AlertCircle className="w-5 h-5 text-red-500" />
+                    <div className="w-12 h-12 mx-auto mb-3 bg-destructive-light rounded-full flex items-center justify-center">
+                      <AlertCircle className="w-5 h-5 text-destructive" />
                     </div>
-                    <p className="text-red-600 text-sm">{routinesError}</p>
+                    <p className="text-destructive text-sm">{routinesError}</p>
                   </div>
                 </Section>
               ) : routines.length === 0 ? (
@@ -334,7 +334,7 @@ export default function WorkoutDashboardScreen({
                         className="
                           w-full
                           rounded-2xl border border-border
-                          bg-white shadow-sm hover:shadow-md transition-all
+                          bg-card shadow-sm hover:shadow-md transition-all
                           p-4
                           text-left
                         "
@@ -342,7 +342,7 @@ export default function WorkoutDashboardScreen({
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${palette.bg}`}>
-                              <div className={`w-8 h-8 ${palette.iconBg} rounded-lg grid place-items-center text-white text-lg`}>
+                              <div className={`w-8 h-8 ${palette.iconBg} rounded-lg grid place-items-center text-primary-foreground text-lg`}>
                                 <span>{palette.emoji}</span>
                               </div>
                             </div>

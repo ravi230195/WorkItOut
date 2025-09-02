@@ -60,7 +60,7 @@ export default function SegmentedToggle<V extends string = string>({
       role="tablist"
       aria-label="Segmented toggle"
       className={cx(
-        "inline-flex items-center rounded-lg border border-border bg-white/70 backdrop-blur-sm p-0.5 gap-1",
+        "inline-flex items-center rounded-lg border border-border bg-card/70 backdrop-blur-sm p-0.5 gap-1",
         className
       )}
     >
@@ -89,9 +89,9 @@ export default function SegmentedToggle<V extends string = string>({
         const filledSelected = cx(
           s.pad,
           s.text,
-          "font-medium text-white",
+          "font-medium text-primary-foreground",
           t.border,
-          "bg-warm-coral"
+          "bg-primary"
         );
         const filledIdle = cx(
           s.pad,

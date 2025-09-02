@@ -12,7 +12,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
     logger.error("[ErrorBoundary]", err, info);
   }
   render() {
-    if (this.state.hasError) return this.props.fallback ?? <div className="p-4 text-red-600">Something went wrong.</div>;
+    if (this.state.hasError) return this.props.fallback ?? <div className="p-4 text-destructive">Something went wrong.</div>;
     return this.props.children;
   }
 }

@@ -15,7 +15,7 @@ export default {
       colors: {
         /* App surface tokens */
         background: "var(--background)",
-        card: "var(--card)",
+        card: "hsl(var(--card-hsl))",
         "card-foreground": "var(--card-foreground)",
         popover: "var(--popover)",
         "popover-foreground": "var(--popover-foreground)",

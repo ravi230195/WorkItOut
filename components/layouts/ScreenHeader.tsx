@@ -49,7 +49,7 @@ export default function ScreenHeader({
 
   const containerClasses = [
     sticky ? "sticky top-0 z-30" : "",
-    "relative w-full bg-white/80 backdrop-blur-sm",
+    "relative w-full bg-card/80 backdrop-blur-sm",
     padSafeArea && "pt-safe",
     showBorder ? "border-b border-border" : "",
     className,
