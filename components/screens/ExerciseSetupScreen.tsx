@@ -15,6 +15,7 @@ import {
 } from "../../utils/supabase/supabase-api";
 import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
+import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../utils/routineLoader";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -83,8 +84,6 @@ interface ExerciseSetupScreenProps {
    Component
    ======================================================================================= */
 
-const SETS_PREFETCH_CONCURRENCY = 5;
-
 export function ExerciseSetupScreen({
   routineId,
   routineName,
@@ -131,27 +130,8 @@ export function ExerciseSetupScreen({
     }
   };
 
-  const fetchSetsFor = async (templateId: number): Promise<UISet[]> => {
-    const rows = (await supabaseAPI.getExerciseSetsForRoutine(templateId)) as UserRoutineExerciseSet[];
-    return rows
-      .sort((a, b) => (a.set_order || 0) - (b.set_order || 0))
-      .map((r) => ({
-        id: r.routine_template_exercise_set_id,
-        set_order: r.set_order ?? 0,
-        reps: String(r.planned_reps ?? "0"),
-        weight: String(r.planned_weight_kg ?? "0"),
-      }));
-  };
-
-  const chunk = <T,>(arr: T[], size: number): T[][] => {
-    const out: T[][] = [];
-    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-    return out;
-  };
-
   /* -------------------------------------------------------------------------------------
-     Load saved exercises + eagerly fetch sets for each (concurrency capped)
-     + hydrate missing name/muscle_group per exercise with supabaseAPI.getExercise(id)
+     Load saved exercises using routineLoader
      ------------------------------------------------------------------------------------- */
   useEffect(() => {
     if (!userToken) return;
@@ -161,94 +141,28 @@ export function ExerciseSetupScreen({
       const timer = performanceTimer.start('ExerciseSetup - load saved exercises');
       setLoadingSaved(true);
       try {
-        // 1) Fetch the routine's exercises
-        const exerciseTimer = performanceTimer.start('ExerciseSetup - fetch routine exercises');
-        const rows = (await supabaseAPI.getUserRoutineExercisesWithDetails(
-          routineId
-        )) as SavedExerciseWithDetails[];
-        exerciseTimer.endWithLog('debug');
+        const loaded = await loadRoutineExercisesWithSets(routineId, {
+          concurrency: SETS_PREFETCH_CONCURRENCY,
+          timer: performanceTimer,
+        });
         if (cancelled) return;
-
-        // 2) For rows missing name or muscle_group (AFTER normalization), fetch meta (cached)
-        const metaTimer = performanceTimer.start('ExerciseSetup - fetch exercise meta');
-        const metaById = new Map<number, ExerciseMeta>();
-        await Promise.all(
-          rows.map(async (r) => {
-            const hasName = !!normalizeField(r.exercise_name);
-            const hasMG = !!normalizeField(r.muscle_group);
-            if (hasName && hasMG) return;
-            const meta = await fetchExerciseMeta(r.exercise_id);
-            if (meta) metaById.set(r.exercise_id, meta);
-          })
-        );
-        metaTimer.endWithLog('debug');
-
-        // 3) Eagerly fetch sets for every exercise, in batches
-        const setsTimer = performanceTimer.start('ExerciseSetup - prefetch exercise sets');
-        const batches = chunk(rows, SETS_PREFETCH_CONCURRENCY);
-        const uiList: UIExercise[] = [];
-
-        for (const batch of batches) {
-          const batchTimer = performanceTimer.start(`ExerciseSetup - prefetch batch of ${batch.length} exercises`);
-          
-          // show spinner for ids in this batch while fetching (optional visual)
-          setLoadingSets((p) => {
-            const n = { ...p };
-            batch.forEach((r) => (n[String(r.routine_template_exercise_id)] = true));
-            return n;
-          });
-
-          const setsBatch = await Promise.all(
-            batch.map((r) =>
-              fetchSetsFor(r.routine_template_exercise_id).catch((err) => {
-                logger.warn("Failed to prefetch sets for", r.routine_template_exercise_id, err);
-                return [] as UISet[];
-              })
-            )
-          );
-          
-          batchTimer.endWithLog('debug');
-
-          // map this batch into UI exercises with sets loaded (normalize + fallback to meta when needed)
-          batch.forEach((r, idx) => {
-            const nameDb = normalizeField(r.exercise_name);
-            const mgDb = normalizeField(r.muscle_group);
-            const meta = (!nameDb || !mgDb) ? metaById.get(r.exercise_id) : undefined;
-
-            const name = nameDb || normalizeField(meta?.name);
-            const mg = mgDb || normalizeField(meta?.muscle_group);
-
-            uiList.push({
-              id: r.routine_template_exercise_id,
-              templateId: r.routine_template_exercise_id,
-              exerciseId: r.exercise_id,
-              name,
-              muscle_group: mg || undefined,
-              loaded: true, // sets are preloaded
-              expanded: false,
-              sets: setsBatch[idx],
-            });
-          });
-
-          // clear loading flags for this batch
-          setLoadingSets((p) => {
-            const n = { ...p };
-            batch.forEach((r) => delete n[String(r.routine_template_exercise_id)]);
-            return n;
-          });
-        }
-
-        if (!cancelled) {
-          setExercises(uiList);
-        }
-        
-        setsTimer.endWithLog('debug');
+        const uiList: UIExercise[] = loaded.map((r) => ({
+          id: r.templateId,
+          templateId: r.templateId,
+          exerciseId: r.exerciseId,
+          name: r.name,
+          muscle_group: r.muscle_group,
+          loaded: true,
+          expanded: false,
+          sets: r.sets,
+        }));
+        setExercises(uiList);
       } catch (e) {
         logger.error(String(e));
-        toast.error("Failed to load exercises");
+        toast.error('Failed to load exercises');
       } finally {
         if (!cancelled) setLoadingSaved(false);
-        timer.endWithLog('info'); // Main function timing at INFO level
+        timer.endWithLog('info');
       }
     })();
 
@@ -512,66 +426,20 @@ export function ExerciseSetupScreen({
   const reloadFromDb = async () => {
     setLoadingSaved(true);
     try {
-      const rows = (await supabaseAPI.getUserRoutineExercisesWithDetails(
-        routineId
-      )) as SavedExerciseWithDetails[];
-
-      // hydrate missing name/muscle_group via getExercise(id) ONLY when normalized fields are missing
-      const metaById = new Map<number, ExerciseMeta>();
-      await Promise.all(
-        rows.map(async (r) => {
-          const hasName = !!normalizeField(r.exercise_name);
-          const hasMG = !!normalizeField(r.muscle_group);
-          if (hasName && hasMG) return;
-          const meta = await fetchExerciseMeta(r.exercise_id);
-          if (meta) metaById.set(r.exercise_id, meta);
-        })
-      );
-
-      // Eagerly reload sets again to keep UX consistent after save
-      const batches = chunk(rows, SETS_PREFETCH_CONCURRENCY);
-      const uiList: UIExercise[] = [];
-
-      for (const batch of batches) {
-        const setsBatch = await Promise.all(
-          batch.map((r) =>
-            supabaseAPI
-              .getExerciseSetsForRoutine(r.routine_template_exercise_id)
-              .then((rows) =>
-                (rows as UserRoutineExerciseSet[])
-                  .sort((a, b) => (a.set_order || 0) - (b.set_order || 0))
-                  .map((s) => ({
-                    id: s.routine_template_exercise_set_id,
-                    set_order: s.set_order ?? 0,
-                    reps: String(s.planned_reps ?? "0"),
-                    weight: String(s.planned_weight_kg ?? "0"),
-                  }))
-              )
-              .catch(() => [] as UISet[])
-          )
-        );
-
-        batch.forEach((r, idx) => {
-          const nameDb = normalizeField(r.exercise_name);
-          const mgDb = normalizeField(r.muscle_group);
-          const meta = (!nameDb || !mgDb) ? metaById.get(r.exercise_id) : undefined;
-
-          const name = nameDb || normalizeField(meta?.name);
-          const mg = mgDb || normalizeField(meta?.muscle_group);
-
-          uiList.push({
-            id: r.routine_template_exercise_id,
-            templateId: r.routine_template_exercise_id,
-            exerciseId: r.exercise_id,
-            name,
-            muscle_group: mg || undefined,
-            loaded: true,
-            expanded: false,
-            sets: setsBatch[idx],
-          });
-        });
-      }
-
+      const loaded = await loadRoutineExercisesWithSets(routineId, {
+        concurrency: SETS_PREFETCH_CONCURRENCY,
+        timer: performanceTimer,
+      });
+      const uiList: UIExercise[] = loaded.map((r) => ({
+        id: r.templateId,
+        templateId: r.templateId,
+        exerciseId: r.exerciseId,
+        name: r.name,
+        muscle_group: r.muscle_group,
+        loaded: true,
+        expanded: false,
+        sets: r.sets,
+      }));
       setExercises(uiList);
     } catch (e) {
       logger.error(String(e));

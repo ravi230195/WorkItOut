@@ -12,6 +12,7 @@ import SegmentedToggle from "../segmented/SegmentedToggle";
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
+import { loadRoutineExercisesWithSets } from "../../utils/routineLoader";
 
 interface WorkoutDashboardScreenProps {
   onCreateRoutine: () => void;
@@ -106,7 +107,7 @@ export default function WorkoutDashboardScreen({
             const routineTimer = performanceTimer.start(`fetchExerciseCounts - routine ${r.routine_template_id}`);
 
             logger.debug("🔍 DGB [WORKOUT_SCREEN] Processing routine:", r.routine_template_id, "name:", r.name);
-            const active = await supabaseAPI.getUserRoutineExercises(r.routine_template_id);
+            const active = await loadRoutineExercisesWithSets(r.routine_template_id, { timer: performanceTimer });
             //logger.debug("🔍 DGB [WORKOUT_SCREEN] Raw list from API:", active);
             //logger.debug("🔍 DGB [WORKOUT_SCREEN] List length:", active?.length, "isArray:", Array.isArray(active));
 
