@@ -206,7 +206,7 @@ export default function AppScreen({
           }}
         >
           <div
-            className={cx(innerWidthClasses, padBottomBar && "px-4 pt-4")}
+            className={cx(innerWidthClasses, padBottomBar && "px-4 py-2")}
             style={innerWidthStyle}
           >
             {bottomBar}
