@@ -116,6 +116,8 @@ export function ExerciseSetupScreen({
 
   // Append-only action journal (doesn't trigger re-renders)
   const journalRef = useRef(makeJournal());
+  // Snapshot of last-saved state for change detection
+  const savedSnapshotRef = useRef<any[]>([]);
 
   /* -------------------------------------------------------------------------------------
      Utilities
@@ -140,6 +142,24 @@ export function ExerciseSetupScreen({
       return null;
     }
   };
+
+  // Normalize exercises to compare against saved snapshot (order + values only)
+  const snapshotExercises = (list: UIExercise[]) =>
+    list
+      .map((e) => ({
+        id: e.id,
+        exerciseId: e.exerciseId,
+        sets: e.sets
+          .slice()
+          .sort((a, b) => a.set_order - b.set_order)
+          .map((s) => ({
+            id: s.id,
+            set_order: s.set_order,
+            reps: s.reps,
+            weight: s.weight,
+          })),
+      }))
+      .sort((a, b) => a.id - b.id);
 
   /* -------------------------------------------------------------------------------------
      Load saved exercises using routineLoader
@@ -168,6 +188,7 @@ export function ExerciseSetupScreen({
           sets: r.sets,
         }));
         setExercises(uiList);
+        savedSnapshotRef.current = snapshotExercises(uiList);
       } catch (e) {
         logger.error(String(e));
         toast.error('Failed to load exercises');
@@ -552,6 +573,7 @@ export function ExerciseSetupScreen({
         sets: r.sets,
       }));
       setExercises(uiList);
+      savedSnapshotRef.current = snapshotExercises(uiList);
     } catch (e) {
       logger.error(String(e));
       toast.error("Failed to refresh");
@@ -602,13 +624,40 @@ export function ExerciseSetupScreen({
      Derived & Render
      ======================================================================================= */
 
-  const hasUnsaved = useMemo(() => !journalIsNoop(journalRef.current), [exercises]);
+  const hasUnsaved = useMemo(
+    () =>
+      performanceTimer.timeSync(
+        "ExerciseSetup - check unsaved",
+        () => {
+          const current = JSON.stringify(snapshotExercises(exercises));
+          const saved = JSON.stringify(savedSnapshotRef.current);
+          return current !== saved;
+        },
+        "debug"
+      ),
+    [exercises]
+  );
   const visible = exercises;
+
+  const handleBack = () => {
+    const timer = performanceTimer.start("ExerciseSetup - handleBack");
+    if (screenMode === "plan" && hasUnsaved) {
+      const proceed = window.confirm(
+        "You have unsaved changes. Leave without saving?"
+      );
+      if (!proceed) {
+        timer.endWithLog("debug");
+        return;
+      }
+    }
+    onBack();
+    timer.endWithLog("debug");
+  };
 
   const renderHeader = () => (
     <ScreenHeader
       title={routineName || "Routine"}
-      onBack={onBack}
+      onBack={handleBack}
       {...(access === RoutineAccess.Editable
         ? {
           onAdd: () => {
