@@ -47,7 +47,7 @@ export default function BottomSheet({
       role="dialog"
       onClick={closeOnBackdrop ? onClose : undefined}
     >
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 bg-overlay/30 backdrop-blur-[2px]" />
 
       <div className="absolute inset-x-0 bottom-0" onClick={(e) => e.stopPropagation()}>
         <div

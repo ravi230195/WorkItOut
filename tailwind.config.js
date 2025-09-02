@@ -55,6 +55,10 @@ export default {
         "warm-lavender": "hsl(var(--warm-lavender-hsl))",
         "soft-gray": "hsl(var(--soft-gray-hsl))",
 
+        /* Overlay & shadow colors */
+        overlay: "hsl(var(--overlay-hsl))",
+        shadow: "hsl(var(--shadow-hsl))",
+
         /* Keep raw background/muted as vars (not HSL) if you prefer */
         muted: "var(--muted)",
       },

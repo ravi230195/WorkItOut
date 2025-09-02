@@ -139,7 +139,7 @@ function ProgressRings({
       </div>
 
       {/* subtle divider */}
-      <div className="mt-3 h-px bg-black/5" />
+      <div className="mt-3 h-px bg-foreground/5" />
     </div>
   );
 }

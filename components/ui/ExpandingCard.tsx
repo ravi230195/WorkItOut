@@ -32,7 +32,7 @@ type Props = React.PropsWithChildren<BaseProps>;
 
 const containerByVariant: Record<Variant, string> = {
   glass:
-    "rounded-2xl border overflow-hidden backdrop-blur-md bg-white/[0.04] border-white/10 shadow-xl shadow-black/40",
+    "rounded-2xl border overflow-hidden backdrop-blur-md bg-white/[0.04] border-white/10 shadow-xl shadow-shadow/40",
   solid:
     "rounded-2xl border overflow-hidden bg-white/80 border-border shadow-sm",
   plain: "rounded-2xl overflow-hidden",

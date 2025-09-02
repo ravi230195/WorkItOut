@@ -115,6 +115,8 @@
   --primary-hsl: 12.56 67.54% 62.55%;
   --muted-foreground-hsl: 27.57 15.35% 47.25%;
   --warm-brown-hsl: 27.57 15.35% 47.25%;
+  --overlay-hsl: 0 0% 0%;
+  --shadow-hsl: 0 0% 0%;
 
   /* HSL triplets for Tailwind /opacity support (adds warm palette + soft gray) */
   --warm-coral-hsl: 12.56 67.54% 62.55%;
