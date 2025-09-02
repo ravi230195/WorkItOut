@@ -1,5 +1,5 @@
 import { SupabaseBase, SUPABASE_URL } from "./supabase-base";
-import type { UserRoutine, UserRoutineExercise, UserRoutineExerciseSet, Profile } from "./supabase-types";
+import type { UserRoutine, UserRoutineExercise, UserRoutineExerciseSet, Profile, Workout, WorkoutExercise, Set } from "./supabase-types";
 import { logger } from "../logging";
 
 export class SupabaseDBWrite extends SupabaseBase {
@@ -182,6 +182,71 @@ export class SupabaseDBWrite extends SupabaseBase {
             this.refreshRoutineExercises(userId, routineId),        // Routine ID
             this.refreshRoutineExercisesWithDetails(userId, routineId), // Routine ID
         ]);
+    }
+
+    // ----- Workout flows -----
+    async startWorkout(routineTemplateId: number): Promise<Workout> {
+        const userId = await this.getUserId();
+        const rows = await this.fetchJson<Workout[]>(
+            `${SUPABASE_URL}/rest/v1/workouts`,
+            true,
+            "POST",
+            { template_id: routineTemplateId, started_at: new Date().toISOString(), user_id: userId },
+            "return=representation"
+        );
+        return rows[0];
+    }
+
+    async endWorkout(workoutId: string): Promise<void> {
+        await this.fetchJson(
+            `${SUPABASE_URL}/rest/v1/workouts?id=eq.${workoutId}`,
+            true,
+            "PATCH",
+            { ended_at: new Date().toISOString() },
+            "return=minimal"
+        );
+    }
+
+    async addWorkoutExercise(workoutId: string, exerciseId: number, order_index: number): Promise<WorkoutExercise> {
+        const rows = await this.fetchJson<WorkoutExercise[]>(
+            `${SUPABASE_URL}/rest/v1/workout_exercises`,
+            true,
+            "POST",
+            { workout_id: workoutId, exercise_id: exerciseId, order_index },
+            "return=representation"
+        );
+        return rows[0];
+    }
+
+    async addWorkoutSet(
+        workoutExerciseId: string,
+        set_index: number,
+        reps: number,
+        weight: number,
+        completed_at?: string
+    ): Promise<Set> {
+        const rows = await this.fetchJson<Set[]>(
+            `${SUPABASE_URL}/rest/v1/sets`,
+            true,
+            "POST",
+            { workout_exercise_id: workoutExerciseId, set_index, reps, weight, completed_at },
+            "return=representation"
+        );
+        return rows[0];
+    }
+
+    async updateWorkoutSet(
+        setId: string,
+        patch: Partial<Pick<Set, "reps" | "weight" | "completed_at">>
+    ): Promise<Set> {
+        const rows = await this.fetchJson<Set[]>(
+            `${SUPABASE_URL}/rest/v1/sets?id=eq.${setId}`,
+            true,
+            "PATCH",
+            patch,
+            "return=representation"
+        );
+        return rows[0];
     }
 
     async updateExerciseSet(
