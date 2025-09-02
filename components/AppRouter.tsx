@@ -19,6 +19,9 @@ interface AppRouterProps {
   currentRoutineName: string;
   routineAccess: RoutineAccess;
 
+  exerciseSetupMode: "plan" | "workout";
+  setExerciseSetupMode: (mode: "plan" | "workout") => void;
+
   selectedExercisesForSetup: Exercise[];
   setSelectedExercisesForSetup: (exercises: Exercise[]) => void;
 
@@ -52,6 +55,9 @@ export function AppRouter({
   currentRoutineId,
   currentRoutineName,
   routineAccess,
+
+  exerciseSetupMode,
+  setExerciseSetupMode,
 
   selectedExercisesForSetup,
   setSelectedExercisesForSetup,
@@ -144,6 +150,8 @@ export function AppRouter({
             onShowExerciseSelector={onCloseExerciseSetup}
             access={routineAccess}
             bottomBar={bottomBar}
+            initialMode={exerciseSetupMode}
+            onModeChange={setExerciseSetupMode}
           />
         )}
 

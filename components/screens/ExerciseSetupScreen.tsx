@@ -79,6 +79,8 @@ interface ExerciseSetupScreenProps {
   onShowExerciseSelector?: () => void;
   access?: RoutineAccess;
   bottomBar?: React.ReactNode;
+  initialMode?: "plan" | "workout";
+  onModeChange?: (mode: "plan" | "workout") => void;
 }
 
 /* =======================================================================================
@@ -96,6 +98,9 @@ export function ExerciseSetupScreen({
   isEditingExistingRoutine = false,
   onShowExerciseSelector,
   access = RoutineAccess.Editable,
+  bottomBar,
+  initialMode = "plan",
+  onModeChange,
 }: ExerciseSetupScreenProps) {
   const { userToken } = useAuth();
 
@@ -106,7 +111,7 @@ export function ExerciseSetupScreen({
   const [loadingSets, setLoadingSets] = useState<Record<string, boolean>>({}); // key by exercise id as string
 
   type ScreenMode = "plan" | "workout";
-  const [screenMode, setScreenMode] = useState<ScreenMode>("plan");
+  const [screenMode, setScreenMode] = useState<ScreenMode>(initialMode);
   const inWorkout = screenMode === "workout";
 
   // Append-only action journal (doesn't trigger re-renders)
@@ -437,6 +442,11 @@ export function ExerciseSetupScreen({
     });
   };
 
+  const updateMode = (mode: ScreenMode) => {
+    setScreenMode(mode);
+    onModeChange?.(mode);
+  };
+
   const startWorkout = () => {
     // reset any stale journal entries and mark all sets as not done locally
     journalRef.current = makeJournal();
@@ -446,7 +456,7 @@ export function ExerciseSetupScreen({
         sets: ex.sets.map((s) => ({ ...s, done: false })),
       }))
     );
-    setScreenMode("workout");
+    updateMode("workout");
   };
 
   const endWorkout = async () => {
@@ -490,7 +500,7 @@ export function ExerciseSetupScreen({
 
       await reloadFromDb();
       toast.success("Workout saved!");
-      setScreenMode("plan");
+      updateMode("plan");
     } catch (e) {
       logger.error(String(e));
       toast.error("Failed to save workout");

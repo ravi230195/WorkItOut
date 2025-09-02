@@ -28,6 +28,8 @@ function AppContent() {
     selectedExercisesForSetup,
     setSelectedExercisesForSetup,
     routineAccess,
+    exerciseSetupMode,
+    setExerciseSetupMode,
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,
@@ -88,6 +90,8 @@ function AppContent() {
           onExerciseSelected={handleExercisesSelected}
           onCloseExerciseSetup={closeExerciseSetup}
           onExerciseSetupComplete={handleExerciseSetupComplete}
+          exerciseSetupMode={exerciseSetupMode}
+          setExerciseSetupMode={setExerciseSetupMode}
           onSelectRoutine={onRoutineSelection}
           onCloseExerciseSetupToRoutines={closeExerciseSetupToRoutines}
           bottomBar={bottomBarEl}

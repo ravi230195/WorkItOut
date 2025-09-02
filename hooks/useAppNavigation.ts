@@ -21,6 +21,11 @@ export function useAppNavigation() {
   const [selectedExercisesForSetup, setSelectedExercisesForSetup] = useState<Exercise[]>([]);
   const [routineAccess, setRoutineAccess] = useState<RoutineAccess>(RoutineAccess.Editable);
 
+  // Persist ExerciseSetupScreen mode ("plan" or "workout") across navigation
+  const [exerciseSetupMode, setExerciseSetupMode] = useState<"plan" | "workout">(
+    "plan"
+  );
+
 
   const handleUnauthorizedError = (error: Error) => {
     if (error.message === "UNAUTHORIZED") {
@@ -63,6 +68,7 @@ export function useAppNavigation() {
     if (routineId) setCurrentRoutineId(routineId);
     setSelectedExercisesForSetup([]); // start empty
     setRoutineAccess(RoutineAccess.Editable);
+    setExerciseSetupMode("plan");
     setCurrentView("exercise-setup");
   };
 
@@ -82,6 +88,7 @@ export function useAppNavigation() {
     setCurrentRoutineId(null);
     setCurrentRoutineName("");
     setSelectedExercisesForSetup([]);
+    setExerciseSetupMode("plan");
     setCurrentView("workouts");
   };
 
@@ -96,7 +103,9 @@ export function useAppNavigation() {
     setCurrentRoutineName(routineName);
     setSelectedExercisesForSetup([]);
     setRoutineAccess(access || RoutineAccess.Editable);
-    setCurrentView("exercise-setup");  };
+    setExerciseSetupMode("plan");
+    setCurrentView("exercise-setup");
+  };
 
 
   const closeCreateRoutine = () => setCurrentView("workouts");
@@ -105,6 +114,7 @@ export function useAppNavigation() {
     setCurrentRoutineId(null);
     setCurrentRoutineName("");
     setSelectedExercisesForSetup([]);
+    setExerciseSetupMode("plan");
     setCurrentView("workouts");
     setRefreshTrigger(prev => prev + 1);
   };
@@ -132,6 +142,8 @@ export function useAppNavigation() {
     setSelectedExercisesForSetup,
     routineAccess,
     setRoutineAccess,
+    exerciseSetupMode,
+    setExerciseSetupMode,
 
     handleAuthSuccess,
     navigateToSignUp,
