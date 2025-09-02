@@ -55,7 +55,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
     <AppScreen
       padHeader={false}
       padBottomBar={false}
-      className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30"
+      className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
       scrollAreaClassName="grid place-items-center"
       bottomBar={bottomBar}
       contentClassName=""
@@ -64,7 +64,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
       <Card
         className="
           w-full
-          bg-white/80 backdrop-blur-sm border-[var(--border)]
+          bg-white/80 backdrop-blur-sm border-border
           shadow-soft
         "
       >
@@ -92,7 +92,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className="bg-[var(--input-background)] border-[var(--border)]"
+                  className="bg-input-background border-border"
                   disabled={isLoading}
                   required
                 />
@@ -107,7 +107,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="bg-[var(--input-background)] border-[var(--border)] pr-10"
+                    className="bg-input-background border-border pr-10"
                     disabled={isLoading}
                     required
                   />
@@ -125,7 +125,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
 
               <TactileButton
                 type="submit"
-                className="w-full bg-gradient-to-r from-[var(--warm-coral)] to-[var(--warm-peach)] text-white"
+                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-white"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -142,23 +142,23 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
             <Stack gap="md" className="text-center">
               <button
                 onClick={() => toast.info("Password reset coming soon!")}
-                className="text-sm text-[var(--warm-coral)] hover:text-[var(--warm-coral)]/80 transition-colors"
+                className="text-sm text-warm-coral hover:text-warm-coral/80 transition-colors"
                 disabled={isLoading}
               >
                 Forgot your password?
               </button>
 
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-px bg-[var(--border)]" />
+                <div className="flex-1 h-px bg-border" />
                 <span className="text-sm text-warm-brown/60">or</span>
-                <div className="flex-1 h-px bg-[var(--border)]" />
+                <div className="flex-1 h-px bg-border" />
               </div>
 
               <div className="text-sm text-warm-brown/60">
                 Don&apos;t have an account?{" "}
                 <button
                   onClick={onNavigateToSignUp}
-                  className="text-[var(--warm-coral)] hover:text-[var(--warm-coral)]/80 transition-colors font-medium"
+                  className="text-warm-coral hover:text-warm-coral/80 transition-colors font-medium"
                   disabled={isLoading}
                 >
                   Sign up

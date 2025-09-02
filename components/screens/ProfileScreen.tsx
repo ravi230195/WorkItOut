@@ -114,14 +114,15 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
       bottomBar={bottomBar}
       bottomBarSticky
       contentClassName=""
+      headerInScrollArea={true}
     >
       <Stack gap="fluid">
         {/* Profile Header */}
         <Section variant="plain" padding="none">
-          <Card className="bg-gradient-to-r from-[var(--warm-coral)]/10 to-[var(--warm-peach)]/10 border-[var(--warm-coral)]/20">
+          <Card className="bg-gradient-to-r from-warm-coral/10 to-warm-peach/10 border-warm-coral/20">
             <CardContent className="p-6 text-center">
-              <Avatar className="w-20 h-20 mx-auto mb-4 bg-[var(--warm-coral)] text-white">
-                <AvatarFallback className="bg-[var(--warm-coral)] text-white text-lg">
+              <Avatar className="w-20 h-20 mx-auto mb-4 bg-warm-coral text-white">
+                <AvatarFallback className="bg-warm-coral text-white text-lg">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
@@ -146,14 +147,14 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
               <div className="flex justify-center gap-2 mt-4">
                 <Badge
                   variant="secondary"
-                  className="bg-[var(--warm-sage)]/20 text-[var(--warm-sage)] border-[var(--warm-sage)]/30"
+                  className="bg-warm-sage/20 text-warm-sage border-warm-sage/30"
                 >
                   <Zap size={12} className="mr-1" />
                   Intermediate
                 </Badge>
                 <Badge
                   variant="secondary"
-                  className="bg-[var(--warm-peach)]/20 text-[var(--warm-peach)] border-[var(--warm-peach)]/30"
+                  className="bg-warm-peach/20 text-warm-peach border-warm-peach/30"
                 >
                   <Target size={12} className="mr-1" />
                   5 Week Streak
@@ -168,8 +169,8 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
           <div className="grid grid-cols-3 gap-3">
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-[var(--warm-coral)]/20 flex items-center justify-center mx-auto mb-2">
-                  <Dumbbell size={16} className="text-[var(--warm-coral)]" />
+                <div className="w-8 h-8 rounded-full bg-warm-coral/20 flex items-center justify-center mx-auto mb-2">
+                  <Dumbbell size={16} className="text-warm-coral" />
                 </div>
                 <div className="text-lg font-medium text-warm-brown">124</div>
                 <div className="text-xs text-warm-brown/60">Workouts</div>
@@ -178,8 +179,8 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
 
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-[var(--warm-sage)]/20 flex items-center justify-center mx-auto mb-2">
-                  <Calendar size={16} className="text-[var(--warm-sage)]" />
+                <div className="w-8 h-8 rounded-full bg-warm-sage/20 flex items-center justify-center mx-auto mb-2">
+                  <Calendar size={16} className="text-warm-sage" />
                 </div>
                 <div className="text-lg font-medium text-warm-brown">186</div>
                 <div className="text-xs text-warm-brown/60">Days Active</div>
@@ -188,8 +189,8 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
 
             <Card className="bg-white/80 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-[var(--warm-peach)]/20 flex items-center justify-center mx-auto mb-2">
-                  <TrendingUp size={16} className="text-[var(--warm-peach)]" />
+                <div className="w-8 h-8 rounded-full bg-warm-peach/20 flex items-center justify-center mx-auto mb-2">
+                  <TrendingUp size={16} className="text-warm-peach" />
                 </div>
                 <div className="text-lg font-medium text-warm-brown">+12%</div>
                 <div className="text-xs text-warm-brown/60">Strength</div>
@@ -202,7 +203,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         <Section variant="plain" padding="none">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Trophy size={20} className="text-[var(--warm-coral)]" />
+              <Trophy size={20} className="text-warm-coral" />
               <h2 className="text-lg text-warm-brown">Personal Bests</h2>
             </div>
 
@@ -292,7 +293,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
 
         {/* App Info */}
         <Section variant="plain" padding="none">
-          <Card className="bg-gradient-to-r from-[var(--warm-sage)]/10 to-[var(--warm-mint)]/10 border-[var(--warm-sage)]/20">
+          <Card className="bg-gradient-to-r from-warm-sage/10 to-warm-mint/10 border-warm-sage/20">
             <CardContent className="p-4 text-center">
               <div className="text-sm text-warm-brown/60">
                 Workout Tracker v1.0

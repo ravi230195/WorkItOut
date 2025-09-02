@@ -1,5 +1,5 @@
 // components/screens/AddExercisesToRoutineScreen.tsx
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { Search } from "lucide-react";
 import { Input } from "../ui/input";
 import { TactileButton } from "../TactileButton";
@@ -20,9 +20,152 @@ interface AddExercisesToRoutineScreenProps {
 }
 
 type MuscleFilter = "all" | string;
-
 const OTHER_GROUP = "Other";
 
+// ────────────────────────────────────────────────────────────────────────────────
+// Small reusable UI bits
+// ────────────────────────────────────────────────────────────────────────────────
+const SearchField = memo(function SearchField({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-brown/60" size={20} />
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder ?? "Search for an exercise..."}
+        className="bg-input-background border-border text-warm-brown placeholder:text-warm-brown/60 h-12 md:h-12 pl-10 pr-4 rounded-xl focus:border-warm-coral focus:ring-warm-coral/20"
+      />
+    </div>
+  );
+});
+
+const ExerciseRow = memo(function ExerciseRow({
+  exercise,
+  selected,
+  onSelect,
+}: {
+  exercise: Exercise;
+  selected: boolean;
+  onSelect: (ex: Exercise) => void;
+}) {
+  const initials = exercise.name.substring(0, 2).toUpperCase();
+  const subtitle = (exercise.muscle_group || "").trim() || OTHER_GROUP;
+
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={() => onSelect(exercise)}
+      className="w-full text-left focus:outline-none"
+    >
+      <div
+        className={[
+          "p-3 md:p-4 rounded-xl border transition-all",
+          selected
+            // toned down selection (less “bright orange”)
+            ? "bg-warm-coral/60 border-warm-coral/30 shadow-md"
+            : "bg-white border-border hover:bg-soft-gray/50 hover:border-warm-coral/30 hover:shadow-md",
+        ].join(" ")}
+      >
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="w-10 h-10 md:w-12 md:h-12 bg-warm-brown/10 rounded-lg grid place-items-center">
+            <span className="text-sm md:text-base font-medium text-warm-brown/60">
+              {initials}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-warm-brown truncate">{exercise.name}</h3>
+            <p className="text-xs md:text-sm text-warm-brown/60 truncate">{subtitle}</p>
+          </div>
+          <div className="text-warm-brown/40">
+            <div className="w-6 h-6 rounded-full border border-warm-brown/20 grid place-items-center">
+              <div>ⓘ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+});
+
+const ExerciseGroup = memo(function ExerciseGroup({
+  letter,
+  items,
+  selectedId,
+  onSelect,
+}: {
+  letter: string;
+  items: Exercise[];
+  selectedId?: number;
+  onSelect: (ex: Exercise) => void;
+}) {
+  return (
+    <div>
+      <h2 className="text-xs md:text-sm text-warm-brown/60 font-medium mb-3 px-2 tracking-wide">
+        {letter}
+      </h2>
+      <div className="space-y-2">
+        {items.map((exercise) => (
+          <ExerciseRow
+            key={exercise.exercise_id}
+            exercise={exercise}
+            selected={selectedId === exercise.exercise_id}
+            onSelect={onSelect}
+          />
+        ))}
+      </div>
+    </div>
+  );
+});
+
+function ExerciseList({
+  groupedAZ,
+  selectedExercise,
+  onSelect,
+}: {
+  groupedAZ: Record<string, Exercise[]>;
+  selectedExercise: Exercise | null;
+  onSelect: (ex: Exercise) => void;
+}) {
+  const letters = useMemo(
+    () => Object.keys(groupedAZ).sort((a, b) => a.localeCompare(b)),
+    [groupedAZ]
+  );
+
+  if (letters.length === 0) {
+    return (
+      <Section variant="card" className="text-center">
+        <p className="text-warm-brown/60">No exercises found</p>
+      </Section>
+    );
+  }
+
+  return (
+    <>
+      {letters.map((letter) => (
+        <ExerciseGroup
+          key={letter}
+          letter={letter}
+          items={groupedAZ[letter]}
+          selectedId={selectedExercise?.exercise_id}
+          onSelect={onSelect}
+        />
+      ))}
+    </>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Screen
+// ────────────────────────────────────────────────────────────────────────────────
 export function AddExercisesToRoutineScreen({
   routineId,
   routineName,
@@ -30,16 +173,16 @@ export function AddExercisesToRoutineScreen({
   onExerciseSelected,
   isFromExerciseSetup = true,
 }: AddExercisesToRoutineScreenProps) {
-
   const { userToken } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>("all") // 👈 default = ALL
+  const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>("all");
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingExercise, setIsAddingExercise] = useState(false);
 
+  // fetch once
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -61,7 +204,7 @@ export function AddExercisesToRoutineScreen({
     };
   }, []);
 
-  // unique muscle groups (built once per fetch)
+  // unique muscle groups
   const muscleGroups = useMemo(() => {
     const s = new Set<string>();
     for (const ex of exercises) {
@@ -71,7 +214,7 @@ export function AddExercisesToRoutineScreen({
     return Array.from(s).sort((a, b) => a.localeCompare(b));
   }, [exercises]);
 
-  // pre-index by muscle group for fast toggling
+  // index by group
   const byGroup = useMemo(() => {
     const map = new Map<string, Exercise[]>();
     for (const ex of exercises) {
@@ -81,15 +224,11 @@ export function AddExercisesToRoutineScreen({
     return map;
   }, [exercises]);
 
-  // compose the base list from muscleFilter, then apply search, then group A–Z
+  // filter + search + group to A–Z
   const groupedAZ = useMemo(() => {
-    const base =
-      muscleFilter === "all" ? exercises : (byGroup.get(muscleFilter) ?? []);
-
+    const base = muscleFilter === "all" ? exercises : (byGroup.get(muscleFilter) ?? []);
     const q = searchQuery.trim().toLowerCase();
-    const filtered = q
-      ? base.filter((ex) => ex.name.toLowerCase().includes(q))
-      : base;
+    const filtered = q ? base.filter((ex) => ex.name.toLowerCase().includes(q)) : base;
 
     const out: Record<string, Exercise[]> = {};
     for (const ex of filtered) {
@@ -106,14 +245,9 @@ export function AddExercisesToRoutineScreen({
   };
 
   const handleAddExercise = async () => {
-    if (!selectedExercise) {
-      toast.error("Please select an exercise");
-      return;
-    }
-    if (!userToken) {
-      toast.error("Please sign in to add exercises");
-      return;
-    }
+    if (!selectedExercise) return toast.error("Please select an exercise");
+    if (!userToken) return toast.error("Please sign in to add exercises");
+
     setIsAddingExercise(true);
     try {
       onExerciseSelected(selectedExercise);
@@ -125,7 +259,6 @@ export function AddExercisesToRoutineScreen({
     }
   };
 
-  // segmented options: ALL + one per muscle group present
   const segmentOptions = useMemo(
     () => [
       { value: "all" as MuscleFilter, label: "ALL" },
@@ -136,12 +269,16 @@ export function AddExercisesToRoutineScreen({
 
   return (
     <AppScreen
-      header={<ScreenHeader title="Select exercises"
-        onBack={onBack}
-        showBorder={false}
-        denseSmall
-        contentHeightPx={74}
-        titleClassName="text-[17px] font-bold" />}
+      header={
+        <ScreenHeader
+          title="Select exercises"
+          onBack={onBack}
+          showBorder={false}
+          denseSmall
+          contentHeightPx={74}
+          titleClassName="text-[17px] font-bold"
+        />
+      }
       maxContent="responsive"
       padContent={false}
       showHeaderBorder={false}
@@ -151,10 +288,11 @@ export function AddExercisesToRoutineScreen({
           <TactileButton
             onClick={handleAddExercise}
             disabled={!selectedExercise || isAddingExercise}
-            className={`h-12 md:h-14 sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${selectedExercise
-                ? "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
-                : "bg-[var(--warm-brown)]/20 text-warm-brown/40 cursor-not-allowed"
-              }`}
+            className={`h-12 md:h-14 sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
+              selectedExercise
+                ? "bg-warm-coral hover:bg-warm-coral/90 text-white/90 btn-tactile"
+                : "bg-warm-brown/20 text-warm-brown/40 cursor-not-allowed"
+            }`}
           >
             {isAddingExercise ? "ADDING..." : selectedExercise ? "ADD (1)" : "ADD"}
           </TactileButton>
@@ -183,18 +321,7 @@ export function AddExercisesToRoutineScreen({
 
         {/* Search */}
         <Section variant="plain" padding="none">
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-brown/60"
-              size={20}
-            />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for an exercise..."
-              className="bg-[var(--input-background)] border-[var(--border)] text-warm-brown placeholder:text-warm-brown/60 h-12 md:h-12 pl-10 pr-4 rounded-xl focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
-            />
-          </div>
+          <SearchField value={searchQuery} onChange={setSearchQuery} />
         </Section>
 
         <Spacer y="xss" />
@@ -208,72 +335,11 @@ export function AddExercisesToRoutineScreen({
           className="space-y-6"
         >
           {!isLoading && (
-            <>
-              {Object.keys(groupedAZ).length === 0 ? (
-                <Section variant="card" className="text-center">
-                  <p className="text-warm-brown/60">
-                    No exercises found
-                  </p>
-                </Section>
-              ) : (
-                Object.keys(groupedAZ)
-                  .sort((a, b) => a.localeCompare(b))
-                  .map((letter) => (
-                    <div key={letter}>
-                      <h2 className="text-xs md:text-sm text-warm-brown/60 font-medium mb-3 px-2 tracking-wide">
-                        {letter}
-                      </h2>
-                      <div className="space-y-2">
-                        {groupedAZ[letter].map((exercise) => {
-                          const isSelected =
-                            selectedExercise?.exercise_id === exercise.exercise_id;
-                          const initials = exercise.name.substring(0, 2).toUpperCase();
-
-                          return (
-                            <button
-                              key={exercise.exercise_id}
-                              type="button"
-                              aria-pressed={isSelected}
-                              onClick={() => handleSelectExercise(exercise)}
-                              className="w-full text-left focus:outline-none"
-                            >
-                              <div
-                                className={[
-                                  "p-3 md:p-4 rounded-xl border transition-all",
-                                  isSelected
-                                    ? "bg-[var(--warm-coral)]/100 border-[var(--warm-coral)] shadow-md"
-                                    : "bg-white border-[var(--border)] hover:bg-[var(--soft-gray)]/50 hover:border-[var(--warm-coral)]/30 hover:shadow-md",
-                                ].join(" ")}
-                              >
-                                <div className="flex items-center gap-3 md:gap-4">
-                                  <div className="w-10 h-10 md:w-12 md:h-12 bg-[var(--warm-brown)]/10 rounded-lg grid place-items-center">
-                                    <span className="text-sm md:text-base font-medium text-warm-brown/60">
-                                      {initials}
-                                    </span>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h3 className="font-medium text-warm-brown truncate">
-                                      {exercise.name}
-                                    </h3>
-                                    <p className="text-xs md:text-sm text-warm-brown/60 truncate">
-                                      {(exercise.muscle_group || "").trim() || OTHER_GROUP}
-                                    </p>
-                                  </div>
-                                  <div className="text-warm-brown/40">
-                                    <div className="w-6 h-6 rounded-full border border-[var(--warm-brown)]/20 grid place-items-center">
-                                      <div>ⓘ</div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))
-              )}
-            </>
+            <ExerciseList
+              groupedAZ={groupedAZ}
+              selectedExercise={selectedExercise}
+              onSelect={handleSelectExercise}
+            />
           )}
         </Section>
 

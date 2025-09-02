@@ -29,8 +29,8 @@ const achievements = [
     title: "Consistency Champion",
     description: "5 workout streak achieved!",
     icon: Zap,
-    color: "var(--warm-coral)",
-    bgColor: "var(--warm-coral)/10",
+    color: "hsl(var(--warm-coral))",
+    bgColor: "hsl(var(--warm-coral) / 0.1)",
     date: "2 days ago",
   },
   {
@@ -38,8 +38,8 @@ const achievements = [
     title: "Volume Milestone",
     description: "Lifted 25,000 lbs this month",
     icon: Trophy,
-    color: "var(--warm-sage)",
-    bgColor: "var(--warm-sage)/10",
+    color: "hsl(var(--warm-sage))",
+    bgColor: "hsl(var(--warm-sage) / 0.1)",
     date: "1 week ago",
   },
   {
@@ -47,8 +47,8 @@ const achievements = [
     title: "Personal Best",
     description: "New bench press record: 225 lbs",
     icon: Medal,
-    color: "var(--warm-peach)",
-    bgColor: "var(--warm-peach)/10",
+    color: "hsl(var(--warm-peach))",
+    bgColor: "hsl(var(--warm-peach) / 0.1)",
     date: "2 weeks ago",
   },
 ];
@@ -119,7 +119,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         {/* Subtitle */}
         <Section variant="plain" padding="none" className="text-center">
           <div className="flex items-center justify-center gap-2">
-            <TrendingUp size={20} className="text-[var(--warm-sage)]" />
+            <TrendingUp size={20} className="text-warm-sage" />
             <p className="text-sm text-warm-brown/70">
               Track your fitness journey
             </p>
@@ -142,7 +142,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                     size={100}
                     label="Workouts"
                     sublabel="This Week"
-                    color="var(--warm-coral)"
+                    color="hsl(var(--warm-coral))"
                   />
                 )}
               </CardContent>
@@ -159,7 +159,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                     size={100}
                     label="Minutes"
                     sublabel="Total Time"
-                    color="var(--warm-sage)"
+                    color="hsl(var(--warm-sage))"
                   />
                 )}
               </CardContent>
@@ -172,7 +172,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           <Card className="bg-white/80 backdrop-blur-sm">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Calendar size={20} className="text-[var(--warm-peach)]" />
+                <Calendar size={20} className="text-warm-peach" />
                 <h2 className="font-medium text-warm-brown">This Month</h2>
               </div>
             </CardHeader>
@@ -183,7 +183,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                   <span className="text-sm text-warm-brown/70">
                     Workouts Progress
                   </span>
-                  <Badge className="bg-[var(--warm-sage)]/10 text-[var(--warm-sage)]">
+                  <Badge className="bg-warm-sage/10 text-warm-sage">
                     {workoutStats.monthlyCount} / {workoutStats.monthlyTarget}
                   </Badge>
                 </div>
@@ -201,7 +201,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                   <span className="text-sm text-warm-brown/70">
                     Current Streak
                   </span>
-                  <Badge className="bg-[var(--warm-coral)]/10 text-[var(--warm-coral)]">
+                  <Badge className="bg-warm-coral/10 text-warm-coral">
                     5 days
                   </Badge>
                 </div>
@@ -214,7 +214,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                   <span className="text-sm text-warm-brown/70">
                     Total Volume
                   </span>
-                  <Badge className="bg-[var(--warm-peach)]/10 text-warm-brown">
+                  <Badge className="bg-warm-peach/10 text-warm-brown">
                     24,500 lbs
                   </Badge>
                 </div>
@@ -229,7 +229,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           <Card className="bg-white/80 backdrop-blur-sm">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Award size={20} className="text-[var(--warm-mint)]" />
+                <Award size={20} className="text-warm-mint" />
                 <h2 className="font-medium text-warm-brown">
                   Recent Achievements
                 </h2>
@@ -239,7 +239,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
               {achievements.map((achievement) => (
                 <div
                   key={achievement.id}
-                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--soft-gray)]/50 transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-soft-gray/50 transition-colors"
                 >
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center"
@@ -272,7 +272,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           <Card className="bg-white/80 backdrop-blur-sm">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <TrendingUp size={20} className="text-[var(--warm-coral)]" />
+                <TrendingUp size={20} className="text-warm-coral" />
                 <h2 className="font-medium text-warm-brown">Weekly Trend</h2>
               </div>
             </CardHeader>

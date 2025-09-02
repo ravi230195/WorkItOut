@@ -22,9 +22,9 @@ type Props<V extends string = string> = {
 const toneVars: Record<Tone, { text: string; border: string; bgSoft: string; bgHover: string }> = {
   accent: {
     text: "text-[var(--warm-coral)]",
-    border: "border-[var(--warm-coral)]",
-    bgSoft: "bg-[var(--warm-coral)]/14",
-    bgHover: "hover:bg-[var(--warm-coral)]/12",
+    border: "border-warm-coral",
+    bgSoft: "bg-warm-coral/14",
+    bgHover: "hover:bg-warm-coral/12",
   },
   sage: {
     text: "text-[var(--warm-sage)]",
@@ -60,7 +60,7 @@ export default function SegmentedToggle<V extends string = string>({
       role="tablist"
       aria-label="Segmented toggle"
       className={cx(
-        "inline-flex items-center rounded-lg border border-[var(--border)] bg-white/70 backdrop-blur-sm p-0.5 gap-1",
+        "inline-flex items-center rounded-lg border border-border bg-white/70 backdrop-blur-sm p-0.5 gap-1",
         className
       )}
     >
@@ -91,7 +91,7 @@ export default function SegmentedToggle<V extends string = string>({
           s.text,
           "font-medium text-white",
           t.border,
-          "bg-[var(--warm-coral)]"
+          "bg-warm-coral"
         );
         const filledIdle = cx(
           s.pad,

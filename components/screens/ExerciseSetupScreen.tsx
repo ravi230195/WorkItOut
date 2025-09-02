@@ -665,7 +665,7 @@ export function ExerciseSetupScreen({
             className={`flex-1 h-11 md:h-12 ${
               access === RoutineAccess.ReadOnly
                 ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
-                : "bg-transparent border-[var(--warm-brown)]/20 text-warm-brown/60 hover:bg-[var(--soft-gray)]"
+                : "bg-transparent border-warm-brown/20 text-warm-brown/60 hover:bg-soft-gray"
             } font-medium`}
           >
             CANCEL ALL
@@ -676,7 +676,7 @@ export function ExerciseSetupScreen({
             className={`flex-1 h-11 md:h-12 font-medium border-0 transition-all ${
               access === RoutineAccess.ReadOnly
                 ? "opacity-50 cursor-not-allowed bg-gray-400"
-                : "bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white btn-tactile"
+                : "bg-warm-coral hover:bg-warm-coral/90 text-white btn-tactile"
             }`}
           >
             {savingAll ? "SAVING..." : `SAVE ALL`}
@@ -722,18 +722,18 @@ export function ExerciseSetupScreen({
           title={ex.name}
           subtitle={subtitle}
           leading={
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-[var(--muted)] rounded-lg flex items-center justify-center overflow-hidden">
-              <span className="text-sm md:text-base font-medium text-[var(--muted-foreground)]">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+              <span className="text-sm md:text-base font-medium text-muted-foreground">
                 {ex.name.substring(0, 2).toUpperCase()}
               </span>
             </div>
           }
-          className="bg-white/80 border-[var(--border)]"
+          className="bg-white/80 border-border"
           bodyClassName="pt-2"
         >
           {isLoading || !ex.loaded ? (
             <div className="flex items-center justify-center py-4">
-              <div className="animate-spin w-4 h-4 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full" />
+              <div className="animate-spin w-4 h-4 border-2 border-warm-coral border-t-transparent rounded-full" />
               <span className="ml-2 text-sm text-warm-brown/60">Loading sets...</span>
             </div>
           ) : (
@@ -773,10 +773,10 @@ export function ExerciseSetupScreen({
         <div className="space-y-3">
           {[1, 2].map((i) => (
             <div key={i} className="flex items-center gap-3 p-3 bg-white/50 rounded-xl animate-pulse">
-              <div className="w-9 h-9 md:w-10 md:h-10 bg-[var(--muted)] rounded-lg" />
+              <div className="w-9 h-9 md:w-10 md:h-10 bg-muted rounded-lg" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-[var(--muted)] rounded w-3/4" />
-                <div className="h-3 bg-[var(--muted)] rounded w-1/2" />
+                <div className="h-4 bg-muted rounded w-3/4" />
+                <div className="h-3 bg-muted rounded w-1/2" />
               </div>
             </div>
           ))}
@@ -786,7 +786,7 @@ export function ExerciseSetupScreen({
     if (visible.length === 0) {
       return (
         <div className="text-center py-4">
-          <p className="text-[var(--muted-foreground)]">Ready to add exercises to this routine</p>
+          <p className="text-muted-foreground">Ready to add exercises to this routine</p>
         </div>
       );
     }
@@ -808,7 +808,7 @@ export function ExerciseSetupScreen({
         <Spacer y="sm" />
         <Section variant="plain" padding="none">
           <div className="mt-2 mb-6">
-            <h3 className="text-xs md:text-sm text-[var(--muted-foreground)] uppercase tracking-wider mb-3">
+            <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
               EXERCISES IN ROUTINE ({visible.length})
             </h3>
             {renderExerciseList()}

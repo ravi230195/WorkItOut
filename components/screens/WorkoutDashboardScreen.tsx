@@ -27,11 +27,11 @@ export enum RoutinesView {
 
 /** 🎨 App-palette avatars */
 const avatarPalette = [
-  { bg: "bg-[var(--soft-gray)]", iconBg: "bg-[var(--warm-coral)]", emoji: "🏋️" },
+  { bg: "bg-soft-gray", iconBg: "bg-warm-coral", emoji: "🏋️" },
   { bg: "bg-[var(--warm-cream)]", iconBg: "bg-[var(--warm-brown)]", emoji: "🏃" },
-  { bg: "bg-[var(--soft-gray)]", iconBg: "bg-[var(--warm-sage)]", emoji: "🧘" },
-  { bg: "bg-[var(--warm-cream)]", iconBg: "bg-[var(--warm-coral)]", emoji: "🤸" },
-  { bg: "bg-[var(--soft-gray)]", iconBg: "bg-[var(--warm-brown)]", emoji: "🔥" },
+  { bg: "bg-soft-gray", iconBg: "bg-[var(--warm-sage)]", emoji: "🧘" },
+  { bg: "bg-[var(--warm-cream)]", iconBg: "bg-warm-coral", emoji: "🤸" },
+  { bg: "bg-soft-gray", iconBg: "bg-[var(--warm-brown)]", emoji: "🔥" },
 ];
 
 export default function WorkoutDashboardScreen({
@@ -259,7 +259,7 @@ export default function WorkoutDashboardScreen({
             ]}
             size="sm"
             /* Light warm highlight when selected */
-            className="data-[checked=true]:bg-[var(--warm-coral)]/20 data-[checked=true]:text-warm-brown"
+            className="data-[checked=true]:bg-warm-coral/20 data-[checked=true]:text-warm-brown"
             variant="filled"
             tone="accent"
           />
@@ -267,7 +267,7 @@ export default function WorkoutDashboardScreen({
           {canEdit && (
             <TactileButton
               onClick={onCreateRoutine}
-              className="bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white px-4 py-2 text-sm font-medium rounded-xl"
+              className="bg-warm-coral hover:bg-warm-coral/90 text-white px-4 py-2 text-sm font-medium rounded-xl"
             >
               Create Routine
             </TactileButton>
@@ -330,7 +330,7 @@ export default function WorkoutDashboardScreen({
                         }
                         className="
                           w-full
-                          rounded-2xl border border-[var(--border)]
+                          rounded-2xl border border-border
                           bg-white shadow-sm hover:shadow-md transition-all
                           p-4
                           text-left

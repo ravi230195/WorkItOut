@@ -57,23 +57,23 @@ const shadowMap: Record<Shadow, string> = {
 const bgMap: Record<Bg, string> = {
   transparent: "bg-transparent",
   card: "bg-white",
-  muted: "bg-[var(--soft-gray)]/30",
+  muted: "bg-soft-gray/30",
   translucent: "bg-white/80 backdrop-blur-sm",
 };
 const dividerMap: Record<Divider, string> = {
   none: "",
-  top: "border-t border-[var(--border)]",
-  bottom: "border-b border-[var(--border)]",
-  both: "border-y border-[var(--border)]",
+  top: "border-t border-border",
+  bottom: "border-b border-border",
+  both: "border-y border-border",
 };
 
 /** Variant presets (props that follow still take precedence) */
 const variantClass: Record<Variant, string> = {
   plain: "bg-transparent shadow-none rounded-none",
   card: "bg-white shadow-sm rounded-2xl",
-  panel: "bg-white shadow-md rounded-2xl border border-[var(--border)]",
+  panel: "bg-white shadow-md rounded-2xl border border-border",
   translucent: "bg-white/80 backdrop-blur-sm shadow-sm rounded-2xl",
-  muted: "bg-[var(--soft-gray)]/30 rounded-2xl shadow-none",
+  muted: "bg-soft-gray/30 rounded-2xl shadow-none",
 };
 
 export default function Section<T extends keyof JSX.IntrinsicElements = "section">({
@@ -160,7 +160,7 @@ export default function Section<T extends keyof JSX.IntrinsicElements = "section
       {loading && loadingBehavior === "overlay" && (
         <div className="absolute inset-0 rounded-inherit bg-white/60 backdrop-blur-[2px] grid place-items-center pointer-events-none">
           <div className="flex items-center gap-2 text-warm-brown/70">
-            <div className="animate-spin w-5 h-5 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full" />
+            <div className="animate-spin w-5 h-5 border-2 border-warm-coral border-t-transparent rounded-full" />
             <span className="text-sm">Loading…</span>
           </div>
         </div>

@@ -101,7 +101,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       padHeader={false}
       padBottomBar={false}
       // Keep your gradient background
-      className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30"
+      className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
       // Center the card; allow the page (not the card) to manage the primary scroll
       scrollAreaClassName="grid place-items-center"
       // Slightly narrower max width than default for auth flows
@@ -112,7 +112,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       <Card
         className="
           w-full max-w-md
-          bg-white/90 backdrop-blur-sm border-[var(--border)]
+          bg-white/90 backdrop-blur-sm border-border
           shadow-soft
           max-h-[100svh] overflow-y-auto
           pt-safe pb-safe kb-aware
@@ -135,7 +135,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="First Name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                     disabled={isLoading}
                     autoComplete="given-name"
                     required
@@ -147,7 +147,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="Last Name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                     disabled={isLoading}
                     autoComplete="family-name"
                     required
@@ -161,7 +161,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                   placeholder="Display Name"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                   disabled={isLoading}
                   autoComplete="nickname"
                   required
@@ -175,7 +175,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="Height (cm)"
                     value={height}
                     onChange={(e) => setHeight(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                     disabled={isLoading}
                     min="1"
                   />
@@ -186,7 +186,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="Weight (kg)"
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                     disabled={isLoading}
                     min="1"
                   />
@@ -199,7 +199,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                   placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                   disabled={isLoading}
                   autoComplete="email"
                   required
@@ -212,7 +212,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                   placeholder="Password (min 6 characters)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-white/80 text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                   disabled={isLoading}
                   autoComplete="new-password"
                   required
@@ -222,7 +222,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
               <TactileButton
                 type="submit"
                 disabled={disabledSubmit}
-                className="w-full bg-gradient-to-r from-[var(--warm-coral)] to-[var(--warm-peach)] text-white disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-white disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
@@ -242,7 +242,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                 Already have an account?{" "}
                 <button
                   onClick={onNavigateToSignIn}
-                  className="text-[var(--warm-coral)] hover:text-[var(--warm-coral)]/80 transition-colors font-medium"
+                  className="text-warm-coral hover:text-warm-coral/80 transition-colors font-medium"
                   disabled={isLoading}
                 >
                   Sign in

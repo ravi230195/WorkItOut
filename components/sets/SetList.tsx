@@ -120,7 +120,7 @@ const SetList: React.FC<SetListProps> = ({
           return (
             <div
               key={it.key}
-              className="grid grid-cols-4 gap-3 md:gap-4 items-center py-2 px-3 bg-[var(--soft-gray)]/30 rounded-lg border border-[var(--border)]/20"
+              className="grid grid-cols-4 gap-3 md:gap-4 items-center py-2 px-3 bg-soft-gray/30 rounded-lg border border-border/20"
               /*RAVI DBG: style={{ border: "2px solid yellow" }}*/>
               <span className="text-sm font-medium text-warm-brown/80">
                 {it.order}
@@ -134,7 +134,7 @@ const SetList: React.FC<SetListProps> = ({
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "reps", e.target.value)}
                 disabled={readOnly}
-                className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)] focus:ring-[var(--warm-sage)]/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`bg-white border-border text-foreground text-center h-10 md:h-8 rounded-md focus:border-warm-sage focus:ring-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                 min="0"
               />
 
@@ -147,7 +147,7 @@ const SetList: React.FC<SetListProps> = ({
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "weight", e.target.value)}
                 disabled={readOnly}
-                className={`bg-white border-[var(--border)] text-[var(--foreground)] text-center h-10 md:h-8 rounded-md focus:border-[var(--warm-sage)]/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`bg-white border-border text-foreground text-center h-10 md:h-8 rounded-md focus:border-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                 min="0"
               />
 
@@ -177,7 +177,7 @@ const SetList: React.FC<SetListProps> = ({
           {onAdd ? (
             <TactileButton
               onClick={onAdd}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg btn-tactile bg-white/70 border-[var(--border)] text-[var(--foreground)] hover:bg-white"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg btn-tactile bg-white/70 border-border text-foreground hover:bg-white"
               disabled={isDisabled}
               title={
                 isDisabled

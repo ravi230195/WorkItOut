@@ -49,10 +49,10 @@ const sizeMap = {
 
 const bgMap: Record<Bg, string> = {
   solid:
-    "bg-white border-t border-[var(--border)] shadow-[0_-2px_8px_rgba(0,0,0,0.04)]",
+    "bg-white border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.04)]",
   translucent:
-    "bg-white/95 backdrop-blur-sm border-t border-[var(--border)] shadow-[0_-2px_8px_rgba(0,0,0,0.04)]",
-  elevated: "bg-white shadow-lg border-t border-[var(--border)]",
+    "bg-white/95 backdrop-blur-sm border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.04)]",
+  elevated: "bg-white shadow-lg border-t border-border",
 };
 
 const alignMap: Record<Align, string> = {
@@ -119,7 +119,7 @@ export default function FooterBar({
         {loading && (
           <div className="absolute inset-0 grid place-items-center">
             <div className="flex items-center gap-2 text-warm-brown/70">
-              <div className="animate-spin w-5 h-5 border-2 border-[var(--warm-coral)] border-t-transparent rounded-full" />
+              <div className="animate-spin w-5 h-5 border-2 border-warm-coral border-t-transparent rounded-full" />
               <span className="text-sm">{loadingText}</span>
             </div>
           </div>

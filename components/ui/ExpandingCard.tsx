@@ -34,7 +34,7 @@ const containerByVariant: Record<Variant, string> = {
   glass:
     "rounded-2xl border overflow-hidden backdrop-blur-md bg-white/[0.04] border-white/10 shadow-xl shadow-black/40",
   solid:
-    "rounded-2xl border overflow-hidden bg-white/80 border-[var(--border)] shadow-sm",
+    "rounded-2xl border overflow-hidden bg-white/80 border-border shadow-sm",
   plain: "rounded-2xl overflow-hidden",
 };
 
@@ -94,7 +94,7 @@ export default function ExpandingCard({
           <div
             className={[
               "truncate font-semibold",
-              variant === "glass" ? "text-white/95" : "text-[var(--foreground)]",
+              variant === "glass" ? "text-white/95" : "text-foreground",
             ].join(" ")}
           >
             {title}
@@ -103,7 +103,7 @@ export default function ExpandingCard({
             <div
               className={[
                 "truncate text-sm",
-                variant === "glass" ? "text-white/60" : "text-[var(--muted-foreground)]",
+                variant === "glass" ? "text-white/60" : "text-muted-foreground",
               ].join(" ")}
             >
               {subtitle}
@@ -139,7 +139,7 @@ export default function ExpandingCard({
             className={[
               "pt-1 pb-4 px-4",
               bodyClassName,
-              variant === "glass" ? "text-white/90" : "text-[var(--foreground)]",
+              variant === "glass" ? "text-white/90" : "text-foreground",
             ].join(" ")}
           >
             {children}

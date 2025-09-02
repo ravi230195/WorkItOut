@@ -49,10 +49,10 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
   primaryDisabled = false,
 }) => {
   return (
-    <div className={["rounded-2xl bg-white/70 border border-[var(--border)] p-3 md:p-4", className].join(" ")}
+    <div className={["rounded-2xl bg-white/70 border border-border p-3 md:p-4", className].join(" ")}
     /* RAVI DBG: style={{ border: "2px solid red" }}*/>
       {note && (
-        <p className="text-xs md:text-sm text-[var(--muted-foreground)] mb-3 italic bg-[var(--warm-cream)]/50 p-3 rounded-lg">
+        <p className="text-xs md:text-sm text-muted-foreground mb-3 italic bg-[var(--warm-cream)]/50 p-3 rounded-lg">
           {note}
         </p>
       )}
@@ -94,7 +94,7 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
           <TactileButton
             onClick={onPrimary}
             disabled={primaryDisabled || disabled}
-            className={`w-full h-12 md:h-14 bg-[var(--warm-coral)] text-white font-medium rounded-full hover:bg-[var(--warm-coral)]/90 btn-tactile ${
+            className={`w-full h-12 md:h-14 bg-warm-coral text-white font-medium rounded-full hover:bg-warm-coral/90 btn-tactile ${
               primaryDisabled || disabled ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >

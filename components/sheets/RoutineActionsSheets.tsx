@@ -83,7 +83,7 @@ export default function RoutineActionsSheet({
             autoFocus
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
-            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 outline-none focus:ring-2 focus:ring-[var(--warm-coral)]/30 focus:border-[var(--warm-coral)]"
+            className="w-full rounded-lg border border-border px-3 py-2 outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
             placeholder="Enter routine name"
             onKeyDown={async (e) => {
               if (e.key === "Enter") {

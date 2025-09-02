@@ -75,7 +75,7 @@ export default function CreateRoutineScreen({
             value={routineName}
             onChange={(e) => setRoutineName(e.target.value)}
             placeholder="Routine Name"
-            className="bg-[var(--input-background)] border-[var(--border)] text-warm-brown placeholder:text-warm-brown/60 h-12 md:h-12 text-base md:text-lg rounded-xl focus:border-[var(--warm-coral)] focus:ring-[var(--warm-coral)]/20"
+            className="bg-input-background border-border text-warm-brown placeholder:text-warm-brown/60 h-12 md:h-12 text-base md:text-lg rounded-xl focus:border-warm-coral focus:ring-warm-coral/20"
             maxLength={50}
             autoFocus
             disabled={isCreating}
@@ -89,7 +89,7 @@ export default function CreateRoutineScreen({
           <TactileButton
             onClick={handleCreateRoutine}
             disabled={!routineName.trim() || isCreating}
-            className="w-full h-12 md:h-14 bg-[var(--warm-coral)] hover:bg-[var(--warm-coral)]/90 text-white font-medium text-sm md:text-base rounded-full disabled:opacity-50 disabled:cursor-not-allowed border-0"
+            className="w-full h-12 md:h-14 bg-warm-coral hover:bg-warm-coral/90 text-white font-medium text-sm md:text-base rounded-full disabled:opacity-50 disabled:cursor-not-allowed border-0"
           >
             <div className="flex items-center justify-center gap-2">
               <Plus size={20} />

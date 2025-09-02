@@ -58,7 +58,7 @@ export default function BottomSheet({
         >
           <div
             className={cx(
-              "bg-white rounded-t-2xl shadow-2xl border-t border-x border-[var(--border)] overflow-hidden",
+              "bg-white rounded-t-2xl shadow-2xl border-t border-x border-border overflow-hidden",
               innerClassName
             )}
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}

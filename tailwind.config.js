@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: "class",
   content: [
     "./index.html",
     "./App.tsx",
@@ -12,23 +13,14 @@ export default {
         sans: ["var(--font-family)", "system-ui", "sans-serif"],
       },
       colors: {
+        /* App surface tokens */
         background: "var(--background)",
-        foreground: "hsl(var(--foreground-hsl))",
         card: "var(--card)",
         "card-foreground": "var(--card-foreground)",
         popover: "var(--popover)",
         "popover-foreground": "var(--popover-foreground)",
-        primary: "hsl(var(--primary-hsl))",
-        "primary-foreground": "var(--primary-foreground)",
-        "primary-hover": "var(--primary-hover)",
-        "primary-light": "var(--primary-light)",
-        secondary: "var(--secondary)",
-        "secondary-foreground": "var(--secondary-foreground)",
-        accent: "var(--accent)",
-        "accent-foreground": "var(--accent-foreground)",
-        "accent-light": "var(--accent-light)",
-        muted: "var(--muted)",
-        "muted-foreground": "hsl(var(--muted-foreground-hsl))",
+
+        /* Semantic tokens */
         border: "var(--border)",
         "border-light": "var(--border-light)",
         input: "var(--input)",
@@ -43,16 +35,28 @@ export default {
         "destructive-light": "var(--destructive-light)",
         info: "var(--info)",
         "info-light": "var(--info-light)",
-        // Legacy support
-        "warm-coral": "var(--warm-coral)",
-        "warm-sage": "var(--warm-sage)",
-        "warm-cream": "var(--warm-cream)",
-        "warm-peach": "var(--warm-peach)",
-        "warm-mint": "var(--warm-mint)",
-        "warm-rose": "var(--warm-rose)",
-        "warm-lavender": "var(--warm-lavender)",
-        "soft-gray": "var(--soft-gray)",
+
+        /* Text & brand (HSL so /opacity works) */
+        foreground: "hsl(var(--foreground-hsl))",
+        "muted-foreground": "hsl(var(--muted-foreground-hsl))",
+        primary: "hsl(var(--primary-hsl))",
+        "primary-foreground": "var(--primary-foreground)",
+        "primary-hover": "var(--primary-hover)",
+        "primary-light": "var(--primary-light)",
+
+        /* Warm palette (HSL so /opacity works) */
         "warm-brown": "hsl(var(--warm-brown-hsl))",
+        "warm-coral": "hsl(var(--warm-coral-hsl))",
+        "warm-sage": "hsl(var(--warm-sage-hsl))",
+        "warm-cream": "hsl(var(--warm-cream-hsl))",
+        "warm-peach": "hsl(var(--warm-peach-hsl))",
+        "warm-mint": "hsl(var(--warm-mint-hsl))",
+        "warm-rose": "hsl(var(--warm-rose-hsl))",
+        "warm-lavender": "hsl(var(--warm-lavender-hsl))",
+        "soft-gray": "hsl(var(--soft-gray-hsl))",
+
+        /* Keep raw background/muted as vars (not HSL) if you prefer */
+        muted: "var(--muted)",
       },
       borderRadius: {
         sm: "var(--radius-sm)",
@@ -116,8 +120,8 @@ export default {
     },
   },
   plugins: [
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/typography'),
-    require('@tailwindcss/aspect-ratio'),
+    require("@tailwindcss/forms"),
+    require("@tailwindcss/typography"),
+    require("@tailwindcss/aspect-ratio"),
   ],
-}
+};

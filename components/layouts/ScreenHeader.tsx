@@ -51,7 +51,7 @@ export default function ScreenHeader({
     sticky ? "sticky top-0 z-30" : "",
     "relative w-full bg-white/80 backdrop-blur-sm",
     padSafeArea && "pt-safe",
-    showBorder ? "border-b border-[var(--border)]" : "",
+    showBorder ? "border-b border-border" : "",
     className,
   ].filter(Boolean).join(" ");
 

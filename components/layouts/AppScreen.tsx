@@ -134,7 +134,7 @@ export default function AppScreen({
         "shrink-0",
         stickyHeader && "sticky top-0 z-30",
         "bg-white/80 backdrop-blur-sm",
-        showHeaderBorder && "border-b border-[var(--border)]",
+        showHeaderBorder && "border-b border-border",
         headerShellClassName
       )}
       style={{
@@ -196,7 +196,7 @@ export default function AppScreen({
             "shrink-0",
             bottomBarSticky && "sticky bottom-0 z-30",
             "bg-white/95 backdrop-blur-sm",
-            showBottomBarBorder && "border-t border-[var(--border)]",
+            showBottomBarBorder && "border-t border-border",
             bottomBarShellClassName
           )}
           style={{
