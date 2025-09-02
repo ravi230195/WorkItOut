@@ -133,7 +133,7 @@ export default function AppScreen({
       className={cx(
         "shrink-0",
         stickyHeader && "sticky top-0 z-30",
-        "bg-white/80 backdrop-blur-sm",
+        "bg-card/80 backdrop-blur-sm",
         showHeaderBorder && "border-b border-border",
         headerShellClassName
       )}
@@ -195,7 +195,7 @@ export default function AppScreen({
           className={cx(
             "shrink-0",
             bottomBarSticky && "sticky bottom-0 z-30",
-            "bg-white/95 backdrop-blur-sm",
+            "bg-card/95 backdrop-blur-sm",
             showBottomBarBorder && "border-t border-border",
             bottomBarShellClassName
           )}

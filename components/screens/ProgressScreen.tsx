@@ -131,7 +131,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         {/* Main Stat Cards */}
         <Section variant="plain" padding="none">
           <div className="grid grid-cols-2 gap-4">
-            <Card className="bg-white/80 backdrop-blur-sm">
+            <Card className="bg-card/80 backdrop-blur-sm">
               <CardContent className="p-6 flex flex-col items-center">
                 {isLoading ? (
                   <div className="text-warm-brown/60">Loading...</div>
@@ -148,7 +148,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 backdrop-blur-sm">
+            <Card className="bg-card/80 backdrop-blur-sm">
               <CardContent className="p-6 flex flex-col items-center">
                 {isLoading ? (
                   <div className="text-warm-brown/60">Loading...</div>
@@ -169,7 +169,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
 
         {/* Monthly Progress */}
         <Section variant="plain" padding="none">
-          <Card className="bg-white/80 backdrop-blur-sm">
+          <Card className="bg-card/80 backdrop-blur-sm">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Calendar size={20} className="text-warm-peach" />
@@ -226,7 +226,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
 
         {/* Achievements */}
         <Section variant="plain" padding="none">
-          <Card className="bg-white/80 backdrop-blur-sm">
+          <Card className="bg-card/80 backdrop-blur-sm">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Award size={20} className="text-warm-mint" />
@@ -269,7 +269,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
 
         {/* Trend Chart */}
         <Section variant="plain" padding="none">
-          <Card className="bg-white/80 backdrop-blur-sm">
+          <Card className="bg-card/80 backdrop-blur-sm">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <TrendingUp size={20} className="text-warm-coral" />

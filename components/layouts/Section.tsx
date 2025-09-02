@@ -56,9 +56,9 @@ const shadowMap: Record<Shadow, string> = {
 };
 const bgMap: Record<Bg, string> = {
   transparent: "bg-transparent",
-  card: "bg-white",
+  card: "bg-card",
   muted: "bg-soft-gray/30",
-  translucent: "bg-white/80 backdrop-blur-sm",
+  translucent: "bg-card/80 backdrop-blur-sm",
 };
 const dividerMap: Record<Divider, string> = {
   none: "",
@@ -70,9 +70,9 @@ const dividerMap: Record<Divider, string> = {
 /** Variant presets (props that follow still take precedence) */
 const variantClass: Record<Variant, string> = {
   plain: "bg-transparent shadow-none rounded-none",
-  card: "bg-white shadow-sm rounded-2xl",
-  panel: "bg-white shadow-md rounded-2xl border border-border",
-  translucent: "bg-white/80 backdrop-blur-sm shadow-sm rounded-2xl",
+  card: "bg-card shadow-sm rounded-2xl",
+  panel: "bg-card shadow-md rounded-2xl border border-border",
+  translucent: "bg-card/80 backdrop-blur-sm shadow-sm rounded-2xl",
   muted: "bg-soft-gray/30 rounded-2xl shadow-none",
 };
 
@@ -120,11 +120,11 @@ export default function Section<T extends keyof JSX.IntrinsicElements = "section
           <div className="animate-pulse">
             {hasHeader && (
               <div className="mb-3">
-                <div className="h-4 w-1/3 bg-black/10 rounded" />
-                <div className="mt-2 h-3 w-1/2 bg-black/5 rounded" />
+                <div className="h-4 w-1/3 bg-foreground/10 rounded" />
+                <div className="mt-2 h-3 w-1/2 bg-foreground/5 rounded" />
               </div>
             )}
-            <div className="h-24 bg-black/5 rounded" />
+            <div className="h-24 bg-foreground/5 rounded" />
           </div>
         )
       : children;
@@ -158,7 +158,7 @@ export default function Section<T extends keyof JSX.IntrinsicElements = "section
 
       {/* Loading overlay */}
       {loading && loadingBehavior === "overlay" && (
-        <div className="absolute inset-0 rounded-inherit bg-white/60 backdrop-blur-[2px] grid place-items-center pointer-events-none">
+        <div className="absolute inset-0 rounded-inherit bg-card/60 backdrop-blur-[2px] grid place-items-center pointer-events-none">
           <div className="flex items-center gap-2 text-warm-brown/70">
             <div className="animate-spin w-5 h-5 border-2 border-warm-coral border-t-transparent rounded-full" />
             <span className="text-sm">Loading…</span>

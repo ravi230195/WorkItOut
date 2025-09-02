@@ -121,8 +121,8 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         <Section variant="plain" padding="none">
           <Card className="bg-gradient-to-r from-warm-coral/10 to-warm-peach/10 border-warm-coral/20">
             <CardContent className="p-6 text-center">
-              <Avatar className="w-20 h-20 mx-auto mb-4 bg-warm-coral text-white">
-                <AvatarFallback className="bg-warm-coral text-white text-lg">
+              <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-primary-foreground">
+                <AvatarFallback className="bg-primary text-primary-foreground text-lg">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
@@ -167,7 +167,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         {/* Stats Overview */}
         <Section variant="plain" padding="none">
           <div className="grid grid-cols-3 gap-3">
-            <Card className="bg-white/80 backdrop-blur-sm">
+            <Card className="bg-card/80 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
                 <div className="w-8 h-8 rounded-full bg-warm-coral/20 flex items-center justify-center mx-auto mb-2">
                   <Dumbbell size={16} className="text-warm-coral" />
@@ -177,7 +177,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 backdrop-blur-sm">
+            <Card className="bg-card/80 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
                 <div className="w-8 h-8 rounded-full bg-warm-sage/20 flex items-center justify-center mx-auto mb-2">
                   <Calendar size={16} className="text-warm-sage" />
@@ -187,7 +187,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/80 backdrop-blur-sm">
+            <Card className="bg-card/80 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
                 <div className="w-8 h-8 rounded-full bg-warm-peach/20 flex items-center justify-center mx-auto mb-2">
                   <TrendingUp size={16} className="text-warm-peach" />
@@ -209,7 +209,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
 
             <div className="space-y-2">
               {personalBests.map((pb, index) => (
-                <Card key={index} className="bg-white/80 backdrop-blur-sm">
+                <Card key={index} className="bg-card/80 backdrop-blur-sm">
                   <CardContent className="p-4">
                     <div className="flex justify-between items-center">
                       <div>
