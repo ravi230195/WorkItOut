@@ -1,8 +1,9 @@
 /**
  * Test User Management Utilities
- * 
+ *
  * Handles creation, management, and cleanup of test users
  */
+import { logger } from "../../utils/logging";
 
 export interface TestUser {
   email: string;
