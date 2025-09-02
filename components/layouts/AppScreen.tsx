@@ -133,7 +133,7 @@ export default function AppScreen({
       className={cx(
         "shrink-0",
         stickyHeader && "sticky top-0 z-30",
-        "bg-card/80 backdrop-blur-sm",
+        "bg-background",
         showHeaderBorder && "border-b border-border",
         headerShellClassName
       )}
