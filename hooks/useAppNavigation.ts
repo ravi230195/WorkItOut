@@ -17,8 +17,8 @@ export function useAppNavigation() {
   const [currentRoutineName, setCurrentRoutineName] = useState<string>("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // When picker returns, ExerciseSetup uses this to open configure form
-  const [selectedExerciseForSetup, setSelectedExerciseForSetup] = useState<Exercise | null>(null);
+  // When picker returns, ExerciseSetup consumes a batch of exercises to configure
+  const [selectedExercisesForSetup, setSelectedExercisesForSetup] = useState<Exercise[]>([]);
   const [routineAccess, setRoutineAccess] = useState<RoutineAccess>(RoutineAccess.Editable);
 
 
@@ -61,14 +61,14 @@ export function useAppNavigation() {
   const handleRoutineCreated = (routineName: string, routineId?: number) => {
     setCurrentRoutineName(routineName);
     if (routineId) setCurrentRoutineId(routineId);
-    setSelectedExerciseForSetup(null); // start empty
+    setSelectedExercisesForSetup([]); // start empty
     setRoutineAccess(RoutineAccess.Editable);
     setCurrentView("exercise-setup");
   };
 
-  /** When a picker selects an exercise (also used by create flow if needed) */
-  const handleExerciseSelected = (exercise: Exercise) => {
-    setSelectedExerciseForSetup(exercise);
+  /** When picker selects one or more exercises */
+  const handleExercisesSelected = (exercises: Exercise[]) => {
+    setSelectedExercisesForSetup(exercises);
     setCurrentView("exercise-setup");
   };
 
@@ -81,7 +81,7 @@ export function useAppNavigation() {
   const closeExerciseSetupToRoutines = () => {
     setCurrentRoutineId(null);
     setCurrentRoutineName("");
-    setSelectedExerciseForSetup(null);
+    setSelectedExercisesForSetup([]);
     setCurrentView("workouts");
   };
 
@@ -94,7 +94,7 @@ export function useAppNavigation() {
   const onRoutineSelection = (routineId: number, routineName: string, access?: RoutineAccess) => {
     setCurrentRoutineId(routineId);
     setCurrentRoutineName(routineName);
-    setSelectedExerciseForSetup(null);
+    setSelectedExercisesForSetup([]);
     setRoutineAccess(access || RoutineAccess.Editable);
     setCurrentView("exercise-setup");  };
 
@@ -104,7 +104,7 @@ export function useAppNavigation() {
   const completeRoutineCreation = () => {
     setCurrentRoutineId(null);
     setCurrentRoutineName("");
-    setSelectedExerciseForSetup(null);
+    setSelectedExercisesForSetup([]);
     setCurrentView("workouts");
     setRefreshTrigger(prev => prev + 1);
   };
@@ -128,8 +128,8 @@ export function useAppNavigation() {
     currentRoutineId,
     currentRoutineName,
     refreshTrigger,
-    selectedExerciseForSetup,
-    setSelectedExerciseForSetup,
+    selectedExercisesForSetup,
+    setSelectedExercisesForSetup,
     routineAccess,
     setRoutineAccess,
 
@@ -143,7 +143,7 @@ export function useAppNavigation() {
     closeCreateRoutine,
     completeRoutineCreation,
 
-    handleExerciseSelected,
+    handleExercisesSelected,
     closeExerciseSetup,
     handleExerciseSetupComplete,
     onRoutineSelection,

@@ -19,8 +19,8 @@ interface AppRouterProps {
   currentRoutineName: string;
   routineAccess: RoutineAccess;
 
-  selectedExerciseForSetup: Exercise | null;
-  setSelectedExerciseForSetup: (exercise: Exercise | null) => void;
+  selectedExercisesForSetup: Exercise[];
+  setSelectedExercisesForSetup: (exercises: Exercise[]) => void;
 
   isAuthenticated: boolean;
   onAuthSuccess: (token: string, refreshToken: string) => void;
@@ -34,7 +34,7 @@ interface AppRouterProps {
   onCloseCreateRoutine: () => void;
   onCompleteRoutineCreation: () => void;
 
-  onExerciseSelected: (exercise: Exercise) => void;
+  onExerciseSelected: (exercises: Exercise[]) => void;
   onCloseExerciseSetup: () => void;
   onExerciseSetupComplete: () => void;
 
@@ -53,8 +53,8 @@ export function AppRouter({
   currentRoutineName,
   routineAccess,
 
-  selectedExerciseForSetup,
-  setSelectedExerciseForSetup,
+  selectedExercisesForSetup,
+  setSelectedExercisesForSetup,
 
   isAuthenticated,
   onAuthSuccess,
@@ -123,7 +123,7 @@ export function AppRouter({
           routineId={currentRoutineId || undefined}
           routineName={currentRoutineName}
           onBack={currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine}
-          onExerciseSelected={(exercise: Exercise) => onExerciseSelected(exercise)}
+          onExerciseSelected={(exercises: Exercise[]) => onExerciseSelected(exercises)}
           isFromExerciseSetup={!!currentRoutineId}
           bottomBar={bottomBar}
         />
@@ -135,8 +135,8 @@ export function AppRouter({
           <ExerciseSetupScreen
             routineId={currentRoutineId}
             routineName={currentRoutineName}
-            selectedExerciseForSetup={selectedExerciseForSetup}
-            setSelectedExerciseForSetup={setSelectedExerciseForSetup}
+            selectedExercisesForSetup={selectedExercisesForSetup}
+            setSelectedExercisesForSetup={setSelectedExercisesForSetup}
             onBack={onCloseExerciseSetupToRoutines}
             onSave={onExerciseSetupComplete}
             onAddMoreExercises={onCloseExerciseSetup}
