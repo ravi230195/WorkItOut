@@ -62,12 +62,20 @@ export function BottomNavigation({
                 className="w-full flex flex-col items-center gap-1 py-2 text-xs"
                 aria-current={isActive ? "page" : undefined}
               >
-                <tab.icon
-                  size={20}
-                  className={isActive ? "text-warm-brown" : "text-warm-brown/50"}
-                />
+                <span>
+                  <tab.icon
+                    size={20}
+                    className={
+                      isActive ? "text-warm-brown-bold-800" : "text-warm-brown"
+                    }
+                  />
+                </span>
                 <span
-                  className={isActive ? "font-medium text-warm-brown" : "text-warm-brown/50"}
+                  className={
+                    isActive
+                      ? "font-medium text-warm-brown-bold-800"
+                      : "text-warm-brown"
+                  }
                 >
                   {tab.label}
                 </span>
@@ -79,4 +87,3 @@ export function BottomNavigation({
     </nav>
   );
 }
-
