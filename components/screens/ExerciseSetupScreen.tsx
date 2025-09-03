@@ -1,7 +1,8 @@
 // components/screens/ExerciseSetupScreen.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AppScreen, Section, ScreenHeader, Stack, Spacer, BottomBar } from "../layouts";
+import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
+import { BottomNavigation } from "../BottomNavigation";
 import { TactileButton } from "../TactileButton";
 import ExpandingCard from "../ui/ExpandingCard";
 import ExerciseSetEditorCard from "../sets/ExerciseSetEditorCard";
@@ -675,7 +676,7 @@ export function ExerciseSetupScreen({
     if (screenMode === "plan") {
       if (hasUnsaved) {
         return (
-          <BottomBar>
+          <BottomNavigation>
             <div className="flex w-full gap-3">
               <TactileButton
                 variant="secondary"
@@ -701,22 +702,22 @@ export function ExerciseSetupScreen({
                 {savingAll ? "SAVING..." : `SAVE ALL`}
               </TactileButton>
             </div>
-          </BottomBar>
+          </BottomNavigation>
         );
       }
       return (
-        <BottomBar>
+        <BottomNavigation>
           <TactileButton
             onClick={startWorkout}
             className="flex-1 h-11 md:h-12 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
           >
             START WORKOUT
           </TactileButton>
-        </BottomBar>
+        </BottomNavigation>
       );
     }
     return (
-      <BottomBar>
+      <BottomNavigation>
         <TactileButton
           onClick={endWorkout}
           disabled={savingWorkout}
@@ -724,7 +725,7 @@ export function ExerciseSetupScreen({
         >
           {savingWorkout ? "SAVING..." : "END WORKOUT"}
         </TactileButton>
-      </BottomBar>
+      </BottomNavigation>
     );
   };
 
