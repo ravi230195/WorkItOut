@@ -706,7 +706,7 @@ export function ExerciseSetupScreen({
         );
       }
       return (
-        <FooterBar size="md" bg="translucent" align="between" maxContent="responsive" innerClassName="w-full gap-3">
+        <BottomNavigation>
           <TactileButton
             onClick={startWorkout}
             className="h-11 md:h-12 px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
