@@ -72,39 +72,39 @@ export default function ExpandingCard({
         className,
       ].join(" ")}
     >
-      <button
+      <ListItem
+        as="button"
         type="button"
         onClick={disabled ? undefined : onToggle}
         aria-expanded={expanded}
         aria-controls={bodyId}
+        leading={leading}
+        leadingClassName="w-12 h-12 rounded-xl overflow-hidden bg-card/10 flex items-center justify-center shrink-0"
+        primary={title}
+        secondary={subtitle}
+        primaryClassName={
+          "truncate font-semibold " +
+          (variant === "glass"
+            ? "text-primary-foreground opacity-95"
+            : "text-foreground")
+        }
+        secondaryClassName={
+          "truncate text-sm " +
+          (variant === "glass"
+            ? "text-primary-foreground opacity-60"
+            : "text-muted-foreground")
+        }
+        trailing={trailing}
+        rightIcon={disableChevron ? undefined : "chevron"}
+        rightIconRotated={expanded}
         className={[
+          headerPadBySize[size],
           "w-full text-left select-none",
           disabled ? "opacity-60 cursor-default" : "hover:bg-card/3",
+          headerClassName,
         ].join(" ")}
-      >
-        <ListItem
-          leading={leading}
-          leadingClassName="w-12 h-12 rounded-xl overflow-hidden bg-card/10 flex items-center justify-center shrink-0"
-          primary={title}
-          secondary={subtitle}
-          primaryClassName={
-            "truncate font-semibold " +
-            (variant === "glass"
-              ? "text-primary-foreground opacity-95"
-              : "text-foreground")
-          }
-          secondaryClassName={
-            "truncate text-sm " +
-            (variant === "glass"
-              ? "text-primary-foreground opacity-60"
-              : "text-muted-foreground")
-          }
-          trailing={trailing}
-          rightIcon={disableChevron ? undefined : "chevron"}
-          rightIconRotated={expanded}
-          className={headerPadBySize[size] + " " + headerClassName}
-        />
-      </button>
+        disabled={disabled}
+      />
 
       <AnimatePresence initial={false}>
         {expanded && (

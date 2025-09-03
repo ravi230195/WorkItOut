@@ -61,32 +61,29 @@ const ExerciseRow = memo(function ExerciseRow({
   const subtitle = (exercise.muscle_group || "").trim() || OTHER_GROUP;
 
   return (
-    <button
+    <ListItem
+      as="button"
       type="button"
       aria-pressed={selected}
       onClick={() => onSelect(exercise)}
-      className="w-full text-left focus:outline-none"
-    >
-      <ListItem
-        leading={<span className="text-sm md:text-base font-medium text-warm-brown/60">{initials}</span>}
-        leadingClassName="w-10 h-10 md:w-12 md:h-12 bg-warm-brown/10 rounded-lg grid place-items-center"
-        primary={exercise.name}
-        secondary={subtitle}
-        primaryClassName="font-medium text-warm-brown"
-        secondaryClassName="text-xs md:text-sm text-warm-brown/60"
-        className={[
-          "rounded-xl border transition-all px-3 md:px-4",
-          selected
-            ? "bg-warm-coral/60 border-warm-coral/30 shadow-md"
-            : "bg-card border-border hover:bg-soft-gray/50 hover:border-warm-coral/30 hover:shadow-md",
-        ].join(" ")}
-        trailing={
-          <div className="text-warm-brown/40">
-            <div className="w-6 h-6 rounded-full border border-warm-brown/20 grid place-items-center">ⓘ</div>
-          </div>
-        }
-      />
-    </button>
+      leading={<span className="text-sm md:text-base font-medium text-warm-brown/60">{initials}</span>}
+      leadingClassName="w-10 h-10 md:w-12 md:h-12 bg-warm-brown/10 rounded-lg grid place-items-center"
+      primary={exercise.name}
+      secondary={subtitle}
+      primaryClassName="font-medium text-warm-brown"
+      secondaryClassName="text-xs md:text-sm text-warm-brown/60"
+      className={[
+        "rounded-xl border transition-all px-3 md:px-4",
+        selected
+          ? "bg-warm-coral/60 border-warm-coral/30 shadow-md"
+          : "bg-card border-border hover:bg-soft-gray/50 hover:border-warm-coral/30 hover:shadow-md",
+      ].join(" ")}
+      trailing={
+        <div className="text-warm-brown/40">
+          <div className="w-6 h-6 rounded-full border border-warm-brown/20 grid place-items-center">ⓘ</div>
+        </div>
+      }
+    />
   );
 });
 

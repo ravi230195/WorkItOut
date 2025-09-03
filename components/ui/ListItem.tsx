@@ -1,7 +1,11 @@
 import React from "react";
 import { MoreVertical, ChevronDown } from "lucide-react";
 
-interface ListItemProps extends React.HTMLAttributes<HTMLDivElement> {
+interface ListItemProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Render as a regular div (default) or button for full-row actions */
+  as?: "div" | "button";
   leading?: React.ReactNode;
   /** Additional classes for the leading container */
   leadingClassName?: string;
@@ -22,8 +26,9 @@ interface ListItemProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export default function ListItem({
+  as = "div",
   leading,
-  leadingClassName = "w-12 h-12 rounded-xl bg-warm-brown/10 flex items-center justify-center", 
+  leadingClassName = "w-12 h-12 rounded-xl bg-warm-brown/10 flex items-center justify-center",
   primary,
   primaryClassName = "text-base font-semibold text-warm-brown",
   secondary,
@@ -39,9 +44,12 @@ export default function ListItem({
 }: ListItemProps) {
   const hasSub = !!secondary || !!tertiary;
   const pyClass = hasSub ? "py-4" : "py-3";
+  const baseInteractive =
+    as === "button" ? "w-full text-left focus:outline-none" : "";
+  const Component = as === "button" ? "button" : "div";
 
   return (
-    <div className={`flex items-center gap-3 ${pyClass} ${className}`} {...rest}>
+    <Component className={`flex items-center gap-3 ${pyClass} ${baseInteractive} ${className}`} {...rest}>
       {leading && (
         <div className={`shrink-0 ${leadingClassName}`}>{leading}</div>
       )}
@@ -74,7 +82,7 @@ export default function ListItem({
           )}
         </button>
       )}
-    </div>
+    </Component>
   );
 }
 
