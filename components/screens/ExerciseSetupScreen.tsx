@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
 import { BottomNavigation } from "../BottomNavigation";
-import { TactileButton } from "../TactileButton";
+import { BottomNavigationButton } from "../BottomNavigationButton";
 import ExpandingCard from "../ui/ExpandingCard";
 import ExerciseSetEditorCard from "../sets/ExerciseSetEditorCard";
 import { RoutineAccess } from "../../hooks/useAppNavigation";
@@ -678,7 +678,7 @@ export function ExerciseSetupScreen({
         return (
           <BottomNavigation>
             <div className="flex w-full gap-3">
-              <TactileButton
+              <BottomNavigationButton
                 variant="secondary"
                 onClick={onCancelAll}
                 disabled={access === RoutineAccess.ReadOnly}
@@ -689,8 +689,8 @@ export function ExerciseSetupScreen({
                 } font-medium`}
               >
                 CANCEL ALL
-              </TactileButton>
-              <TactileButton
+              </BottomNavigationButton>
+              <BottomNavigationButton
                 onClick={onSaveAll}
                 disabled={savingAll || access === RoutineAccess.ReadOnly}
                 className={`flex-1 font-medium border-0 transition-all ${
@@ -700,31 +700,31 @@ export function ExerciseSetupScreen({
                 }`}
               >
                 {savingAll ? "SAVING..." : `SAVE ALL`}
-              </TactileButton>
+              </BottomNavigationButton>
             </div>
           </BottomNavigation>
         );
       }
       return (
         <BottomNavigation>
-          <TactileButton
+          <BottomNavigationButton
             onClick={startWorkout}
             className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
           >
             START WORKOUT
-          </TactileButton>
+          </BottomNavigationButton>
         </BottomNavigation>
       );
     }
     return (
       <BottomNavigation>
-        <TactileButton
+        <BottomNavigationButton
           onClick={endWorkout}
           disabled={savingWorkout}
           className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
         >
           {savingWorkout ? "SAVING..." : "END WORKOUT"}
-        </TactileButton>
+        </BottomNavigationButton>
       </BottomNavigation>
     );
   };
