@@ -7,7 +7,8 @@ import SegmentedToggle from "../segmented/SegmentedToggle";
 import { supabaseAPI, Exercise } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
-import { AppScreen, ScreenHeader, Section, FooterBar, Stack, Spacer } from "../layouts";
+import { AppScreen, ScreenHeader, Section, Stack, Spacer } from "../layouts";
+import { BottomNavigation } from "../BottomNavigation";
 import { logger } from "../../utils/logging";
 
 interface AddExercisesToRoutineScreenProps {
@@ -286,7 +287,7 @@ export function AddExercisesToRoutineScreen({
       showHeaderBorder={false}
       showBottomBarBorder={false}
       bottomBar={
-        <FooterBar size="md" bg="solid" align="center" maxContent="responsive">
+        <BottomNavigation>
           <TactileButton
             onClick={handleAddExercise}
             disabled={selectedExercises.length === 0 || isAddingExercise}
@@ -302,7 +303,7 @@ export function AddExercisesToRoutineScreen({
               ? `ADD (${selectedExercises.length})`
               : "ADD"}
           </TactileButton>
-        </FooterBar>
+        </BottomNavigation>
       }
       bottomBarSticky
       contentClassName=""

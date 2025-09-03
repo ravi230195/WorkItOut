@@ -5,8 +5,6 @@ export type { AppScreenProps } from "./AppScreen";
 export { default as ScreenHeader } from "./ScreenHeader";
 export { default as Section } from "./Section";
 
-export { default as FooterBar } from "./FooterBar";
-export type { FooterBarProps, Align, Bg } from "./FooterBar";
 
 export { default as Spacer } from "./Spacer";
 export type { Space } from "./Spacer";
