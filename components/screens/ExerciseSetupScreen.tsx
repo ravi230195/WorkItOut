@@ -1,8 +1,7 @@
 // components/screens/ExerciseSetupScreen.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
-import { BottomNavigation } from "../BottomNavigation";
+import { AppScreen, Section, ScreenHeader, Stack, Spacer, BottomBar } from "../layouts";
 import { TactileButton } from "../TactileButton";
 import ExpandingCard from "../ui/ExpandingCard";
 import ExerciseSetEditorCard from "../sets/ExerciseSetEditorCard";
@@ -79,7 +78,6 @@ interface ExerciseSetupScreenProps {
   isEditingExistingRoutine?: boolean;
   onShowExerciseSelector?: () => void;
   access?: RoutineAccess;
-  bottomBar?: React.ReactNode;
   initialMode?: "plan" | "workout";
   onModeChange?: (mode: "plan" | "workout") => void;
 }
@@ -99,7 +97,6 @@ export function ExerciseSetupScreen({
   isEditingExistingRoutine = false,
   onShowExerciseSelector,
   access = RoutineAccess.Editable,
-  bottomBar,
   initialMode = "plan",
   onModeChange,
 }: ExerciseSetupScreenProps) {
@@ -678,7 +675,7 @@ export function ExerciseSetupScreen({
     if (screenMode === "plan") {
       if (hasUnsaved) {
         return (
-          <BottomNavigation>
+          <BottomBar>
             <div className="flex w-full gap-3">
               <TactileButton
                 variant="secondary"
@@ -704,22 +701,22 @@ export function ExerciseSetupScreen({
                 {savingAll ? "SAVING..." : `SAVE ALL`}
               </TactileButton>
             </div>
-          </BottomNavigation>
+          </BottomBar>
         );
       }
       return (
-        <BottomNavigation>
+        <BottomBar>
           <TactileButton
             onClick={startWorkout}
             className="flex-1 h-11 md:h-12 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
           >
             START WORKOUT
           </TactileButton>
-        </BottomNavigation>
+        </BottomBar>
       );
     }
     return (
-      <BottomNavigation>
+      <BottomBar>
         <TactileButton
           onClick={endWorkout}
           disabled={savingWorkout}
@@ -727,7 +724,7 @@ export function ExerciseSetupScreen({
         >
           {savingWorkout ? "SAVING..." : "END WORKOUT"}
         </TactileButton>
-      </BottomNavigation>
+      </BottomBar>
     );
   };
 

@@ -7,8 +7,7 @@ import SegmentedToggle from "../segmented/SegmentedToggle";
 import { supabaseAPI, Exercise } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
-import { AppScreen, ScreenHeader, Section, Stack, Spacer } from "../layouts";
-import { BottomNavigation } from "../BottomNavigation";
+import { AppScreen, ScreenHeader, Section, Stack, Spacer, BottomBar } from "../layouts";
 import { logger } from "../../utils/logging";
 
 interface AddExercisesToRoutineScreenProps {
@@ -17,7 +16,6 @@ interface AddExercisesToRoutineScreenProps {
   onBack: () => void;
   onExerciseSelected: (exercises: Exercise[]) => void;
   isFromExerciseSetup?: boolean;
-  bottomBar?: React.ReactNode;
 }
 
 type MuscleFilter = "all" | string;
@@ -287,7 +285,7 @@ export function AddExercisesToRoutineScreen({
       showHeaderBorder={false}
       showBottomBarBorder={false}
       bottomBar={
-        <BottomNavigation>
+        <BottomBar>
           <TactileButton
             onClick={handleAddExercise}
             disabled={selectedExercises.length === 0 || isAddingExercise}
@@ -303,7 +301,7 @@ export function AddExercisesToRoutineScreen({
               ? `ADD (${selectedExercises.length})`
               : "ADD"}
           </TactileButton>
-        </BottomNavigation>
+        </BottomBar>
       }
       bottomBarSticky
       contentClassName=""
