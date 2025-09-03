@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { AppScreen, ScreenHeader, Section, Stack, Spacer } from "../layouts";
 import { BottomNavigation } from "../BottomNavigation";
 import { logger } from "../../utils/logging";
+import ListItem from "../ui/ListItem";
 
 interface AddExercisesToRoutineScreenProps {
   routineId?: number;
@@ -66,32 +67,25 @@ const ExerciseRow = memo(function ExerciseRow({
       onClick={() => onSelect(exercise)}
       className="w-full text-left focus:outline-none"
     >
-      <div
+      <ListItem
+        leading={<span className="text-sm md:text-base font-medium text-warm-brown/60">{initials}</span>}
+        leadingClassName="w-10 h-10 md:w-12 md:h-12 bg-warm-brown/10 rounded-lg grid place-items-center"
+        primary={exercise.name}
+        secondary={subtitle}
+        primaryClassName="font-medium text-warm-brown"
+        secondaryClassName="text-xs md:text-sm text-warm-brown/60"
         className={[
-          "p-3 md:p-4 rounded-xl border transition-all",
+          "rounded-xl border transition-all px-3 md:px-4",
           selected
-            // toned down selection (less “bright orange”)
             ? "bg-warm-coral/60 border-warm-coral/30 shadow-md"
             : "bg-card border-border hover:bg-soft-gray/50 hover:border-warm-coral/30 hover:shadow-md",
         ].join(" ")}
-      >
-        <div className="flex items-center gap-3 md:gap-4">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-warm-brown/10 rounded-lg grid place-items-center">
-            <span className="text-sm md:text-base font-medium text-warm-brown/60">
-              {initials}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-warm-brown truncate">{exercise.name}</h3>
-            <p className="text-xs md:text-sm text-warm-brown/60 truncate">{subtitle}</p>
-          </div>
+        trailing={
           <div className="text-warm-brown/40">
-            <div className="w-6 h-6 rounded-full border border-warm-brown/20 grid place-items-center">
-              <div>ⓘ</div>
-            </div>
+            <div className="w-6 h-6 rounded-full border border-warm-brown/20 grid place-items-center">ⓘ</div>
           </div>
-        </div>
-      </div>
+        }
+      />
     </button>
   );
 });

@@ -1,7 +1,7 @@
 // components/ui/ExpandingCard.tsx
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import ListItem from "./ListItem";
 
 type Variant = "glass" | "solid" | "plain";
 
@@ -78,53 +78,32 @@ export default function ExpandingCard({
         aria-expanded={expanded}
         aria-controls={bodyId}
         className={[
-          "w-full flex items-center gap-3 text-left select-none",
-          headerPadBySize[size],
-          headerClassName,
+          "w-full text-left select-none",
           disabled ? "opacity-60 cursor-default" : "hover:bg-card/3",
         ].join(" ")}
       >
-        {leading && (
-          <div className="w-12 h-12 rounded-xl overflow-hidden bg-card/10 flex items-center justify-center shrink-0">
-            {leading}
-          </div>
-        )}
-
-        <div className="min-w-0 flex-1">
-          <div
-            className={[
-              "truncate font-semibold",
-              variant === "glass" ? "text-primary-foreground opacity-95" : "text-foreground",
-            ].join(" ")}
-          >
-            {title}
-          </div>
-          {subtitle && (
-            <div
-              className={[
-                "truncate text-sm",
-                variant === "glass" ? "text-primary-foreground opacity-60" : "text-muted-foreground",
-              ].join(" ")}
-            >
-              {subtitle}
-            </div>
-          )}
-        </div>
-
-        {trailing}
-
-        {!disableChevron && (
-          <motion.div
-            animate={{ rotate: expanded ? 180 : 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 24 }}
-            className={[
-              "ml-1",
-              variant === "glass" ? "text-primary-foreground opacity-70" : "text-warm-brown/70",
-            ].join(" ")}
-          >
-            <ChevronDown size={18} />
-          </motion.div>
-        )}
+        <ListItem
+          leading={leading}
+          leadingClassName="w-12 h-12 rounded-xl overflow-hidden bg-card/10 flex items-center justify-center shrink-0"
+          primary={title}
+          secondary={subtitle}
+          primaryClassName={
+            "truncate font-semibold " +
+            (variant === "glass"
+              ? "text-primary-foreground opacity-95"
+              : "text-foreground")
+          }
+          secondaryClassName={
+            "truncate text-sm " +
+            (variant === "glass"
+              ? "text-primary-foreground opacity-60"
+              : "text-muted-foreground")
+          }
+          trailing={trailing}
+          rightIcon={disableChevron ? undefined : "chevron"}
+          rightIconRotated={expanded}
+          className={headerPadBySize[size] + " " + headerClassName}
+        />
       </button>
 
       <AnimatePresence initial={false}>
