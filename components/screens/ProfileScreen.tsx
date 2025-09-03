@@ -19,6 +19,7 @@ import { supabaseAPI, Profile } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { AppScreen, Section, ScreenHeader, Stack } from "../layouts";
 import { logger, getLogLevel, setLogLevel, getAvailableLogLevels, type LogLevel } from "../../utils/logging";
+import SettingsSheet from "../sheets/SettingsSheet";
 
 interface PersonalBest {
   exercise: string;
@@ -37,6 +38,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const personalBests: PersonalBest[] = [
     { exercise: "Bench Press", weight: 225, reps: 5, date: "2 weeks ago" },
@@ -270,6 +272,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
             <TactileButton
               variant="secondary"
               className="w-full flex items-center justify-center gap-2"
+              onClick={() => setSettingsOpen(true)}
             >
               <Settings size={16} />
               Settings
@@ -305,6 +308,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
           </Card>
         </Section>
       </Stack>
+      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </AppScreen>
   );
 }

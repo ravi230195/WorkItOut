@@ -5,8 +5,7 @@ import { useAuthEffects } from "./hooks/useAuthEffects";
 import { useAppNavigation } from "./hooks/useAppNavigation";
 import { useMobileSetup } from "./hooks/useMobileSetup";
 import { Toaster } from "./components/ui/sonner";
-import { useState } from "react";
-import ThemeToggle from "./components/ThemeToggle";
+import { useState, useEffect } from "react";
 
 import { BottomNavigation, TabType } from "./components/BottomNavigation";
 import { VIEWS_WITHOUT_BOTTOM_NAV } from "./utils/navigation";
@@ -48,6 +47,13 @@ function AppContent() {
   // ⬅️ now includes authReady
   const { isAuthenticated, authReady } = useAuthEffects({ currentView, setCurrentView });
 
+  useEffect(() => {
+    const stored = localStorage.getItem("theme");
+    if (stored === "dark") {
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
   const showBottomNav = !VIEWS_WITHOUT_BOTTOM_NAV.includes(currentView);
   const [overlayOpen, setOverlayOpen] = useState(false);
 
@@ -70,7 +76,6 @@ function AppContent() {
 
   return (
     <div id="app" className="relative h-dvh flex flex-col overflow-hidden">
-      <ThemeToggle className="absolute top-2 right-2" />
       <main className="flex-1 min-h-0 overflow-hidden">
         <AppRouter
           currentView={currentView}
