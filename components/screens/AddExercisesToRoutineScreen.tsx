@@ -37,12 +37,12 @@ const SearchField = memo(function SearchField({
 }) {
   return (
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-brown/60" size={20} />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? "Search for an exercise..."}
-        className="bg-input-background border-border text-warm-brown placeholder:text-warm-brown/60 h-12 md:h-12 pl-10 pr-4 rounded-xl focus:border-warm-coral focus:ring-warm-coral/20"
+        className="bg-input-background border-border text-foreground placeholder:text-muted-foreground h-12 md:h-12 pl-10 pr-4 rounded-xl focus:border-warm-coral focus:ring-warm-coral/20"
       />
     </div>
   );
@@ -66,12 +66,12 @@ const ExerciseRow = memo(function ExerciseRow({
       type="button"
       aria-pressed={selected}
       onClick={() => onSelect(exercise)}
-      leading={<span className="font-medium text-warm-brown/60">{initials}</span>}
-      leadingClassName="w-12 h-12 rounded-xl bg-warm-brown/10 grid place-items-center"
+      leading={<span className="font-medium text-muted-foreground">{initials}</span>}
+      leadingClassName="w-12 h-12 rounded-xl bg-card/10 grid place-items-center"
       primary={exercise.name}
       secondary={subtitle}
-      primaryClassName="font-medium text-warm-brown text-[clamp(16px,4.5vw,19px)]"
-      secondaryClassName="text-[clamp(11px,3.2vw,12px)] text-warm-brown/60"
+      primaryClassName="font-medium text-foreground text-[clamp(16px,4.5vw,19px)]"
+      secondaryClassName="text-[clamp(11px,3.2vw,12px)] text-muted-foreground"
       className={[
         "w-full rounded-2xl border border-border bg-card shadow-sm transition-all px-4",
         selected
@@ -79,8 +79,8 @@ const ExerciseRow = memo(function ExerciseRow({
           : "hover:bg-soft-gray/50 hover:shadow-md",
       ].join(" ")}
       trailing={
-        <div className="text-warm-brown/40">
-          <div className="w-6 h-6 rounded-full border border-warm-brown/20 grid place-items-center">ⓘ</div>
+        <div className="text-muted-foreground">
+          <div className="w-6 h-6 rounded-full border border-border grid place-items-center">ⓘ</div>
         </div>
       }
     />
@@ -100,7 +100,7 @@ const ExerciseGroup = memo(function ExerciseGroup({
 }) {
   return (
     <div>
-      <h2 className="text-xs md:text-sm text-warm-brown/60 font-medium mb-3 px-2 tracking-wide">
+      <h2 className="text-xs md:text-sm text-muted-foreground font-medium mb-3 px-2 tracking-wide">
         {letter}
       </h2>
       <div className="space-y-2">
@@ -134,7 +134,7 @@ function ExerciseList({
   if (letters.length === 0) {
     return (
       <Section variant="card" className="text-center">
-        <p className="text-warm-brown/60">No exercises found</p>
+        <p className="text-muted-foreground">No exercises found</p>
       </Section>
     );
   }
@@ -284,7 +284,7 @@ export function AddExercisesToRoutineScreen({
             className={`sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
               selectedExercises.length > 0
                 ? "bg-primary hover:bg-primary-hover text-primary-foreground opacity-90 btn-tactile"
-                : "bg-warm-brown/20 text-warm-brown/40 cursor-not-allowed"
+                : "bg-muted text-muted-foreground/60 cursor-not-allowed"
             }`}
           >
             {isAddingExercise
