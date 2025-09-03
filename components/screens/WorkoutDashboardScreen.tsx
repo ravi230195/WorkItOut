@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
-import { MoreVertical, AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
+import { AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { supabaseAPI, UserRoutine } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
@@ -13,6 +13,7 @@ import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets } from "../../utils/routineLoader";
+import ListItem from "../ui/ListItem";
 
 interface WorkoutDashboardScreenProps {
   onCreateRoutine: () => void;
@@ -331,69 +332,36 @@ export default function WorkoutDashboardScreen({
                             view === RoutinesView.My ? RoutineAccess.Editable : RoutineAccess.ReadOnly
                           )
                         }
-                        className="
-                          w-full
-                          rounded-2xl border border-border
-                          bg-card shadow-sm hover:shadow-md transition-all
-                          p-4
-                          text-left
-                        "
+                        className="w-full rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all text-left"
                       >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${palette.bg}`}>
-                              <div className={`w-8 h-8 ${palette.iconBg} rounded-lg grid place-items-center text-primary-foreground text-lg`}>
-                                <span>{palette.emoji}</span>
-                              </div>
+                        <ListItem
+                          leading={
+                            <div className={`w-8 h-8 ${palette.iconBg} rounded-lg grid place-items-center text-primary-foreground text-lg`}>
+                              <span>{palette.emoji}</span>
                             </div>
-
-                            <div className="min-w-0">
-                              <h3
-                                className="
-                                  font-medium text-warm-brown truncate 
-                                  text-[clamp(16px,4.5vw,19px)] 
-                                  text-left 
-                                "
-                              >
-                                {routine.name}
-                              </h3>
-
-                              <p className="text-[clamp(11px,3.2vw,12px)] text-warm-brown/60 truncate text-left">
-                                {muscleGroups}
-                              </p>
-
-                              <div className="
-                                mt-2 flex items-center gap-4 
-                                text-[clamp(11px,3.2vw,12px)] 
-                                text-warm-brown/70">
-                                <span className="inline-flex items-center gap-1">
-                                  <Clock size={14} />
-                                  {loadingCounts ? "—" : timeMin !== null ? `${timeMin} min` : "—"}
-                                </span>
-                                <span className="inline-flex items-center gap-1">
-                                  <TrendingUp size={14} />
-                                  {loadingCounts ? "—" : `${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}`}
-                                </span>
-                              </div>
+                          }
+                          leadingClassName={`w-12 h-12 rounded-xl flex items-center justify-center ${palette.bg}`}
+                          primary={routine.name}
+                          secondary={muscleGroups}
+                          tertiary={
+                            <div className="mt-2 flex items-center gap-4 text-warm-brown/70">
+                              <span className="inline-flex items-center gap-1">
+                                <Clock size={14} />
+                                {loadingCounts ? "—" : timeMin !== null ? `${timeMin} min` : "—"}
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <TrendingUp size={14} />
+                                {loadingCounts ? "—" : `${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}`}
+                              </span>
                             </div>
-                          </div>
-
-                          {/* right: kebab only when editable */}
-                          {canEdit && (
-                            <TactileButton
-                              variant="secondary"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openActions(routine, e);
-                              }}
-                              className="shrink-0 p-2 h-auto bg-transparent hover:bg=[var(--soft-gray)]/60 text-warm-brown/70"
-                              aria-label="More options"
-                            >
-                              <MoreVertical size={18} />
-                            </TactileButton>
-                          )}
-                        </div>
+                          }
+                          primaryClassName="font-medium text-warm-brown text-[clamp(16px,4.5vw,19px)]"
+                          secondaryClassName="text-[clamp(11px,3.2vw,12px)] text-warm-brown/60"
+                          tertiaryClassName="text-[clamp(11px,3.2vw,12px)]"
+                          className="p-4"
+                          rightIcon={canEdit ? "kebab" : undefined}
+                          onRightIconClick={(e) => openActions(routine, e)}
+                        />
                       </button>
                     );
                   })}
