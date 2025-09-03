@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { AppScreen, ScreenHeader, Section, Stack, Spacer } from "../layouts";
 import { BottomNavigation } from "../BottomNavigation";
 import { logger } from "../../utils/logging";
+import ListItem from "../ui/ListItem";
 
 interface AddExercisesToRoutineScreenProps {
   routineId?: number;
@@ -36,12 +37,12 @@ const SearchField = memo(function SearchField({
 }) {
   return (
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-brown/60" size={20} />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? "Search for an exercise..."}
-        className="bg-input-background border-border text-warm-brown placeholder:text-warm-brown/60 h-12 md:h-12 pl-10 pr-4 rounded-xl focus:border-warm-coral focus:ring-warm-coral/20"
+        className="bg-input-background border-border text-foreground placeholder:text-muted-foreground h-12 md:h-12 pl-10 pr-4 rounded-xl focus:border-warm-coral focus:ring-warm-coral/20"
       />
     </div>
   );
@@ -60,39 +61,29 @@ const ExerciseRow = memo(function ExerciseRow({
   const subtitle = (exercise.muscle_group || "").trim() || OTHER_GROUP;
 
   return (
-    <button
+    <ListItem
+      as="button"
       type="button"
       aria-pressed={selected}
       onClick={() => onSelect(exercise)}
-      className="w-full text-left focus:outline-none"
-    >
-      <div
-        className={[
-          "p-3 md:p-4 rounded-xl border transition-all",
-          selected
-            // toned down selection (less “bright orange”)
-            ? "bg-warm-coral/60 border-warm-coral/30 shadow-md"
-            : "bg-card border-border hover:bg-soft-gray/50 hover:border-warm-coral/30 hover:shadow-md",
-        ].join(" ")}
-      >
-        <div className="flex items-center gap-3 md:gap-4">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-warm-brown/10 rounded-lg grid place-items-center">
-            <span className="text-sm md:text-base font-medium text-warm-brown/60">
-              {initials}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-warm-brown truncate">{exercise.name}</h3>
-            <p className="text-xs md:text-sm text-warm-brown/60 truncate">{subtitle}</p>
-          </div>
-          <div className="text-warm-brown/40">
-            <div className="w-6 h-6 rounded-full border border-warm-brown/20 grid place-items-center">
-              <div>ⓘ</div>
-            </div>
-          </div>
+      leading={<span className="font-medium text-muted-foreground">{initials}</span>}
+      leadingClassName="w-12 h-12 rounded-xl bg-card/10 grid place-items-center"
+      primary={exercise.name}
+      secondary={subtitle}
+      primaryClassName="font-medium text-foreground text-[clamp(16px,4.5vw,19px)]"
+      secondaryClassName="text-[clamp(11px,3.2vw,12px)] text-muted-foreground"
+      className={[
+        "w-full rounded-2xl border border-border bg-card shadow-sm transition-all px-4",
+        selected
+          ? "bg-warm-coral/20 border-warm-coral/30 shadow-md"
+          : "hover:bg-soft-gray/50 hover:shadow-md",
+      ].join(" ")}
+      trailing={
+        <div className="text-muted-foreground">
+          <div className="w-6 h-6 rounded-full border border-border grid place-items-center">ⓘ</div>
         </div>
-      </div>
-    </button>
+      }
+    />
   );
 });
 
@@ -109,7 +100,7 @@ const ExerciseGroup = memo(function ExerciseGroup({
 }) {
   return (
     <div>
-      <h2 className="text-xs md:text-sm text-warm-brown/60 font-medium mb-3 px-2 tracking-wide">
+      <h2 className="text-xs md:text-sm text-muted-foreground font-medium mb-3 px-2 tracking-wide">
         {letter}
       </h2>
       <div className="space-y-2">
@@ -143,7 +134,7 @@ function ExerciseList({
   if (letters.length === 0) {
     return (
       <Section variant="card" className="text-center">
-        <p className="text-warm-brown/60">No exercises found</p>
+        <p className="text-muted-foreground">No exercises found</p>
       </Section>
     );
   }
@@ -293,7 +284,7 @@ export function AddExercisesToRoutineScreen({
             className={`sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
               selectedExercises.length > 0
                 ? "bg-primary hover:bg-primary-hover text-primary-foreground opacity-90 btn-tactile"
-                : "bg-warm-brown/20 text-warm-brown/40 cursor-not-allowed"
+                : "bg-muted text-muted-foreground/60 cursor-not-allowed"
             }`}
           >
             {isAddingExercise

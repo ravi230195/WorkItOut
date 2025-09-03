@@ -17,6 +17,7 @@ import {
 import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../utils/routineLoader";
+import ListItem from "../ui/ListItem";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -731,19 +732,20 @@ export function ExerciseSetupScreen({
 
   const renderExerciseCard = (ex: UIExercise) => {
     const isLoading = !!loadingSets[String(ex.id)];
+    const initials = ex.name.substring(0, 2).toUpperCase();
 
     const items = ex.loaded
       ? ex.sets
-        .slice()
-        .sort((a, b) => a.set_order - b.set_order)
-        .map((s) => ({
-          key: s.id, // child will pass this back; our resolver also handles order numbers
-          order: s.set_order,
-          reps: s.reps,
-          weight: s.weight,
-          removable: ex.sets.length > 1,
-          done: s.done,
-        }))
+          .slice()
+          .sort((a, b) => a.set_order - b.set_order)
+          .map((s) => ({
+            key: s.id, // child will pass this back; our resolver also handles order numbers
+            order: s.set_order,
+            reps: s.reps,
+            weight: s.weight,
+            removable: ex.sets.length > 1,
+            done: s.done,
+          }))
       : [];
 
     // Subtitle: "<muscle_group> • <N Sets>" (when loaded) or just muscle group while loading.
@@ -766,13 +768,11 @@ export function ExerciseSetupScreen({
           onToggle={() => toggleExpanded(ex.id)}
           title={ex.name}
           subtitle={subtitle}
-          leading={
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
-              <span className="text-sm md:text-base font-medium text-muted-foreground">
-                {ex.name.substring(0, 2).toUpperCase()}
+            leading={
+              <span className="text-sm md:text-base font-medium text-warm-brown/60">
+                {initials}
               </span>
-            </div>
-          }
+            }
           className="bg-card/80 border-border"
           bodyClassName="pt-2"
         >
@@ -784,31 +784,39 @@ export function ExerciseSetupScreen({
           ) : (
             <ExerciseSetEditorCard
               name={ex.name}
-              initials={ex.name.substring(0, 2)}
+              initials={initials}
               items={items}
               mode={inWorkout ? "workout" : "edit"}
               onChange={(key, field, value) =>
-                onChangeSet(ex.id, key as unknown, field as "reps" | "weight", value)
+                onChangeSet(
+                  ex.id,
+                  key as unknown,
+                  field as "reps" | "weight",
+                  value
+                )
               }
-              onRemove={inWorkout ? undefined : (key) => onRemoveSet(ex.id, key as unknown)}
+              onRemove={
+                inWorkout ? undefined : (key) => onRemoveSet(ex.id, key as unknown)
+              }
               onAdd={() => onAddSet(ex.id)}
-              onDeleteExercise={inWorkout ? undefined : () => onDeleteExercise(ex.id)}
-              onToggleDone={inWorkout ? (key, done) => onToggleDone(ex.id, key, done) : undefined}
+              onDeleteExercise={
+                inWorkout ? undefined : () => onDeleteExercise(ex.id)
+              }
+              onToggleDone={
+                inWorkout ? (key, done) => onToggleDone(ex.id, key, done) : undefined
+              }
               deleteDisabled={access === RoutineAccess.ReadOnly}
               disabled={access === RoutineAccess.ReadOnly}
               onFocusScroll={(e) => {
                 const target = e.currentTarget;
-                setTimeout(
-                  () => {
-                    if (target && target.scrollIntoView) {
-                      target.scrollIntoView({
-                        block: "center",
-                        behavior: "smooth",
-                      });
-                    }
-                  },
-                  60
-                );
+                setTimeout(() => {
+                  if (target && target.scrollIntoView) {
+                    target.scrollIntoView({
+                      block: "center",
+                      behavior: "smooth",
+                    });
+                  }
+                }, 60);
               }}
               className="mb-2"
             />
@@ -823,13 +831,14 @@ export function ExerciseSetupScreen({
       return (
         <div className="space-y-3">
           {[1, 2].map((i) => (
-            <div key={i} className="flex items-center gap-3 p-3 bg-card/50 rounded-xl animate-pulse">
-              <div className="w-9 h-9 md:w-10 md:h-10 bg-muted rounded-lg" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-muted rounded w-3/4" />
-                <div className="h-3 bg-muted rounded w-1/2" />
-              </div>
-            </div>
+            <ListItem
+              key={i}
+              leading={<div />}
+              leadingClassName="w-10 h-10 md:w-12 md:h-12 bg-muted rounded-lg"
+              primary={<div className="h-4 bg-muted rounded w-3/4" />}
+              secondary={<div className="h-3 bg-muted rounded w-1/2" />}
+              className="px-3 md:px-4 bg-card/50 rounded-xl animate-pulse"
+            />
           ))}
         </div>
       );

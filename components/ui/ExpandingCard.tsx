@@ -32,9 +32,9 @@ type Props = React.PropsWithChildren<BaseProps>;
 
 const containerByVariant: Record<Variant, string> = {
   glass:
-    "rounded-2xl border overflow-hidden backdrop-blur-md bg-card/4 border-border shadow-xl shadow-black/40",
+    "rounded-2xl border overflow-hidden backdrop-blur-md bg-card/4 border-border/60 shadow-xl shadow-black/40",
   solid:
-    "rounded-2xl border overflow-hidden bg-card/80 border-border shadow-sm",
+    "rounded-2xl border overflow-hidden bg-card/80 border-border/60 shadow-sm",
   plain: "rounded-2xl overflow-hidden",
 };
 
@@ -68,7 +68,7 @@ export default function ExpandingCard({
       initial={false}
       className={[
         containerByVariant[variant],
-        expanded ? "ring-1 ring-border" : "",
+        expanded ? "ring-1 ring-border/60" : "",
         className,
       ].join(" ")}
     >
