@@ -88,7 +88,7 @@ const SetList: React.FC<SetListProps> = ({
   return (
     <div className={className}>
       {/* Header row — identical to configure card */}
-      <div className="grid grid-cols-4 gap-3 md:gap-4 text-[10px] md:text-xs text-warm-brown/60 uppercase tracking-wider mb-2"
+      <div className="grid grid-cols-4 gap-3 md:gap-4 text-[10px] md:text-xs text-warm-brown/200 uppercase tracking-wider mb-2"
       /* RAVI DBG: style={{ border: "2px solid green" }}*/>
         <span>Set</span>
         <span className="text-center">Reps</span>
