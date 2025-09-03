@@ -120,7 +120,6 @@ export function AppRouter({
         <CreateRoutineScreen
           onBack={onCloseCreateRoutine}
           onRoutineCreated={onRoutineCreated} // (name, id)
-          bottomBar={bottomBar}
         />
       )}
 
@@ -131,7 +130,6 @@ export function AppRouter({
           onBack={currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine}
           onExerciseSelected={(exercises: Exercise[]) => onExerciseSelected(exercises)}
           isFromExerciseSetup={!!currentRoutineId}
-          bottomBar={bottomBar}
         />
       )}
 
@@ -149,14 +147,13 @@ export function AppRouter({
             isEditingExistingRoutine={true}
             onShowExerciseSelector={onCloseExerciseSetup}
             access={routineAccess}
-            bottomBar={bottomBar}
             initialMode={exerciseSetupMode}
             onModeChange={setExerciseSetupMode}
           />
         )}
 
-      {currentView === "progress" && <ProgressScreen bottomBar={bottomBar}/>}
-      {currentView === "profile" && <ProfileScreen bottomBar={bottomBar}/>}
+      {currentView === "progress" && <ProgressScreen bottomBar={bottomBar} />}
+      {currentView === "profile" && <ProfileScreen bottomBar={bottomBar} />}
     </div>
   );
 }
