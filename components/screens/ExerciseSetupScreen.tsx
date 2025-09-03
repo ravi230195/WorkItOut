@@ -768,11 +768,11 @@ export function ExerciseSetupScreen({
           onToggle={() => toggleExpanded(ex.id)}
           title={ex.name}
           subtitle={subtitle}
-          leading={
-            <span className="text-sm md:text-base font-medium text-muted-foreground">
-              {initials}
-            </span>
-          }
+            leading={
+              <span className="text-sm md:text-base font-medium text-warm-brown/60">
+                {initials}
+              </span>
+            }
           className="bg-card/80 border-border"
           bodyClassName="pt-2"
         >
