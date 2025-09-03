@@ -1,4 +1,4 @@
-import React from "react";
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Dumbbell, TrendingUp, User } from "lucide-react";
 
@@ -20,7 +20,7 @@ interface BottomNavigationProps {
    * children are rendered instead, allowing the component to act
    * as a generic bottom action bar.
    */
-  children?: React.ReactNode;
+  children?: ReactNode;
 
   /** Additional classes on the root container */
   className?: string;
@@ -40,23 +40,13 @@ export function BottomNavigation({
 
   // Render custom content when provided
   if (children) {
-    const enhancedChildren = React.Children.map(children, (child) => {
-      if (React.isValidElement(child)) {
-        const existing = (child.props as { className?: string }).className ?? "";
-        return React.cloneElement(child, {
-          className: `${existing} h-14`.trim(),
-        });
-      }
-      return child;
-    });
-
     return (
       <nav
         aria-label="Bottom navigation"
         className={`w-full h-14 flex items-center justify-center ${className}`}
       >
         <div className="flex w-full items-center justify-center gap-3">
-          {enhancedChildren}
+          {children}
         </div>
       </nav>
     );

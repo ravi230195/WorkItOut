@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo, memo } from "react";
 import { Search } from "lucide-react";
 import { Input } from "../ui/input";
-import { TactileButton } from "../TactileButton";
+import { BottomNavigationButton } from "../BottomNavigationButton";
 import SegmentedToggle from "../segmented/SegmentedToggle";
 import { supabaseAPI, Exercise } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
@@ -287,7 +287,7 @@ export function AddExercisesToRoutineScreen({
       showBottomBarBorder={false}
       bottomBar={
         <BottomNavigation>
-          <TactileButton
+          <BottomNavigationButton
             onClick={handleAddExercise}
             disabled={selectedExercises.length === 0 || isAddingExercise}
             className={`sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
@@ -301,7 +301,7 @@ export function AddExercisesToRoutineScreen({
               : selectedExercises.length > 0
               ? `ADD (${selectedExercises.length})`
               : "ADD"}
-          </TactileButton>
+          </BottomNavigationButton>
         </BottomNavigation>
       }
       bottomBarSticky
