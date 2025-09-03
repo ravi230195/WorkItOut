@@ -34,7 +34,7 @@ const containerByVariant: Record<Variant, string> = {
   glass:
     "rounded-2xl border overflow-hidden backdrop-blur-md bg-card/4 border-border shadow-xl shadow-black/40",
   solid:
-    "rounded-2xl border overflow-hidden bg-card/80 border-border shadow-sm",
+    "rounded-2xl border overflow-hidden bg-card border-border shadow-sm transition-all",
   plain: "rounded-2xl overflow-hidden",
 };
 

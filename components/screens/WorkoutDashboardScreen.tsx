@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
+import { ListCardButton } from "../ListCardButton";
 import { MoreVertical, AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { supabaseAPI, UserRoutine } from "../../utils/supabase/supabase-api";
@@ -322,7 +323,7 @@ export default function WorkoutDashboardScreen({
                     const timeMin = exerciseCount > 0 ? exerciseCount * 10 : null;
 
                     return (
-                      <button
+                      <ListCardButton
                         key={routine.routine_template_id}
                         onClick={() =>
                           onSelectRoutine(
@@ -331,13 +332,6 @@ export default function WorkoutDashboardScreen({
                             view === RoutinesView.My ? RoutineAccess.Editable : RoutineAccess.ReadOnly
                           )
                         }
-                        className="
-                          w-full
-                          rounded-2xl border border-border
-                          bg-card shadow-sm hover:shadow-md transition-all
-                          p-4
-                          text-left
-                        "
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3 min-w-0">
@@ -394,7 +388,7 @@ export default function WorkoutDashboardScreen({
                             </TactileButton>
                           )}
                         </div>
-                      </button>
+                      </ListCardButton>
                     );
                   })}
                 </div>
