@@ -705,10 +705,10 @@ export function ExerciseSetupScreen({
         );
       }
       return (
-        <FooterBar size="md" bg="translucent" align="between" maxContent="responsive" innerClassName="w-full gap-3">
+        <FooterBar size="md" bg="translucent" align="center" maxContent="responsive" innerClassName="w-full gap-3">
           <TactileButton
             onClick={startWorkout}
-            className="flex-1 h-11 md:h-12 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
+            className="h-11 md:h-12 px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
           >
             START WORKOUT
           </TactileButton>
@@ -716,11 +716,11 @@ export function ExerciseSetupScreen({
       );
     }
     return (
-      <FooterBar size="md" bg="translucent" align="between" maxContent="responsive" innerClassName="w-full gap-3">
+      <FooterBar size="md" bg="translucent" align="center" maxContent="responsive" innerClassName="w-full gap-3">
         <TactileButton
           onClick={endWorkout}
           disabled={savingWorkout}
-          className="flex-1 h-11 md:h-12 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
+          className="h-11 md:h-12 px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
         >
           {savingWorkout ? "SAVING..." : "END WORKOUT"}
         </TactileButton>

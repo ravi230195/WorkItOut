@@ -203,7 +203,7 @@ export default function AppScreen({
             //paddingBottom: `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
             paddingBottom: `${kbInsetChain}`,
             // RAVI: Debug border commented out
-            border: "2px solid green",
+            // border: "2px solid green",
           }}
         >
           <div

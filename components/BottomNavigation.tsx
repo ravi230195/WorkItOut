@@ -17,14 +17,14 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
 
   return (
     <nav aria-label="Bottom navigation" className="w-full"
-    style={{
-      borderTop: "1px solid red",
-    }}
+      style={{
+        //border: "1px solid red",
+      }}
     >
       <ul className="flex justify-around"
-      style={{
-        borderTop: "1px solid green",
-      }}
+        style={{
+          //border: "1px solid green",
+        }}
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -35,23 +35,19 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
                 className="w-full flex flex-col items-center gap-1 py-2 text-xs"
                 aria-current={isActive ? "page" : undefined}
               >
-                <span
-                  className={
-                    isActive ? "p-1 bg-warm-brown/20" : "p-1"
-                  }
-                >
+                <span>
                   <tab.icon
                     size={20}
                     className={
-                      isActive ? "text-warm-brown" : "text-warm-brown/50"
+                      isActive ? "text-warm-brown-bold-800" : "text-warm-brown"
                     }
                   />
                 </span>
                 <span
                   className={
                     isActive
-                      ? "font-medium text-warm-brown"
-                      : "text-warm-brown/50"
+                      ? "font-medium text-warm-brown-bold-800"
+                      : "text-warm-brown"
                   }
                 >
                   {tab.label}
