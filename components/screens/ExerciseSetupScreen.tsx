@@ -1,7 +1,8 @@
 // components/screens/ExerciseSetupScreen.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AppScreen, Section, ScreenHeader, FooterBar, Stack, Spacer } from "../layouts";
+import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
+import { BottomNavigation } from "../BottomNavigation";
 import { TactileButton } from "../TactileButton";
 import ExpandingCard from "../ui/ExpandingCard";
 import ExerciseSetEditorCard from "../sets/ExerciseSetEditorCard";
@@ -78,7 +79,6 @@ interface ExerciseSetupScreenProps {
   isEditingExistingRoutine?: boolean;
   onShowExerciseSelector?: () => void;
   access?: RoutineAccess;
-  bottomBar?: React.ReactNode;
   initialMode?: "plan" | "workout";
   onModeChange?: (mode: "plan" | "workout") => void;
 }
@@ -98,7 +98,6 @@ export function ExerciseSetupScreen({
   isEditingExistingRoutine = false,
   onShowExerciseSelector,
   access = RoutineAccess.Editable,
-  bottomBar,
   initialMode = "plan",
   onModeChange,
 }: ExerciseSetupScreenProps) {
@@ -677,46 +676,48 @@ export function ExerciseSetupScreen({
     if (screenMode === "plan") {
       if (hasUnsaved) {
         return (
-          <FooterBar size="md" bg="translucent" align="between" maxContent="responsive" innerClassName="w-full gap-3">
+          <BottomNavigation>
             <div className="flex w-full gap-3">
               <TactileButton
                 variant="secondary"
                 onClick={onCancelAll}
                 disabled={access === RoutineAccess.ReadOnly}
-                className={`flex-1 h-11 md:h-12 ${access === RoutineAccess.ReadOnly
+                className={`flex-1 h-11 md:h-12 ${
+                  access === RoutineAccess.ReadOnly
                     ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
                     : "bg-transparent border-warm-brown/20 text-warm-brown/60 hover:bg-soft-gray"
-                  } font-medium`}
+                } font-medium`}
               >
                 CANCEL ALL
               </TactileButton>
               <TactileButton
                 onClick={onSaveAll}
                 disabled={savingAll || access === RoutineAccess.ReadOnly}
-                className={`flex-1 h-11 md:h-12 font-medium border-0 transition-all ${access === RoutineAccess.ReadOnly
+                className={`flex-1 h-11 md:h-12 font-medium border-0 transition-all ${
+                  access === RoutineAccess.ReadOnly
                     ? "opacity-50 cursor-not-allowed bg-gray-400"
                     : "bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
-                  }`}
+                }`}
               >
                 {savingAll ? "SAVING..." : `SAVE ALL`}
               </TactileButton>
             </div>
-          </FooterBar>
+          </BottomNavigation>
         );
       }
       return (
-        <FooterBar size="md" bg="translucent" align="center" maxContent="responsive" innerClassName="w-full gap-3">
+        <FooterBar size="md" bg="translucent" align="between" maxContent="responsive" innerClassName="w-full gap-3">
           <TactileButton
             onClick={startWorkout}
             className="h-11 md:h-12 px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
           >
             START WORKOUT
           </TactileButton>
-        </FooterBar>
+        </BottomNavigation>
       );
     }
     return (
-      <FooterBar size="md" bg="translucent" align="center" maxContent="responsive" innerClassName="w-full gap-3">
+      <BottomNavigation>
         <TactileButton
           onClick={endWorkout}
           disabled={savingWorkout}
@@ -724,7 +725,7 @@ export function ExerciseSetupScreen({
         >
           {savingWorkout ? "SAVING..." : "END WORKOUT"}
         </TactileButton>
-      </FooterBar>
+      </BottomNavigation>
     );
   };
 

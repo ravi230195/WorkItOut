@@ -12,13 +12,11 @@ interface CreateRoutineScreenProps {
   onBack: () => void;
   /** Pass both name and created routineId to parent */
   onRoutineCreated: (routineName: string, routineId: number) => void;
-  bottomBar?: React.ReactNode;
 }
 
 export default function CreateRoutineScreen({
   onBack,
   onRoutineCreated,
-  bottomBar
 }: CreateRoutineScreenProps) {
 
   const [routineName, setRoutineName] = useState("");
@@ -62,7 +60,7 @@ export default function CreateRoutineScreen({
       padContent={false}
       showHeaderBorder={false}
       showBottomBarBorder={false}
-      bottomBar={bottomBar}
+      bottomBar={null}
       bottomBarSticky
       contentClassName=""
     >
