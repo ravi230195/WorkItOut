@@ -16,8 +16,16 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
   ];
 
   return (
-    <nav aria-label="Bottom navigation" className="w-full">
-      <ul className="flex justify-around">
+    <nav aria-label="Bottom navigation" className="w-full"
+      style={{
+        //border: "1px solid red",
+      }}
+    >
+      <ul className="flex justify-around"
+        style={{
+          //border: "1px solid green",
+        }}
+      >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -27,12 +35,20 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
                 className="w-full flex flex-col items-center gap-1 py-2 text-xs"
                 aria-current={isActive ? "page" : undefined}
               >
-                <tab.icon
-                  size={20}
-                  className={isActive ? "text-warm-brown" : "text-warm-brown/50"}
-                />
+                <span>
+                  <tab.icon
+                    size={20}
+                    className={
+                      isActive ? "text-warm-brown-bold-800" : "text-warm-brown"
+                    }
+                  />
+                </span>
                 <span
-                  className={isActive ? "font-medium text-warm-brown" : "text-warm-brown/50"}
+                  className={
+                    isActive
+                      ? "font-medium text-warm-brown-bold-800"
+                      : "text-warm-brown"
+                  }
                 >
                   {tab.label}
                 </span>
@@ -44,4 +60,3 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
     </nav>
   );
 }
-
