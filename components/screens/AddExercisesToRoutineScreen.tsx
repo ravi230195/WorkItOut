@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, memo } from "react";
 import { Search } from "lucide-react";
 import { Input } from "../ui/input";
 import { BottomNavigationButton } from "../BottomNavigationButton";
+import { ListCardButton } from "../ListCardButton";
 import SegmentedToggle from "../segmented/SegmentedToggle";
 import { supabaseAPI, Exercise } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
@@ -60,39 +61,30 @@ const ExerciseRow = memo(function ExerciseRow({
   const subtitle = (exercise.muscle_group || "").trim() || OTHER_GROUP;
 
   return (
-    <button
+    <ListCardButton
       type="button"
       aria-pressed={selected}
       onClick={() => onSelect(exercise)}
-      className="w-full text-left focus:outline-none"
+      selected={selected}
+      className="p-3 md:p-4"
     >
-      <div
-        className={[
-          "p-3 md:p-4 rounded-xl border transition-all",
-          selected
-            // toned down selection (less “bright orange”)
-            ? "bg-warm-coral/60 border-warm-coral/30 shadow-md"
-            : "bg-card border-border hover:bg-soft-gray/50 hover:border-warm-coral/30 hover:shadow-md",
-        ].join(" ")}
-      >
-        <div className="flex items-center gap-3 md:gap-4">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-warm-brown/10 rounded-lg grid place-items-center">
-            <span className="text-sm md:text-base font-medium text-warm-brown/60">
-              {initials}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-warm-brown truncate">{exercise.name}</h3>
-            <p className="text-xs md:text-sm text-warm-brown/60 truncate">{subtitle}</p>
-          </div>
-          <div className="text-warm-brown/40">
-            <div className="w-6 h-6 rounded-full border border-warm-brown/20 grid place-items-center">
-              <div>ⓘ</div>
-            </div>
+      <div className="flex items-center gap-3 md:gap-4">
+        <div className="w-10 h-10 md:w-12 md:h-12 bg-warm-brown/10 rounded-lg grid place-items-center">
+          <span className="text-sm md:text-base font-medium text-warm-brown/60">
+            {initials}
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-warm-brown truncate">{exercise.name}</h3>
+          <p className="text-xs md:text-sm text-warm-brown/60 truncate">{subtitle}</p>
+        </div>
+        <div className="text-warm-brown/40">
+          <div className="w-6 h-6 rounded-full border border-warm-brown/20 grid place-items-center">
+            <div>ⓘ</div>
           </div>
         </div>
       </div>
-    </button>
+    </ListCardButton>
   );
 });
 

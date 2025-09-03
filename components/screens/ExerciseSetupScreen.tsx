@@ -773,7 +773,6 @@ export function ExerciseSetupScreen({
               </span>
             </div>
           }
-          className="bg-card/80 border-border"
           bodyClassName="pt-2"
         >
           {isLoading || !ex.loaded ? (

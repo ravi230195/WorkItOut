@@ -34,7 +34,7 @@ const containerByVariant: Record<Variant, string> = {
   glass:
     "rounded-2xl border overflow-hidden backdrop-blur-md bg-card/4 border-border shadow-xl shadow-black/40",
   solid:
-    "rounded-2xl border overflow-hidden bg-card/80 border-border shadow-sm",
+    "rounded-2xl border overflow-hidden shadow-sm transition-all",
   plain: "rounded-2xl overflow-hidden",
 };
 
@@ -68,7 +68,11 @@ export default function ExpandingCard({
       initial={false}
       className={[
         containerByVariant[variant],
-        expanded ? "ring-1 ring-border" : "",
+        variant === "solid"
+          ? expanded
+            ? "bg-warm-coral/60 border-warm-coral/60 shadow-md"
+            : "bg-card border-border/70 hover:bg-soft-gray/50 hover:border-warm-coral/60 hover:shadow-md"
+          : "",
         className,
       ].join(" ")}
     >
