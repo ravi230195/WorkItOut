@@ -1,4 +1,4 @@
-import type React from "react";
+import React from "react";
 import type { LucideIcon } from "lucide-react";
 import { Dumbbell, TrendingUp, User } from "lucide-react";
 
@@ -40,10 +40,23 @@ export function BottomNavigation({
 
   // Render custom content when provided
   if (children) {
+    const enhancedChildren = React.Children.map(children, (child) => {
+      if (React.isValidElement(child)) {
+        const existing = (child.props as { className?: string }).className ?? "";
+        return React.cloneElement(child, {
+          className: `${existing} h-14`.trim(),
+        });
+      }
+      return child;
+    });
+
     return (
-      <nav aria-label="Bottom navigation" className={`w-full ${className}`}>
+      <nav
+        aria-label="Bottom navigation"
+        className={`w-full h-14 flex items-center justify-center ${className}`}
+      >
         <div className="flex w-full items-center justify-center gap-3">
-          {children}
+          {enhancedChildren}
         </div>
       </nav>
     );
@@ -51,8 +64,11 @@ export function BottomNavigation({
 
   // Fallback to tab navigation
   return (
-    <nav aria-label="Bottom navigation" className={`w-full ${className}`}>
-      <ul className="flex justify-around">
+    <nav
+      aria-label="Bottom navigation"
+      className={`w-full h-14 flex items-center justify-center ${className}`}
+    >
+      <ul className="w-full flex justify-around">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (

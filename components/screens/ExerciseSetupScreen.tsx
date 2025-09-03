@@ -682,7 +682,7 @@ export function ExerciseSetupScreen({
                 variant="secondary"
                 onClick={onCancelAll}
                 disabled={access === RoutineAccess.ReadOnly}
-                className={`flex-1 h-11 md:h-12 ${
+                className={`flex-1 ${
                   access === RoutineAccess.ReadOnly
                     ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
                     : "bg-transparent border-warm-brown/20 text-warm-brown/60 hover:bg-soft-gray"
@@ -693,7 +693,7 @@ export function ExerciseSetupScreen({
               <TactileButton
                 onClick={onSaveAll}
                 disabled={savingAll || access === RoutineAccess.ReadOnly}
-                className={`flex-1 h-11 md:h-12 font-medium border-0 transition-all ${
+                className={`flex-1 font-medium border-0 transition-all ${
                   access === RoutineAccess.ReadOnly
                     ? "opacity-50 cursor-not-allowed bg-gray-400"
                     : "bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
@@ -709,7 +709,7 @@ export function ExerciseSetupScreen({
         <BottomNavigation>
           <TactileButton
             onClick={startWorkout}
-            className="h-11 md:h-12 px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
+            className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
           >
             START WORKOUT
           </TactileButton>
@@ -721,7 +721,7 @@ export function ExerciseSetupScreen({
         <TactileButton
           onClick={endWorkout}
           disabled={savingWorkout}
-          className="h-11 md:h-12 px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
+          className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
         >
           {savingWorkout ? "SAVING..." : "END WORKOUT"}
         </TactileButton>

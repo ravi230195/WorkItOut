@@ -290,7 +290,7 @@ export function AddExercisesToRoutineScreen({
           <TactileButton
             onClick={handleAddExercise}
             disabled={selectedExercises.length === 0 || isAddingExercise}
-            className={`h-12 md:h-14 sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
+            className={`sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
               selectedExercises.length > 0
                 ? "bg-primary hover:bg-primary-hover text-primary-foreground opacity-90 btn-tactile"
                 : "bg-warm-brown/20 text-warm-brown/40 cursor-not-allowed"
