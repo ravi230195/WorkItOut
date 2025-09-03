@@ -60,4 +60,3 @@ export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationPro
     </nav>
   );
 }
-

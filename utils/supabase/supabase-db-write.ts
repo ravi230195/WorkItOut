@@ -368,30 +368,41 @@ export class SupabaseDBWrite extends SupabaseBase {
             `${SUPABASE_URL}/rest/v1/user_routine_exercises_data` +
             `?routine_template_id=eq.${routineTemplateId}&is_active=eq.true` +
             `&select=exercises(muscle_group)`;
-
+    
         logger.debug("🔍 DGB [MUSCLE SUMMARY] Fetching exercises from URL:", urlEx);
         const rows = await this.fetchJson<Array<{ exercises?: { muscle_group?: string } }>>(urlEx, true);
         logger.debug("🔍 DGB [MUSCLE SUMMARY] Found exercises:", rows.length);
-
+    
         // Early exit if no active exercises - nothing to recompute
         if (rows.length === 0) {
             logger.debug("🔍 DGB [MUSCLE SUMMARY] No active exercises found, skipping recomputation");
             logger.debug("🔍 DGB [MUSCLE SUMMARY] No database update or cache refresh needed");
             return;
         }
-
-        const groups = Array.from(
-            new Set(
-                rows.map(r => (r.exercises?.muscle_group ?? "").trim()).filter(Boolean)
-            )
-        ).sort();
-
-        logger.debug("🔍 DGB [MUSCLE SUMMARY] Muscle groups found:", groups);
-
+    
+        // Count frequency of each muscle group
+        const muscleGroupCounts = new Map<string, number>();
+        rows.forEach(r => {
+            const muscleGroup = (r.exercises?.muscle_group ?? "").trim();
+            if (muscleGroup) {
+                muscleGroupCounts.set(muscleGroup, (muscleGroupCounts.get(muscleGroup) || 0) + 1);
+            }
+        });
+    
+        logger.debug("🔍 DGB [MUSCLE SUMMARY] Muscle group counts:", Object.fromEntries(muscleGroupCounts));
+    
+        // Sort by frequency (descending) and take top 3
+        const topMuscleGroups = Array.from(muscleGroupCounts.entries())
+            .sort(([, a], [, b]) => b - a) // Sort by count descending
+            .slice(0, 3) // Take top 3
+            .map(([group]) => group); // Extract just the group names
+    
+        logger.debug("🔍 DGB [MUSCLE SUMMARY] Top 3 muscle groups:", topMuscleGroups);
+    
         // Use NULL when no groups (avoids DB pattern/CHECK failures on empty string)
-        const summary = groups.length ? groups.join(" • ") : null;
+        const summary = topMuscleGroups.length ? topMuscleGroups.join(" • ") : null;
         logger.debug("🔍 DGB [MUSCLE SUMMARY] Final summary:", summary);
-
+    
         // Patch base table
         const urlPatch = `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`;
         logger.debug("🔍 DGB [MUSCLE SUMMARY] Patching routine with URL:", urlPatch);
@@ -402,7 +413,7 @@ export class SupabaseDBWrite extends SupabaseBase {
             [{ muscle_group_summary: summary }],
             "return=representation"
         );
-
+    
         // Refresh routines cache so UI reflects changes
         logger.debug("🔍 DGB [MUSCLE SUMMARY] Refreshing routines cache...");
         const userId = await this.getUserId();
