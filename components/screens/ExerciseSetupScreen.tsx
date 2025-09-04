@@ -62,6 +62,7 @@ type UIExercise = {
   muscle_group?: string;
   loaded: boolean; // sets loaded
   expanded: boolean;
+  completed: boolean;
   sets: UISet[];
 };
 
@@ -185,6 +186,7 @@ export function ExerciseSetupScreen({
           muscle_group: r.muscle_group,
           loaded: true,
           expanded: false,
+          completed: false,
           sets: r.sets,
         }));
         setExercises(uiList);
@@ -237,6 +239,12 @@ export function ExerciseSetupScreen({
       updater(next);
       return next;
     });
+  };
+
+  const recomputeExerciseCompletion = (ex: UIExercise) => {
+    const allDone = ex.sets.length > 0 && ex.sets.every((s) => s.done);
+    ex.completed = allDone;
+    ex.expanded = !allDone;
   };
 
   const ensureSetsLoaded = async (ex: UIExercise) => {
@@ -311,6 +319,7 @@ export function ExerciseSetupScreen({
         muscle_group: muscle_group || undefined,
         loaded: true,
         expanded: true,
+        completed: false,
         sets: [{ id: initialSetId, set_order: 1, reps: "0", weight: "0", ...(inWorkout ? { done: false } : {}) }],
       },
     ]);
@@ -374,6 +383,7 @@ export function ExerciseSetupScreen({
       });
 
       recordSetAdd(journalRef.current, exId, newSetId, nextOrder, initialReps, initialWeight);
+      recomputeExerciseCompletion(ex);
     });
   };
 
@@ -443,6 +453,7 @@ export function ExerciseSetupScreen({
           recordSetReorder(journalRef.current, exId, s.id, s.set_order);
         }
       }
+      recomputeExerciseCompletion(ex);
     });
   };
 
@@ -460,6 +471,7 @@ export function ExerciseSetupScreen({
       if (setId == null) return;
       const s = ex.sets.find((st) => st.id === setId);
       if (s) s.done = done;
+      recomputeExerciseCompletion(ex);
     });
   };
 
@@ -475,6 +487,8 @@ export function ExerciseSetupScreen({
       prev.map((ex) => ({
         ...ex,
         sets: ex.sets.map((s) => ({ ...s, done: false })),
+        completed: false,
+        expanded: false,
       }))
     );
     updateMode("workout");
@@ -570,6 +584,7 @@ export function ExerciseSetupScreen({
         muscle_group: r.muscle_group,
         loaded: true,
         expanded: false,
+        completed: false,
         sets: r.sets,
       }));
       setExercises(uiList);
@@ -706,6 +721,9 @@ export function ExerciseSetupScreen({
           </BottomNavigation>
         );
       }
+      if (visible.length === 0) {
+        return null;
+      }
       return (
         <BottomNavigation>
           <BottomNavigationButton
@@ -773,7 +791,7 @@ export function ExerciseSetupScreen({
                 {initials}
               </span>
             }
-          className="bg-card/80 border-border"
+          className={`${ex.completed && !ex.expanded ? "bg-success-light" : "bg-card/80"} border-border`}
           bodyClassName="pt-2"
         >
           {isLoading || !ex.loaded ? (

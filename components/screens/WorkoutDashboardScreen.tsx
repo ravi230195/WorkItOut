@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
-import { AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
+import { AlertCircle, Clock3 as Clock, TrendingUp, Plus } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { supabaseAPI, UserRoutine } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
@@ -248,11 +248,11 @@ export default function WorkoutDashboardScreen({
 
         <Spacer y="xss" />
 
-        {/* top row: view toggle + create */}
+        {/* view toggle */}
         <Section
           variant="plain"
           padding="none"
-          className="flex items-center justify-between gap-3"
+          className="flex items-center justify-center"
         >
           <SegmentedToggle
             value={view}
@@ -267,15 +267,6 @@ export default function WorkoutDashboardScreen({
             variant="filled"
             tone="accent"
           />
-
-          {canEdit && (
-            <TactileButton
-              onClick={onCreateRoutine}
-              className="bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2 text-sm font-medium rounded-xl"
-            >
-              Create Routine
-            </TactileButton>
-          )}
         </Section>
 
         {/* routines list with Section loading state */}
@@ -394,6 +385,16 @@ export default function WorkoutDashboardScreen({
           />
         )}
       </Stack>
+
+      {canEdit && (
+        <TactileButton
+          onClick={onCreateRoutine}
+          className="fixed z-40 rounded-full shadow-lg right-4 bottom-24 bg-primary hover:bg-primary-hover text-primary-foreground p-4"
+          aria-label="Create routine"
+        >
+          <Plus className="w-6 h-6" />
+        </TactileButton>
+      )}
     </AppScreen>
   );
 }
