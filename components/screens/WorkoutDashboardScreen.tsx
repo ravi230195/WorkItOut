@@ -384,7 +384,10 @@ export default function WorkoutDashboardScreen({
                 actions={[
                   {
                     label: "Rename Routine",
-                    onClick: () => setSheetMode("rename"),
+                    onClick: () => {
+                      if (actionRoutine) setRenameValue(actionRoutine.name);
+                      setSheetMode("rename");
+                    },
                     type: "button",
                   },
                   {
