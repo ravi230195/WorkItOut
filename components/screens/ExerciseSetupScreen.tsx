@@ -18,6 +18,7 @@ import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../utils/routineLoader";
 import ListItem from "../ui/ListItem";
+import WorkoutEndSheet from "../sheets/WorkoutEndSheet";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -109,6 +110,7 @@ export function ExerciseSetupScreen({
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [savingAll, setSavingAll] = useState(false);
   const [savingWorkout, setSavingWorkout] = useState(false);
+  const [showEndSheet, setShowEndSheet] = useState(false);
   const [loadingSets, setLoadingSets] = useState<Record<string, boolean>>({}); // key by exercise id as string
 
   type ScreenMode = "plan" | "workout";
@@ -613,6 +615,12 @@ export function ExerciseSetupScreen({
     }
   };
 
+  const cancelWorkout = async () => {
+    journalRef.current = makeJournal();
+    await reloadFromDb();
+    updateMode("plan");
+  };
+
   /* =======================================================================================
      Save / Cancel
      ======================================================================================= */
@@ -701,6 +709,10 @@ export function ExerciseSetupScreen({
     [exercises]
   );
   const visible = exercises;
+  const hasIncompleteSets = useMemo(
+    () => exercises.some((ex) => ex.sets.some((s) => !s.done)),
+    [exercises]
+  );
 
   const handleBack = () => {
     const timer = performanceTimer.start("ExerciseSetup - handleBack");
@@ -722,14 +734,14 @@ export function ExerciseSetupScreen({
       title={routineName || "Routine"}
       subtitle={inWorkout ? formatHHMMSS(elapsedSeconds) : undefined}
       subtitleClassName="text-base font-bold text-black"
-      onBack={handleBack}
-      {...(access === RoutineAccess.Editable
+      onBack={inWorkout ? undefined : handleBack}
+      {...(access === RoutineAccess.Editable && !inWorkout
         ? {
-          onAdd: () => {
-            if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
-            else onAddMoreExercises();
-          },
-        }
+            onAdd: () => {
+              if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
+              else onAddMoreExercises();
+            },
+          }
         : {})}
       showBorder={false}
       denseSmall
@@ -788,7 +800,7 @@ export function ExerciseSetupScreen({
     return (
       <BottomNavigation>
         <BottomNavigationButton
-          onClick={endWorkout}
+          onClick={() => setShowEndSheet(true)}
           disabled={savingWorkout}
           className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
         >
@@ -922,27 +934,43 @@ export function ExerciseSetupScreen({
   };
 
   return (
-    <AppScreen
-      header={renderHeader()}
-      maxContent="responsive"
-      padContent={false}
-      contentBottomPaddingClassName={hasUnsaved || inWorkout ? "pb-24" : ""}
-      bottomBar={renderBottomBar()}
-      showHeaderBorder={false}
-      showBottomBarBorder={false}
-      contentClassName=""
-    >
-      <Stack gap="fluid">
-        <Spacer y="sm" />
-        <Section variant="plain" padding="none">
-          <div className="mt-2 mb-6">
-            <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
-              EXERCISES IN ROUTINE ({visible.length})
-            </h3>
-            {renderExerciseList()}
-          </div>
-        </Section>
-      </Stack>
-    </AppScreen>
+    <>
+      <AppScreen
+        header={renderHeader()}
+        maxContent="responsive"
+        padContent={false}
+        contentBottomPaddingClassName={hasUnsaved || inWorkout ? "pb-24" : ""}
+        bottomBar={renderBottomBar()}
+        showHeaderBorder={false}
+        showBottomBarBorder={false}
+        contentClassName=""
+      >
+        <Stack gap="fluid">
+          <Spacer y="sm" />
+          <Section variant="plain" padding="none">
+            <div className="mt-2 mb-6">
+              <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                EXERCISES IN ROUTINE ({visible.length})
+              </h3>
+              {renderExerciseList()}
+            </div>
+          </Section>
+        </Stack>
+      </AppScreen>
+      <WorkoutEndSheet
+        open={showEndSheet}
+        hasIncompleteSets={hasIncompleteSets}
+        finishing={savingWorkout}
+        onClose={() => setShowEndSheet(false)}
+        onFinish={async () => {
+          setShowEndSheet(false);
+          await endWorkout();
+        }}
+        onCancelWorkout={async () => {
+          setShowEndSheet(false);
+          await cancelWorkout();
+        }}
+      />
+    </>
   );
 }
