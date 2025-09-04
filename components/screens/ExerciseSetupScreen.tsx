@@ -18,6 +18,7 @@ import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../utils/routineLoader";
 import ListItem from "../ui/ListItem";
+import ActionSheet from "../sheets/ActionSheet";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -109,6 +110,7 @@ export function ExerciseSetupScreen({
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [savingAll, setSavingAll] = useState(false);
   const [savingWorkout, setSavingWorkout] = useState(false);
+  const [showEndSheet, setShowEndSheet] = useState(false);
   const [loadingSets, setLoadingSets] = useState<Record<string, boolean>>({}); // key by exercise id as string
 
   type ScreenMode = "plan" | "workout";
@@ -119,6 +121,8 @@ export function ExerciseSetupScreen({
   const journalRef = useRef(makeJournal());
   // Snapshot of last-saved state for change detection
   const savedSnapshotRef = useRef<any[]>([]);
+  // Backup of exercises before entering workout mode
+  const preWorkoutExercisesRef = useRef<UIExercise[]>([]);
 
   // Workout timer state
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -522,6 +526,8 @@ export function ExerciseSetupScreen({
   const startWorkout = () => {
     workoutStartRef.current = Date.now();
     setElapsedSeconds(0);
+    // preserve current plan state for quick restoration if workout is canceled
+    preWorkoutExercisesRef.current = JSON.parse(JSON.stringify(exercises));
     // reset any stale journal entries and mark all sets as not done locally
     journalRef.current = makeJournal();
     setExercises((prev) =>
@@ -613,6 +619,12 @@ export function ExerciseSetupScreen({
     }
   };
 
+  const cancelWorkout = async () => {
+    journalRef.current = makeJournal();
+    setExercises(JSON.parse(JSON.stringify(preWorkoutExercisesRef.current)));
+    updateMode("plan");
+  };
+
   /* =======================================================================================
      Save / Cancel
      ======================================================================================= */
@@ -701,6 +713,10 @@ export function ExerciseSetupScreen({
     [exercises]
   );
   const visible = exercises;
+  const hasIncompleteSets = useMemo(
+    () => exercises.some((ex) => ex.sets.some((s) => !s.done)),
+    [exercises]
+  );
 
   const handleBack = () => {
     const timer = performanceTimer.start("ExerciseSetup - handleBack");
@@ -722,14 +738,14 @@ export function ExerciseSetupScreen({
       title={routineName || "Routine"}
       subtitle={inWorkout ? formatHHMMSS(elapsedSeconds) : undefined}
       subtitleClassName="text-base font-bold text-black"
-      onBack={handleBack}
-      {...(access === RoutineAccess.Editable
+      onBack={inWorkout ? undefined : handleBack}
+      {...(access === RoutineAccess.Editable && !inWorkout
         ? {
-          onAdd: () => {
-            if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
-            else onAddMoreExercises();
-          },
-        }
+            onAdd: () => {
+              if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
+              else onAddMoreExercises();
+            },
+          }
         : {})}
       showBorder={false}
       denseSmall
@@ -788,7 +804,7 @@ export function ExerciseSetupScreen({
     return (
       <BottomNavigation>
         <BottomNavigationButton
-          onClick={endWorkout}
+          onClick={() => setShowEndSheet(true)}
           disabled={savingWorkout}
           className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
         >
@@ -922,27 +938,60 @@ export function ExerciseSetupScreen({
   };
 
   return (
-    <AppScreen
-      header={renderHeader()}
-      maxContent="responsive"
-      padContent={false}
-      contentBottomPaddingClassName={hasUnsaved || inWorkout ? "pb-24" : ""}
-      bottomBar={renderBottomBar()}
-      showHeaderBorder={false}
-      showBottomBarBorder={false}
-      contentClassName=""
-    >
-      <Stack gap="fluid">
-        <Spacer y="sm" />
-        <Section variant="plain" padding="none">
-          <div className="mt-2 mb-6">
-            <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
-              EXERCISES IN ROUTINE ({visible.length})
-            </h3>
-            {renderExerciseList()}
-          </div>
-        </Section>
-      </Stack>
-    </AppScreen>
+    <>
+      <AppScreen
+        header={renderHeader()}
+        maxContent="responsive"
+        padContent={false}
+        contentBottomPaddingClassName={hasUnsaved || inWorkout ? "pb-24" : ""}
+        bottomBar={renderBottomBar()}
+        showHeaderBorder={false}
+        showBottomBarBorder={false}
+        contentClassName=""
+      >
+        <Stack gap="fluid">
+          <Spacer y="sm" />
+          <Section variant="plain" padding="none">
+            <div className="mt-2 mb-6">
+              <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                EXERCISES IN ROUTINE ({visible.length})
+              </h3>
+              {renderExerciseList()}
+            </div>
+          </Section>
+        </Stack>
+      </AppScreen>
+      <ActionSheet
+        open={showEndSheet}
+        onClose={() => setShowEndSheet(false)}
+        title="Finish Workout?"
+        message={
+          hasIncompleteSets
+            ? "There are valid sets in this workout that have not been marked as complete."
+            : undefined
+        }
+        actions={[
+          {
+            label: savingWorkout ? "Saving…" : "Finish Workout",
+            onClick: async () => {
+              setShowEndSheet(false);
+              await endWorkout();
+            },
+            type: "button",
+            disabled: savingWorkout,
+          },
+          {
+            label: "Cancel Workout",
+            onClick: async () => {
+              setShowEndSheet(false);
+              await cancelWorkout();
+            },
+            type: "button",
+            variant: "destructive",
+            disabled: savingWorkout,
+          },
+        ]}
+      />
+    </>
   );
 }
