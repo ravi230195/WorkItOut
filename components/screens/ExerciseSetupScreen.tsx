@@ -121,6 +121,8 @@ export function ExerciseSetupScreen({
   const journalRef = useRef(makeJournal());
   // Snapshot of last-saved state for change detection
   const savedSnapshotRef = useRef<any[]>([]);
+  // Backup of exercises before entering workout mode
+  const preWorkoutExercisesRef = useRef<UIExercise[]>([]);
 
   // Workout timer state
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -524,6 +526,8 @@ export function ExerciseSetupScreen({
   const startWorkout = () => {
     workoutStartRef.current = Date.now();
     setElapsedSeconds(0);
+    // preserve current plan state for quick restoration if workout is canceled
+    preWorkoutExercisesRef.current = JSON.parse(JSON.stringify(exercises));
     // reset any stale journal entries and mark all sets as not done locally
     journalRef.current = makeJournal();
     setExercises((prev) =>
@@ -617,7 +621,7 @@ export function ExerciseSetupScreen({
 
   const cancelWorkout = async () => {
     journalRef.current = makeJournal();
-    await reloadFromDb();
+    setExercises(JSON.parse(JSON.stringify(preWorkoutExercisesRef.current)));
     updateMode("plan");
   };
 
