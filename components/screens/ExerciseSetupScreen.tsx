@@ -750,7 +750,7 @@ export function ExerciseSetupScreen({
                 disabled={access === RoutineAccess.ReadOnly}
                 className={`flex-1 ${
                   access === RoutineAccess.ReadOnly
-                    ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
+                    ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground border-border"
                     : "bg-transparent border-warm-brown/20 text-warm-brown/60 hover:bg-soft-gray"
                 } font-medium`}
               >
@@ -761,7 +761,7 @@ export function ExerciseSetupScreen({
                 disabled={savingAll || access === RoutineAccess.ReadOnly}
                 className={`flex-1 font-medium border-0 transition-all ${
                   access === RoutineAccess.ReadOnly
-                    ? "opacity-50 cursor-not-allowed bg-gray-400"
+                    ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
                     : "bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
                 }`}
               >

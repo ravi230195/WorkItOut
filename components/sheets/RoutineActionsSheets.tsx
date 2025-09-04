@@ -35,7 +35,7 @@ export default function RoutineActionsSheet({
 
   const header = (
     <div>
-      <p className="text-xs text-gray-500">Routine</p>
+      <p className="text-xs text-muted-foreground">Routine</p>
       <h3 className="font-medium text-warm-brown truncate text-[clamp(14px,3.8vw,18px)]">
         {routineName}
       </h3>
@@ -55,7 +55,7 @@ export default function RoutineActionsSheet({
         <>
           <div>
             <button
-              className="w-full text-left px-4 py-4 hover:bg-gray-50"
+              className="w-full text-left px-4 py-4 hover:bg-soft-gray/50"
               onClick={() => setMode("renaming")}
             >
               Rename
@@ -78,7 +78,7 @@ export default function RoutineActionsSheet({
       {/* RENAMING */}
       {mode === "renaming" && (
         <div className="p-4 space-y-3">
-          <label className="text-sm text-gray-600">New name</label>
+          <label className="text-sm text-muted-foreground">New name</label>
           <input
             autoFocus
             value={renameValue}
@@ -120,10 +120,10 @@ export default function RoutineActionsSheet({
       {/* CONFIRM DELETE */}
       {mode === "confirmDelete" && (
         <div className="p-4 space-y-3">
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-foreground">
             Delete <span className="font-medium">{routineName}</span>?
             <br />
-            <span className="text-gray-500">This will remove it from your list</span>
+            <span className="text-muted-foreground">This will remove it from your list</span>
           </p>
           <div className="flex gap-3 pt-1">
             <TactileButton

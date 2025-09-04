@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#e07a5f" />
+    <script>
+      const t = localStorage.getItem('theme');
+      if (t === 'dark') document.documentElement.classList.add('dark');
+    </script>
     <meta name="description" content="Track your workouts with a beautiful, intuitive interface" />
     
     <!-- iOS specific meta tags -->
@@ -30,7 +34,7 @@
         margin: 0;
         padding: 0;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-        background-color: #fefcfb;
+        background-color: var(--background);
         overflow-x: hidden;
       }
       
@@ -47,8 +51,8 @@
         transform: translate(-50%, -50%);
         width: 40px;
         height: 40px;
-        border: 3px solid #f4e8c1;
-        border-top: 3px solid #e07a5f;
+        border: 3px solid var(--secondary);
+        border-top: 3px solid var(--primary);
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }
