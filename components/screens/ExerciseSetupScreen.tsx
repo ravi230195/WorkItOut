@@ -120,6 +120,45 @@ export function ExerciseSetupScreen({
   // Snapshot of last-saved state for change detection
   const savedSnapshotRef = useRef<any[]>([]);
 
+  // Workout timer state
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const workoutStartRef = useRef<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  const formatHHMMSS = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return [hours, minutes, seconds]
+      .map((v) => v.toString().padStart(2, "0"))
+      .join(":");
+  };
+
+  useEffect(() => {
+    if (inWorkout) {
+      timerRef.current = setInterval(() => {
+        if (workoutStartRef.current != null) {
+          setElapsedSeconds(
+            Math.floor((Date.now() - workoutStartRef.current) / 1000)
+          );
+        }
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      workoutStartRef.current = null;
+      setElapsedSeconds(0);
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [inWorkout]);
+
   /* -------------------------------------------------------------------------------------
      Utilities
      ------------------------------------------------------------------------------------- */
@@ -481,6 +520,8 @@ export function ExerciseSetupScreen({
   };
 
   const startWorkout = () => {
+    workoutStartRef.current = Date.now();
+    setElapsedSeconds(0);
     // reset any stale journal entries and mark all sets as not done locally
     journalRef.current = makeJournal();
     setExercises((prev) =>
@@ -541,6 +582,13 @@ export function ExerciseSetupScreen({
       //TODO: Uncomment this when we have a way to end a workout
       //await supabaseAPI.endWorkout(workout.id);
       logger.info(" [EXERCISE_SETUP] Workout ended for id: " + workout.id);
+      const durationSecs =
+        workoutStartRef.current != null
+          ? Math.floor((Date.now() - workoutStartRef.current) / 1000)
+          : elapsedSeconds;
+      logger.info(
+        " [EXERCISE_SETUP] Workout duration: " + formatHHMMSS(durationSecs)
+      );
 
       // Apply workout edits to the routine template
       const journal = journalRef.current;
@@ -672,6 +720,7 @@ export function ExerciseSetupScreen({
   const renderHeader = () => (
     <ScreenHeader
       title={routineName || "Routine"}
+      subtitle={inWorkout ? formatHHMMSS(elapsedSeconds) : undefined}
       onBack={handleBack}
       {...(access === RoutineAccess.Editable
         ? {
