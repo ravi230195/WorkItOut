@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
-import { AlertCircle, Clock3 as Clock, TrendingUp, Plus, Pencil, Trash2 } from "lucide-react";
+import { AlertCircle, Clock3 as Clock, TrendingUp, Plus } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { supabaseAPI, UserRoutine } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
@@ -383,16 +383,14 @@ export default function WorkoutDashboardScreen({
                 title={actionRoutine.name}
                 actions={[
                   {
-                    label: "Rename",
-                    icon: <Pencil className="w-5 h-5 text-warm-brown" />,
+                    label: "Rename Routine",
                     onClick: () => setSheetMode("rename"),
-                    type: "list",
+                    type: "button",
                   },
                   {
-                    label: "Delete",
-                    icon: <Trash2 className="w-5 h-5" />,
+                    label: "Delete Routine",
                     onClick: () => setSheetMode("delete"),
-                    type: "list",
+                    type: "button",
                     variant: "destructive",
                   },
                 ]}
