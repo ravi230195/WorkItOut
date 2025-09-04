@@ -147,7 +147,7 @@ async function readTodayStepsNative(): Promise<number> {
 }
 
 /** Hook */
-export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
+export function useStepTracking(): UseStepTrackingReturn {
   const [stepData, setStepData] = useState<StepData>({
     steps: 0,
     lastUpdated: 0,
@@ -182,7 +182,7 @@ export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
   // Read steps from native
   const readStepData = useCallback(
     async (forceRead: boolean = false) => {
-      if (!forceRead && (!isOnDashboard || !isAppInForeground() || !shouldReadStepData())) return;
+      if (!forceRead && (!isAppInForeground() || !shouldReadStepData())) return;
 
       setIsLoading(true);
       lastReadRef.current = Date.now();
@@ -205,7 +205,7 @@ export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
         setIsLoading(false);
       }
     },
-    [isOnDashboard, isAppInForeground, shouldReadStepData]
+    [isAppInForeground, shouldReadStepData]
   );
 
   // Force refresh (bypass 10-minute rule)
@@ -220,21 +220,15 @@ export function useStepTracking(isOnDashboard: boolean): UseStepTrackingReturn {
 
   // Poll: check conditions every minute, read if 10+ mins passed
   useEffect(() => {
-    if (isOnDashboard && userToken) {
+    if (userToken) {
       readStepData(); // initial
       intervalRef.current = setInterval(() => readStepData(), 60000);
-      return () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-      };
     }
-  }, [isOnDashboard, userToken, readStepData]);
 
-  // Cleanup on unmount
-  useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, []);
+  }, [userToken, readStepData]);
 
   const progressRaw = stepData.goal > 0 ? (stepData.steps / stepData.goal) * 100 : 0;
   const progressPercentage = Math.min(Math.max(progressRaw, 0), 100);

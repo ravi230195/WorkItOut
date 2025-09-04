@@ -60,7 +60,7 @@ export default function WorkoutDashboardScreen({
   const [renameLoading, setRenameLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const { steps, goal, isLoading: isLoadingSteps } = useStepTracking(true);
+  const { steps, goal, isLoading: isLoadingSteps } = useStepTracking();
 
   const canEdit = view === RoutinesView.My;
 
