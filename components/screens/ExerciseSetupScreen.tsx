@@ -244,9 +244,7 @@ export function ExerciseSetupScreen({
   const recomputeExerciseCompletion = (ex: UIExercise) => {
     const allDone = ex.sets.length > 0 && ex.sets.every((s) => s.done);
     ex.completed = allDone;
-    if (allDone) {
-      ex.expanded = false;
-    }
+    ex.expanded = !allDone;
   };
 
   const ensureSetsLoaded = async (ex: UIExercise) => {
