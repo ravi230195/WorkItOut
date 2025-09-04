@@ -22,19 +22,19 @@ export type CacheEntry<T> = {
         const storeKey = this.prefixedKey(key);
         const raw = localStorage.getItem(storeKey);
         if (!raw) {
-          logger.info("🔍 [CACHE GET] [miss]", storeKey);
+          logger.db("🔍 [CACHE GET] [miss]", storeKey);
           return null;
         }
         const entry = JSON.parse(raw) as CacheEntry<T>;
         const ageMs = Date.now() - entry.storedAtMs;
         if (ageMs > maxAgeMs) {
-          logger.info("🔍 [CACHE GET] [stale]", storeKey, { ageMs, maxAgeMs });
+          logger.db("🔍 [CACHE GET] [stale]", storeKey, { ageMs, maxAgeMs });
           return null;
         }
-        logger.info("🔍 [CACHE GET] [hit]", storeKey, { ageMs, maxAgeMs });
+        logger.db("🔍 [CACHE GET] [hit]", storeKey, { ageMs, maxAgeMs });
         return entry.value;
       } catch {
-        logger.info("🔍 [CACHE GET] [error parsing]", key);
+        logger.db("🔍 [CACHE GET] [error parsing]", key);
         return null;
       }
     }
@@ -45,12 +45,12 @@ export type CacheEntry<T> = {
         const entry: CacheEntry<T> = { storedAtMs: Date.now(), value, hintTtlMs };
         const raw = JSON.stringify(entry);
         localStorage.setItem(storeKey, raw);
-        logger.info("🔍 [CACHE SET]", storeKey, { bytes: raw.length, hasTTL: !!hintTtlMs });
+        logger.db("🔍 [CACHE SET]", storeKey, { bytes: raw.length, hasTTL: !!hintTtlMs });
         if (this.debug) {
             this.debugDumpValuesChunked(); // false = don't print full values, just metadata
         }
       } catch {
-        logger.info("🔍 [CACHE SET] [failed]", key);
+        logger.db("🔍 [CACHE SET] [failed]", key);
       }
     }
   
@@ -58,12 +58,12 @@ export type CacheEntry<T> = {
       const storeKey = this.prefixedKey(key);
       try {
         localStorage.removeItem(storeKey);
-        logger.info("🔍 [CACHE REMOVE]", storeKey);
+        logger.db("🔍 [CACHE REMOVE]", storeKey);
         if (this.debug) {
             this.debugDumpValuesChunked(); // false = don't print full values, just metadata
         }
       } catch {
-        logger.info("🔍 [CACHE REMOVE] [failed]", storeKey);
+        logger.db("🔍 [CACHE REMOVE] [failed]", storeKey);
       }
     }
   
@@ -108,18 +108,18 @@ export type CacheEntry<T> = {
       const storeKey = this.prefixedKey(key);
       const raw = localStorage.getItem(storeKey);
       if (!raw) {
-        logger.info("🔍 [CACHE PEEK] [miss]", storeKey);
+        logger.db("🔍 [CACHE PEEK] [miss]", storeKey);
         return null;
       }
       try {
         const { value } = JSON.parse(raw) as CacheEntry<unknown>;
         const snap = JSON.stringify(value);
         const out = snap.length > preview ? snap.slice(0, preview) + "…(truncated)" : snap;
-        logger.info("🔍 [CACHE PEEK]", storeKey, out);
+        logger.db("🔍 [CACHE PEEK]", storeKey, out);
         return value;
       } catch {
         const out = raw.length > preview ? raw.slice(0, preview) + "…(truncated)" : raw;
-        logger.info("🔍 [CACHE PEEK RAW]", storeKey, out);
+        logger.db("🔍 [CACHE PEEK RAW]", storeKey, out);
         return raw;
       }
     }
@@ -131,7 +131,7 @@ export type CacheEntry<T> = {
       for (let i = 0; i < s.length; i += chunkSize) {
         const end = Math.min(i + chunkSize, s.length);
         // keep label short; Xcode sometimes truncates very long prefixes too
-        logger.info(`    [${label}] [${i}-${end}/${s.length}]`, s.slice(i, end));
+        logger.db(`    [${label}] [${i}-${end}/${s.length}]`, s.slice(i, end));
       }
     }
     
@@ -141,7 +141,7 @@ export type CacheEntry<T> = {
       for (const [k, v] of Object.entries(snap)) {
         const val = (v as any).value;
         // small metadata line
-        logger.info("🔍 [CACHE ENTRY]", k, {
+        logger.db("🔍 [CACHE ENTRY]", k, {
           storedAtMs: (v as any).storedAtMs,
           ageMs: (v as any).ageMs,
           bytes: (v as any).bytes
@@ -156,7 +156,7 @@ export type CacheEntry<T> = {
     debugDump(includeValues = false) {
       const snap = this.snapshot(includeValues);
       const keys = Object.keys(snap);
-      logger.info("🔍 [CACHE SNAPSHOT]", {
+      logger.db("🔍 [CACHE SNAPSHOT]", {
         prefix: this.prefix,
         count: keys.length,
         entries: snap,
@@ -175,9 +175,9 @@ export type CacheEntry<T> = {
             removed++;
           }
         }
-        logger.info("🔍 [CACHE CLEAR_PREFIX]", p, { removed });
+        logger.db("🔍 [CACHE CLEAR_PREFIX]", p, { removed });
       } catch {
-        logger.info("🔍 [CACHE CLEAR_PREFIX] [failed]", subPrefix ?? "");
+        logger.db("🔍 [CACHE CLEAR_PREFIX] [failed]", subPrefix ?? "");
       }
     }
   }

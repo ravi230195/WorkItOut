@@ -1,0 +1,221 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/components/screens/ExerciseSetupScreen.tsx b/components/screens/ExerciseSetupScreen.tsx
+index ae3f6eb45a98ffc2d9918efb97ee54a61b2c45fb..5d1f6faaa93bba4d289ee3b06866ec16670d5ecf 100644
+--- a/components/screens/ExerciseSetupScreen.tsx
++++ b/components/screens/ExerciseSetupScreen.tsx
+@@ -280,122 +280,135 @@ export function ExerciseSetupScreen({
+ 
+   /* =======================================================================================
+      Journal-backed UI actions
+      ======================================================================================= */
+ 
+   const addNewExercise = async (x: Exercise) => {
+     const timer = performanceTimer.start('ExerciseSetup - addNewExercise');
+     const newExId: Id = tempId();
+     const initialSetId: Id = tempId();
+ 
+     // If selector didn't include muscle_group or name, fetch per-exercise meta now
+     let name = x.name?.trim() || "";
+     let muscle_group = ((x as any).muscle_group || "")?.toString().trim() || "";
+ 
+     if (!name || !muscle_group) {
+       const metaTimer = performanceTimer.start('ExerciseSetup - fetchExerciseMeta in addNewExercise');
+       const meta = await fetchExerciseMeta(x.exercise_id);
+       if (meta) {
+         if (!name) name = normalizeField(meta.name) || name;
+         if (!muscle_group) muscle_group = normalizeField(meta.muscle_group) || muscle_group;
+       }
+       metaTimer.endWithLog('debug');
+     }
+ 
+     // 1) Update UI
+-    setExercises((prev) => [
+-      ...prev,
+-      {
++    setExercises((prev) => {
++      const newEx: UIExercise = {
+         id: newExId,
+         exerciseId: x.exercise_id,
+         name,
+         muscle_group: muscle_group || undefined,
+         loaded: true,
+-        expanded: true,
+-        sets: [{ id: initialSetId, set_order: 1, reps: "0", weight: "0", ...(inWorkout ? { done: false } : {}) }],
+-      },
+-    ]);
++        expanded: false,
++        sets: [{
++          id: initialSetId,
++          set_order: 1,
++          reps: "0",
++          weight: "0",
++          ...(inWorkout ? { done: false } : {}),
++        }],
++      };
++      recomputeExerciseCompletion(newEx);
++      return [...prev, newEx];
++    });
+ 
+     // 2) Record in journal
+     recordExAdd(journalRef.current, newExId, x.exercise_id, name);
+     recordSetAdd(journalRef.current, newExId, initialSetId, 1, "0", "0");
+ 
+     timer.endWithLog('debug');
+   };
+ 
+   const toggleExpanded = async (exId: Id) => {
+     const ex = exercises.find((e) => e.id === exId);
+     if (!ex) return;
+ 
+     if (!ex.loaded && ex.templateId) {
+       await ensureSetsLoaded(ex);
+     }
+ 
+     withExercises((draft) => {
+       const i = draft.findIndex((d) => d.id === exId);
+       if (i >= 0) draft[i].expanded = !draft[i].expanded;
+     });
+   };
+ 
+   const computeNextOrder = (sets: UISet[]) =>
+     sets.reduce((m, s) => Math.max(m, s.set_order || 0), 0) + 1;
+ 
++  function recomputeExerciseCompletion(ex: UIExercise) {
++    const allDone = ex.sets.length > 0 && ex.sets.every((s) => s.done);
++    ex.expanded = !allDone;
++  }
++
+   /** Add set by duplicating the last set’s reps/weight (or "0"/"0" if none). */
+   const onAddSet = async (exId: Id) => {
+     if (access === RoutineAccess.ReadOnly) return;
+ 
+     const current = exercises.find((e) => e.id === exId);
+     if (!current) return;
+     if (!current.loaded && current.templateId) {
+       await ensureSetsLoaded(current);
+     }
+ 
+     withExercises((draft) => {
+       const i = draft.findIndex((d) => d.id === exId);
+       if (i < 0) return;
+ 
+       const ex = draft[i];
+       const nextOrder = computeNextOrder(ex.sets);
+ 
+       const prevSet =
+         ex.sets.length > 0
+           ? ex.sets.slice().sort((a, b) => a.set_order - b.set_order)[ex.sets.length - 1]
+           : undefined;
+ 
+       const newSetId: Id = tempId();
+       const initialReps = prevSet ? prevSet.reps : "0";
+       const initialWeight = prevSet ? prevSet.weight : "0";
+ 
+       ex.sets.push({
+         id: newSetId,
+         set_order: nextOrder,
+         reps: initialReps,
+         weight: initialWeight,
+         ...(inWorkout ? { done: false } : {}),
+       });
+ 
+       recordSetAdd(journalRef.current, exId, newSetId, nextOrder, initialReps, initialWeight);
++      recomputeExerciseCompletion(ex);
+     });
+   };
+ 
+   // robust key resolver: expect set id; also accept order number.
+   const resolveSetId = (ex: UIExercise, rawKey: unknown): Id | null => {
+     if (typeof rawKey === "number") {
+       const byId = ex.sets.find((s) => s.id === rawKey);
+       if (byId) return byId.id;
+       const byOrder = ex.sets.find((s) => s.set_order === rawKey);
+       return byOrder ? byOrder.id : null;
+     }
+     if (typeof rawKey === "string") {
+       const n = Number(rawKey);
+       if (!Number.isNaN(n)) {
+         const byId = ex.sets.find((s) => s.id === n);
+         if (byId) return byId.id;
+         const byOrder = ex.sets.find((s) => s.set_order === n);
+         return byOrder ? byOrder.id : null;
+       }
+     }
+     return null;
+   };
+ 
+   const onChangeSet = (exId: Id, rawKey: unknown, field: "reps" | "weight", value: string) => {
+     if (access === RoutineAccess.ReadOnly) return;
+@@ -421,67 +434,69 @@ export function ExerciseSetupScreen({
+ 
+   const onRemoveSet = (exId: Id, rawKey: unknown) => {
+     if (access === RoutineAccess.ReadOnly) return;
+     withExercises((draft) => {
+       const i = draft.findIndex((d) => d.id === exId);
+       if (i < 0) return;
+       const ex = draft[i];
+ 
+       const setId = resolveSetId(ex, rawKey);
+       if (setId == null) return;
+ 
+       const before = ex.sets.slice();
+       ex.sets = ex.sets.filter((s) => s.id !== setId);
+ 
+       recordSetDelete(journalRef.current, exId, setId);
+ 
+       // reindex 1..N and record reorders for DB sets only
+       let order = 1;
+       for (const s of ex.sets) {
+         const old = before.find((b) => b.id === s.id);
+         s.set_order = order++;
+         if (s.id > 0 && old && old.set_order !== s.set_order) {
+           recordSetReorder(journalRef.current, exId, s.id, s.set_order);
+         }
+       }
++      recomputeExerciseCompletion(ex);
+     });
+   };
+ 
+   const onDeleteExercise = (exId: Id) => {
+     if (access === RoutineAccess.ReadOnly) return;
+     setExercises((prev) => prev.filter((e) => e.id !== exId));
+     recordExDelete(journalRef.current, exId);
+   };
+ 
+   const onToggleDone = (exId: Id, rawKey: unknown, done: boolean) => {
+     withExercises((draft) => {
+       const ex = draft.find((d) => d.id === exId);
+       if (!ex) return;
+       const setId = resolveSetId(ex, rawKey);
+       if (setId == null) return;
+       const s = ex.sets.find((st) => st.id === setId);
+       if (s) s.done = done;
++      recomputeExerciseCompletion(ex);
+     });
+   };
+ 
+   const updateMode = (mode: ScreenMode) => {
+     setScreenMode(mode);
+     onModeChange?.(mode);
+   };
+ 
+   const startWorkout = () => {
+     // reset any stale journal entries and mark all sets as not done locally
+     journalRef.current = makeJournal();
+     setExercises((prev) =>
+       prev.map((ex) => ({
+         ...ex,
+         sets: ex.sets.map((s) => ({ ...s, done: false })),
+       }))
+     );
+     updateMode("workout");
+     logger.info(" [EXERCISE_SETUP] Workout started for id: " + routineId);
+   };
+ 
+   const endWorkout = async () => {
+     if (!userToken) {
+       toast.error("Please sign in to save workout");
+       return;
+ 
+EOF
+)

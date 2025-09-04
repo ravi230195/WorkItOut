@@ -361,7 +361,7 @@ export class SupabaseDBWrite extends SupabaseBase {
     }
 
     async recomputeAndSaveRoutineMuscleSummary(routineTemplateId: number) {
-        logger.debug("🔍 DGB [MUSCLE SUMMARY] Starting recompute for routine:", routineTemplateId);
+        logger.db("🔍 DGB [MUSCLE SUMMARY] Starting recompute for routine:", routineTemplateId);
         
         // Load active exercises → muscle groups
         const urlEx =
@@ -369,14 +369,14 @@ export class SupabaseDBWrite extends SupabaseBase {
             `?routine_template_id=eq.${routineTemplateId}&is_active=eq.true` +
             `&select=exercises(muscle_group)`;
     
-        logger.debug("🔍 DGB [MUSCLE SUMMARY] Fetching exercises from URL:", urlEx);
+        logger.db("🔍 DGB [MUSCLE SUMMARY] Fetching exercises from URL:", urlEx);
         const rows = await this.fetchJson<Array<{ exercises?: { muscle_group?: string } }>>(urlEx, true);
-        logger.debug("🔍 DGB [MUSCLE SUMMARY] Found exercises:", rows.length);
+        logger.db("🔍 DGB [MUSCLE SUMMARY] Found exercises:", rows.length);
     
         // Early exit if no active exercises - nothing to recompute
         if (rows.length === 0) {
-            logger.debug("🔍 DGB [MUSCLE SUMMARY] No active exercises found, skipping recomputation");
-            logger.debug("🔍 DGB [MUSCLE SUMMARY] No database update or cache refresh needed");
+            logger.db("🔍 DGB [MUSCLE SUMMARY] No active exercises found, skipping recomputation");
+            logger.db("🔍 DGB [MUSCLE SUMMARY] No database update or cache refresh needed");
             return;
         }
     
@@ -389,7 +389,7 @@ export class SupabaseDBWrite extends SupabaseBase {
             }
         });
     
-        logger.debug("🔍 DGB [MUSCLE SUMMARY] Muscle group counts:", Object.fromEntries(muscleGroupCounts));
+        logger.db("🔍 DGB [MUSCLE SUMMARY] Muscle group counts:", Object.fromEntries(muscleGroupCounts));
     
         // Sort by frequency (descending) and take top 3
         const topMuscleGroups = Array.from(muscleGroupCounts.entries())
@@ -397,15 +397,15 @@ export class SupabaseDBWrite extends SupabaseBase {
             .slice(0, 3) // Take top 3
             .map(([group]) => group); // Extract just the group names
     
-        logger.debug("🔍 DGB [MUSCLE SUMMARY] Top 3 muscle groups:", topMuscleGroups);
+        logger.db("🔍 DGB [MUSCLE SUMMARY] Top 3 muscle groups:", topMuscleGroups);
     
         // Use NULL when no groups (avoids DB pattern/CHECK failures on empty string)
         const summary = topMuscleGroups.length ? topMuscleGroups.join(" • ") : null;
-        logger.debug("🔍 DGB [MUSCLE SUMMARY] Final summary:", summary);
+        logger.db("🔍 DGB [MUSCLE SUMMARY] Final summary:", summary);
     
         // Patch base table
         const urlPatch = `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`;
-        logger.debug("🔍 DGB [MUSCLE SUMMARY] Patching routine with URL:", urlPatch);
+        logger.db("🔍 DGB [MUSCLE SUMMARY] Patching routine with URL:", urlPatch);
         await this.fetchJson<any[]>(
             urlPatch,
             true,
@@ -415,11 +415,42 @@ export class SupabaseDBWrite extends SupabaseBase {
         );
     
         // Refresh routines cache so UI reflects changes
-        logger.debug("🔍 DGB [MUSCLE SUMMARY] Refreshing routines cache...");
+        logger.db("🔍 DGB [MUSCLE SUMMARY] Refreshing routines cache...");
         const userId = await this.getUserId();
-        logger.debug("🔍 DGB [MUSCLE SUMMARY] User ID for cache refresh:", userId);
+        logger.db("🔍 DGB [MUSCLE SUMMARY] User ID for cache refresh:", userId);
         await this.refreshRoutines(userId);
-        logger.debug("🔍 DGB [MUSCLE SUMMARY] Cache refresh completed");
+        logger.db("🔍 DGB [MUSCLE SUMMARY] Cache refresh completed");
+    }
+
+    /**
+     * Log a message to the database logger table
+     * @param level - Log level (INFO, DEBUG, etc.)
+     * @param message - Log message
+     * @param args - Additional arguments
+     */
+    async logToDatabase(level: string, message: string, args: any[] = []): Promise<void> {
+        try {
+            const userId = await this.getUserId();
+            const logEntry = {
+                level,
+                message,
+                args: args.length > 0 ? JSON.stringify(args) : null,
+                timestamp: new Date().toISOString(),
+                user_id: userId
+            };
+
+            const url = `${SUPABASE_URL}/rest/v1/logger`;
+            await this.fetchJson<any[]>(
+                url,
+                true,
+                "POST",
+                [logEntry],
+                "return=minimal"
+            );
+        } catch (error) {
+            // Don't log database logging errors to avoid infinite loops
+            console.error("Failed to log to database:", error);
+        }
     }
 }
 

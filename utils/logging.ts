@@ -4,8 +4,9 @@
 export const LOG_LEVELS = {
     ERROR: 0,
     WARN:  1,
-    INFO:  2,
-    DEBUG: 3,
+    DB:    2,
+    INFO:  3,
+    DEBUG: 4,
   } as const;
   
   export type LogLevel = keyof typeof LOG_LEVELS;
@@ -42,6 +43,7 @@ export const LOG_LEVELS = {
     WARN:  "warn",
     INFO:  "info",
     DEBUG: "debug",
+    DB:    "db",
     LOG:   "log",    // alias used by logger.log()
   };
   
@@ -140,6 +142,9 @@ export const LOG_LEVELS = {
     message: string,
     args: any[]
   ) => {
+    if (level === 'DEBUG') {
+      return;
+    }
     // gate: treat .log as DEBUG severity
     const severity: LogLevel = level === "LOG" ? "DEBUG" : level;
     if (!shouldLog(severity)) return;
@@ -156,6 +161,7 @@ export const LOG_LEVELS = {
     warn:  (message: string, ...args: any[]) => print("WARN",  console.warn,  message, args),
     info:  (message: string, ...args: any[]) => print("INFO",  console.info,  message, args),
     debug: (message: string, ...args: any[]) => print("DEBUG", console.debug, message, args),
+    db:  (message: string, ...args: any[]) => print("DB",  console.info,  message, args),
     // alias -> uses LOG level key, DEBUG gate
     log:   (message: string, ...args: any[]) => print("LOG",   console.log,   message, args),
   };
