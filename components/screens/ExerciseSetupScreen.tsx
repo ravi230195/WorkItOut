@@ -241,6 +241,14 @@ export function ExerciseSetupScreen({
     });
   };
 
+  const recomputeExerciseCompletion = (ex: UIExercise) => {
+    const allDone = ex.sets.length > 0 && ex.sets.every((s) => s.done);
+    ex.completed = allDone;
+    if (allDone) {
+      ex.expanded = false;
+    }
+  };
+
   const ensureSetsLoaded = async (ex: UIExercise) => {
     // With eager load this will usually be a no-op; keep for safety.
     if (ex.loaded || !ex.templateId) return;
@@ -377,6 +385,7 @@ export function ExerciseSetupScreen({
       });
 
       recordSetAdd(journalRef.current, exId, newSetId, nextOrder, initialReps, initialWeight);
+      recomputeExerciseCompletion(ex);
     });
   };
 
@@ -446,6 +455,7 @@ export function ExerciseSetupScreen({
           recordSetReorder(journalRef.current, exId, s.id, s.set_order);
         }
       }
+      recomputeExerciseCompletion(ex);
     });
   };
 
@@ -463,11 +473,7 @@ export function ExerciseSetupScreen({
       if (setId == null) return;
       const s = ex.sets.find((st) => st.id === setId);
       if (s) s.done = done;
-      const allDone = ex.sets.every((st) => st.done);
-      ex.completed = allDone;
-      if (allDone) {
-        ex.expanded = false;
-      }
+      recomputeExerciseCompletion(ex);
     });
   };
 
