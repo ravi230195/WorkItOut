@@ -18,7 +18,7 @@ import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../utils/routineLoader";
 import ListItem from "../ui/ListItem";
-import WorkoutEndSheet from "../sheets/WorkoutEndSheet";
+import ActionSheet from "../sheets/ActionSheet";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -961,19 +961,36 @@ export function ExerciseSetupScreen({
           </Section>
         </Stack>
       </AppScreen>
-      <WorkoutEndSheet
+      <ActionSheet
         open={showEndSheet}
-        hasIncompleteSets={hasIncompleteSets}
-        finishing={savingWorkout}
         onClose={() => setShowEndSheet(false)}
-        onFinish={async () => {
-          setShowEndSheet(false);
-          await endWorkout();
-        }}
-        onCancelWorkout={async () => {
-          setShowEndSheet(false);
-          await cancelWorkout();
-        }}
+        title="Finish Workout?"
+        message={
+          hasIncompleteSets
+            ? "There are valid sets in this workout that have not been marked as complete."
+            : undefined
+        }
+        actions={[
+          {
+            label: savingWorkout ? "Saving…" : "Finish Workout",
+            onClick: async () => {
+              setShowEndSheet(false);
+              await endWorkout();
+            },
+            type: "button",
+            disabled: savingWorkout,
+          },
+          {
+            label: "Cancel Workout",
+            onClick: async () => {
+              setShowEndSheet(false);
+              await cancelWorkout();
+            },
+            type: "button",
+            variant: "destructive",
+            disabled: savingWorkout,
+          },
+        ]}
       />
     </>
   );
