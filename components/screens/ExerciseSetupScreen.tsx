@@ -787,7 +787,7 @@ export function ExerciseSetupScreen({
                 {initials}
               </span>
             }
-          className={`${ex.completed ? "bg-success-light" : "bg-card/80"} border-border`}
+          className={`${ex.completed && !ex.expanded ? "bg-success-light" : "bg-card/80"} border-border`}
           bodyClassName="pt-2"
         >
           {isLoading || !ex.loaded ? (
