@@ -121,7 +121,7 @@ export function ExerciseSetupScreen({
   const savedSnapshotRef = useRef<any[]>([]);
 
   // Workout timer state
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const workoutStartRef = useRef<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -547,7 +547,7 @@ export function ExerciseSetupScreen({
       // Persist workout session in one go at workout end
       //TODO: Uncomment this when we have a way to start a workout and fetch the workout id
       // const workout = await supabaseAPI.startWorkout(routineId);
-      logger.info(" [EXERCISE_SETUP] Workout edded for id: " + routineId);
+      logger.info(" [EXERCISE_SETUP] Workout ended for id: " + routineId);
       // Dummy workout object
       let workout = {
         id: "123",
@@ -721,6 +721,7 @@ export function ExerciseSetupScreen({
     <ScreenHeader
       title={routineName || "Routine"}
       subtitle={inWorkout ? formatHHMMSS(elapsedSeconds) : undefined}
+      subtitleClassName="text-base font-bold text-black"
       onBack={handleBack}
       {...(access === RoutineAccess.Editable
         ? {

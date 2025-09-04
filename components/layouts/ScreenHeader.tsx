@@ -70,7 +70,7 @@ export default function ScreenHeader({
   const titleMaxWidth = `calc(100% - ${reserveLeftPx + reserveRightPx}px)`;
 
   return (
-    <div className={containerClasses}  /* RAVI style={{ border: "2px solid green" }} */>
+    <div className={containerClasses}>
       {/* Content row (height excludes safe-area padding) */}
       <div className={rowClasses} style={useFixed ? { height: contentHeightPx } : undefined}>
         {/* Left */}
@@ -94,8 +94,8 @@ export default function ScreenHeader({
           {subtitle ? (
             <span
               className={[
-                "mt-1 text-xs text-warm-brown",
-                subtitleClassName,
+                "mt-1",
+                subtitleClassName || "text-xs text-warm-brown",
               ].join(" ")}
             >
               {subtitle}
