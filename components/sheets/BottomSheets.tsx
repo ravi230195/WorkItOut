@@ -73,13 +73,22 @@ export default function BottomSheet({
               className="overflow-y-auto"
               style={{
                 maxHeight: `calc(85svh - ${kb})`,
-                paddingBottom: `calc(var(--app-bottom-h, 0px) + env(safe-area-inset-bottom) + ${kb} + 12px)`,
+                paddingBottom: `calc(var(--app-bottom-h, 0px) + env(safe-area-inset-bottom) + ${kb})`,
               }}
             >
               {children}
             </div>
 
-            {footer ? <div className="px-4 pt-2">{footer}</div> : null}
+            {footer ? (
+              <div
+                className="px-4 pt-2"
+                style={{
+                  paddingBottom: `calc(var(--app-bottom-h, 0px) + env(safe-area-inset-bottom) + ${kb})`,
+                }}
+              >
+                {footer}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
