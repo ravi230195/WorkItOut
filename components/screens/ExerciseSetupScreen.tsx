@@ -706,6 +706,9 @@ export function ExerciseSetupScreen({
           </BottomNavigation>
         );
       }
+      if (visible.length === 0) {
+        return null;
+      }
       return (
         <BottomNavigation>
           <BottomNavigationButton
