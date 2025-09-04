@@ -73,8 +73,7 @@ export default function BottomSheet({
               className="overflow-y-auto"
               style={{
                 maxHeight: `calc(85svh - ${kb})`,
-                //paddingBottom: `calc(env(safe-area-inset-bottom) + ${kb} + 12px)`,
-                paddingBottom: `${kb} + 12px)`,
+                paddingBottom: `calc(var(--app-bottom-h, 0px) + env(safe-area-inset-bottom) + ${kb} + 12px)`,
               }}
             >
               {children}

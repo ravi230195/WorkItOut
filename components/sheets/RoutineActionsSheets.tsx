@@ -2,6 +2,7 @@
 import * as React from "react";
 import BottomSheet from "../sheets/BottomSheets";
 import { TactileButton } from "../TactileButton";
+import { Pencil, Trash2 } from "lucide-react";
 
 export type RoutineActionsSheetProps = {
   open: boolean;
@@ -47,32 +48,38 @@ export default function RoutineActionsSheet({
       open={open}
       onClose={onClose}
       header={header}
+      footer={
+        mode === "default" ? (
+          <TactileButton
+            variant="secondary"
+            className="w-full py-3"
+            onClick={onClose}
+          >
+            Cancel
+          </TactileButton>
+        ) : null
+      }
       zIndex={60}
       fullWidth
     >
-      {/* DEFAULT MODE — edge-to-edge action rows */}
+      {/* DEFAULT MODE — action list */}
       {mode === "default" && (
-        <>
-          <div>
-            <button
-              className="w-full text-left px-4 py-4 hover:bg-gray-50"
-              onClick={() => setMode("renaming")}
-            >
-              Rename
-            </button>
-            <button
-              className="w-full text-left px-4 py-4 hover:bg-destructive-light text-destructive"
-              onClick={() => setMode("confirmDelete")}
-            >
-              Delete
-            </button>
-          </div>
-          <div className="px-4 pt-2">
-            <TactileButton variant="secondary" className="w-full py-3" onClick={onClose}>
-              Cancel
-            </TactileButton>
-          </div>
-        </>
+        <div className="py-1">
+          <button
+            className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
+            onClick={() => setMode("renaming")}
+          >
+            <Pencil className="w-5 h-5 text-warm-brown" />
+            <span>Rename</span>
+          </button>
+          <button
+            className="flex w-full items-center gap-3 px-4 py-3 text-left text-destructive hover:bg-destructive-light"
+            onClick={() => setMode("confirmDelete")}
+          >
+            <Trash2 className="w-5 h-5" />
+            <span>Delete</span>
+          </button>
+        </div>
       )}
 
       {/* RENAMING */}
