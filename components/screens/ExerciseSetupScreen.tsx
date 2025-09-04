@@ -465,7 +465,9 @@ export function ExerciseSetupScreen({
       if (s) s.done = done;
       const allDone = ex.sets.every((st) => st.done);
       ex.completed = allDone;
-      ex.expanded = !allDone;
+      if (allDone) {
+        ex.expanded = false;
+      }
     });
   };
 
