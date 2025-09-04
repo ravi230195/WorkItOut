@@ -39,7 +39,7 @@ export class SupabaseDBRead extends SupabaseBase {
   // Routines (per user)
   async getUserRoutines(): Promise<UserRoutine[]> {
     const userId = await this.getUserId();
-    const url = `${SUPABASE_URL}/rest/v1/user_routines?user_id=eq.${userId}&is_active=eq.true&select=*`;
+    const url = `${SUPABASE_URL}/rest/v1/user_routines?user_id=eq.${userId}&is_active=eq.true&select=*&order=created_at.asc`;
     const key = this.keyUserRoutines(userId);
     
     // Add post-filter for consistency and to handle old cache data with inactive routines
@@ -57,7 +57,7 @@ export class SupabaseDBRead extends SupabaseBase {
   // Routines (per user)
   async getSampleRoutines(): Promise<UserRoutine[]> {
     const user = "58b39a78-0284-445f-8c88-4fed2944c8be"
-    const url = `${SUPABASE_URL}/rest/v1/user_routines?user_id=eq.${user}&is_active=eq.true&select=*`;
+    const url = `${SUPABASE_URL}/rest/v1/user_routines?user_id=eq.${user}&is_active=eq.true&select=*&order=created_at.asc`;
     const key = this.keyUserRoutines(user);
     const { data: routines } = await this.getOrFetchAndCache<UserRoutine[]>(url, key, CACHE_TTL.routines, true);
     return routines;
