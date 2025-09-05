@@ -518,6 +518,20 @@ export function ExerciseSetupScreen({
     });
   };
 
+  const onToggleExerciseDone = async (exId: Id, done: boolean) => {
+    const ex = exercises.find((e) => e.id === exId);
+    if (!ex) return;
+    if (!ex.loaded && ex.templateId) {
+      await ensureSetsLoaded(ex);
+    }
+    withExercises((draft) => {
+      const ex = draft.find((d) => d.id === exId);
+      if (!ex) return;
+      ex.sets.forEach((s) => (s.done = done));
+      recomputeExerciseCompletion(ex);
+    });
+  };
+
   const updateMode = (mode: ScreenMode) => {
     setScreenMode(mode);
     onModeChange?.(mode);
@@ -713,6 +727,10 @@ export function ExerciseSetupScreen({
     [exercises]
   );
   const visible = exercises;
+  const completedCount = useMemo(
+    () => exercises.filter((ex) => ex.completed).length,
+    [exercises]
+  );
   const hasIncompleteSets = useMemo(
     () => exercises.some((ex) => ex.sets.some((s) => !s.done)),
     [exercises]
@@ -852,11 +870,23 @@ export function ExerciseSetupScreen({
           onToggle={() => toggleExpanded(ex.id)}
           title={ex.name}
           subtitle={subtitle}
-            leading={
-              <span className="text-sm md:text-base font-medium text-warm-brown/60">
-                {initials}
-              </span>
-            }
+          leading={
+            <span className="text-sm md:text-base font-medium text-warm-brown/60">
+              {initials}
+            </span>
+          }
+          trailing={
+            inWorkout ? (
+              <input
+                type="checkbox"
+                checked={ex.completed}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => void onToggleExerciseDone(ex.id, e.target.checked)}
+                className="w-5 h-5 rounded-full border-2 border-border text-success accent-success checked:border-success"
+              />
+            ) : undefined
+          }
+          disableChevron={inWorkout}
           className={`${ex.completed && !ex.expanded ? "bg-success-light" : "bg-card/80"} border-border`}
           bodyClassName="pt-2"
         >
@@ -953,9 +983,17 @@ export function ExerciseSetupScreen({
           <Spacer y="sm" />
           <Section variant="plain" padding="none">
             <div className="mt-2 mb-6">
-              <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
-                EXERCISES IN ROUTINE ({visible.length})
-              </h3>
+              {inWorkout ? (
+                completedCount > 0 && (
+                  <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                    {completedCount} COMPLETED
+                  </h3>
+                )
+              ) : (
+                <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                  EXERCISES IN ROUTINE ({visible.length})
+                </h3>
+              )}
               {renderExerciseList()}
             </div>
           </Section>
