@@ -727,6 +727,10 @@ export function ExerciseSetupScreen({
     [exercises]
   );
   const visible = exercises;
+  const completedCount = useMemo(
+    () => exercises.filter((ex) => ex.completed).length,
+    [exercises]
+  );
   const hasIncompleteSets = useMemo(
     () => exercises.some((ex) => ex.sets.some((s) => !s.done)),
     [exercises]
@@ -979,9 +983,17 @@ export function ExerciseSetupScreen({
           <Spacer y="sm" />
           <Section variant="plain" padding="none">
             <div className="mt-2 mb-6">
-              <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
-                EXERCISES IN ROUTINE ({visible.length})
-              </h3>
+              {inWorkout ? (
+                completedCount > 0 && (
+                  <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                    {completedCount} COMPLETED
+                  </h3>
+                )
+              ) : (
+                <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                  EXERCISES IN ROUTINE ({visible.length})
+                </h3>
+              )}
               {renderExerciseList()}
             </div>
           </Section>
