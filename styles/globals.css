@@ -7,7 +7,7 @@
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
 
   /* Core Colors - Modern & Accessible */
-  --background: #fefcfb;
+  --background: #f5f2ef;
   --foreground: #3d2914;
   --card-hsl: 0 0% 100%;
   --card: hsl(var(--card-hsl));
