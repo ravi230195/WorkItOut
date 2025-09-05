@@ -318,13 +318,30 @@ html {
     }
   }
 
-  /* Universal safe area classes for immediate use */
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .app-shell #root {
+    flex: 1;
+  }
+
+  /* Safe area overlays for notch and home indicator */
+  .safe-top,
   .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 1rem);
+    flex-shrink: 0;
+    background: #f5f2ef;
   }
 
   .safe-top {
-    padding-top: env(safe-area-inset-top, 1rem);
+    height: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-bottom {
+    height: env(safe-area-inset-bottom, 0px);
   }
 
   /* Fixed positioning with safe areas */

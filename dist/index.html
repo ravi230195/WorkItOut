@@ -38,10 +38,30 @@
         background-color: #f5f2ef;
         overflow-x: hidden;
       }
-      
-      #root {
+
+      .app-shell {
+        display: flex;
+        flex-direction: column;
         min-height: 100vh;
         min-height: 100dvh;
+      }
+
+      #root {
+        flex: 1;
+      }
+
+      .safe-top,
+      .safe-bottom {
+        flex-shrink: 0;
+        background: #f5f2ef;
+      }
+
+      .safe-top {
+        height: env(safe-area-inset-top);
+      }
+
+      .safe-bottom {
+        height: env(safe-area-inset-bottom);
       }
       
       /* Loading spinner */
@@ -69,8 +89,12 @@
     <link rel="stylesheet" crossorigin href="/assets/index-r8Xsc4pm.css">
   </head>
   <body>
-    <div id="root">
-      <div class="loading-spinner"></div>
+    <div class="app-shell">
+      <div class="safe-top"></div>
+      <div id="root">
+        <div class="loading-spinner"></div>
+      </div>
+      <div class="safe-bottom"></div>
     </div>
   </body>
 </html>
