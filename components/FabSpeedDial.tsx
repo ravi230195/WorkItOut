@@ -27,39 +27,43 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
     onOpenChange?.(false);
   };
 
+  const radius = 90;
+  const spacing = 45;
+  const startAngle = 180 - spacing * (actions.length - 1);
+
   return (
     <>
-      {open && (
-        <div className="fixed inset-0 z-30" onClick={close}>
-          <div
-            className="absolute bottom-24 right-4 flex flex-col items-end gap-3"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {actions.map((action) => (
+      {open && <div className="fixed inset-0 z-30" onClick={close} />}
+      <div className="fixed right-4 bottom-24 z-40">
+        {open &&
+          actions.map((action, index) => {
+            const angle = startAngle + index * spacing;
+            const rad = (angle * Math.PI) / 180;
+            const x = Math.cos(rad) * radius;
+            const y = Math.sin(rad) * radius;
+            return (
               <button
                 key={action.label}
                 onClick={() => {
                   close();
                   action.onPress();
                 }}
-                className="w-24 h-24 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center px-2 text-center"
+                className="absolute text-sm font-medium text-primary"
+                style={{ transform: `translate(${x}px, ${-y}px)` }}
                 aria-label={action.label}
               >
-                <span className="text-xs font-medium leading-tight whitespace-pre-wrap">
-                  {action.label}
-                </span>
+                {action.label}
               </button>
-            ))}
-          </div>
-        </div>
-      )}
-      <button
-        onClick={toggle}
-        className="fixed right-4 bottom-24 z-40 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
-        aria-label="Speed dial"
-      >
-        <Plus className={`w-6 h-6 transition-transform ${open ? "rotate-45" : ""}`} />
-      </button>
+            );
+          })}
+        <button
+          onClick={toggle}
+          className="w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
+          aria-label="Speed dial"
+        >
+          <Plus className={`w-6 h-6 transition-transform ${open ? "rotate-45" : ""}`} />
+        </button>
+      </div>
     </>
   );
 }
