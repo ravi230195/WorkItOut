@@ -4,9 +4,12 @@ import { Card, CardContent, CardHeader } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { TrendingUp, Calendar, Award, Zap, Medal, Trophy, Footprints, Activity, Target, BarChart3, Star, Flame, Rocket, ChevronRight, Check, Dumbbell } from "lucide-react";
 import { Badge } from "../ui/badge";
-import { supabaseAPI, Workout } from "../../utils/supabase/supabase-api";
+import { supabaseAPI, Workout, Profile } from "../../utils/supabase/supabase-api";
 import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
 import { logger } from "../../utils/logging";
+import { useAuth } from "../AuthContext";
+import { useStepTracking } from "../../hooks/useStepTracking";
+import { useWorkoutTracking } from "../../hooks/useWorkoutTracking";
 
 interface ProgressScreenProps {
   bottomBar?: React.ReactNode;
@@ -85,7 +88,7 @@ const todaysRoutines = [
   { name: "Yoga Session", duration: 20, type: "Flexibility" }
 ];
 
-// Comprehensive data for different time periods
+// Fallback/static data used until live aggregates load
 const progressData: Record<'day' | 'week' | 'month' | 'year', PeriodData> = {
   day: {
     steps: {
@@ -195,8 +198,8 @@ const progressData: Record<'day' | 'week' | 'month' | 'year', PeriodData> = {
   }
 };
 
-// Mock monthly data for year view
-const monthlyYearData = [
+// Fallback monthly data for year view (replaced by live aggregates when available)
+const monthlyYearDataFallback = [
   { month: "Jan", steps: 280000, stepsTarget: 300000, stepsAchieved: false, routines: 18, routinesTarget: 20, routinesAchieved: false },
   { month: "Feb", steps: 310000, stepsTarget: 300000, stepsAchieved: true, routines: 22, routinesTarget: 20, routinesAchieved: true },
   { month: "Mar", steps: 295000, stepsTarget: 300000, stepsAchieved: false, routines: 19, routinesTarget: 20, routinesAchieved: false },
@@ -211,8 +214,8 @@ const monthlyYearData = [
   { month: "Dec", steps: 295000, stepsTarget: 300000, stepsAchieved: false, routines: 19, routinesTarget: 20, routinesAchieved: false }
 ];
 
-// Mock calendar data for year view
-const generateYearCalendarData = () => {
+// Fallback calendar data for year view (replaced by live aggregates when available)
+const generateYearCalendarDataFallback = () => {
   const data: Record<string, { steps: boolean; routines: boolean }> = {};
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
@@ -231,7 +234,10 @@ const generateYearCalendarData = () => {
   return data;
 };
 
-const yearCalendarData = generateYearCalendarData();
+// Local state for live aggregates
+import { fetchStepsByDay, fetchWorkoutsByDay, weekStart, weekEnd, monthStart, monthEnd } from "../../hooks/useHealthAggregates";
+
+const yearCalendarDataFallback = generateYearCalendarDataFallback();
 
 export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
   const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([]);
@@ -245,6 +251,25 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const { userToken } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  // Live health data
+  const { steps, goal: stepGoal, isLoading: stepsLoading, forceRefreshStepData } = useStepTracking(true);
+  const { count: workoutCount, totalMinutes: workoutMinutes, isLoading: workoutsLoading, refresh: refreshWorkouts } = useWorkoutTracking();
+
+  // Fetch user profile for display name
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!userToken) return;
+      try {
+        const profileData = await supabaseAPI.getMyProfile();
+        setProfile(profileData);
+      } catch (error) {
+        logger.error("Failed to fetch profile for Progress screen:", error);
+      }
+    };
+    fetchProfile();
+  }, [userToken]);
 
   useEffect(() => {
     const fetchProgressData = async () => {
@@ -280,10 +305,235 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     };
 
     fetchProgressData();
+    // Kick off fresh native reads for steps/workouts
+    forceRefreshStepData().catch(() => {});
+    refreshWorkouts().catch(() => {});
   }, []);
 
-  // Get current period data
-  const currentData = progressData[selectedPeriod];
+  // Dynamic aggregates state
+  const [periodData, setPeriodData] = useState<Partial<Record<'day'|'week'|'month'|'year', PeriodData>>>({});
+  const [monthlyYearData, setMonthlyYearData] = useState<Array<{ month: string; steps: number; stepsTarget: number; stepsAchieved: boolean; routines: number; routinesTarget: number; routinesAchieved: boolean }>>(monthlyYearDataFallback);
+  const [yearCalendarData, setYearCalendarData] = useState<Record<string, { steps: boolean; routines: boolean }>>(yearCalendarDataFallback);
+
+  // Compute current period data from live Health aggregates
+  useEffect(() => {
+    const compute = async () => {
+      try {
+        if (selectedPeriod === 'day') {
+          // Day view already uses live hooks for steps/workouts; still compute to drive badges
+          const stepsCurrent = steps ?? 0;
+          const target = stepGoal || 10000;
+          const stepsData: StepsData = {
+            current: stepsCurrent,
+            target,
+            progress: Math.min(100, Math.max(0, (stepsCurrent / Math.max(1, target)) * 100)),
+            remaining: Math.max(0, target - stepsCurrent),
+            achieved: stepsCurrent >= target,
+          };
+          const routinesCurrent = workoutCount;
+          const routinesTarget = 1;
+          const routinesData: RoutineData = {
+            current: routinesCurrent,
+            target: routinesTarget,
+            progress: Math.min(100, Math.max(0, (routinesCurrent / Math.max(1, routinesTarget)) * 100)),
+            remaining: Math.max(0, routinesTarget - routinesCurrent),
+            achieved: routinesCurrent >= routinesTarget,
+          };
+          setPeriodData(prev => ({ ...prev, day: { steps: stepsData, routines: routinesData } }));
+          return;
+        }
+
+        if (selectedPeriod === 'week') {
+          const now = new Date();
+          const s = weekStart(now);
+          const e = weekEnd(now);
+          const stepsByDay = await fetchStepsByDay(s, e);
+          const wByDay = await fetchWorkoutsByDay(s, e);
+
+          const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+          const dailySteps = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(s); d.setDate(s.getDate() + i);
+            const key = `${d.getMonth()+1}/${d.getDate()}`;
+            const stepsVal = stepsByDay[key]?.steps || 0;
+            return { day: dayNames[d.getDay()], steps: stepsVal, target: stepGoal, achieved: stepsVal >= stepGoal };
+          });
+          const stepsCurrent = dailySteps.reduce((sum, d) => sum + d.steps, 0);
+          const stepsTarget = stepGoal * 7;
+          const stepsData: StepsData = {
+            current: stepsCurrent,
+            target: stepsTarget,
+            progress: Math.min(100, Math.max(0, (stepsCurrent / Math.max(1, stepsTarget)) * 100)),
+            remaining: Math.max(0, stepsTarget - stepsCurrent),
+            achieved: stepsCurrent >= stepsTarget,
+            dailyBreakdown: dailySteps,
+          };
+
+          const dailyRoutines = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(s); d.setDate(s.getDate() + i);
+            const key = `${d.getMonth()+1}/${d.getDate()}`;
+            const minutes = Math.round(wByDay[key]?.minutes || 0);
+            const perDayTarget = 30; // 30 min/day target
+            return { day: dayNames[d.getDay()], timeSpent: minutes, target: perDayTarget, achieved: minutes >= perDayTarget };
+          });
+          const routinesCount = Object.values(wByDay).reduce((sum, v) => sum + (v?.count || 0), 0);
+          const routinesTarget = 5; // 5 workouts/week target
+          const routinesData: RoutineData = {
+            current: routinesCount,
+            target: routinesTarget,
+            progress: Math.min(100, Math.max(0, (routinesCount / Math.max(1, routinesTarget)) * 100)),
+            remaining: Math.max(0, routinesTarget - routinesCount),
+            achieved: routinesCount >= routinesTarget,
+            dailyBreakdown: dailyRoutines,
+          };
+
+          setPeriodData(prev => ({ ...prev, week: { steps: stepsData, routines: routinesData } }));
+          return;
+        }
+
+        if (selectedPeriod === 'month') {
+          const now = new Date();
+          const s = monthStart(now);
+          const e = monthEnd(now);
+          const stepsByDay = await fetchStepsByDay(s, e);
+          const wByDay = await fetchWorkoutsByDay(s, e);
+
+          // Build weekly buckets within month (partial weeks adjusted)
+          const weeks: Array<{ start: Date; end: Date; label: string; days: number }> = [];
+          let wS = weekStart(s);
+          while (wS <= e) {
+            const wE = weekEnd(wS);
+            const startIn = wS < s ? s : wS;
+            const endIn = wE > e ? e : wE;
+            const days = Math.floor((new Date(endIn.getFullYear(), endIn.getMonth(), endIn.getDate()).getTime() - new Date(startIn.getFullYear(), startIn.getMonth(), startIn.getDate()).getTime())/86400000) + 1;
+            weeks.push({ start: startIn, end: endIn, label: `W${weeks.length+1}`, days });
+            wS = new Date(wS.getFullYear(), wS.getMonth(), wS.getDate() + 7);
+          }
+
+          const weeklySteps = weeks.map(w => {
+            let total = 0;
+            for (let d = new Date(w.start); d <= w.end; d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1)) {
+              const key = `${d.getMonth()+1}/${d.getDate()}`;
+              total += stepsByDay[key]?.steps || 0;
+            }
+            const target = stepGoal * w.days; // adjust for partial weeks
+            return { week: w.label, steps: total, target, achieved: total >= target };
+          });
+
+          const weeklyMinutes = weeks.map(w => {
+            let minutes = 0;
+            for (let d = new Date(w.start); d <= w.end; d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1)) {
+              const key = `${d.getMonth()+1}/${d.getDate()}`;
+              minutes += Math.round(wByDay[key]?.minutes || 0);
+            }
+            const target = Math.round(150 * (w.days/7)); // 150 min/week adjusted
+            return { week: w.label, timeSpent: minutes, target, achieved: minutes >= target };
+          });
+
+          const stepsCurrent = weeklySteps.reduce((s, w) => s + w.steps, 0);
+          const stepsTarget = Array.from({length: (e.getDate())}, (_, i) => 0).reduce((acc) => acc, 0) + stepGoal * e.getDate();
+
+          const stepsData: StepsData = {
+            current: stepsCurrent,
+            target: stepsTarget,
+            progress: Math.min(100, Math.max(0, (stepsCurrent / Math.max(1, stepsTarget)) * 100)),
+            remaining: Math.max(0, stepsTarget - stepsCurrent),
+            achieved: stepsCurrent >= stepsTarget,
+            weeklyBreakdown: weeklySteps,
+          } as any;
+
+          const routinesCount = Object.values(wByDay).reduce((sum, v) => sum + (v?.count || 0), 0);
+          const routinesTarget = weeks.length * 5; // 5/week
+          const routinesData: RoutineData = {
+            current: routinesCount,
+            target: routinesTarget,
+            progress: Math.min(100, Math.max(0, (routinesCount / Math.max(1, routinesTarget)) * 100)),
+            remaining: Math.max(0, routinesTarget - routinesCount),
+            achieved: routinesCount >= routinesTarget,
+            weeklyBreakdown: weeklyMinutes,
+          } as any;
+
+          setPeriodData(prev => ({ ...prev, month: { steps: stepsData, routines: routinesData } }));
+          return;
+        }
+
+        if (selectedPeriod === 'year') {
+          const year = selectedYear;
+          const start = new Date(year, 0, 1, 0, 0, 0, 0);
+          const end = new Date(year, 11, 31, 23, 59, 59, 999);
+          const stepsByDay = await fetchStepsByDay(start, end);
+          const wByDay = await fetchWorkoutsByDay(start, end);
+
+          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const monthly = months.map((m, idx) => {
+            const daysInMonth = new Date(year, idx+1, 0).getDate();
+            let stepsSum = 0;
+            let workoutsCount = 0;
+            for (let d = 1; d <= daysInMonth; d++) {
+              const key = `${idx+1}/${d}`;
+              stepsSum += stepsByDay[key]?.steps || 0;
+              workoutsCount += wByDay[key]?.count || 0;
+            }
+            const stepsTarget = stepGoal * daysInMonth;
+            const routinesTarget = Math.ceil(daysInMonth / 7) * 5; // 5/week
+            return {
+              month: m,
+              steps: stepsSum,
+              stepsTarget,
+              stepsAchieved: stepsSum >= stepsTarget,
+              routines: workoutsCount,
+              routinesTarget,
+              routinesAchieved: workoutsCount >= routinesTarget,
+            };
+          });
+          setMonthlyYearData(monthly);
+
+          // Calendar flags for current selected year
+          const cal: Record<string, { steps: boolean; routines: boolean }> = {};
+          for (let m = 0; m < 12; m++) {
+            const dim = new Date(year, m+1, 0).getDate();
+            for (let d = 1; d <= dim; d++) {
+              const key = `${m+1}/${d}`;
+              cal[key] = {
+                steps: (stepsByDay[key]?.steps || 0) > 0,
+                routines: (wByDay[key]?.count || 0) > 0,
+              };
+            }
+          }
+          setYearCalendarData(cal);
+
+          // Also compute high-level aggregates for year header cards
+          const stepsTotal = monthly.reduce((s, m) => s + m.steps, 0);
+          const stepsTargetYear = monthly.reduce((s, m) => s + m.stepsTarget, 0);
+          const stepsData: StepsData = {
+            current: stepsTotal,
+            target: stepsTargetYear,
+            progress: Math.min(100, Math.max(0, (stepsTotal / Math.max(1, stepsTargetYear)) * 100)),
+            remaining: Math.max(0, stepsTargetYear - stepsTotal),
+            achieved: stepsTotal >= stepsTargetYear,
+          } as any;
+          const workoutsTotal = monthly.reduce((s, m) => s + m.routines, 0);
+          const workoutsTargetYear = monthly.reduce((s, m) => s + m.routinesTarget, 0);
+          const routinesData: RoutineData = {
+            current: workoutsTotal,
+            target: workoutsTargetYear,
+            progress: Math.min(100, Math.max(0, (workoutsTotal / Math.max(1, workoutsTargetYear)) * 100)),
+            remaining: Math.max(0, workoutsTargetYear - workoutsTotal),
+            achieved: workoutsTotal >= workoutsTargetYear,
+          } as any;
+          setPeriodData(prev => ({ ...prev, year: { steps: stepsData, routines: routinesData } }));
+          return;
+        }
+      } catch (e) {
+        logger.error('Failed computing health aggregates for period', selectedPeriod, e);
+      }
+    };
+
+    compute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPeriod, selectedYear, stepGoal]);
+
+  // Get current period data (prefer live aggregates)
+  const currentData = periodData[selectedPeriod] || progressData[selectedPeriod];
 
   // Get period-specific title
   const getPeriodTitle = () => {
@@ -301,6 +551,32 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 
                    'July', 'August', 'September', 'October', 'November', 'December'];
     return months[monthIndex];
+  };
+
+  // First name only for personalization
+  const getFirstName = () => {
+    if (profile?.first_name && profile.first_name.trim() !== "") {
+      return profile.first_name.split(" ")[0];
+    }
+    if (profile?.display_name && profile.display_name.trim() !== "") {
+      return profile.display_name.split(" ")[0];
+    }
+    return null;
+  };
+
+  // Dynamic motivational message based on current progress/consistency
+  const getMotivationMessage = () => {
+    const name = getFirstName();
+    const stepsP = currentData?.steps?.progress ?? 0;
+    const routinesP = currentData?.routines?.progress ?? 0;
+    const score = (stepsP + routinesP) / 2;
+
+    const you = name ?? "there";
+    if (score >= 90) return `On fire, ${you}! Keep pushing 🔥`;
+    if (score >= 75) return `Great momentum, ${you}! Almost there 💪`;
+    if (score >= 50) return `Nice work, ${you}! Keep it going 👏`;
+    if (score >= 25) return `You got this, ${you}! Small steps add up 🚶`;
+    return `New day, ${you}. Let's get moving 💫`;
   };
 
   // Navigate months
@@ -348,7 +624,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                   )}
                 </div>
                 <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                  {(day.steps / 1000).toFixed(1)}k
+                  {(day.steps / 1000).toFixed(0)}k
                 </div>
               </div>
             ))}
@@ -527,7 +803,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     return null;
   };
 
-  // Render year monthly breakdown with horizontal scroll
+  // Render year monthly breakdown with horizontal scroll (uses live monthlyYearData when available)
   const renderYearMonthlyBreakdown = () => {
     if (selectedPeriod === 'year') {
       return (
@@ -536,7 +812,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Steps Targets</h3>
             <div className="overflow-x-auto">
               <div className="flex gap-2 min-w-max">
-                {monthlyYearData.map((month, index) => (
+                {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
                   <div key={index} className="w-16 text-center">
                     <div className="text-xs font-medium text-warm-brown/60 mb-2">{month.month}</div>
                     <div className="relative">
@@ -545,7 +821,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                           month.stepsAchieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
                         }`}
                         style={{
-                          height: `${Math.max(20, (month.steps / Math.max(...monthlyYearData.map(m => m.steps))) * 80)}px`
+                          height: `${Math.max(20, (month.steps / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.steps))) * 80)}px`
                         }}
                       />
                       {month.stepsAchieved && (
@@ -567,7 +843,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Routine Targets</h3>
             <div className="overflow-x-auto">
               <div className="flex gap-2 min-w-max">
-                {monthlyYearData.map((month, index) => (
+                {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
                   <div key={index} className="w-16 text-center">
                     <div className="text-xs font-medium text-warm-brown/60 mb-2">{month.month}</div>
                     <div className="relative">
@@ -576,7 +852,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                           month.routinesAchieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
                         }`}
                         style={{
-                          height: `${Math.max(20, (month.routines / Math.max(...monthlyYearData.map(m => m.routines))) * 80)}px`
+                          height: `${Math.max(20, (month.routines / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.routines))) * 80)}px`
                         }}
                       />
                       {month.routinesAchieved && (
@@ -646,7 +922,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             {Array.from({ length: daysInMonth }, (_, dayIndex) => {
               const day = dayIndex + 1;
               const dateKey = `${selectedMonth + 1}/${day}`;
-              const dayData = yearCalendarData[dateKey];
+              const dayData = (yearCalendarData || yearCalendarDataFallback)[dateKey];
               
               if (!dayData) return <div key={day} className="w-8 h-8" />;
               
@@ -689,24 +965,17 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     if (selectedPeriod === 'day') {
       return (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-warm-brown/80">Today's Routines</h3>
-          <div className="space-y-2">
-            {todaysRoutines.map((routine, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-white/60 rounded-xl border border-white/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-warm-coral/20 rounded-full flex items-center justify-center">
-                    <Dumbbell size={18} className="text-warm-coral" />
-                  </div>
-                  <div>
-                    <span className="font-semibold text-warm-brown">{routine.name}</span>
-                    <div className="text-xs text-warm-brown/60">{routine.type}</div>
-                  </div>
-                </div>
-                <div className="text-sm font-medium text-warm-brown/70">
-                  {routine.duration} min
-                </div>
+          <h3 className="text-sm font-semibold text-warm-brown/80">Today's Workouts</h3>
+          <div className="p-4 bg-white/60 rounded-xl border border-white/20 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-warm-coral/20 rounded-full flex items-center justify-center">
+                <Dumbbell size={18} className="text-warm-coral" />
               </div>
-            ))}
+              <div>
+                <span className="font-semibold text-warm-brown">{workoutsLoading ? 'Loading…' : `${workoutCount} workout${workoutCount === 1 ? '' : 's'}`}</span>
+                <div className="text-xs text-warm-brown/60">{workoutsLoading ? '' : `${workoutMinutes} min total`}</div>
+              </div>
+            </div>
           </div>
         </div>
       );
@@ -717,7 +986,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
 
   return (
     <AppScreen
-      header={<ScreenHeader title="Progress"
+      header={<ScreenHeader title={"Progress"}
         showBorder={false}
         denseSmall
         contentHeightPx={74} 
@@ -731,6 +1000,15 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
       headerInScrollArea={true}
     >
       <Stack gap="fluid">
+        {/* Motivational greeting with first name */}
+        {(
+          <Section variant="plain" padding="none">
+            <div className="px-1">
+              <h2 className="text-2xl font-bold text-warm-brown">{getMotivationMessage()}</h2>
+            </div>
+          </Section>
+        )}
+
         {/* Period Selector */}
         <Section variant="plain" padding="none">
           <div className="flex bg-white/60 rounded-2xl p-1 border border-white/20">
@@ -781,14 +1059,14 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                     </div>
                     <div>
                       <h2 className="font-bold text-warm-brown text-xl">{getPeriodTitle()} Steps</h2>
-                      <p className="text-sm text-warm-brown/60">Goal: {currentData.steps.target.toLocaleString()}</p>
+                      <p className="text-sm text-warm-brown/60">Goal: {(selectedPeriod==='day' ? stepGoal : currentData.steps.target).toLocaleString()}</p>
                     </div>
                   </div>
                   {selectedPeriod === 'day' ? (
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      currentData.steps.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
+                      ((stepsLoading ? false : steps >= stepGoal) ) ? 'bg-warm-sage' : 'bg-warm-sage/20'
                     }`}>
-                      {currentData.steps.achieved ? (
+                      {((stepsLoading ? false : steps >= stepGoal)) ? (
                         <Check size={20} className="text-white" />
                       ) : (
                         <div className="w-4 h-4 border-2 border-warm-sage rounded-sm" />
@@ -806,18 +1084,24 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-4xl font-bold text-warm-brown">
-                      {currentData.steps.current.toLocaleString()}
+                      {(selectedPeriod==='day' ? steps : currentData.steps.current).toLocaleString()}
                     </span>
                     <span className="text-sm font-medium text-warm-brown/60">
-                      {currentData.steps.remaining > 0 
-                        ? `${currentData.steps.remaining.toLocaleString()} remaining`
-                        : 'Goal achieved! 🎉'
+                      {selectedPeriod==='day'
+                        ? (stepsLoading
+                            ? 'Loading…'
+                            : steps < stepGoal
+                              ? `${(stepGoal - steps).toLocaleString()} remaining`
+                              : 'Goal achieved! 🎉')
+                        : currentData.steps.remaining > 0
+                          ? `${currentData.steps.remaining.toLocaleString()} remaining`
+                          : 'Goal achieved! 🎉'
                       }
                     </span>
                   </div>
                   {/* Progress bar - Always shown for steps */}
                   <Progress
-                    value={currentData.steps.progress}
+                    value={selectedPeriod==='day' ? Math.min(100, Math.max(0, (steps / Math.max(1, stepGoal)) * 100)) : currentData.steps.progress}
                     className="h-4 bg-warm-sage/20 rounded-full"
                     style={{
                       '--progress-color': 'hsl(var(--warm-sage))'
@@ -832,7 +1116,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           </Section>
         )}
 
-        {/* Routines Overview Card - Hidden for Month and Year */}
+        {/* Workouts Overview Card - Hidden for Month and Year */}
         {selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
           <Section variant="plain" padding="none">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
@@ -843,15 +1127,15 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                       <Dumbbell size={24} className="text-warm-coral" />
                     </div>
                     <div>
-                      <h2 className="font-bold text-warm-brown text-xl">{getPeriodTitle()} Routines</h2>
-                      <p className="text-sm text-warm-brown/60">Goal: {currentData.routines.target} routines</p>
+                      <h2 className="font-bold text-warm-brown text-xl">{getPeriodTitle()} Workouts</h2>
+                      <p className="text-sm text-warm-brown/60">Goal: {selectedPeriod==='day' ? 1 : currentData.routines.target} {selectedPeriod==='day' ? 'workout' : 'routines'}</p>
                     </div>
                   </div>
                   {selectedPeriod === 'day' ? (
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      currentData.routines.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
+                      (workoutsLoading ? false : workoutCount >= 1) ? 'bg-warm-coral' : 'bg-warm-coral/20'
                     }`}>
-                      {currentData.routines.achieved ? (
+                      {(workoutsLoading ? false : workoutCount >= 1) ? (
                         <Check size={20} className="text-white" />
                       ) : (
                         <div className="w-4 h-4 border-2 border-warm-coral rounded-sm" />
@@ -902,8 +1186,8 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           </Section>
         )}
 
-        {/* Month View - Routine Types */}
-        {selectedPeriod === 'month' && (
+        {/* Month View - Routine Types (show only if types exist) */}
+        {selectedPeriod === 'month' && (currentData.routines.types && currentData.routines.types.length > 0) && (
           <Section variant="plain" padding="none">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
               <CardHeader>

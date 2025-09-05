@@ -38,7 +38,7 @@ const percentOf = (part: number | null | undefined, total: number | null | undef
   if (part == null || total == null || !isFinite(part) || !isFinite(total) || total <= 0) return null;
   return clampNum(Math.round((part / total) * 100), 0, 100);
 };
-const fmt = (n: number | null | undefined) => (n == null ? "—" : n.toLocaleString());
+const fmt = (n: number | null | undefined) => (n == null ? "—" : Math.round(n).toLocaleString());
 
 /* ---------- component ---------- */
 function ProgressRings({

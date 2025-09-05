@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
 import { AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
-import { supabaseAPI, UserRoutine } from "../../utils/supabase/supabase-api";
+import { supabaseAPI, UserRoutine, Profile } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import ProgressRings from "../circularStat/ProgressRings";
@@ -56,6 +56,9 @@ export default function WorkoutDashboardScreen({
   // bottom-sheet
   const [actionRoutine, setActionRoutine] = useState<UserRoutine | null>(null);
 
+  // Profile for greeting with user's name
+  const [profile, setProfile] = useState<Profile | null>(null);
+
   const { steps, goal, isLoading: isLoadingSteps } = useStepTracking(true);
 
   const canEdit = view === RoutinesView.My;
@@ -87,6 +90,30 @@ export default function WorkoutDashboardScreen({
     reloadRoutines(view);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, userToken]);
+
+  // Load profile for personalized greeting
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!userToken) return;
+      try {
+        const p = await supabaseAPI.getMyProfile();
+        setProfile(p);
+      } catch (e) {
+        logger.error("Failed to load profile for dashboard greeting", e);
+      }
+    };
+    fetchProfile();
+  }, [userToken]);
+
+  const getFirstName = () => {
+    if (profile?.first_name && profile.first_name.trim() !== "") {
+      return profile.first_name.split(" ")[0];
+    }
+    if (profile?.display_name && profile.display_name.trim() !== "") {
+      return profile.display_name.split(" ")[0];
+    }
+    return null;
+  };
 
   // compute exercise counts for each routine (for time display)
   useEffect(() => {
@@ -216,7 +243,7 @@ export default function WorkoutDashboardScreen({
       <Stack gap="fluid">
         <Section variant="plain" padding="none" className="text-center">
           <p className="text-3xl text-warm-brown/60 mt-1">
-            Welcome back !
+            {getFirstName() ? `Welcome back, ${getFirstName()}!` : "Welcome back!"}
           </p>
         </Section>
 
