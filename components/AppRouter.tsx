@@ -1,7 +1,8 @@
 import  WorkoutDashboardScreen  from "./screens/WorkoutDashboardScreen";
-import CreateRoutineScreen  from "./screens/CreateRoutineScreen";
-import { AddExercisesToRoutineScreen }  from "./screens/AddExercisesToRoutineScreen";
+import CreateRoutineScreen from "./screens/CreateRoutineScreen";
+import { AddExercisesToRoutineScreen } from "./screens/AddExercisesToRoutineScreen";
 import { ExerciseSetupScreen } from "./screens/ExerciseSetupScreen";
+import EditMeasurementsScreen from "./screens/EditMeasurementsScreen";
 
 import { ProgressScreen } from "./screens/ProgressScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
@@ -31,10 +32,12 @@ interface AppRouterProps {
   onNavigateToSignIn: () => void;
 
   onCreateRoutine: () => void;
+  onEditMeasurements: () => void;
   /** Passes (name, id) to jump straight to ExerciseSetup */
   onRoutineCreated: (routineName: string, routineId: number) => void;
 
   onCloseCreateRoutine: () => void;
+  onCloseEditMeasurements: () => void;
   onCompleteRoutineCreation: () => void;
 
   onExerciseSelected: (exercises: Exercise[]) => void;
@@ -68,8 +71,10 @@ export function AppRouter({
   onNavigateToSignIn,
 
   onCreateRoutine,
+  onEditMeasurements,
   onRoutineCreated,
   onCloseCreateRoutine,
+  onCloseEditMeasurements,
   onCompleteRoutineCreation,
 
   onExerciseSelected,
@@ -109,6 +114,7 @@ export function AppRouter({
       {currentView === "workouts" && (
         <WorkoutDashboardScreen
           onCreateRoutine={onCreateRoutine}
+          onEditMeasurements={onEditMeasurements}
           onSelectRoutine={onSelectRoutine}
           // ⬇️ forward overlay visibility changes to App (to hide bottom nav)
           onOverlayChange={onOverlayChange}
@@ -121,6 +127,10 @@ export function AppRouter({
           onBack={onCloseCreateRoutine}
           onRoutineCreated={onRoutineCreated} // (name, id)
         />
+      )}
+
+      {currentView === "edit-measurements" && (
+        <EditMeasurementsScreen onBack={onCloseEditMeasurements} />
       )}
 
       {currentView === "add-exercises-to-routine" && currentRoutineName && (

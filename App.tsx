@@ -35,8 +35,10 @@ function AppContent() {
     navigateToSignIn,
     handleTabChange,
     showCreateRoutine,
+    showEditMeasurements,
     handleRoutineCreated,
     closeCreateRoutine,
+    closeEditMeasurements,
     completeRoutineCreation,
     handleExercisesSelected,
     closeExerciseSetup,
@@ -84,8 +86,10 @@ function AppContent() {
           onNavigateToSignUp={navigateToSignUp}
           onNavigateToSignIn={navigateToSignIn}
           onCreateRoutine={showCreateRoutine}
+          onEditMeasurements={showEditMeasurements}
           onRoutineCreated={handleRoutineCreated}
           onCloseCreateRoutine={closeCreateRoutine}
+          onCloseEditMeasurements={closeEditMeasurements}
           onCompleteRoutineCreation={completeRoutineCreation}
           onExerciseSelected={handleExercisesSelected}
           onCloseExerciseSetup={closeExerciseSetup}
