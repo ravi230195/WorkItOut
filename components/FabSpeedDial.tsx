@@ -33,7 +33,12 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
 
   return (
     <>
-      {open && <div className="fixed inset-0 z-30" onClick={close} />}
+      {open && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
+          onClick={close}
+        />
+      )}
       <div className="fixed right-4 bottom-24 z-40">
         {open &&
           actions.map((action, index) => {
@@ -48,7 +53,7 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
                   close();
                   action.onPress();
                 }}
-                className="absolute text-lg font-medium text-primary text-right whitespace-nowrap"
+                className="absolute text-xl font-medium-lg text-primary text-right whitespace-nowrap"
                 style={{ transform: `translate(${x}px, ${-y}px) translateX(-100%)` }}
                 aria-label={action.label}
               >
