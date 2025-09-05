@@ -11,10 +11,10 @@
 			"backgroundColor": "#f5f2ef",
 			"showSpinner": false
 		},
-		"StatusBar": {
-			"style": "light",
-			"backgroundColor": "#e07a5f"
-		},
+                "StatusBar": {
+                        "style": "light",
+                        "backgroundColor": "#f5f2ef"
+                },
 		"Keyboard": {
 			"resize": "ionic"
 		},
