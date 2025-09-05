@@ -31,14 +31,14 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
   const spacing = 45;
   const startAngle = 180 - spacing * (actions.length - 1);
   const maxLabelLength = Math.max(...actions.map((a) => a.label.length));
-  const overlaySize = radius + maxLabelLength * 8 + 40;
+  const overlaySize = radius + maxLabelLength * 8 + 100;
 
   return (
     <>
       {open && (
         <div className="fixed inset-0 z-30" onClick={close}>
           <div
-            className="absolute right-0 bottom-0 bg-black/40 backdrop-blur-[2px] rounded-tl-full pointer-events-none"
+            className="absolute right-0 bottom-0 bg-transparent backdrop-blur-[0.0000005px] rounded-tl-full pointer-events-none"
             style={{ width: overlaySize, height: overlaySize }}
           />
         </div>
