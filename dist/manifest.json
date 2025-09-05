@@ -3,7 +3,7 @@
   "short_name": "Workout",
   "description": "Track your workouts with a beautiful, intuitive interface",
   "theme_color": "#e07a5f",
-  "background_color": "#fefcfb",
+  "background_color": "#f5f2ef",
   "display": "standalone",
   "orientation": "portrait-primary",
   "scope": "/",
