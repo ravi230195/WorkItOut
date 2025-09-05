@@ -48,8 +48,8 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
                   close();
                   action.onPress();
                 }}
-                className="absolute text-sm font-medium text-primary"
-                style={{ transform: `translate(${x}px, ${-y}px)` }}
+                className="absolute text-lg font-medium text-primary text-right whitespace-nowrap"
+                style={{ transform: `translate(${x}px, ${-y}px) translateX(-100%)` }}
                 aria-label={action.label}
               >
                 {action.label}

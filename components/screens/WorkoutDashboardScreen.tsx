@@ -500,11 +500,11 @@ export default function WorkoutDashboardScreen({
         <FabSpeedDial
           actions={[
             {
-              label: "Create routine",
+              label: "Create Routine",
               onPress: onCreateRoutine,
             },
             {
-              label: "Edit measurements",
+              label: "Edit Measurement",
               onPress: onEditMeasurements,
             },
           ]}
