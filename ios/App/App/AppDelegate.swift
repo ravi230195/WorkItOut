@@ -8,6 +8,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        // Ensure the window and root view controller have a white background so
+        // that the safe area always renders with a white color.
+        window?.backgroundColor = .white
+        window?.rootViewController?.view.backgroundColor = .white
+
+        // The embedded Capacitor web view uses a WKScrollView which defaults to
+        // a dynamic system background. Force both the web view and its scroll
+        // view to white so that any exposed safe area is consistently white.
+        if let bridge = window?.rootViewController as? CAPBridgeViewController {
+            bridge.webView?.backgroundColor = .white
+            bridge.webView?.scrollView.backgroundColor = .white
+        }
         return true
     }
 
