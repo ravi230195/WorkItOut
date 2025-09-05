@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="background-color: #f5f2ef;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#e07a5f" />
+    <meta name="color-scheme" content="light" />
     <meta name="description" content="Track your workouts with a beautiful, intuitive interface" />
     
     <!-- iOS specific meta tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Workout Tracker" />
     
     <!-- Android specific meta tags -->
@@ -26,17 +27,41 @@
     <!-- Preload critical fonts if any -->
     <style>
       /* Critical CSS for initial paint */
+      html {
+        background-color: #f5f2ef;
+        color-scheme: light;
+      }
       body {
         margin: 0;
         padding: 0;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-        background-color: #fefcfb;
+        background-color: #f5f2ef;
         overflow-x: hidden;
       }
-      
-      #root {
+
+      .app-shell {
+        display: flex;
+        flex-direction: column;
         min-height: 100vh;
         min-height: 100dvh;
+      }
+
+      #root {
+        flex: 1;
+      }
+
+      .safe-top,
+      .safe-bottom {
+        flex-shrink: 0;
+        background: #f5f2ef;
+      }
+
+      .safe-top {
+        height: env(safe-area-inset-top);
+      }
+
+      .safe-bottom {
+        height: env(safe-area-inset-bottom);
       }
       
       /* Loading spinner */
@@ -60,8 +85,12 @@
     </style>
   </head>
   <body>
-    <div id="root">
-      <div class="loading-spinner"></div>
+    <div class="app-shell">
+      <div class="safe-top"></div>
+      <div id="root">
+        <div class="loading-spinner"></div>
+      </div>
+      <div class="safe-bottom"></div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

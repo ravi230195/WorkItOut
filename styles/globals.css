@@ -2,12 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  background-color: #f5f2ef;
+  color-scheme: light;
+}
+
 :root {
   --font-size: 14px;
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
 
   /* Core Colors - Modern & Accessible */
-  --background: #fefcfb;
+  --background: #f5f2ef;
   --foreground: #3d2914;
   --card-hsl: 0 0% 100%;
   --card: hsl(var(--card-hsl));
@@ -220,6 +225,8 @@
   html {
     font-size: var(--font-size);
     scroll-behavior: smooth;
+    background-color: var(--background);
+    color-scheme: light;
   }
 
   body {
@@ -311,13 +318,30 @@
     }
   }
 
-  /* Universal safe area classes for immediate use */
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .app-shell #root {
+    flex: 1;
+  }
+
+  /* Safe area overlays for notch and home indicator */
+  .safe-top,
   .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 1rem);
+    flex-shrink: 0;
+    background: #f5f2ef;
   }
 
   .safe-top {
-    padding-top: env(safe-area-inset-top, 1rem);
+    height: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-bottom {
+    height: env(safe-area-inset-bottom, 0px);
   }
 
   /* Fixed positioning with safe areas */
