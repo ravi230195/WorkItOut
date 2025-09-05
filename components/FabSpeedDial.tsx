@@ -36,7 +36,7 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
       {open && (
         <div className="fixed inset-0 z-30" onClick={close}>
           <div
-            className="absolute right-0 bottom-0 w-56 h-56 bg-black/40 backdrop-blur-sm rounded-tl-full pointer-events-none"
+            className="absolute right-0 bottom-0 w-56 h-56 bg-black/40 backdrop-blur-[2px] rounded-tl-full pointer-events-none"
           />
         </div>
       )}
