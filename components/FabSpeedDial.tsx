@@ -27,7 +27,7 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
     onOpenChange?.(false);
   };
 
-  const radius = 90;
+  const radius = 70;
   const spacing = 45;
   const startAngle = 180 - spacing * (actions.length - 1);
   const maxLabelLength = Math.max(...actions.map((a) => a.label.length));
@@ -57,7 +57,7 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
                   close();
                   action.onPress();
                 }}
-                className="absolute text-xl font-medium-lg text-primary text-right whitespace-nowrap"
+                className="absolute text-xl font-medium-lg font-mono uppercase text-primary text-right whitespace-nowrap"
                 style={{ transform: `translate(${x}px, ${-y}px) translateX(-100%)` }}
                 aria-label={action.label}
               >
