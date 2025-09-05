@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
-import { AlertCircle, Clock3 as Clock, TrendingUp, FilePlus, Ruler } from "lucide-react";
+import { AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { supabaseAPI, UserRoutine } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
@@ -500,12 +500,10 @@ export default function WorkoutDashboardScreen({
         <FabSpeedDial
           actions={[
             {
-              icon: <FilePlus className="w-5 h-5" />,
               label: "Create routine",
               onPress: onCreateRoutine,
             },
             {
-              icon: <Ruler className="w-5 h-5" />,
               label: "Edit measurements",
               onPress: onEditMeasurements,
             },

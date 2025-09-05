@@ -1,8 +1,7 @@
-import { useState, ReactNode } from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
 
 export interface FabAction {
-  icon: ReactNode;
   label: string;
   onPress: () => void;
 }
@@ -43,10 +42,12 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
                   close();
                   action.onPress();
                 }}
-                className="w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center"
+                className="w-24 h-24 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center px-2 text-center"
                 aria-label={action.label}
               >
-                {action.icon}
+                <span className="text-xs font-medium leading-tight whitespace-pre-wrap">
+                  {action.label}
+                </span>
               </button>
             ))}
           </div>
