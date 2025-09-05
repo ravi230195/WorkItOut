@@ -518,6 +518,20 @@ export function ExerciseSetupScreen({
     });
   };
 
+  const onToggleExerciseDone = async (exId: Id, done: boolean) => {
+    const ex = exercises.find((e) => e.id === exId);
+    if (!ex) return;
+    if (!ex.loaded && ex.templateId) {
+      await ensureSetsLoaded(ex);
+    }
+    withExercises((draft) => {
+      const ex = draft.find((d) => d.id === exId);
+      if (!ex) return;
+      ex.sets.forEach((s) => (s.done = done));
+      recomputeExerciseCompletion(ex);
+    });
+  };
+
   const updateMode = (mode: ScreenMode) => {
     setScreenMode(mode);
     onModeChange?.(mode);
@@ -852,11 +866,23 @@ export function ExerciseSetupScreen({
           onToggle={() => toggleExpanded(ex.id)}
           title={ex.name}
           subtitle={subtitle}
-            leading={
-              <span className="text-sm md:text-base font-medium text-warm-brown/60">
-                {initials}
-              </span>
-            }
+          leading={
+            <span className="text-sm md:text-base font-medium text-warm-brown/60">
+              {initials}
+            </span>
+          }
+          trailing={
+            inWorkout ? (
+              <input
+                type="checkbox"
+                checked={ex.completed}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => void onToggleExerciseDone(ex.id, e.target.checked)}
+                className="w-5 h-5 rounded-full border-2 border-border text-success accent-success checked:border-success"
+              />
+            ) : undefined
+          }
+          disableChevron={inWorkout}
           className={`${ex.completed && !ex.expanded ? "bg-success-light" : "bg-card/80"} border-border`}
           bodyClassName="pt-2"
         >
