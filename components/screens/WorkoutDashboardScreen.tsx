@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
-import { AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
+import { AlertCircle, Clock3 as Clock, TrendingUp, Plus } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { supabaseAPI, UserRoutine, Profile } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
 import { toast } from "sonner";
 import ProgressRings from "../circularStat/ProgressRings";
 import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
-import RoutineActionsSheet from "../sheets/RoutineActionsSheets";
+import ActionSheet from "../sheets/ActionSheet";
 import SegmentedToggle from "../segmented/SegmentedToggle";
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { logger } from "../../utils/logging";
@@ -55,11 +55,14 @@ export default function WorkoutDashboardScreen({
 
   // bottom-sheet
   const [actionRoutine, setActionRoutine] = useState<UserRoutine | null>(null);
+  const [sheetMode, setSheetMode] = useState<"main" | "rename" | "delete">("main");
+  const [renameValue, setRenameValue] = useState("");
+  const [renameLoading, setRenameLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Profile for greeting with user's name
   const [profile, setProfile] = useState<Profile | null>(null);
-
-  const { steps, goal, isLoading: isLoadingSteps } = useStepTracking(true);
+  const { steps, goal, isLoading: isLoadingSteps } = useStepTracking();
 
   const canEdit = view === RoutinesView.My;
 
@@ -71,7 +74,8 @@ export default function WorkoutDashboardScreen({
         which === RoutinesView.My
           ? await supabaseAPI.getUserRoutines()
           : await supabaseAPI.getSampleRoutines();
-      data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      // oldest routines first
+      data.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       setRoutines(Array.isArray(data) ? data : []);
     } catch (error) {
       logger.error(String(error));
@@ -214,10 +218,16 @@ export default function WorkoutDashboardScreen({
     if (!canEdit) return; // hide in sample view
     e.stopPropagation();
     setActionRoutine(routine);
+    setRenameValue(routine.name);
+    setSheetMode("main");
     onOverlayChange?.(true);
   };
   const closeActions = () => {
     setActionRoutine(null);
+    setSheetMode("main");
+    setRenameValue("");
+    setRenameLoading(false);
+    setDeleteLoading(false);
     onOverlayChange?.(false);
   };
 
@@ -275,11 +285,11 @@ export default function WorkoutDashboardScreen({
 
         <Spacer y="xss" />
 
-        {/* top row: view toggle + create */}
+        {/* view toggle */}
         <Section
           variant="plain"
           padding="none"
-          className="flex items-center justify-between gap-3"
+          className="flex items-center justify-center"
         >
           <SegmentedToggle
             value={view}
@@ -294,15 +304,6 @@ export default function WorkoutDashboardScreen({
             variant="filled"
             tone="accent"
           />
-
-          {canEdit && (
-            <TactileButton
-              onClick={onCreateRoutine}
-              className="bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2 text-sm font-medium rounded-xl"
-            >
-              Create Routine
-            </TactileButton>
-          )}
         </Section>
 
         {/* routines list with Section loading state */}
@@ -398,29 +399,134 @@ export default function WorkoutDashboardScreen({
           )}
         </Section>
 
-        {/* bottom sheet (only when editing user's own routines) */}
+        {/* action sheet flows when editing user's own routines */}
         {canEdit && actionRoutine && (
-          <RoutineActionsSheet
-            open={!!actionRoutine}
-            routineName={actionRoutine?.name ?? ""}
-            onClose={closeActions}
-            onRequestRename={async (newName) => {
-              if (!actionRoutine) return;
-              await supabaseAPI.renameRoutine(actionRoutine.routine_template_id, newName);
-              await reloadRoutines(RoutinesView.My);
-              toast.success("Routine renamed");
-              closeActions();
-            }}
-            onRequestDelete={async () => {
-              if (!actionRoutine) return;
-              await supabaseAPI.deleteRoutine(actionRoutine.routine_template_id);
-              await reloadRoutines(RoutinesView.My);
-              toast.success("Routine deleted");
-              closeActions();
-            }}
-          />
+          <>
+            {sheetMode === "main" && (
+              <ActionSheet
+                open={!!actionRoutine}
+                onClose={closeActions}
+                title={actionRoutine.name}
+                actions={[
+                  {
+                    label: "Rename Routine",
+                    onClick: () => {
+                      if (actionRoutine) setRenameValue(actionRoutine.name);
+                      setSheetMode("rename");
+                    },
+                    type: "button",
+                  },
+                  {
+                    label: "Delete Routine",
+                    onClick: () => setSheetMode("delete"),
+                    type: "button",
+                    variant: "destructive",
+                  },
+                ]}
+              />
+            )}
+            {sheetMode === "rename" && (
+              <ActionSheet
+                open={!!actionRoutine}
+                onClose={closeActions}
+                title="Rename Routine"
+                cancelText={null}
+                actions={[
+                  {
+                    label: renameLoading ? "Saving…" : "Save",
+                    onClick: async () => {
+                      if (!actionRoutine) return;
+                      const v = renameValue.trim();
+                      if (!v) return;
+                      setRenameLoading(true);
+                      await supabaseAPI.renameRoutine(actionRoutine.routine_template_id, v);
+                      await reloadRoutines(RoutinesView.My);
+                      toast.success("Routine renamed");
+                      setRenameLoading(false);
+                      closeActions();
+                    },
+                    type: "button",
+                    disabled: !renameValue.trim() || renameLoading,
+                  },
+                  {
+                    label: "Cancel",
+                    onClick: () => setSheetMode("main"),
+                    type: "button",
+                    variant: "secondary",
+                    disabled: renameLoading,
+                  },
+                ]}
+              >
+                <div className="space-y-3">
+                  <label className="text-sm text-gray-600">New name</label>
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    className="w-full rounded-lg border border-border px-3 py-2 outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
+                    placeholder="Enter routine name"
+                    onKeyDown={async (e) => {
+                      if (e.key === "Enter") {
+                        const v = renameValue.trim();
+                        if (!v || renameLoading) return;
+                        setRenameLoading(true);
+                        await supabaseAPI.renameRoutine(actionRoutine.routine_template_id, v);
+                        await reloadRoutines(RoutinesView.My);
+                        toast.success("Routine renamed");
+                        setRenameLoading(false);
+                        closeActions();
+                      }
+                    }}
+                  />
+                </div>
+              </ActionSheet>
+            )}
+            {sheetMode === "delete" && (
+              <ActionSheet
+                open={!!actionRoutine}
+                onClose={closeActions}
+                title={`Delete ${actionRoutine.name}?`}
+                cancelText={null}
+                message="This will remove it from your list"
+                actions={[
+                  {
+                    label: deleteLoading ? "Deleting…" : "Delete",
+                    onClick: async () => {
+                      if (!actionRoutine) return;
+                      setDeleteLoading(true);
+                      await supabaseAPI.deleteRoutine(actionRoutine.routine_template_id);
+                      await reloadRoutines(RoutinesView.My);
+                      toast.success("Routine deleted");
+                      setDeleteLoading(false);
+                      closeActions();
+                    },
+                    type: "button",
+                    variant: "destructive",
+                    disabled: deleteLoading,
+                  },
+                  {
+                    label: "Cancel",
+                    onClick: () => setSheetMode("main"),
+                    type: "button",
+                    variant: "secondary",
+                    disabled: deleteLoading,
+                  },
+                ]}
+              />
+            )}
+          </>
         )}
       </Stack>
+
+      {canEdit && (
+        <TactileButton
+          onClick={onCreateRoutine}
+          className="fixed z-40 rounded-full shadow-lg right-4 bottom-24 bg-primary hover:bg-primary-hover text-primary-foreground p-4"
+          aria-label="Create routine"
+        >
+          <Plus className="w-6 h-6" />
+        </TactileButton>
+      )}
     </AppScreen>
   );
 }

@@ -162,7 +162,7 @@ const SetList: React.FC<SetListProps> = ({
                     type="checkbox"
                     checked={!!it.done}
                     onChange={(e) => onToggleDone?.(it.key, e.target.checked)}
-                    className="w-5 h-5 ml-auto"
+                    className="w-5 h-5 ml-auto rounded-full border-2 border-border text-success accent-success checked:border-success"
                   />
                 </div>
               ) : canRemove ? (

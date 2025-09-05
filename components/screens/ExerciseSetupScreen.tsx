@@ -18,6 +18,7 @@ import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../utils/routineLoader";
 import ListItem from "../ui/ListItem";
+import ActionSheet from "../sheets/ActionSheet";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -62,6 +63,7 @@ type UIExercise = {
   muscle_group?: string;
   loaded: boolean; // sets loaded
   expanded: boolean;
+  completed: boolean;
   sets: UISet[];
 };
 
@@ -108,6 +110,7 @@ export function ExerciseSetupScreen({
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [savingAll, setSavingAll] = useState(false);
   const [savingWorkout, setSavingWorkout] = useState(false);
+  const [showEndSheet, setShowEndSheet] = useState(false);
   const [loadingSets, setLoadingSets] = useState<Record<string, boolean>>({}); // key by exercise id as string
 
   type ScreenMode = "plan" | "workout";
@@ -118,6 +121,47 @@ export function ExerciseSetupScreen({
   const journalRef = useRef(makeJournal());
   // Snapshot of last-saved state for change detection
   const savedSnapshotRef = useRef<any[]>([]);
+  // Backup of exercises before entering workout mode
+  const preWorkoutExercisesRef = useRef<UIExercise[]>([]);
+
+  // Workout timer state
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const workoutStartRef = useRef<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  const formatHHMMSS = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return [hours, minutes, seconds]
+      .map((v) => v.toString().padStart(2, "0"))
+      .join(":");
+  };
+
+  useEffect(() => {
+    if (inWorkout) {
+      timerRef.current = setInterval(() => {
+        if (workoutStartRef.current != null) {
+          setElapsedSeconds(
+            Math.floor((Date.now() - workoutStartRef.current) / 1000)
+          );
+        }
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      workoutStartRef.current = null;
+      setElapsedSeconds(0);
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [inWorkout]);
 
   /* -------------------------------------------------------------------------------------
      Utilities
@@ -185,6 +229,7 @@ export function ExerciseSetupScreen({
           muscle_group: r.muscle_group,
           loaded: true,
           expanded: false,
+          completed: false,
           sets: r.sets,
         }));
         setExercises(uiList);
@@ -237,6 +282,12 @@ export function ExerciseSetupScreen({
       updater(next);
       return next;
     });
+  };
+
+  const recomputeExerciseCompletion = (ex: UIExercise) => {
+    const allDone = ex.sets.length > 0 && ex.sets.every((s) => s.done);
+    ex.completed = allDone;
+    ex.expanded = !allDone;
   };
 
   const ensureSetsLoaded = async (ex: UIExercise) => {
@@ -311,6 +362,7 @@ export function ExerciseSetupScreen({
         muscle_group: muscle_group || undefined,
         loaded: true,
         expanded: true,
+        completed: false,
         sets: [{ id: initialSetId, set_order: 1, reps: "0", weight: "0", ...(inWorkout ? { done: false } : {}) }],
       },
     ]);
@@ -374,6 +426,7 @@ export function ExerciseSetupScreen({
       });
 
       recordSetAdd(journalRef.current, exId, newSetId, nextOrder, initialReps, initialWeight);
+      recomputeExerciseCompletion(ex);
     });
   };
 
@@ -443,6 +496,7 @@ export function ExerciseSetupScreen({
           recordSetReorder(journalRef.current, exId, s.id, s.set_order);
         }
       }
+      recomputeExerciseCompletion(ex);
     });
   };
 
@@ -460,6 +514,21 @@ export function ExerciseSetupScreen({
       if (setId == null) return;
       const s = ex.sets.find((st) => st.id === setId);
       if (s) s.done = done;
+      recomputeExerciseCompletion(ex);
+    });
+  };
+
+  const onToggleExerciseDone = async (exId: Id, done: boolean) => {
+    const ex = exercises.find((e) => e.id === exId);
+    if (!ex) return;
+    if (!ex.loaded && ex.templateId) {
+      await ensureSetsLoaded(ex);
+    }
+    withExercises((draft) => {
+      const ex = draft.find((d) => d.id === exId);
+      if (!ex) return;
+      ex.sets.forEach((s) => (s.done = done));
+      recomputeExerciseCompletion(ex);
     });
   };
 
@@ -469,12 +538,18 @@ export function ExerciseSetupScreen({
   };
 
   const startWorkout = () => {
+    workoutStartRef.current = Date.now();
+    setElapsedSeconds(0);
+    // preserve current plan state for quick restoration if workout is canceled
+    preWorkoutExercisesRef.current = JSON.parse(JSON.stringify(exercises));
     // reset any stale journal entries and mark all sets as not done locally
     journalRef.current = makeJournal();
     setExercises((prev) =>
       prev.map((ex) => ({
         ...ex,
         sets: ex.sets.map((s) => ({ ...s, done: false })),
+        completed: false,
+        expanded: false,
       }))
     );
     updateMode("workout");
@@ -492,7 +567,7 @@ export function ExerciseSetupScreen({
       // Persist workout session in one go at workout end
       //TODO: Uncomment this when we have a way to start a workout and fetch the workout id
       // const workout = await supabaseAPI.startWorkout(routineId);
-      logger.info(" [EXERCISE_SETUP] Workout edded for id: " + routineId);
+      logger.info(" [EXERCISE_SETUP] Workout ended for id: " + routineId);
       // Dummy workout object
       let workout = {
         id: "123",
@@ -527,6 +602,13 @@ export function ExerciseSetupScreen({
       //TODO: Uncomment this when we have a way to end a workout
       //await supabaseAPI.endWorkout(workout.id);
       logger.info(" [EXERCISE_SETUP] Workout ended for id: " + workout.id);
+      const durationSecs =
+        workoutStartRef.current != null
+          ? Math.floor((Date.now() - workoutStartRef.current) / 1000)
+          : elapsedSeconds;
+      logger.info(
+        " [EXERCISE_SETUP] Workout duration: " + formatHHMMSS(durationSecs)
+      );
 
       // Apply workout edits to the routine template
       const journal = journalRef.current;
@@ -551,6 +633,12 @@ export function ExerciseSetupScreen({
     }
   };
 
+  const cancelWorkout = async () => {
+    journalRef.current = makeJournal();
+    setExercises(JSON.parse(JSON.stringify(preWorkoutExercisesRef.current)));
+    updateMode("plan");
+  };
+
   /* =======================================================================================
      Save / Cancel
      ======================================================================================= */
@@ -570,6 +658,7 @@ export function ExerciseSetupScreen({
         muscle_group: r.muscle_group,
         loaded: true,
         expanded: false,
+        completed: false,
         sets: r.sets,
       }));
       setExercises(uiList);
@@ -638,6 +727,14 @@ export function ExerciseSetupScreen({
     [exercises]
   );
   const visible = exercises;
+  const completedCount = useMemo(
+    () => exercises.filter((ex) => ex.completed).length,
+    [exercises]
+  );
+  const hasIncompleteSets = useMemo(
+    () => exercises.some((ex) => ex.sets.some((s) => !s.done)),
+    [exercises]
+  );
 
   const handleBack = () => {
     const timer = performanceTimer.start("ExerciseSetup - handleBack");
@@ -657,14 +754,16 @@ export function ExerciseSetupScreen({
   const renderHeader = () => (
     <ScreenHeader
       title={routineName || "Routine"}
-      onBack={handleBack}
-      {...(access === RoutineAccess.Editable
+      subtitle={inWorkout ? formatHHMMSS(elapsedSeconds) : undefined}
+      subtitleClassName="text-base font-bold text-black"
+      onBack={inWorkout ? undefined : handleBack}
+      {...(access === RoutineAccess.Editable && !inWorkout
         ? {
-          onAdd: () => {
-            if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
-            else onAddMoreExercises();
-          },
-        }
+            onAdd: () => {
+              if (isEditingExistingRoutine && onShowExerciseSelector) onShowExerciseSelector();
+              else onAddMoreExercises();
+            },
+          }
         : {})}
       showBorder={false}
       denseSmall
@@ -706,6 +805,9 @@ export function ExerciseSetupScreen({
           </BottomNavigation>
         );
       }
+      if (visible.length === 0) {
+        return null;
+      }
       return (
         <BottomNavigation>
           <BottomNavigationButton
@@ -720,7 +822,7 @@ export function ExerciseSetupScreen({
     return (
       <BottomNavigation>
         <BottomNavigationButton
-          onClick={endWorkout}
+          onClick={() => setShowEndSheet(true)}
           disabled={savingWorkout}
           className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
         >
@@ -768,12 +870,24 @@ export function ExerciseSetupScreen({
           onToggle={() => toggleExpanded(ex.id)}
           title={ex.name}
           subtitle={subtitle}
-            leading={
-              <span className="text-sm md:text-base font-medium text-warm-brown/60">
-                {initials}
-              </span>
-            }
-          className="bg-card/80 border-border"
+          leading={
+            <span className="text-sm md:text-base font-medium text-warm-brown/60">
+              {initials}
+            </span>
+          }
+          trailing={
+            inWorkout ? (
+              <input
+                type="checkbox"
+                checked={ex.completed}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => void onToggleExerciseDone(ex.id, e.target.checked)}
+                className="w-5 h-5 rounded-full border-2 border-border text-success accent-success checked:border-success"
+              />
+            ) : undefined
+          }
+          disableChevron={inWorkout}
+          className={`${ex.completed && !ex.expanded ? "bg-success-light" : "bg-card/80"} border-border`}
           bodyClassName="pt-2"
         >
           {isLoading || !ex.loaded ? (
@@ -854,27 +968,68 @@ export function ExerciseSetupScreen({
   };
 
   return (
-    <AppScreen
-      header={renderHeader()}
-      maxContent="responsive"
-      padContent={false}
-      contentBottomPaddingClassName={hasUnsaved || inWorkout ? "pb-24" : ""}
-      bottomBar={renderBottomBar()}
-      showHeaderBorder={false}
-      showBottomBarBorder={false}
-      contentClassName=""
-    >
-      <Stack gap="fluid">
-        <Spacer y="sm" />
-        <Section variant="plain" padding="none">
-          <div className="mt-2 mb-6">
-            <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
-              EXERCISES IN ROUTINE ({visible.length})
-            </h3>
-            {renderExerciseList()}
-          </div>
-        </Section>
-      </Stack>
-    </AppScreen>
+    <>
+      <AppScreen
+        header={renderHeader()}
+        maxContent="responsive"
+        padContent={false}
+        contentBottomPaddingClassName={hasUnsaved || inWorkout ? "pb-24" : ""}
+        bottomBar={renderBottomBar()}
+        showHeaderBorder={false}
+        showBottomBarBorder={false}
+        contentClassName=""
+      >
+        <Stack gap="fluid">
+          <Spacer y="sm" />
+          <Section variant="plain" padding="none">
+            <div className="mt-2 mb-6">
+              {inWorkout ? (
+                completedCount > 0 && (
+                  <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                    {completedCount} COMPLETED
+                  </h3>
+                )
+              ) : (
+                <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                  EXERCISES IN ROUTINE ({visible.length})
+                </h3>
+              )}
+              {renderExerciseList()}
+            </div>
+          </Section>
+        </Stack>
+      </AppScreen>
+      <ActionSheet
+        open={showEndSheet}
+        onClose={() => setShowEndSheet(false)}
+        title="Finish Workout?"
+        message={
+          hasIncompleteSets
+            ? "There are valid sets in this workout that have not been marked as complete."
+            : undefined
+        }
+        actions={[
+          {
+            label: savingWorkout ? "Saving…" : "Finish Workout",
+            onClick: async () => {
+              setShowEndSheet(false);
+              await endWorkout();
+            },
+            type: "button",
+            disabled: savingWorkout,
+          },
+          {
+            label: "Cancel Workout",
+            onClick: async () => {
+              setShowEndSheet(false);
+              await cancelWorkout();
+            },
+            type: "button",
+            variant: "destructive",
+            disabled: savingWorkout,
+          },
+        ]}
+      />
+    </>
   );
 }
