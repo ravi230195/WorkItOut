@@ -89,7 +89,8 @@ async function readTodayStepsNative(): Promise<number> {
           );
         });
 
-        return rows.reduce((sum, row) => sum + (Number(row?.value) || 0), 0);
+        const total = rows.reduce((sum, row) => sum + (Number(row?.value) || 0), 0);
+        return Math.round(total);
       } catch (e) {
         logger.warn('[steps] iOS Health read failed:', e);
         return 0;
@@ -132,7 +133,8 @@ async function readTodayStepsNative(): Promise<number> {
           );
         });
 
-        return records.reduce((sum, r) => sum + (Number(r?.count) || 0), 0);
+        const total = records.reduce((sum, r) => sum + (Number(r?.count) || 0), 0);
+        return Math.round(total);
       } catch (e) {
         logger.warn('[steps] Android Health Connect read failed:', e);
         return 0;
