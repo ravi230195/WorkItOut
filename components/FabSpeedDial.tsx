@@ -34,10 +34,11 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
   return (
     <>
       {open && (
-        <div
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
-          onClick={close}
-        />
+        <div className="fixed inset-0 z-30" onClick={close}>
+          <div
+            className="absolute right-0 bottom-0 w-56 h-56 bg-black/40 backdrop-blur-sm rounded-tl-full pointer-events-none"
+          />
+        </div>
       )}
       <div className="fixed right-4 bottom-24 z-40">
         {open &&
