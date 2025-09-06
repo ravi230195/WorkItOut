@@ -4,6 +4,7 @@ import type { MaxContent } from "./layout-types";
 import { classForMaxContent } from "./layout-types";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
 import { useKeyboardVisible } from "../../hooks/useKeyboardVisible";
+import { useNumericInputFocus } from "../../hooks/useNumericInputFocus";
 
 export type AppScreenProps = React.PropsWithChildren<{
   header?: React.ReactNode | null;
@@ -82,13 +83,27 @@ export default function AppScreen({
   // Single global provider of --app-kb-inset / --kb-inset / --keyboard-inset
   useKeyboardInset();
   const keyboardVisible = useKeyboardVisible();
+  const numericInputFocused = useNumericInputFocus();
 
   const rootRef = React.useRef<HTMLDivElement>(null);
   const headerRef = React.useRef<HTMLDivElement>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
-  const renderedBottomBar =
-    bottomBar && !(hideBottomBarOnKeyboard && keyboardVisible) ? bottomBar : null;
+  const showDoneBar = keyboardVisible && numericInputFocused;
+  const renderedBottomBar = showDoneBar
+    ? (
+        <div className="w-full flex justify-end">
+          <button
+            className="px-4 py-2 rounded-md bg-green-600 text-white text-sm"
+            onClick={() => (document.activeElement as HTMLElement | null)?.blur()}
+          >
+            Done
+          </button>
+        </div>
+      )
+    : bottomBar && !(hideBottomBarOnKeyboard && keyboardVisible)
+      ? bottomBar
+      : null;
 
   /** Measure header/bottom heights and publish CSS vars */
   React.useLayoutEffect(() => {
