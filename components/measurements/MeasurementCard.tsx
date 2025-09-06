@@ -3,12 +3,17 @@ import ExpandingCard from "../ui/ExpandingCard";
 import { Input } from "../ui/input";
 import { Minus, Plus } from "lucide-react";
 
+interface MeasurementHistoryEntry {
+  date: string;
+  value: string;
+}
+
 interface MeasurementCardProps {
   label: string;
   icon: React.ReactNode;
   unit?: string;
   initial?: string;
-  history?: string[]; // most recent first
+  history?: MeasurementHistoryEntry[]; // most recent first
 }
 
 export default function MeasurementCard({
@@ -41,12 +46,12 @@ export default function MeasurementCard({
   const handlePastChange = (idx: number, v: string) => {
     setPast((arr) => {
       const copy = [...arr];
-      copy[idx] = v;
+      copy[idx] = { ...copy[idx], value: v };
       return copy;
     });
   };
 
-  const diff = past[0] != null ? parse(value) - parse(past[0]) : null;
+  const diff = past[0] != null ? parse(value) - parse(past[0].value) : null;
   const diffText = diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}${unit}` : undefined;
 
   return (
@@ -79,6 +84,11 @@ export default function MeasurementCard({
             </button>
 
             <Input
+              type="number"
+              inputMode="decimal"
+              pattern="[0-9]*[.,]?[0-9]*"
+              step="0.5"
+              min="0"
               value={value}
               onChange={handleChange}
               placeholder={unit}
@@ -96,21 +106,28 @@ export default function MeasurementCard({
         </div>
       }
     >
-      <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
-        {past.slice(0, 4).map((p, i) => (
-          <div key={i} className="flex items-center justify-between gap-2">
-            <span className="text-sm text-warm-brown/60">Entry {i + 1}</span>
-            <div className="flex items-center gap-2">
-              <Input
-                value={p}
-                onChange={(e) => handlePastChange(i, e.target.value)}
-                className="h-7 text-center px-1 w-[6.5rem] sm:w-[7.5rem]"
-              />
-              <span className="text-sm text-warm-brown">{unit}</span>
+      {past.length > 0 && (
+        <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+          {past.slice(0, 4).map((p, i) => (
+            <div key={i} className="flex items-center justify-between gap-2">
+              <span className="text-sm text-warm-brown/60">{p.date}</span>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.,]?[0-9]*"
+                  step="0.5"
+                  min="0"
+                  value={p.value}
+                  onChange={(e) => handlePastChange(i, e.target.value)}
+                  className="h-7 text-center px-1 w-[6.5rem] sm:w-[7.5rem]"
+                />
+                <span className="text-sm text-warm-brown">{unit}</span>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </ExpandingCard>
   );
 }

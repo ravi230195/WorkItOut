@@ -1,5 +1,6 @@
 import { AppScreen, ScreenHeader, Section, Stack, Spacer } from "../layouts";
-import { TactileButton } from "../TactileButton";
+import { BottomNavigation } from "../BottomNavigation";
+import { BottomNavigationButton } from "../BottomNavigationButton";
 import { toast } from "sonner";
 import { TrendingUp } from "lucide-react";
 import MeasurementCard from "../measurements/MeasurementCard";
@@ -103,7 +104,16 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       padContent={false}
       showHeaderBorder={false}
       showBottomBarBorder={false}
-      bottomBar={null}
+      bottomBar={
+        <BottomNavigation>
+          <BottomNavigationButton
+            onClick={handleSave}
+            className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
+          >
+            SAVE CHANGES
+          </BottomNavigationButton>
+        </BottomNavigation>
+      }
       bottomBarSticky
       contentClassName=""
     >
@@ -124,14 +134,6 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
           </div>
         ))}
         <Spacer y="sm" />
-        <Section variant="plain" padding="none">
-          <TactileButton
-            onClick={handleSave}
-            className="w-full h-12 md:h-14 bg-primary hover:bg-primary-hover text-primary-foreground font-medium text-sm md:text-base rounded-full border-0"
-          >
-            Save Measurements
-          </TactileButton>
-        </Section>
       </Stack>
     </AppScreen>
   );
