@@ -68,19 +68,13 @@ export default function MeasurementCard({
       size="lg"
       expanded={expanded}
       onToggle={() => setExpanded((v) => !v)}
-      title={
-        <div className="flex items-center gap-2">
-          <span>{label}</span>
-          {diffText && (
-            <span className="font-normal text-sm text-warm-brown/60 truncate">
-              {diffText}
-            </span>
-          )}
-        </div>
-      }
+      title={label}
+      subtitle={diffText && (
+        <span className="text-sm text-warm-brown/60">{diffText}</span>
+      )}
       leading={<span className="text-xl">{icon}</span>}
       trailing={
-        <div className="flex items-center gap-2 mr-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 mr-4" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={handleDec}
@@ -92,7 +86,7 @@ export default function MeasurementCard({
             value={value}
             onChange={handleChange}
             placeholder={unit}
-            className="w-32 h-7 text-center p-1"
+            className="w-48 h-7 text-center p-1"
           />
           <button
             type="button"
@@ -112,7 +106,7 @@ export default function MeasurementCard({
               <Input
                 value={p}
                 onChange={(e) => handlePastChange(i, e.target.value)}
-                className="w-32 h-7 text-center p-1"
+                className="w-48 h-7 text-center p-1"
               />
               <span className="text-sm text-warm-brown">{unit}</span>
             </div>
