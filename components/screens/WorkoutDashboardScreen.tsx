@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
-import { AlertCircle, Clock3 as Clock, TrendingUp, Plus } from "lucide-react";
+import { AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { supabaseAPI, UserRoutine, Profile } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
@@ -14,9 +14,11 @@ import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets } from "../../utils/routineLoader";
 import ListItem from "../ui/ListItem";
+import FabSpeedDial from "../FabSpeedDial";
 
 interface WorkoutDashboardScreenProps {
   onCreateRoutine: () => void;
+  onEditMeasurements: () => void;
   onSelectRoutine: (routineId: number, routineName: string, access?: RoutineAccess) => void;
   onOverlayChange?: (open: boolean) => void;
   bottomBar?: React.ReactNode;
@@ -38,6 +40,7 @@ const avatarPalette = [
 
 export default function WorkoutDashboardScreen({
   onCreateRoutine,
+  onEditMeasurements,
   onSelectRoutine,
   onOverlayChange,
   bottomBar
@@ -230,6 +233,7 @@ export default function WorkoutDashboardScreen({
     setDeleteLoading(false);
     onOverlayChange?.(false);
   };
+
 
   return (
     <AppScreen
@@ -519,13 +523,19 @@ export default function WorkoutDashboardScreen({
       </Stack>
 
       {canEdit && (
-        <TactileButton
-          onClick={onCreateRoutine}
-          className="fixed z-40 rounded-full shadow-lg right-4 bottom-24 bg-primary hover:bg-primary-hover text-primary-foreground p-4"
-          aria-label="Create routine"
-        >
-          <Plus className="w-6 h-6" />
-        </TactileButton>
+        <FabSpeedDial
+          actions={[
+            {
+              label: "Create Routine",
+              onPress: onCreateRoutine,
+            },
+            {
+              label: "Edit Measurement",
+              onPress: onEditMeasurements,
+            },
+          ]}
+          onOpenChange={onOverlayChange}
+        />
       )}
     </AppScreen>
   );
