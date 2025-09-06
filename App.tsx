@@ -7,6 +7,7 @@ import { useMobileSetup } from "./hooks/useMobileSetup";
 import { Toaster } from "./components/ui/sonner";
 import { useState } from "react";
 import ThemeToggle from "./components/ThemeToggle";
+import { useKeyboardVisible } from "./hooks/useKeyboardVisible";
 
 import { BottomNavigation, TabType } from "./components/BottomNavigation";
 import { VIEWS_WITHOUT_BOTTOM_NAV } from "./utils/navigation";
@@ -52,8 +53,9 @@ function AppContent() {
 
   const showBottomNav = !VIEWS_WITHOUT_BOTTOM_NAV.includes(currentView);
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const keyboardVisible = useKeyboardVisible();
 
-  const showNav = isAuthenticated && showBottomNav && !overlayOpen;
+  const showNav = isAuthenticated && showBottomNav && !overlayOpen && !keyboardVisible;
   const bottomBarEl = showNav ? (
     <BottomNavigation
       activeTab={activeTab as TabType}
