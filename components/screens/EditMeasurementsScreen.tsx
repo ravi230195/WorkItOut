@@ -9,13 +9,85 @@ interface EditMeasurementsScreenProps {
 }
 
 const measurementData = [
-  { key: "chest", label: "Chest", icon: "🫁", initial: "102", history: ["100", "99", "98", "97"] },
-  { key: "rightArm", label: "Right Arm", icon: "💪", initial: "35", history: ["34", "33.5", "33", "32.5"] },
-  { key: "leftArm", label: "Left Arm", icon: "💪", initial: "34.5", history: ["34", "33.5", "33", "32.5"] },
-  { key: "hip", label: "Hip", icon: "🩳", initial: "95", history: ["94.5", "94", "93.5", "93"] },
-  { key: "glutes", label: "Glutes", icon: "🍑", initial: "", history: [] },
-  { key: "leftQuad", label: "Left Quad", icon: "🦵", initial: "35", history: ["34.5", "34", "33.5", "33"] },
-  { key: "rightQuad", label: "Right Quad", icon: "🦵", initial: "58.5", history: ["58", "57.5", "57", "56.5"] },
+  {
+    key: "chest",
+    label: "Chest",
+    icon: "🫁",
+    initial: "102",
+    history: [
+      { date: "2024-01-15", value: "100" },
+      { date: "2024-01-08", value: "99" },
+      { date: "2024-01-01", value: "98" },
+      { date: "2023-12-25", value: "97" }
+    ]
+  },
+  {
+    key: "rightArm",
+    label: "Right Arm",
+    icon: "💪",
+    initial: "35",
+    history: [
+      { date: "2024-01-15", value: "34" },
+      { date: "2024-01-08", value: "33.5" },
+      { date: "2024-01-01", value: "33" },
+      { date: "2023-12-25", value: "32.5" }
+    ]
+  },
+  {
+    key: "leftArm",
+    label: "Left Arm",
+    icon: "💪",
+    initial: "34.5",
+    history: [
+      { date: "2024-01-15", value: "34" },
+      { date: "2024-01-08", value: "33.5" },
+      { date: "2024-01-01", value: "33" },
+      { date: "2023-12-25", value: "32.5" }
+    ]
+  },
+  {
+    key: "hip",
+    label: "Hip",
+    icon: "🩳",
+    initial: "95",
+    history: [
+      { date: "2024-01-15", value: "94.5" },
+      { date: "2024-01-08", value: "94" },
+      { date: "2024-01-01", value: "93.5" },
+      { date: "2023-12-25", value: "93" }
+    ]
+  },
+  {
+    key: "glutes",
+    label: "Glutes",
+    icon: "🍑",
+    initial: "",
+    history: []
+  },
+  {
+    key: "leftQuad",
+    label: "Left Quad",
+    icon: "🦵",
+    initial: "35",
+    history: [
+      { date: "2024-01-15", value: "34.5" },
+      { date: "2024-01-08", value: "34" },
+      { date: "2024-01-01", value: "33.5" },
+      { date: "2023-12-25", value: "33" }
+    ]
+  },
+  {
+    key: "rightQuad",
+    label: "Right Quad",
+    icon: "🦵",
+    initial: "58.5",
+    history: [
+      { date: "2024-01-15", value: "58" },
+      { date: "2024-01-08", value: "57.5" },
+      { date: "2024-01-01", value: "57" },
+      { date: "2023-12-25", value: "56.5" }
+    ]
+  }
 ];
 
 export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScreenProps) {
@@ -36,7 +108,6 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       contentClassName=""
     >
       <Stack gap="fluid">
-        <Spacer y="sm" />
         <Section variant="card" padding="md" className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-soft-gray flex items-center justify-center shrink-0">
             <TrendingUp className="text-warm-brown" size={20} />
