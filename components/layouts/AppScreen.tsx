@@ -94,8 +94,9 @@ export default function AppScreen({
     ? (
         <div className="w-full flex justify-end">
           <button
-            className="px-4 py-2 rounded-md bg-green-600 text-white text-sm"
+            className="p-2 text-green-600 text-sm bg-transparent border-0"
             onClick={() => (document.activeElement as HTMLElement | null)?.blur()}
+            type="button"
           >
             Done
           </button>
