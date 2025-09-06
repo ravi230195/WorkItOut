@@ -70,9 +70,8 @@ export default function MeasurementCard({
       title={label}
       subtitle={subtitle}
       leading={<span className="text-xl">{icon}</span>}
-      disableChevron
       trailing={
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 mr-4" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={handleDec}
@@ -83,7 +82,7 @@ export default function MeasurementCard({
           <Input
             value={value}
             onChange={handleChange}
-            className="w-16 h-7 text-center p-1"
+            className="w-24 h-7 text-center p-1"
           />
           <button
             type="button"
@@ -104,7 +103,7 @@ export default function MeasurementCard({
               <Input
                 value={p}
                 onChange={(e) => handlePastChange(i, e.target.value)}
-                className="w-16 h-7 text-center p-1"
+                className="w-24 h-7 text-center p-1"
               />
               <span className="text-sm text-warm-brown">{unit}</span>
             </div>
