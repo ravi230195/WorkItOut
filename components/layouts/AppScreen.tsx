@@ -226,8 +226,12 @@ export default function AppScreen({
           )}
           style={
             showDoneBar
-              ? { marginBottom: kbInsetChain }
-              : { paddingBottom: `calc(env(safe-area-inset-bottom) + ${kbInsetChain})` }
+              ? {
+                  marginBottom: `calc(${kbInsetChain} - env(safe-area-inset-bottom))`,
+                }
+              : {
+                  paddingBottom: `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
+                }
           }
         >
           <div
