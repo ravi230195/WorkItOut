@@ -6,18 +6,23 @@
   --font-size: 14px;
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
 
+  /* Base color tokens */
+  --color-black: #000000;
+  --color-light-black: #1a1a1a;
+  --color-white: #ffffff;
+
   /* Core Colors - Modern & Accessible */
   --background: #fefcfb;
   --foreground: #3d2914;
   --card-hsl: 0 0% 100%;
   --card: hsl(var(--card-hsl));
   --card-foreground: #3d2914;
-  --popover: #ffffff;
+  --popover: var(--color-white);
   --popover-foreground: #3d2914;
 
   /* Primary Brand Colors */
   --primary: #e07a5f;
-  --primary-foreground: #ffffff;
+  --primary-foreground: var(--color-white);
   --primary-hover: #d06a4f;
   --primary-light: #fdf2f0;
 
@@ -25,7 +30,7 @@
   --secondary: #f4e8c1;
   --secondary-foreground: #3d2914;
   --accent: #a7c4a0;
-  --accent-foreground: #ffffff;
+  --accent-foreground: var(--color-white);
   --accent-light: #f0f7ed;
 
   /* Semantic Colors */
@@ -43,7 +48,7 @@
   --muted-foreground: #8b7766;
   --border: rgba(224, 122, 95, 0.15);
   --border-light: #f1f3f4;
-  --input: #ffffff;
+  --input: var(--color-white);
   --input-background: #faf8f6;
   --input-border: #dee2e6;
   --input-focus: #e07a5f;
@@ -114,6 +119,8 @@
 
   --app-header-h: 56px;
   --app-bottom-h: 64px;
+  --spinner-size: 40px;
+  --spinner-border-width: 3px;
 
 
   /* HSL triplets for Tailwind /opacity support */
@@ -144,24 +151,24 @@
 .dark,
 [data-theme="dark"] {
   /* Core Colors - Dark Mode */
-  --background: #0f0f0f;
-  --foreground: #f5f5f5;
-  --card: #1a1a1a;
-  --card-foreground: #f5f5f5;
-  --popover: #1a1a1a;
-  --popover-foreground: #f5f5f5;
+  --background: var(--color-black);
+  --foreground: var(--color-white);
+  --card: var(--color-light-black);
+  --card-foreground: var(--color-white);
+  --popover: var(--color-light-black);
+  --popover-foreground: var(--color-white);
 
   /* Primary Brand Colors */
   --primary: #e07a5f;
-  --primary-foreground: #ffffff;
+  --primary-foreground: var(--color-white);
   --primary-hover: #cf694f;
   --primary-light: #4a2a22;
 
   /* Secondary & Accent */
   --secondary: #3f3727;
-  --secondary-foreground: #f5f5f5;
+  --secondary-foreground: var(--color-white);
   --accent: #56756b;
-  --accent-foreground: #ffffff;
+  --accent-foreground: var(--color-white);
   --accent-light: #2d3f36;
 
   /* Semantic Colors */
@@ -205,12 +212,15 @@
   body {
     height: 100%;
     margin: 0;
+    padding: 0;
     overflow: hidden;
   }
 
   #root,
   #app {
     height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   * {
@@ -580,9 +590,15 @@
   }
 
   .loading-spinner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--spinner-size);
+    height: var(--spinner-size);
     border-radius: 50%;
-    border: 2px solid var(--muted);
-    border-top: 2px solid var(--primary);
+    border: var(--spinner-border-width) solid var(--muted);
+    border-top: var(--spinner-border-width) solid var(--primary);
     animation: spin 1s linear infinite;
   }
 }
