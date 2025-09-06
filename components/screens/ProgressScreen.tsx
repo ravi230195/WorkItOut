@@ -251,6 +251,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMetric, setSelectedMetric] = useState<'steps' | 'workouts'>('steps');
   const { userToken } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   // Live health data
@@ -739,63 +740,67 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     if (selectedPeriod === 'month' && currentData.steps.weeklyBreakdown && currentData.routines.weeklyBreakdown) {
       return (
         <div className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-warm-brown/80">Weekly Steps Targets</h3>
-            <div className="flex gap-3">
-              {currentData.steps.weeklyBreakdown.map((week, index) => (
-                <div key={index} className="flex-1 text-center">
-                  <div className="text-xs font-medium text-warm-brown/60 mb-2">{week.week}</div>
-                  <div className="relative">
-                    <div 
-                      className={`w-full rounded-lg transition-all duration-300 ${
-                        week.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                      }`}
-                      style={{
-                        height: `${Math.max(20, (week.steps / Math.max(...currentData.steps.weeklyBreakdown!.map(w => w.steps))) * 80)}px`
-                      }}
-                    />
-                    {week.achieved && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      </div>
-                    )}
+          {selectedMetric === 'steps' && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-warm-brown/80">Weekly Steps Targets</h3>
+              <div className="flex gap-3">
+                {currentData.steps.weeklyBreakdown.map((week, index) => (
+                  <div key={index} className="flex-1 text-center">
+                    <div className="text-xs font-medium text-warm-brown/60 mb-2">{week.week}</div>
+                    <div className="relative">
+                      <div 
+                        className={`w-full rounded-lg transition-all duration-300 ${
+                          week.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
+                        }`}
+                        style={{
+                          height: `${Math.max(20, (week.steps / Math.max(...currentData.steps.weeklyBreakdown!.map(w => w.steps))) * 80)}px`
+                        }}
+                      />
+                      {week.achieved && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                      {(week.steps / 1000).toFixed(0)}k
+                    </div>
                   </div>
-                  <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                    {(week.steps / 1000).toFixed(0)}k
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-warm-brown/80">Weekly Routine Targets</h3>
-            <div className="flex gap-3">
-              {currentData.routines.weeklyBreakdown.map((week, index) => (
-                <div key={index} className="flex-1 text-center">
-                  <div className="text-xs font-medium text-warm-brown/60 mb-2">{week.week}</div>
-                  <div className="relative">
-                    <div 
-                      className={`w-full rounded-lg transition-all duration-300 ${
-                        week.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
-                      }`}
-                      style={{
-                        height: `${Math.max(20, (week.timeSpent / Math.max(...currentData.routines.weeklyBreakdown!.map(w => w.timeSpent))) * 80)}px`
-                      }}
-                    />
-                    {week.achieved && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-coral rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      </div>
-                    )}
+          {selectedMetric === 'workouts' && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-warm-brown/80">Weekly Routine Targets</h3>
+              <div className="flex gap-3">
+                {currentData.routines.weeklyBreakdown.map((week, index) => (
+                  <div key={index} className="flex-1 text-center">
+                    <div className="text-xs font-medium text-warm-brown/60 mb-2">{week.week}</div>
+                    <div className="relative">
+                      <div 
+                        className={`w-full rounded-lg transition-all duration-300 ${
+                          week.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
+                        }`}
+                        style={{
+                          height: `${Math.max(20, (week.timeSpent / Math.max(...currentData.routines.weeklyBreakdown!.map(w => w.timeSpent))) * 80)}px`
+                        }}
+                      />
+                      {week.achieved && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-coral rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                      {week.timeSpent}m
+                    </div>
                   </div>
-                  <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                    {week.timeSpent}m
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       );
     }
@@ -808,67 +813,71 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     if (selectedPeriod === 'year') {
       return (
         <div className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Steps Targets</h3>
-            <div className="overflow-x-auto">
-              <div className="flex gap-2 min-w-max">
-                {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
-                  <div key={index} className="w-16 text-center">
-                    <div className="text-xs font-medium text-warm-brown/60 mb-2">{month.month}</div>
-                    <div className="relative">
-                      <div 
-                        className={`w-full rounded-lg transition-all duration-300 ${
-                          month.stepsAchieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                        }`}
-                        style={{
-                          height: `${Math.max(20, (month.steps / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.steps))) * 80)}px`
-                        }}
-                      />
-                      {month.stepsAchieved && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      )}
+          {selectedMetric === 'steps' && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Steps Targets</h3>
+              <div className="overflow-x-auto">
+                <div className="flex gap-2 min-w-max">
+                  {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
+                    <div key={index} className="w-16 text-center">
+                      <div className="text-xs font-medium text-warm-brown/60 mb-2">{month.month}</div>
+                      <div className="relative">
+                        <div 
+                          className={`w-full rounded-lg transition-all duration-300 ${
+                            month.stepsAchieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
+                          }`}
+                          style={{
+                            height: `${Math.max(20, (month.steps / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.steps))) * 80)}px`
+                          }}
+                        />
+                        {month.stepsAchieved && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
+                            <div className="w-2 h-2 bg-white rounded-full" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                        {(month.steps / 1000).toFixed(0)}k
+                      </div>
                     </div>
-                    <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                      {(month.steps / 1000).toFixed(0)}k
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
           
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Routine Targets</h3>
-            <div className="overflow-x-auto">
-              <div className="flex gap-2 min-w-max">
-                {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
-                  <div key={index} className="w-16 text-center">
-                    <div className="text-xs font-medium text-warm-brown/60 mb-2">{month.month}</div>
-                    <div className="relative">
-                      <div 
-                        className={`w-full rounded-lg transition-all duration-300 ${
-                          month.routinesAchieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
-                        }`}
-                        style={{
-                          height: `${Math.max(20, (month.routines / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.routines))) * 80)}px`
-                        }}
-                      />
-                      {month.routinesAchieved && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-coral rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      )}
+          {selectedMetric === 'workouts' && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Routine Targets</h3>
+              <div className="overflow-x-auto">
+                <div className="flex gap-2 min-w-max">
+                  {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
+                    <div key={index} className="w-16 text-center">
+                      <div className="text-xs font-medium text-warm-brown/60 mb-2">{month.month}</div>
+                      <div className="relative">
+                        <div 
+                          className={`w-full rounded-lg transition-all duration-300 ${
+                            month.routinesAchieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
+                          }`}
+                          style={{
+                            height: `${Math.max(20, (month.routines / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.routines))) * 80)}px`
+                          }}
+                        />
+                        {month.routinesAchieved && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-coral rounded-full flex items-center justify-center">
+                            <div className="w-2 h-2 bg-white rounded-full" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                        {month.routines}
+                      </div>
                     </div>
-                    <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                      {month.routines}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       );
     }
@@ -1028,6 +1037,22 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           </div>
         </Section>
 
+        {/* Metric Dropdown */}
+        <Section variant="plain" padding="none">
+          <div className="flex items-center justify-end">
+            <label htmlFor="metric" className="sr-only">View</label>
+            <select
+              id="metric"
+              value={selectedMetric}
+              onChange={(e) => setSelectedMetric(e.target.value as 'steps' | 'workouts')}
+              className="input-modern w-auto px-3 py-2 rounded-xl bg-[var(--input)] border border-[var(--input-border)] text-warm-brown shadow-sm"
+            >
+              <option value="steps">Steps</option>
+              <option value="workouts">Workouts</option>
+            </select>
+          </div>
+        </Section>
+
         {/* Month View - Weekly Targets at Top */}
         {selectedPeriod === 'month' && (
           <Section variant="plain" padding="none">
@@ -1048,7 +1073,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         )}
 
         {/* Steps Overview Card - Hidden for Month and Year */}
-        {selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
+        {selectedPeriod !== 'month' && selectedPeriod !== 'year' && selectedMetric === 'steps' && (
           <Section variant="plain" padding="none">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
               <CardHeader className="pb-6">
@@ -1117,7 +1142,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         )}
 
         {/* Workouts Overview Card - Hidden for Month and Year */}
-        {selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
+        {selectedPeriod !== 'month' && selectedPeriod !== 'year' && selectedMetric === 'workouts' && (
           <Section variant="plain" padding="none">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
               <CardHeader className="pb-6">
@@ -1187,7 +1212,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         )}
 
         {/* Month View - Routine Types (show only if types exist) */}
-        {selectedPeriod === 'month' && (currentData.routines.types && currentData.routines.types.length > 0) && (
+        {selectedPeriod === 'month' && selectedMetric === 'workouts' && (currentData.routines.types && currentData.routines.types.length > 0) && (
           <Section variant="plain" padding="none">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
               <CardHeader>
