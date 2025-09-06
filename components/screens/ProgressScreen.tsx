@@ -248,7 +248,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     monthlyTarget: 20,
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
+  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('month');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMetric, setSelectedMetric] = useState<'steps' | 'workouts'>('steps');
@@ -320,7 +320,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
   useEffect(() => {
     const compute = async () => {
       try {
-        if (selectedPeriod === 'day') {
+        if (false) {
           // Day view already uses live hooks for steps/workouts; still compute to drive badges
           const stepsCurrent = steps ?? 0;
           const target = stepGoal || 10000;
@@ -430,6 +430,23 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             return { week: w.label, timeSpent: minutes, target, achieved: minutes >= target };
           });
 
+          // Month daily breakdown (for scrollable day-by-day chart)
+          const daysInMonth = e.getDate();
+          const dailySteps = Array.from({ length: daysInMonth }, (_, i) => {
+            const d = new Date(s.getFullYear(), s.getMonth(), i + 1);
+            const key = `${d.getMonth() + 1}/${d.getDate()}`;
+            const stepsVal = stepsByDay[key]?.steps || 0;
+            return { day: String(i + 1), steps: stepsVal, target: stepGoal, achieved: stepsVal >= stepGoal };
+          });
+
+          const dailyRoutines = Array.from({ length: daysInMonth }, (_, i) => {
+            const d = new Date(s.getFullYear(), s.getMonth(), i + 1);
+            const key = `${d.getMonth() + 1}/${d.getDate()}`;
+            const minutes = Math.round(wByDay[key]?.minutes || 0);
+            const perDayTarget = 30;
+            return { day: String(i + 1), timeSpent: minutes, target: perDayTarget, achieved: minutes >= perDayTarget };
+          });
+
           const stepsCurrent = weeklySteps.reduce((s, w) => s + w.steps, 0);
           const stepsTarget = Array.from({length: (e.getDate())}, (_, i) => 0).reduce((acc) => acc, 0) + stepGoal * e.getDate();
 
@@ -440,6 +457,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             remaining: Math.max(0, stepsTarget - stepsCurrent),
             achieved: stepsCurrent >= stepsTarget,
             weeklyBreakdown: weeklySteps,
+            dailyBreakdown: dailySteps,
           } as any;
 
           const routinesCount = Object.values(wByDay).reduce((sum, v) => sum + (v?.count || 0), 0);
@@ -451,6 +469,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             remaining: Math.max(0, routinesTarget - routinesCount),
             achieved: routinesCount >= routinesTarget,
             weeklyBreakdown: weeklyMinutes,
+            dailyBreakdown: dailyRoutines,
           } as any;
 
           setPeriodData(prev => ({ ...prev, month: { steps: stepsData, routines: routinesData } }));
@@ -605,61 +624,41 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
       return (
         <div className="space-y-4">
           <h3 className="text-sm font-semibold text-warm-brown/80">Daily Breakdown</h3>
-          <div className="flex gap-3">
-            {currentData.steps.dailyBreakdown.map((day, index) => (
-              <div key={index} className="flex-1 text-center">
-                <div className="text-xs font-medium text-warm-brown/60 mb-2">{day.day}</div>
-                <div className="relative">
-                  <div 
-                    className={`w-full rounded-lg transition-all duration-300 ${
-                      day.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                    }`}
-                    style={{
-                      height: `${Math.max(20, (day.steps / Math.max(...currentData.steps.dailyBreakdown!.map(d => d.steps))) * 80)}px`
-                    }}
-                  />
-                  {day.achieved && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
-                  )}
+          <div className="overflow-x-auto">
+            <div className="flex gap-3 min-w-max pr-2">
+              {currentData.steps.dailyBreakdown.map((day, index) => (
+                <div key={index} className="w-10 text-center">
+                  <div className="relative h-24 flex items-end">
+                    <div
+                      className={`w-full rounded-lg transition-all duration-300 ${day.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'}`}
+                      style={{ height: `${Math.max(10, (day.steps / Math.max(...currentData.steps.dailyBreakdown!.map(d => d.steps))) * 90)}%` }}
+                    />
+                  </div>
+                  <div className="mt-2 text-xs font-medium text-warm-brown/70">{day.day}</div>
                 </div>
-                <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                  {(day.steps / 1000).toFixed(0)}k
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       );
-    } else if (selectedPeriod === 'month' && currentData.steps.weeklyBreakdown) {
+    } else if (selectedPeriod === 'month' && currentData.steps.dailyBreakdown) {
       return (
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-warm-brown/80">Weekly Breakdown</h3>
-          <div className="flex gap-3">
-            {currentData.steps.weeklyBreakdown.map((week, index) => (
-              <div key={index} className="flex-1 text-center">
-                <div className="text-xs font-medium text-warm-brown/60 mb-2">{week.week}</div>
-                <div className="relative">
-                  <div 
-                    className={`w-full rounded-lg transition-all duration-300 ${
-                      week.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                    }`}
-                    style={{
-                      height: `${Math.max(20, (week.steps / Math.max(...currentData.steps.weeklyBreakdown!.map(w => w.steps))) * 80)}px`
-                    }}
-                  />
-                  {week.achieved && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
-                  )}
+          <h3 className="text-sm font-semibold text-warm-brown/80">Daily Breakdown</h3>
+          <div className="overflow-x-auto">
+            <div className="flex gap-2 min-w-max pr-2">
+              {currentData.steps.dailyBreakdown.map((day, index) => (
+                <div key={index} className="w-8 text-center">
+                  <div className="relative h-24 flex items-end">
+                    <div
+                      className={`w-full rounded-lg transition-all duration-300 ${day.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'}`}
+                      style={{ height: `${Math.max(8, (day.steps / Math.max(...currentData.steps.dailyBreakdown!.map(d => d.steps))) * 90)}%` }}
+                    />
+                  </div>
+                  <div className="mt-1 text-[10px] font-medium text-warm-brown/60">{day.day}</div>
                 </div>
-                <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                  {(week.steps / 1000).toFixed(0)}k
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       );
@@ -674,30 +673,22 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
       return (
         <div className="space-y-4">
           <h3 className="text-sm font-semibold text-warm-brown/80">Daily Routine Time</h3>
-          <div className="flex gap-3">
-            {currentData.routines.dailyBreakdown.map((day, index) => (
-              <div key={index} className="flex-1 text-center">
-                <div className="text-xs font-medium text-warm-brown/60 mb-2">{day.day}</div>
-                <div className="relative">
-                  <div 
-                    className={`w-full rounded-lg transition-all duration-300 ${
-                      day.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
-                    }`}
-                    style={{
-                      height: `${Math.max(20, (day.timeSpent / Math.max(...currentData.routines.dailyBreakdown!.map(d => d.timeSpent))) * 80)}px`
-                    }}
-                  />
-                  {day.achieved && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-coral rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
-                  )}
+          <div className="overflow-x-auto">
+            <div className="flex gap-3 min-w-max pr-2">
+              {currentData.routines.dailyBreakdown.map((day, index) => (
+                <div key={index} className="w-10 text-center">
+                  <div className="relative h-24 flex items-end">
+                    <div 
+                      className={`w-full rounded-lg transition-all duration-300 ${
+                        day.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
+                      }`}
+                      style={{ height: `${Math.max(10, (day.timeSpent / Math.max(...currentData.routines.dailyBreakdown!.map(d => d.timeSpent))) * 90)}%` }}
+                    />
+                  </div>
+                  <div className="mt-2 text-xs font-medium text-warm-brown/70">{day.day}</div>
                 </div>
-                <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                  {day.timeSpent}m
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       );
@@ -735,69 +726,49 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     return null;
   };
 
-  // Render weekly targets for month view
+  // Render month daily chart for the selected metric (scrollable, one bar per day)
   const renderWeeklyTargets = () => {
-    if (selectedPeriod === 'month' && currentData.steps.weeklyBreakdown && currentData.routines.weeklyBreakdown) {
+    if (selectedPeriod === 'month' && currentData.steps.dailyBreakdown && currentData.routines.dailyBreakdown) {
       return (
         <div className="space-y-6">
           {selectedMetric === 'steps' && (
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-warm-brown/80">Weekly Steps Targets</h3>
-              <div className="flex gap-3">
-                {currentData.steps.weeklyBreakdown.map((week, index) => (
-                  <div key={index} className="flex-1 text-center">
-                    <div className="text-xs font-medium text-warm-brown/60 mb-2">{week.week}</div>
-                    <div className="relative">
-                      <div 
-                        className={`w-full rounded-lg transition-all duration-300 ${
-                          week.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                        }`}
-                        style={{
-                          height: `${Math.max(20, (week.steps / Math.max(...currentData.steps.weeklyBreakdown!.map(w => w.steps))) * 80)}px`
-                        }}
-                      />
-                      {week.achieved && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      )}
+              <h3 className="text-sm font-semibold text-warm-brown/80">Daily Steps</h3>
+              <div className="overflow-x-auto">
+                <div className="flex gap-2 min-w-max pr-2">
+                  {currentData.steps.dailyBreakdown.map((day, index) => (
+                    <div key={index} className="w-8 text-center">
+                      <div className="relative h-24 flex items-end">
+                        <div
+                          className={`w-full rounded-lg transition-all duration-300 ${day.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'}`}
+                          style={{ height: `${Math.max(8, (day.steps / Math.max(...currentData.steps.dailyBreakdown!.map(d => d.steps))) * 90)}%` }}
+                        />
+                      </div>
+                      <div className="mt-1 text-[10px] font-medium text-warm-brown/60">{day.day}</div>
                     </div>
-                    <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                      {(week.steps / 1000).toFixed(0)}k
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
           
           {selectedMetric === 'workouts' && (
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-warm-brown/80">Weekly Routine Targets</h3>
-              <div className="flex gap-3">
-                {currentData.routines.weeklyBreakdown.map((week, index) => (
-                  <div key={index} className="flex-1 text-center">
-                    <div className="text-xs font-medium text-warm-brown/60 mb-2">{week.week}</div>
-                    <div className="relative">
-                      <div 
-                        className={`w-full rounded-lg transition-all duration-300 ${
-                          week.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
-                        }`}
-                        style={{
-                          height: `${Math.max(20, (week.timeSpent / Math.max(...currentData.routines.weeklyBreakdown!.map(w => w.timeSpent))) * 80)}px`
-                        }}
-                      />
-                      {week.achieved && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-coral rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      )}
+              <h3 className="text-sm font-semibold text-warm-brown/80">Daily Routine Time</h3>
+              <div className="overflow-x-auto">
+                <div className="flex gap-2 min-w-max pr-2">
+                  {currentData.routines.dailyBreakdown.map((day, index) => (
+                    <div key={index} className="w-8 text-center">
+                      <div className="relative h-24 flex items-end">
+                        <div
+                          className={`w-full rounded-lg transition-all duration-300 ${day.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'}`}
+                          style={{ height: `${Math.max(8, (day.timeSpent / Math.max(...currentData.routines.dailyBreakdown!.map(d => d.timeSpent))) * 90)}%` }}
+                        />
+                      </div>
+                      <div className="mt-1 text-[10px] font-medium text-warm-brown/60">{day.day}</div>
                     </div>
-                    <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                      {week.timeSpent}m
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -814,69 +785,55 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
       return (
         <div className="space-y-6">
           {selectedMetric === 'steps' && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Steps Targets</h3>
-              <div className="overflow-x-auto">
-                <div className="flex gap-2 min-w-max">
-                  {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
-                    <div key={index} className="w-16 text-center">
-                      <div className="text-xs font-medium text-warm-brown/60 mb-2">{month.month}</div>
-                      <div className="relative">
-                        <div 
-                          className={`w-full rounded-lg transition-all duration-300 ${
-                            month.stepsAchieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                          }`}
-                          style={{
-                            height: `${Math.max(20, (month.steps / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.steps))) * 80)}px`
-                          }}
-                        />
-                        {month.stepsAchieved && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
-                            <div className="w-2 h-2 bg-white rounded-full" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                        {(month.steps / 1000).toFixed(0)}k
-                      </div>
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Steps Targets</h3>
+            <div className="overflow-x-auto">
+              <div className="flex gap-2 min-w-max">
+                {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
+                  <div key={index} className="w-16 text-center">
+                    <div className="relative h-24 flex items-end">
+                      <div 
+                        className={`w-full rounded-lg transition-all duration-300 ${
+                          month.stepsAchieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
+                        }`}
+                        style={{ height: `${Math.max(8, (month.steps / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.steps))) * 90)}%` }}
+                      />
                     </div>
-                  ))}
-                </div>
+                    <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                      {(month.steps / 1000).toFixed(0)}k
+                    </div>
+                    <div className="text-xs font-medium text-warm-brown/60 mt-1">{month.month}</div>
+                  </div>
+                ))}
               </div>
             </div>
+          </div>
           )}
           
           {selectedMetric === 'workouts' && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Routine Targets</h3>
-              <div className="overflow-x-auto">
-                <div className="flex gap-2 min-w-max">
-                  {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
-                    <div key={index} className="w-16 text-center">
-                      <div className="text-xs font-medium text-warm-brown/60 mb-2">{month.month}</div>
-                      <div className="relative">
-                        <div 
-                          className={`w-full rounded-lg transition-all duration-300 ${
-                            month.routinesAchieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
-                          }`}
-                          style={{
-                            height: `${Math.max(20, (month.routines / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.routines))) * 80)}px`
-                          }}
-                        />
-                        {month.routinesAchieved && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-coral rounded-full flex items-center justify-center">
-                            <div className="w-2 h-2 bg-white rounded-full" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-xs font-medium text-warm-brown/70 mt-2">
-                        {month.routines}
-                      </div>
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Routine Targets</h3>
+            <div className="overflow-x-auto">
+              <div className="flex gap-2 min-w-max">
+                {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
+                  <div key={index} className="w-16 text-center">
+                    <div className="relative h-24 flex items-end">
+                      <div 
+                        className={`w-full rounded-lg transition-all duration-300 ${
+                          month.routinesAchieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
+                        }`}
+                        style={{ height: `${Math.max(8, (month.routines / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.routines))) * 90)}%` }}
+                      />
                     </div>
-                  ))}
-                </div>
+                    <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                      {month.routines}
+                    </div>
+                    <div className="text-xs font-medium text-warm-brown/60 mt-1">{month.month}</div>
+                  </div>
+                ))}
               </div>
             </div>
+          </div>
           )}
         </div>
       );
@@ -1021,7 +978,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         {/* Period Selector */}
         <Section variant="plain" padding="none">
           <div className="flex bg-white/60 rounded-2xl p-1 border border-white/20">
-            {(['day', 'week', 'month', 'year'] as const).map((period) => (
+            {(['week', 'month', 'year'] as const).map((period) => (
               <button
                 key={period}
                 onClick={() => setSelectedPeriod(period)}
