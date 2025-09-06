@@ -92,16 +92,16 @@ export default function AppScreen({
   const showDoneBar = keyboardVisible && numericInputFocused;
   const renderedBottomBar = showDoneBar
     ? (
-        <div className="w-full flex justify-end">
-          <button
-            className="px-3 py-2 text-dark-green-1000 text-lg bg-transparent border-0"
-            onClick={() => (document.activeElement as HTMLElement | null)?.blur()}
-            type="button"
-          >
-            Done
-          </button>
-        </div>
-      )
+      <div className="w-full flex justify-end">
+        <button
+          className="px-3 py-2 text-dark-green-1000 text-lg bg-transparent border-0"
+          onClick={() => (document.activeElement as HTMLElement | null)?.blur()}
+          type="button"
+        >
+          Done
+        </button>
+      </div>
+    )
     : bottomBar && !(hideBottomBarOnKeyboard && keyboardVisible)
       ? bottomBar
       : null;
@@ -166,8 +166,8 @@ export default function AppScreen({
         paddingTop: padHeaderSafeArea
           ? "max(env(safe-area-inset-top), 0px)"
           : undefined,
-          // RAVI: Debug border commented out
-          //border: "2px solid green",
+        // RAVI: Debug border commented out
+        //border: "2px solid green",
       }}
     >
       <div className={cx(innerWidthClasses, padHeader && "px-4")} style={innerWidthStyle}>
@@ -203,45 +203,41 @@ export default function AppScreen({
           )}
           style={{
             ...innerWidthStyle,
-              paddingBottom: renderedBottomBar
-                ? `var(--app-bottom-h, 0px)`
-                : `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
-              // RAVI: Debug border commented out
-              //border: "2px solid red",
+            paddingBottom: renderedBottomBar
+              ? `var(--app-bottom-h, 0px)`
+              : `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
+            // RAVI: Debug border commented out
+            //border: "2px solid red",
           }}
         >
           {children}
         </div>
       </div>
 
-        {renderedBottomBar ? (
-          <div
-            ref={bottomRef}
+      {renderedBottomBar ? (
+        <div
+          ref={bottomRef}
           className={cx(
             "shrink-0",
             bottomBarSticky && "sticky bottom-0 z-30",
-            "bg-card/95 backdrop-blur-sm",
+            showDoneBar ? "bg-white dark:bg-black" : "bg-card/95 backdrop-blur-sm",
             showBottomBarBorder && "border-t border-border",
-            bottomBarShellClassName
+            bottomBarShellClassName,
           )}
           style={
             showDoneBar
-              ? {
-                  marginBottom: `calc(${kbInsetChain} - env(safe-area-inset-bottom))`,
-                }
-              : {
-                  paddingBottom: `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
-                }
+              ? { marginBottom: `calc(${kbInsetChain} - env(safe-area-inset-bottom))`, }
+              : { paddingBottom: `${kbInsetChain})` }
           }
         >
           <div
             className={cx(innerWidthClasses, padBottomBar && "px-4 py-2")}
             style={innerWidthStyle}
           >
-              {renderedBottomBar}
-            </div>
+            {renderedBottomBar}
           </div>
-        ) : null}
-      </div>
-    );
-  }
+        </div>
+      ) : null}
+    </div>
+  );
+}
