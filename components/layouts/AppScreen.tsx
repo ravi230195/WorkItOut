@@ -3,6 +3,7 @@ import * as React from "react";
 import type { MaxContent } from "./layout-types";
 import { classForMaxContent } from "./layout-types";
 import { useKeyboardInset } from "../../hooks/useKeyboardInset";
+import { useKeyboardVisible } from "../../hooks/useKeyboardVisible";
 
 export type AppScreenProps = React.PropsWithChildren<{
   header?: React.ReactNode | null;
@@ -10,6 +11,9 @@ export type AppScreenProps = React.PropsWithChildren<{
 
   bottomBar?: React.ReactNode | null;
   bottomBarSticky?: boolean;
+
+  /** Hide the bottom bar when the on-screen keyboard is visible. */
+  hideBottomBarOnKeyboard?: boolean;
 
   showHeaderBorder?: boolean;
   showBottomBarBorder?: boolean;
@@ -47,6 +51,7 @@ export default function AppScreen({
 
   bottomBar,
   bottomBarSticky = true,
+  hideBottomBarOnKeyboard = true,
 
   showHeaderBorder = true,
   showBottomBarBorder = true,
@@ -76,10 +81,14 @@ export default function AppScreen({
 }: AppScreenProps) {
   // Single global provider of --app-kb-inset / --kb-inset / --keyboard-inset
   useKeyboardInset();
+  const keyboardVisible = useKeyboardVisible();
 
   const rootRef = React.useRef<HTMLDivElement>(null);
   const headerRef = React.useRef<HTMLDivElement>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
+
+  const renderedBottomBar =
+    bottomBar && !(hideBottomBarOnKeyboard && keyboardVisible) ? bottomBar : null;
 
   /** Measure header/bottom heights and publish CSS vars */
   React.useLayoutEffect(() => {
@@ -89,7 +98,7 @@ export default function AppScreen({
       const h = headerRef.current?.offsetHeight ?? 0;
       const b = bottomRef.current?.offsetHeight ?? 0;
       rootRef.current!.style.setProperty("--app-header-h", `${header ? h : 0}px`);
-      rootRef.current!.style.setProperty("--app-bottom-h", `${bottomBar ? b : 0}px`);
+      rootRef.current!.style.setProperty("--app-bottom-h", `${renderedBottomBar ? b : 0}px`);
     };
 
     const ro = new ResizeObserver(updateVars);
@@ -98,7 +107,7 @@ export default function AppScreen({
 
     updateVars();
     return () => ro.disconnect();
-  }, [header, bottomBar]);
+  }, [header, renderedBottomBar]);
 
   const shouldCenter = maxContent !== "none" || typeof maxContentPx === "number";
   const maxWidthClass =
@@ -178,9 +187,9 @@ export default function AppScreen({
           )}
           style={{
             ...innerWidthStyle,
-            paddingBottom: bottomBar
-              ? `var(--app-bottom-h, 0px)`
-              : `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
+              paddingBottom: renderedBottomBar
+                ? `var(--app-bottom-h, 0px)`
+                : `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
               // RAVI: Debug border commented out
               //border: "2px solid red",
           }}
@@ -189,9 +198,9 @@ export default function AppScreen({
         </div>
       </div>
 
-      {bottomBar ? (
-        <div
-          ref={bottomRef}
+        {renderedBottomBar ? (
+          <div
+            ref={bottomRef}
           className={cx(
             "shrink-0",
             bottomBarSticky && "sticky bottom-0 z-30",
@@ -210,10 +219,10 @@ export default function AppScreen({
             className={cx(innerWidthClasses, padBottomBar && "px-4 py-2")}
             style={innerWidthStyle}
           >
-            {bottomBar}
+              {renderedBottomBar}
+            </div>
           </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
+        ) : null}
+      </div>
+    );
+  }

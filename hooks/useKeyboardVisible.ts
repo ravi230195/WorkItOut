@@ -1,73 +1,57 @@
 import { useEffect, useState } from "react";
+import { useKeyboardInset } from "./useKeyboardInset";
 
 /**
  * Hook that returns true when the on-screen keyboard is visible.
- * Works for both Capacitor (native) and web environments.
+ *
+ * It reuses the global keyboard inset detection provided by
+ * `useKeyboardInset` and simply checks whether the computed inset
+ * is greater than zero. This keeps the logic consistent with the
+ * layout components that already rely on the inset CSS variable and
+ * avoids duplicating platform-specific event handling.
  */
 export function useKeyboardVisible(): boolean {
   const [visible, setVisible] = useState(false);
 
-  useEffect(() => {
-    let raf = 0;
-    let capCleanup: (() => void) | null = null;
+  // ensure the global --kb-inset CSS variable stays up to date
+  useKeyboardInset();
 
-    const updateFromViewport = () => {
-      const vv = window.visualViewport;
-      if (!vv) {
-        setVisible(false);
-        return;
-      }
-      const inset = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop || 0));
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const update = () => {
+      const inset = parseInt(
+        getComputedStyle(root).getPropertyValue("--kb-inset") || "0",
+        10
+      );
       setVisible(inset > 0);
     };
 
-    const onChange = () => {
-      if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(updateFromViewport);
-    };
+    // Initial measurement
+    update();
 
-    const attach = async () => {
-      // Capacitor keyboard events (native mobile)
-      try {
-        const { Capacitor } = await import("@capacitor/core");
-        const { Keyboard } = await import("@capacitor/keyboard");
-        if (Capacitor.isNativePlatform()) {
-          const showListener = await Keyboard.addListener("keyboardWillShow", () => setVisible(true));
-          const hideListener = await Keyboard.addListener("keyboardWillHide", () => setVisible(false));
-          capCleanup = () => {
-            showListener.remove();
-            hideListener.remove();
-          };
-          return;
-        }
-      } catch {
-        /* capacitor not available - fall back to web */
-      }
+    // Observe style changes on the root element since --kb-inset is
+    // updated there by useKeyboardInset
+    const observer = new MutationObserver(update);
+    observer.observe(root, { attributes: true, attributeFilter: ["style"] });
 
-      // Web fallback using VisualViewport
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener("resize", onChange);
-        window.visualViewport.addEventListener("scroll", onChange);
-      } else {
-        window.addEventListener("resize", onChange);
-      }
-
-      capCleanup = () => {
-        if (window.visualViewport) {
-          window.visualViewport.removeEventListener("resize", onChange);
-          window.visualViewport.removeEventListener("scroll", onChange);
-        } else {
-          window.removeEventListener("resize", onChange);
-        }
-      };
-    };
-
-    void attach();
-    updateFromViewport();
+    // Also listen to viewport changes as a fallback
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener("resize", update);
+      vv.addEventListener("scroll", update);
+    } else {
+      window.addEventListener("resize", update);
+    }
 
     return () => {
-      if (raf) cancelAnimationFrame(raf);
-      capCleanup?.();
+      observer.disconnect();
+      if (vv) {
+        vv.removeEventListener("resize", update);
+        vv.removeEventListener("scroll", update);
+      } else {
+        window.removeEventListener("resize", update);
+      }
     };
   }, []);
 
