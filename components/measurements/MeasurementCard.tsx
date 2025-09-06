@@ -57,9 +57,10 @@ export default function MeasurementCard({
 
   const diff = past[0] != null ? parse(value) - parse(past[0]) : null;
   const diffPct = diff != null && parse(past[0]) !== 0 ? (diff / parse(past[0])) * 100 : null;
-  const subtitle = diff != null
-    ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}${unit} (${diffPct && diffPct >= 0 ? "+" : ""}${diffPct?.toFixed(1)}%) vs last entry`
-    : undefined;
+  const diffText =
+    diff != null
+      ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}${unit} (${diffPct && diffPct >= 0 ? "+" : ""}${diffPct?.toFixed(1)}%) vs last entry`
+      : undefined;
 
   return (
     <ExpandingCard
@@ -67,11 +68,19 @@ export default function MeasurementCard({
       size="lg"
       expanded={expanded}
       onToggle={() => setExpanded((v) => !v)}
-      title={label}
-      subtitle={subtitle}
+      title={
+        <div className="flex items-center gap-2">
+          <span>{label}</span>
+          {diffText && (
+            <span className="font-normal text-sm text-warm-brown/60 truncate">
+              {diffText}
+            </span>
+          )}
+        </div>
+      }
       leading={<span className="text-xl">{icon}</span>}
       trailing={
-        <div className="flex items-center gap-2 mr-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 mr-2" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={handleDec}
@@ -82,7 +91,8 @@ export default function MeasurementCard({
           <Input
             value={value}
             onChange={handleChange}
-            className="w-24 h-7 text-center p-1"
+            placeholder={unit}
+            className="w-32 h-7 text-center p-1"
           />
           <button
             type="button"
@@ -91,7 +101,6 @@ export default function MeasurementCard({
           >
             <Plus size={14} />
           </button>
-          <span className="text-sm text-warm-brown ml-1">{unit}</span>
         </div>
       }
     >
@@ -103,7 +112,7 @@ export default function MeasurementCard({
               <Input
                 value={p}
                 onChange={(e) => handlePastChange(i, e.target.value)}
-                className="w-24 h-7 text-center p-1"
+                className="w-32 h-7 text-center p-1"
               />
               <span className="text-sm text-warm-brown">{unit}</span>
             </div>
