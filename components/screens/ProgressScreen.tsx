@@ -713,7 +713,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           <h3 className="text-sm font-semibold text-warm-brown/80">Routine Types</h3>
           <div className="space-y-2">
             {currentData.routines.types.map((type, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-white/60 rounded-xl hover:bg-white/80 transition-all duration-200 border border-white/20">
+              <div key={index} className="flex items-center justify-between p-4 bg-[var(--card)]/90 rounded-xl hover:bg-[var(--card)] transition-all duration-200 border border-[var(--border)] backdrop-blur-sm">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 ${type.color} bg-current/10 rounded-full flex items-center justify-center`}>
                     <type.icon size={18} />
@@ -966,7 +966,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
       return (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-warm-brown/80">Today's Workouts</h3>
-          <div className="p-4 bg-white/60 rounded-xl border border-white/20 flex items-center justify-between">
+          <div className="p-4 bg-[var(--card)]/80 rounded-xl border border-[var(--border)] flex items-center justify-between backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-warm-coral/20 rounded-full flex items-center justify-center">
                 <Dumbbell size={18} className="text-warm-coral" />
@@ -1011,7 +1011,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
 
         {/* Period Selector */}
         <Section variant="plain" padding="none">
-          <div className="flex bg-white/60 rounded-2xl p-1 border border-white/20">
+          <div className="flex bg-[var(--card)]/60 rounded-2xl p-1 border border-[var(--border)]">
             {(['day', 'week', 'month', 'year'] as const).map((period) => (
               <button
                 key={period}
@@ -1019,7 +1019,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                 className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   selectedPeriod === period
                     ? 'bg-warm-sage text-white shadow-md'
-                    : 'text-warm-brown/70 hover:text-warm-brown/90 hover:bg-white/40'
+                    : 'text-warm-brown/70 hover:text-warm-brown/90 hover:bg-[var(--card)]/40'
                 }`}
               >
                 {period.charAt(0).toUpperCase() + period.slice(1)}
@@ -1031,7 +1031,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         {/* Month View - Weekly Targets at Top */}
         {selectedPeriod === 'month' && (
           <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <Card className="bg-[var(--card)]/90 backdrop-blur-sm border border-[var(--border)] shadow-lg">
               <CardHeader>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-warm-peach/20 rounded-full flex items-center justify-center">
@@ -1050,7 +1050,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         {/* Steps Overview Card - Hidden for Month and Year */}
         {selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
           <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <Card className="bg-[var(--card)]/90 backdrop-blur-sm border border-[var(--border)] shadow-lg">
               <CardHeader className="pb-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -1119,7 +1119,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         {/* Workouts Overview Card - Hidden for Month and Year */}
         {selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
           <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <Card className="bg-[var(--card)]/90 backdrop-blur-sm border border-[var(--border)] shadow-lg">
               <CardHeader className="pb-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -1189,7 +1189,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         {/* Month View - Routine Types (show only if types exist) */}
         {selectedPeriod === 'month' && (currentData.routines.types && currentData.routines.types.length > 0) && (
           <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <Card className="bg-[var(--card)]/90 backdrop-blur-sm border border-[var(--border)] shadow-lg">
               <CardHeader>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-warm-coral/20 rounded-full flex items-center justify-center">

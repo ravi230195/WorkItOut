@@ -115,6 +115,11 @@
   --app-header-h: 56px;
   --app-bottom-h: 64px;
 
+  /* App background gradient tokens (light) */
+  --app-bg-start: var(--soft-gray);
+  --app-bg-mid: var(--background);
+  --app-bg-end: rgba(244, 232, 193, 0.30); /* warm-cream/30 */
+
 
   /* HSL triplets for Tailwind /opacity support */
   --foreground-hsl: 30.73 50.62% 15.88%;
@@ -197,6 +202,11 @@
   --warm-rose-hsl: 355.38 53.06% 80.78%;
   --warm-lavender-hsl: 280.56 63.96% 78.24%;
   --soft-gray-hsl: 0 0% 20%;
+
+  /* App background gradient tokens (dark) */
+  --app-bg-start: #0c0c0d;
+  --app-bg-mid: #0f0f10;
+  --app-bg-end: rgba(224, 122, 95, 0.10); /* warm coral tint */
 }
 
 @layer base {
