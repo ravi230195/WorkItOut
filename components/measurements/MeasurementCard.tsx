@@ -3,12 +3,17 @@ import ExpandingCard from "../ui/ExpandingCard";
 import { Input } from "../ui/input";
 import { Minus, Plus } from "lucide-react";
 
+interface MeasurementHistoryEntry {
+  date: string;
+  value: string;
+}
+
 interface MeasurementCardProps {
   label: string;
   icon: React.ReactNode;
   unit?: string;
   initial?: string;
-  history?: string[]; // most recent first
+  history?: MeasurementHistoryEntry[]; // most recent first
 }
 
 export default function MeasurementCard({
@@ -20,7 +25,6 @@ export default function MeasurementCard({
 }: MeasurementCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [value, setValue] = useState(initial);
-  const [past, setPast] = useState(history);
 
   const step = 0.5;
   const parse = (v: string) => {
@@ -38,15 +42,8 @@ export default function MeasurementCard({
     setValue(e.target.value);
   };
 
-  const handlePastChange = (idx: number, v: string) => {
-    setPast((arr) => {
-      const copy = [...arr];
-      copy[idx] = v;
-      return copy;
-    });
-  };
-
-  const diff = past[0] != null ? parse(value) - parse(past[0]) : null;
+  const diff =
+    history[0] != null ? parse(value) - parse(history[0].value) : null;
   const diffText = diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}${unit}` : undefined;
 
   return (
@@ -96,21 +93,19 @@ export default function MeasurementCard({
         </div>
       }
     >
-      <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
-        {past.slice(0, 4).map((p, i) => (
-          <div key={i} className="flex items-center justify-between gap-2">
-            <span className="text-sm text-warm-brown/60">Entry {i + 1}</span>
-            <div className="flex items-center gap-2">
-              <Input
-                value={p}
-                onChange={(e) => handlePastChange(i, e.target.value)}
-                className="h-7 text-center px-1 w-[6.5rem] sm:w-[7.5rem]"
-              />
-              <span className="text-sm text-warm-brown">{unit}</span>
+      {history.length > 0 && (
+        <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+          {history.slice(0, 4).map((p, i) => (
+            <div key={i} className="flex items-center justify-between gap-2">
+              <span className="text-sm text-warm-brown/60">{p.date}</span>
+              <span className="text-sm text-warm-brown">
+                {p.value}
+                {unit}
+              </span>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </ExpandingCard>
   );
 }
