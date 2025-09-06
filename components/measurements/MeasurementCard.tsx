@@ -84,6 +84,11 @@ export default function MeasurementCard({
             </button>
 
             <Input
+              type="number"
+              inputMode="decimal"
+              pattern="[0-9]*[.,]?[0-9]*"
+              step="0.5"
+              min="0"
               value={value}
               onChange={handleChange}
               placeholder={unit}
@@ -108,6 +113,11 @@ export default function MeasurementCard({
               <span className="text-sm text-warm-brown/60">{p.date}</span>
               <div className="flex items-center gap-2">
                 <Input
+                  type="number"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.,]?[0-9]*"
+                  step="0.5"
+                  min="0"
                   value={p.value}
                   onChange={(e) => handlePastChange(i, e.target.value)}
                   className="h-7 text-center px-1 w-[6.5rem] sm:w-[7.5rem]"
