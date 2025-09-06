@@ -61,6 +61,7 @@ export function useAppNavigation() {
   };
 
   const showCreateRoutine = () => setCurrentView("create-routine");
+  const showEditMeasurements = () => setCurrentView("edit-measurements");
 
   /** After CreateRoutineScreen creates a routine, jump to ExerciseSetup (empty) */
   const handleRoutineCreated = (routineName: string, routineId?: number) => {
@@ -109,6 +110,7 @@ export function useAppNavigation() {
 
 
   const closeCreateRoutine = () => setCurrentView("workouts");
+  const closeEditMeasurements = () => setCurrentView("workouts");
 
   const completeRoutineCreation = () => {
     setCurrentRoutineId(null);
@@ -151,8 +153,10 @@ export function useAppNavigation() {
     handleTabChange,
 
     showCreateRoutine,
+    showEditMeasurements,
     handleRoutineCreated,
     closeCreateRoutine,
+    closeEditMeasurements,
     completeRoutineCreation,
 
     handleExercisesSelected,
