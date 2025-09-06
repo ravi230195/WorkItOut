@@ -94,7 +94,7 @@ export default function AppScreen({
     ? (
         <div className="w-full flex justify-end">
           <button
-            className="p-3 text-dark-green-800 text-2xl bg-transparent border-0"
+            className="px-3 py-2 text-dark-green-800 text-sm bg-transparent border-0"
             onClick={() => (document.activeElement as HTMLElement | null)?.blur()}
             type="button"
           >
@@ -224,12 +224,11 @@ export default function AppScreen({
             showBottomBarBorder && "border-t border-border",
             bottomBarShellClassName
           )}
-          style={{
-            //paddingBottom: `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
-            paddingBottom: `${kbInsetChain}`,
-            // RAVI: Debug border commented out
-            // border: "2px solid green",
-          }}
+          style={
+            showDoneBar
+              ? { marginBottom: kbInsetChain }
+              : { paddingBottom: `calc(env(safe-area-inset-bottom) + ${kbInsetChain})` }
+          }
         >
           <div
             className={cx(innerWidthClasses, padBottomBar && "px-4 py-2")}
