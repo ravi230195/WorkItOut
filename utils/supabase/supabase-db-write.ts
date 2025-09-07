@@ -1,5 +1,5 @@
 import { SupabaseBase, SUPABASE_URL, CACHE_TTL } from "./supabase-base";
-import type { UserRoutine, UserRoutineExercise, UserRoutineExerciseSet, Profile, Workout, WorkoutExercise, Set } from "./supabase-types";
+import type { UserRoutine, UserRoutineExercise, UserRoutineExerciseSet, Profile, Workout, WorkoutExercise, Set, BodyMeasurement } from "./supabase-types";
 import { logger } from "../logging";
 import { performanceTimer } from "../performanceTimer";
 
@@ -562,6 +562,44 @@ export class SupabaseDBWrite extends SupabaseBase {
                 );
                 await this.refreshSteps(userId);
                 return rows[0]?.goal ?? goal;
+            }
+        );
+    }
+
+    async upsertBodyMeasurement(data: Partial<BodyMeasurement> & { measured_on: string }): Promise<BodyMeasurement | null> {
+        return performanceTimer.timeAsync(
+            `[SUPABASE] upsertBodyMeasurement(${data.measured_on})`,
+            async () => {
+                const userId = await this.getUserId();
+                const payload = [{ ...data, user_id: userId }];
+                // Use PostgREST upsert semantics: when a measurement already exists for
+                // the same user + date, the unique constraint on
+                // (user_id, measured_on) will trigger and `resolution=merge-duplicates`
+                // tells Supabase to update that row instead of inserting a new one.
+                const rows = await this.fetchJson<BodyMeasurement[]>(
+                    `${SUPABASE_URL}/rest/v1/user_body_measurements?on_conflict=user_id,measured_on`,
+                    true,
+                    "POST",
+                    payload,
+                    "resolution=merge-duplicates, return=representation"
+                );
+                await this.refreshBodyMeasurements(userId);
+                return rows[0] ?? null;
+            }
+        );
+    }
+
+    async deleteBodyMeasurement(measured_on: string): Promise<void> {
+        return performanceTimer.timeAsync(
+            `[SUPABASE] deleteBodyMeasurement(${measured_on})`,
+            async () => {
+                const userId = await this.getUserId();
+                await this.fetchJson(
+                    `${SUPABASE_URL}/rest/v1/user_body_measurements?user_id=eq.${userId}&measured_on=eq.${measured_on}`,
+                    true,
+                    "DELETE"
+                );
+                await this.refreshBodyMeasurements(userId);
             }
         );
     }

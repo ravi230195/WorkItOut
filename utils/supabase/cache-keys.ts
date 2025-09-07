@@ -16,3 +16,5 @@ export const fullCacheKeyProfile = (userId: string) =>
   `supabase:${userId}:profile`;
 export const fullCacheKeySteps = (userId: string) =>
   `supabase:${userId}:steps`;
+export const fullCacheKeyBodyMeasurements = (userId: string) =>
+  `supabase:${userId}:bodyMeasurements`;

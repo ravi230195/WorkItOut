@@ -3,7 +3,7 @@ import ExpandingCard from "../ui/ExpandingCard";
 import { Input } from "../ui/input";
 import { Minus, Plus } from "lucide-react";
 
-interface MeasurementHistoryEntry {
+interface MeasurementEntry {
   date: string;
   value: string;
 }
@@ -12,20 +12,18 @@ interface MeasurementCardProps {
   label: string;
   icon: React.ReactNode;
   unit?: string;
-  initial?: string;
-  history?: MeasurementHistoryEntry[]; // most recent first
+  entries: MeasurementEntry[]; // index 0 is today
+  onEntryChange: (index: number, value: string) => void;
 }
 
 export default function MeasurementCard({
   label,
   icon,
   unit = "cm",
-  initial = "",
-  history = [],
+  entries,
+  onEntryChange,
 }: MeasurementCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [value, setValue] = useState(initial);
-  const [past, setPast] = useState(history);
 
   const step = 0.5;
   const parse = (v: string) => {
@@ -33,26 +31,29 @@ export default function MeasurementCard({
     return isNaN(n) ? 0 : n;
   };
   const update = (delta: number) => {
-    setValue((prev) => (parse(prev) + delta).toFixed(1));
+    const current = entries[0]?.value ?? "0";
+    onEntryChange(0, (parse(current) + delta).toFixed(1));
   };
 
-  const handleDec = (e: React.MouseEvent) => { e.stopPropagation(); update(-step); };
-  const handleInc = (e: React.MouseEvent) => { e.stopPropagation(); update(step); };
+  const handleDec = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    update(-step);
+  };
+  const handleInc = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    update(step);
+  };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
-    setValue(e.target.value);
+    onEntryChange(0, e.target.value);
   };
 
-  const handlePastChange = (idx: number, v: string) => {
-    setPast((arr) => {
-      const copy = [...arr];
-      copy[idx] = { ...copy[idx], value: v };
-      return copy;
-    });
-  };
-
-  const diff = past[0] != null ? parse(value) - parse(past[0].value) : null;
-  const diffText = diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}${unit}` : undefined;
+  const diff =
+    entries[1] != null
+      ? parse(entries[0]?.value ?? "0") - parse(entries[1].value)
+      : null;
+  const diffText =
+    diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}${unit}` : undefined;
 
   return (
     <ExpandingCard
@@ -89,7 +90,7 @@ export default function MeasurementCard({
               pattern="[0-9]*[.,]?[0-9]*"
               step="0.5"
               min="0"
-              value={value}
+              value={entries[0]?.value ?? ""}
               onChange={handleChange}
               placeholder={unit}
               className="h-7 text-center px-1 w-full"
@@ -106,9 +107,9 @@ export default function MeasurementCard({
         </div>
       }
     >
-      {past.length > 0 && (
+      {entries.length > 0 && (
         <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
-          {past.slice(0, 4).map((p, i) => (
+          {entries.slice(0, 4).map((p, i) => (
             <div key={i} className="flex items-center justify-between gap-2">
               <span className="text-sm text-warm-brown/60">{p.date}</span>
               <div className="flex items-center gap-2">
@@ -119,7 +120,7 @@ export default function MeasurementCard({
                   step="0.5"
                   min="0"
                   value={p.value}
-                  onChange={(e) => handlePastChange(i, e.target.value)}
+                  onChange={(e) => onEntryChange(i, e.target.value)}
                   className="h-7 text-center px-1 w-[6.5rem] sm:w-[7.5rem]"
                 />
                 <span className="text-sm text-warm-brown">{unit}</span>
