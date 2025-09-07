@@ -1,9 +1,25 @@
 import SupabaseDBRead from "./supabase-db-read";
 import SupabaseDBWrite from "./supabase-db-write";
+import { isHardDeleteEnabled } from "../delete-config";
 
 // Mix the read methods into the write class so one instance exposes both.
 // (Public API remains: `supabaseAPI.method(...)` everywhere.)
-class SupabaseAPI extends SupabaseDBWrite {}
+class SupabaseAPI extends SupabaseDBWrite {
+  async deleteRoutine(routineTemplateId: number): Promise<void> {
+    if (isHardDeleteEnabled()) return this.hardDeleteRoutine(routineTemplateId);
+    return super.deleteRoutine(routineTemplateId);
+  }
+
+  async deleteRoutineExercise(routineTemplateExerciseId: number): Promise<void> {
+    if (isHardDeleteEnabled()) return this.hardDeleteRoutineExercise(routineTemplateExerciseId);
+    return super.deleteRoutineExercise(routineTemplateExerciseId);
+  }
+
+  async deleteExerciseSet(routineTemplateExerciseSetId: number): Promise<void> {
+    if (isHardDeleteEnabled()) return this.hardDeleteExerciseSet(routineTemplateExerciseSetId);
+    return super.deleteExerciseSet(routineTemplateExerciseSetId);
+  }
+}
 interface SupabaseAPI extends SupabaseDBRead {}
 function applyMixins(derivedCtor: any, baseCtors: any[]) {
   baseCtors.forEach((baseCtor) => {

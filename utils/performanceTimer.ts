@@ -10,7 +10,7 @@ export interface TimerResult {
 
 export interface PerformanceTimer {
   end: () => TimerResult;
-  endWithLog: (level?: 'debug' | 'info' | 'warn') => TimerResult;
+  endWithLog: () => TimerResult;
   getElapsed: () => number;
 }
 
@@ -35,28 +35,9 @@ class Timer implements PerformanceTimer {
     };
   }
 
-  endWithLog(level: 'debug' | 'info' | 'warn' = 'info'): TimerResult {
+  endWithLog(): TimerResult {
     const result = this.end();
-    
-    // Use console methods directly to avoid duplicate prefixes from logger
-    switch(level) {
-      case 'debug':
-        if (shouldLog('DEBUG')) {
-          logger.log(`⏱️ [TIMER] ${this.label}: ${result.duration.toFixed(0)}ms`);
-        }
-        break;
-      case 'info':
-        if (shouldLog('INFO')) {
-          logger.log(`⏱️ [TIMER] ${this.label}: ${result.duration.toFixed(0)}ms`);
-        }
-        break;
-      case 'warn':
-        if (shouldLog('WARN')) {
-          logger.warn(`⏱️ [TIMER] ${this.label}: ${result.duration.toFixed(0)}ms`);
-        }
-        break;
-    }
-    
+    logger.perf(`⏱️ [TIMER] ${this.label}: ${result.duration.toFixed(0)}ms`);
     return result;
   }
 
@@ -90,10 +71,10 @@ export const performanceTimer = {
     const timer = performanceTimer.start(label);
     try {
       const result = operation();
-      timer.endWithLog(level);
+      timer.endWithLog();
       return result;
     } catch (error) {
-      timer.endWithLog('warn');
+      timer.endWithLog();
       throw error;
     }
   },
@@ -107,16 +88,15 @@ export const performanceTimer = {
    */
   timeAsync: async <T>(
     label: string, 
-    operation: () => Promise<T>, 
-    level: 'debug' | 'info' | 'warn' = 'info'
+    operation: () => Promise<T>,
   ): Promise<T> => {
     const timer = performanceTimer.start(label);
     try {
       const result = await operation();
-      timer.endWithLog(level);
+      timer.endWithLog();
       return result;
     } catch (error) {
-      timer.endWithLog('warn');
+      timer.endWithLog();
       throw error;
     }
   },
@@ -131,7 +111,6 @@ export const performanceTimer = {
   timeBatch: async <T>(
     label: string,
     operations: Array<{ name: string; operation: () => Promise<T> }>,
-    level: 'debug' | 'info' | 'warn' = 'info'
   ): Promise<T[]> => {
     const batchTimer = performanceTimer.start(label);
     const results: T[] = [];
@@ -145,7 +124,7 @@ export const performanceTimer = {
         results.push(result);
         timings.push({ name, duration: timing.duration });
       } catch (error) {
-        timer.endWithLog('warn');
+        timer.endWithLog();
         throw error;
       }
     }
@@ -156,19 +135,7 @@ export const performanceTimer = {
     
     const message = `⏱️ [TIMER] ${label} - Total: ${totalTime.toFixed(0)}ms, Avg: ${avgTime.toFixed(0)}ms, Count: ${operations.length}`;
     
-    switch(level) {
-      case 'debug':
-        logger.debug(message);
-        logger.debug(`⏱️ [TIMER] ${label} - Individual timings:`, timings);
-        break;
-      case 'info':
-        logger.info(message);
-        break;
-      case 'warn':
-        logger.warn(message);
-        break;
-    }
-
+    logger.perf(message);
     return results;
   }
 };

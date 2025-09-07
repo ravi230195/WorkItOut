@@ -6,6 +6,55 @@
 
 import '@testing-library/jest-dom';
 import { logger } from '../utils/logging';
+import { request as httpsRequest } from 'https';
+import { request as httpRequest } from 'http';
+import { URL } from 'url';
+
+// Minimal fetch polyfill for Node-based tests
+function nodeFetch(url: string, options: any = {}): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const isHttps = parsed.protocol === 'https:';
+    const requestFn = isHttps ? httpsRequest : httpRequest;
+
+    const req = requestFn(
+      {
+        method: options.method || 'GET',
+        hostname: parsed.hostname,
+        port: parsed.port,
+        path: parsed.pathname + parsed.search,
+        headers: options.headers,
+      },
+      (res) => {
+        const chunks: Uint8Array[] = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const body = Buffer.concat(chunks).toString();
+          resolve({
+            ok: res.statusCode ? res.statusCode >= 200 && res.statusCode < 300 : false,
+            status: res.statusCode || 0,
+            json: async () => (body ? JSON.parse(body) : {}),
+            text: async () => body,
+          });
+        });
+      }
+    );
+
+    req.on('error', reject);
+
+    if (options.body) {
+      req.write(options.body);
+    }
+
+    req.end();
+  });
+}
+
+(global as any).fetch = nodeFetch as any;
+// Ensure window.fetch is also defined for libraries expecting it
+if (typeof window !== 'undefined') {
+  (window as any).fetch = nodeFetch as any;
+}
 
 // Mock browser APIs
 Object.defineProperty(window, 'matchMedia', {
@@ -42,27 +91,32 @@ Object.defineProperty(window, 'scrollTo', {
   value: jest.fn(),
 });
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-  length: 0,
-  key: jest.fn(),
-};
-global.localStorage = localStorageMock as Storage;
+// Basic in-memory storage mocks to support caching
+function createStorageMock(): Storage {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => (key in store ? store[key] : null),
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+    key: (index: number) => Object.keys(store)[index] || null,
+    get length() {
+      return Object.keys(store).length;
+    },
+  } as Storage;
+}
 
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-  length: 0,
-  key: jest.fn(),
-};
-global.sessionStorage = sessionStorageMock as Storage;
+global.localStorage = createStorageMock();
+// Enable hard delete mode by default in tests
+global.localStorage.setItem('USE_HARD_DELETE', 'true');
+
+global.sessionStorage = createStorageMock();
 
 // Suppress console logs during tests (uncomment if needed)
 // global.console = {

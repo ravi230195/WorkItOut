@@ -5,8 +5,9 @@ export const LOG_LEVELS = {
     ERROR: 0,
     WARN:  1,
     DB:    2,
-    INFO:  3,
-    DEBUG: 4,
+    PERF:  3,
+    INFO:  4,
+    DEBUG: 5,
   } as const;
   
   export type LogLevel = keyof typeof LOG_LEVELS;
@@ -162,6 +163,7 @@ export const LOG_LEVELS = {
     info:  (message: string, ...args: any[]) => print("INFO",  console.info,  message, args),
     debug: (message: string, ...args: any[]) => print("DEBUG", console.debug, message, args),
     db:  (message: string, ...args: any[]) => print("DB",  console.info,  message, args),
+    perf:  (message: string, ...args: any[]) => print("PERF",  console.info,  message, args),
     // alias -> uses LOG level key, DEBUG gate
     log:   (message: string, ...args: any[]) => print("LOG",   console.log,   message, args),
   };

@@ -70,7 +70,7 @@ export class SupabaseBase {
   protected async fetchJson<T>(
     url: string,
     includeAuth = true,
-    method: "GET" | "POST" | "PATCH" = "GET",
+    method: "GET" | "POST" | "PATCH" | "DELETE" = "GET",
     body?: any,
     prefer?: string
   ): Promise<T> {
