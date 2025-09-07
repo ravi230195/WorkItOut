@@ -782,7 +782,7 @@ export function ExerciseSetupScreen({
                 variant="secondary"
                 onClick={onCancelAll}
                 disabled={access === RoutineAccess.ReadOnly}
-                className="flex-1 bg-transparent border border-warm-brown/20 text-warm-brown/60 hover:bg-soft-gray"
+                className="flex-1"
               >
                 CANCEL ALL
               </BottomNavigationButton>
