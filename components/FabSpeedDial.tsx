@@ -16,6 +16,7 @@ interface FabSpeedDialProps {
 export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProps) {
   const [open, setOpen] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
   const [overlayStyle, setOverlayStyle] = useState<React.CSSProperties | null>(null);
 
   const toggle = () => {
@@ -32,15 +33,16 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
   };
 
   useLayoutEffect(() => {
-    if (open && actionsRef.current) {
-      const rect = actionsRef.current.getBoundingClientRect();
+    if (open && actionsRef.current && fabRef.current) {
+      const actionsRect = actionsRef.current.getBoundingClientRect();
+      const fabRect = fabRef.current.getBoundingClientRect();
       setOverlayStyle({
-        width: rect.width,
-        height: rect.height,
-        right: window.innerWidth - rect.right,
-        bottom: window.innerHeight - rect.bottom,
+        width: actionsRect.width,
+        height: fabRect.bottom - actionsRect.top,
+        right: window.innerWidth - actionsRect.right,
+        bottom: window.innerHeight - fabRect.bottom,
       });
-      logger.info("overlay", rect);
+      logger.info("overlay", { actionsRect, fabRect });
     } else {
       setOverlayStyle(null);
     }
@@ -94,6 +96,7 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
         )}
 
         <button
+          ref={fabRef}
           onClick={toggle}
           aria-label="Speed dial"
           aria-expanded={open}
