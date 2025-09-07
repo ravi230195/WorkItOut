@@ -268,7 +268,7 @@ export class SupabaseBase {
     logger.db("🔍 [CACHE REFRESH TRIGGER] refreshBodyMeasurements called by:", stackTrace);
     logger.db("🔍 [CACHE REFRESH TRIGGER] User ID:", userId);
 
-    const url = `${SUPABASE_URL}/rest/v1/user_body_measurements?user_id=eq.${userId}&select=*`;
+    const url = `${SUPABASE_URL}/rest/v1/user_body_measurements?user_id=eq.${userId}&select=*&order=measured_on.desc`;
     const key = fullCacheKeyBodyMeasurements(userId);
     logger.db("🔍 [CACHE REFRESH TRIGGER] Cache key:", key);
     logger.db("🔍 [CACHE REFRESH TRIGGER] URL:", url);

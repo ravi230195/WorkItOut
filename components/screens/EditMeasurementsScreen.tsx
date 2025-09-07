@@ -52,7 +52,12 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       });
       data = [newRow, ...rows];
     }
-    data = data.slice(0, 4);
+    data = data
+      .sort(
+        (a, b) =>
+          new Date(b.measured_on).getTime() - new Date(a.measured_on).getTime()
+      )
+      .slice(0, 4);
     const mapped = data.map((r) => {
       const obj: any = { measured_on: r.measured_on };
       measurementParts.forEach((part) => {
