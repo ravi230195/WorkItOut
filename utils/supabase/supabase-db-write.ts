@@ -585,6 +585,21 @@ export class SupabaseDBWrite extends SupabaseBase {
         );
     }
 
+    async deleteBodyMeasurement(measured_on: string): Promise<void> {
+        return performanceTimer.timeAsync(
+            `[SUPABASE] deleteBodyMeasurement(${measured_on})`,
+            async () => {
+                const userId = await this.getUserId();
+                await this.fetchJson(
+                    `${SUPABASE_URL}/rest/v1/user_body_measurements?user_id=eq.${userId}&measured_on=eq.${measured_on}`,
+                    true,
+                    "DELETE"
+                );
+                await this.refreshBodyMeasurements(userId);
+            }
+        );
+    }
+
     async recomputeAndSaveRoutineMuscleSummary(routineTemplateId: number) {
         return performanceTimer.timeAsync(
             `[SUPABASE] recomputeAndSaveRoutineMuscleSummary(${routineTemplateId})`,

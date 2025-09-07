@@ -123,8 +123,57 @@ describe('Supabase API Routine CRUD Integration', () => {
     expect(afterRoutines.some(r => r.routine_template_id === routineId)).toBe(false);
     console.log('🔐 User Routines:', afterRoutines.some(r => r.routine_template_id === routineId));
     console.log('🔐 Deleted Routine:', routineId);
-  
+
   }, 60000);
+
+  test('upserts body measurements and keeps single entry per day', async () => {
+    const today = new Date();
+    const dates: string[] = [];
+
+    // Generate ISO dates for today and the previous 3 days
+    for (let i = 3; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      dates.push(d.toISOString().split('T')[0]);
+    }
+
+    // Insert measurements for each day
+    for (let i = 0; i < dates.length; i++) {
+      const measurement = await supabaseAPI.upsertBodyMeasurement({
+        measured_on: dates[i],
+        chest_cm: 100 + i,
+      });
+      expect(measurement?.measured_on).toBe(dates[i]);
+    }
+
+    // Fetch and verify four entries exist
+    localCache.clearPrefix();
+    let fetched = await supabaseAPI.getBodyMeasurements(4);
+    expect(fetched.length).toBe(4);
+
+    // Update today's measurement
+    const updated = await supabaseAPI.upsertBodyMeasurement({
+      measured_on: dates[3],
+      chest_cm: 200,
+    });
+    expect(updated?.chest_cm).toBe(200);
+
+    // Ensure only one entry for today with updated value
+    localCache.clearPrefix();
+    fetched = await supabaseAPI.getBodyMeasurements(4);
+    const todays = fetched.filter(m => m.measured_on === dates[3]);
+    expect(todays.length).toBe(1);
+    expect(todays[0].chest_cm).toBe(200);
+
+    // Clean up inserted measurements
+    for (const date of dates) {
+      await supabaseAPI.deleteBodyMeasurement(date);
+    }
+
+    localCache.clearPrefix();
+    fetched = await supabaseAPI.getBodyMeasurements(4);
+    expect(fetched.length).toBe(0);
+  }, 30000);
 
   afterAll(async () => {
     const user = await supabaseAPI.getCurrentUser().catch(() => null);
