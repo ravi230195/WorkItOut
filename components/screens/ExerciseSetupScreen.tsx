@@ -671,11 +671,6 @@ export function ExerciseSetupScreen({
     }
   };
 
-  const onCancelAll = async () => {
-    journalRef.current = makeJournal();
-    await reloadFromDb();
-  };
-
   const onSaveAll = async () => {
     if (!userToken) {
       toast.error("Please sign in to save changes");
@@ -777,23 +772,12 @@ export function ExerciseSetupScreen({
       if (hasUnsaved) {
         return (
           <BottomNavigation>
-            <div className="flex w-full gap-3">
-              <BottomNavigationButton
-                variant="secondary"
-                onClick={onCancelAll}
-                disabled={access === RoutineAccess.ReadOnly}
-                className="flex-1"
-              >
-                CANCEL ALL
-              </BottomNavigationButton>
-              <BottomNavigationButton
-                onClick={onSaveAll}
-                disabled={savingAll || access === RoutineAccess.ReadOnly}
-                className="flex-1"
-              >
-                {savingAll ? "SAVING..." : `SAVE ALL`}
-              </BottomNavigationButton>
-            </div>
+            <BottomNavigationButton
+              onClick={onSaveAll}
+              disabled={savingAll || access === RoutineAccess.ReadOnly}
+            >
+              {savingAll ? "SAVING..." : `SAVE ALL`}
+            </BottomNavigationButton>
           </BottomNavigation>
         );
       }
