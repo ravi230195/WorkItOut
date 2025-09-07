@@ -18,6 +18,7 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
   const actionsRef = useRef<HTMLDivElement>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
   const [overlayStyle, setOverlayStyle] = useState<React.CSSProperties | null>(null);
+  const [scrimStyle, setScrimStyle] = useState<React.CSSProperties | null>(null);
 
   const toggle = () => {
     setOpen((o) => {
@@ -36,22 +37,34 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
     if (open && actionsRef.current && fabRef.current) {
       const actionsRect = actionsRef.current.getBoundingClientRect();
       const fabRect = fabRef.current.getBoundingClientRect();
+
       setOverlayStyle({
         width: actionsRect.width,
-        height: actionsRect.bottom - fabRect.bottom,
+        height: fabRect.bottom - actionsRect.top,
         right: window.innerWidth - actionsRect.right,
-        top: fabRect.bottom,
+        top: actionsRect.top,
       });
+
+      setScrimStyle({
+        top: 0,
+        bottom: window.innerHeight - fabRect.bottom,
+      });
+
       logger.info("overlay", { actionsRect, fabRect });
     } else {
       setOverlayStyle(null);
+      setScrimStyle(null);
     }
   }, [open]);
 
   return (
     <>
-      {open && overlayStyle && (
-        <div className="fixed inset-0 z-30" onClick={close}>
+      {open && overlayStyle && scrimStyle && (
+        <div
+          className="fixed left-0 right-0 z-30"
+          style={scrimStyle}
+          onClick={close}
+        >
           {/* Localized rectangular overlay anchored to the FAB */}
           <div
             className="absolute pointer-events-none rounded-lg"
@@ -70,22 +83,8 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
 
       {/* Actions + FAB */}
       <div className="fixed right-4 bottom-24 z-40 flex flex-col items-end gap-4">
-        <button
-          ref={fabRef}
-          onClick={toggle}
-          aria-label="Speed dial"
-          aria-expanded={open}
-          className="
-            w-16 h-16 rounded-full bg-primary text-primary-foreground
-            shadow-lg flex items-center justify-center
-            transition-transform
-          "
-        >
-          <Plus className={`w-6 h-6 transition-transform ${open ? "rotate-45" : ""}`} />
-        </button>
-
         {open && (
-          <div ref={actionsRef} className="flex flex-col items-end gap-4 mt-4">
+          <div ref={actionsRef} className="flex flex-col items-end gap-4 mb-4">
             {actions.map((action) => (
               <button
                 key={action.label}
@@ -108,6 +107,20 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
             ))}
           </div>
         )}
+
+        <button
+          ref={fabRef}
+          onClick={toggle}
+          aria-label="Speed dial"
+          aria-expanded={open}
+          className="
+            w-16 h-16 rounded-full bg-primary text-primary-foreground
+            shadow-lg flex items-center justify-center
+            transition-transform
+          "
+        >
+          <Plus className={`w-6 h-6 transition-transform ${open ? "rotate-45" : ""}`} />
+        </button>
       </div>
     </>
   );
