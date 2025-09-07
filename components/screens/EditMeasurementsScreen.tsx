@@ -4,95 +4,57 @@ import { BottomNavigationButton } from "../BottomNavigationButton";
 import { toast } from "sonner";
 import { TrendingUp } from "lucide-react";
 import MeasurementCard from "../measurements/MeasurementCard";
+import { useEffect, useState } from "react";
+import { supabaseAPI } from "../../utils/supabase/supabase-api";
 
 interface EditMeasurementsScreenProps {
   onBack: () => void;
 }
 
-const measurementData = [
-  {
-    key: "chest",
-    label: "Chest",
-    icon: "🫁",
-    initial: "102",
-    history: [
-      { date: "2024-01-15", value: "100" },
-      { date: "2024-01-08", value: "99" },
-      { date: "2024-01-01", value: "98" },
-      { date: "2023-12-25", value: "97" }
-    ]
-  },
-  {
-    key: "rightArm",
-    label: "Right Arm",
-    icon: "💪",
-    initial: "35",
-    history: [
-      { date: "2024-01-15", value: "34" },
-      { date: "2024-01-08", value: "33.5" },
-      { date: "2024-01-01", value: "33" },
-      { date: "2023-12-25", value: "32.5" }
-    ]
-  },
-  {
-    key: "leftArm",
-    label: "Left Arm",
-    icon: "💪",
-    initial: "34.5",
-    history: [
-      { date: "2024-01-15", value: "34" },
-      { date: "2024-01-08", value: "33.5" },
-      { date: "2024-01-01", value: "33" },
-      { date: "2023-12-25", value: "32.5" }
-    ]
-  },
-  {
-    key: "hip",
-    label: "Hip",
-    icon: "🩳",
-    initial: "95",
-    history: [
-      { date: "2024-01-15", value: "94.5" },
-      { date: "2024-01-08", value: "94" },
-      { date: "2024-01-01", value: "93.5" },
-      { date: "2023-12-25", value: "93" }
-    ]
-  },
-  {
-    key: "glutes",
-    label: "Glutes",
-    icon: "🍑",
-    initial: "",
-    history: []
-  },
-  {
-    key: "leftQuad",
-    label: "Left Quad",
-    icon: "🦵",
-    initial: "35",
-    history: [
-      { date: "2024-01-15", value: "34.5" },
-      { date: "2024-01-08", value: "34" },
-      { date: "2024-01-01", value: "33.5" },
-      { date: "2023-12-25", value: "33" }
-    ]
-  },
-  {
-    key: "rightQuad",
-    label: "Right Quad",
-    icon: "🦵",
-    initial: "58.5",
-    history: [
-      { date: "2024-01-15", value: "58" },
-      { date: "2024-01-08", value: "57.5" },
-      { date: "2024-01-01", value: "57" },
-      { date: "2023-12-25", value: "56.5" }
-    ]
-  }
-];
+const measurementParts = [
+  { key: "chest_cm", label: "Chest", icon: "🫁" },
+  { key: "right_arm_cm", label: "Right Arm", icon: "💪" },
+  { key: "left_arm_cm", label: "Left Arm", icon: "💪" },
+  { key: "waist_cm", label: "Waist", icon: "📏" },
+  { key: "hip_cm", label: "Hip", icon: "🩳" },
+  { key: "glutes_cm", label: "Glutes", icon: "🍑" },
+  { key: "left_quad_cm", label: "Left Quad", icon: "🦵" },
+  { key: "right_quad_cm", label: "Right Quad", icon: "🦵" },
+  { key: "left_calf_cm", label: "Left Calf", icon: "🦵" },
+  { key: "right_calf_cm", label: "Right Calf", icon: "🦵" },
+] as const;
+
+type PartKey = typeof measurementParts[number]["key"];
 
 export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScreenProps) {
-  const handleSave = () => {
+  const [values, setValues] = useState<Record<PartKey, string>>({} as Record<PartKey, string>);
+  const [history, setHistory] = useState<Record<PartKey, { date: string; value: string }[]>>({} as Record<PartKey, { date: string; value: string }[]>);
+
+  useEffect(() => {
+    supabaseAPI.getBodyMeasurements(4).then((rows) => {
+      const anyRows = rows as any[];
+      const v: Record<string, string> = {};
+      const h: Record<string, { date: string; value: string }[]> = {};
+      measurementParts.forEach((part) => {
+        v[part.key] = anyRows[0]?.[part.key] != null ? String(anyRows[0][part.key]) : "";
+        h[part.key] = anyRows.slice(1).map((r) => ({
+          date: r.measured_on,
+          value: r[part.key] != null ? String(r[part.key]) : "",
+        }));
+      });
+      setValues(v as Record<PartKey, string>);
+      setHistory(h as Record<PartKey, { date: string; value: string }[]>);
+    });
+  }, []);
+
+  const handleSave = async () => {
+    const today = new Date().toISOString().split("T")[0];
+    const payload: Record<string, any> = { measured_on: today };
+    measurementParts.forEach((part) => {
+      const num = parseFloat(values[part.key]);
+      if (!isNaN(num)) payload[part.key] = num;
+    });
+    await supabaseAPI.upsertBodyMeasurement(payload);
     toast.success("Measurements saved");
     onBack();
   };
@@ -128,9 +90,15 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
           </div>
         </Section>
         <Spacer y="sm" />
-        {measurementData.map((m) => (
+        {measurementParts.map((m) => (
           <div key={m.key} className="space-y-2">
-            <MeasurementCard label={m.label} icon={m.icon} initial={m.initial} history={m.history} />
+            <MeasurementCard
+              label={m.label}
+              icon={m.icon}
+              value={values[m.key] || ""}
+              onValueChange={(v) => setValues((prev) => ({ ...prev, [m.key]: v }))}
+              history={history[m.key] || []}
+            />
           </div>
         ))}
         <Spacer y="sm" />

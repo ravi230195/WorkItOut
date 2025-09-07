@@ -9,6 +9,7 @@ import {
   fullCacheKeyRoutineSets,
   fullCacheKeyUserRoutines,
   fullCacheKeySteps,
+  fullCacheKeyBodyMeasurements,
 } from "./cache-keys";
 import { logger } from "../logging";
 
@@ -26,6 +27,7 @@ export const CACHE_TTL = {
   routineSets: 60 * 60 * 1000,
   profile: 60 * 60 * 1000,
   steps: 60 * 60 * 1000,
+  bodyMeasurements: 60 * 60 * 1000,
 };
 
 export const PREFER_CACHE_ON_READ = true;
@@ -261,6 +263,22 @@ export class SupabaseBase {
     logger.db("🔍 [CACHE REFRESH COMPLETE] Steps refreshed, count:", rows.length);
   }
 
+  protected async refreshBodyMeasurements(userId: string) {
+    const stackTrace = new Error().stack;
+    logger.db("🔍 [CACHE REFRESH TRIGGER] refreshBodyMeasurements called by:", stackTrace);
+    logger.db("🔍 [CACHE REFRESH TRIGGER] User ID:", userId);
+
+    const url = `${SUPABASE_URL}/rest/v1/user_body_measurements?user_id=eq.${userId}&select=*`;
+    const key = fullCacheKeyBodyMeasurements(userId);
+    logger.db("🔍 [CACHE REFRESH TRIGGER] Cache key:", key);
+    logger.db("🔍 [CACHE REFRESH TRIGGER] URL:", url);
+
+    const rows = await this.fetchJson<any[]>(url, true);
+    localCache.set(key, rows);
+    logger.db("🔍 [CACHE REFRESH] body measurements", key);
+    logger.db("🔍 [CACHE REFRESH COMPLETE] Body measurements refreshed, count:", rows.length);
+  }
+
   // ---------- Common keys (exported so reads/writes can use) ----------
   protected keyExercises = () => fullCacheKeyExercises();
   protected keyExercise = (id: number) => fullCacheKeyExercise(id);
@@ -270,4 +288,5 @@ export class SupabaseBase {
   protected keyRoutineSets = (userId: string, rtexId: number) => fullCacheKeyRoutineSets(userId, rtexId);
   protected keyProfile = (userId: string) => fullCacheKeyProfile(userId);
   protected keySteps = (userId: string) => fullCacheKeySteps(userId);
+  protected keyBodyMeasurements = (userId: string) => fullCacheKeyBodyMeasurements(userId);
 }

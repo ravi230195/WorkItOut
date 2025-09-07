@@ -5,6 +5,7 @@ import type {
   UserRoutineExercise,
   UserRoutineExerciseSet,
   Profile,
+  BodyMeasurement,
 } from "./supabase-types";
 import { localCache } from "../cache/localCache";
 
@@ -116,6 +117,14 @@ export class SupabaseDBRead extends SupabaseBase {
     const key = this.keyProfile(userId);
     const { data: rows } = await this.getOrFetchAndCache<Profile[]>(url, key, CACHE_TTL.profile, true);
     return rows[0] ?? null;
+  }
+
+  async getBodyMeasurements(limit = 4): Promise<BodyMeasurement[]> {
+    const userId = await this.getUserId();
+    const url = `${SUPABASE_URL}/rest/v1/user_body_measurements?user_id=eq.${userId}&select=*&order=measured_on.desc&limit=${limit}`;
+    const key = this.keyBodyMeasurements(userId);
+    const { data: rows } = await this.getOrFetchAndCache<BodyMeasurement[]>(url, key, CACHE_TTL.bodyMeasurements, true);
+    return rows;
   }
 
   // Steps goal (creates a default on first read if none exists)

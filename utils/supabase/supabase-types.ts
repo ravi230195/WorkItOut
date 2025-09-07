@@ -97,7 +97,24 @@ export interface Exercise {
     planned_reps?: number | null;
     planned_weight_kg?: number | null;
     notes?: string;
-  } 
+  }
+
+  export interface BodyMeasurement {
+    id: number;
+    user_id: string;
+    measured_on: string;
+    chest_cm?: number | null;
+    right_arm_cm?: number | null;
+    left_arm_cm?: number | null;
+    waist_cm?: number | null;
+    hip_cm?: number | null;
+    glutes_cm?: number | null;
+    left_quad_cm?: number | null;
+    right_quad_cm?: number | null;
+    left_calf_cm?: number | null;
+    right_calf_cm?: number | null;
+    notes?: string | null;
+  }
   // src/utils/supabase/supabase-types.ts
 export interface Exercise { /* ... */ }
 export interface Workout { /* ... */ }
