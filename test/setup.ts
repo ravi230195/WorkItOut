@@ -6,6 +6,55 @@
 
 import '@testing-library/jest-dom';
 import { logger } from '../utils/logging';
+import { request as httpsRequest } from 'https';
+import { request as httpRequest } from 'http';
+import { URL } from 'url';
+
+// Minimal fetch polyfill for Node-based tests
+function nodeFetch(url: string, options: any = {}): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const isHttps = parsed.protocol === 'https:';
+    const requestFn = isHttps ? httpsRequest : httpRequest;
+
+    const req = requestFn(
+      {
+        method: options.method || 'GET',
+        hostname: parsed.hostname,
+        port: parsed.port,
+        path: parsed.pathname + parsed.search,
+        headers: options.headers,
+      },
+      (res) => {
+        const chunks: Uint8Array[] = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const body = Buffer.concat(chunks).toString();
+          resolve({
+            ok: res.statusCode ? res.statusCode >= 200 && res.statusCode < 300 : false,
+            status: res.statusCode || 0,
+            json: async () => (body ? JSON.parse(body) : {}),
+            text: async () => body,
+          });
+        });
+      }
+    );
+
+    req.on('error', reject);
+
+    if (options.body) {
+      req.write(options.body);
+    }
+
+    req.end();
+  });
+}
+
+(global as any).fetch = nodeFetch as any;
+// Ensure window.fetch is also defined for libraries expecting it
+if (typeof window !== 'undefined') {
+  (window as any).fetch = nodeFetch as any;
+}
 
 // Mock browser APIs
 Object.defineProperty(window, 'matchMedia', {
