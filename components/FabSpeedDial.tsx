@@ -77,14 +77,14 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
               className="flex items-center gap-3"
               style={{ textShadow: "none" }}
             >
+              <span className="uppercase whitespace-nowrap text-primary text-xl font-bold tracking-wide">
+                {action.label}
+              </span>
               {action.icon && (
                 <span className="w-12 h-12 rounded-full bg-primary text-primary-foreground shadow flex items-center justify-center">
                   {action.icon}
                 </span>
               )}
-              <span className="uppercase whitespace-nowrap text-primary text-xl font-bold tracking-wide">
-                {action.label}
-              </span>
             </button>
           ))}
 
