@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { TactileButton } from "../TactileButton";
-import { AlertCircle, Clock3 as Clock, TrendingUp } from "lucide-react";
+import { AlertCircle, Clock3 as Clock, TrendingUp, Dumbbell, Ruler } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { supabaseAPI, UserRoutine, Profile } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
@@ -528,13 +528,14 @@ export default function WorkoutDashboardScreen({
             {
               label: "Create Routine",
               onPress: onCreateRoutine,
+              icon: <Dumbbell className="w-6 h-6" />,
             },
             {
               label: "Edit Measurement",
               onPress: onEditMeasurements,
+              icon: <Ruler className="w-6 h-6" />,
             },
           ]}
-          onOpenChange={onOverlayChange}
         />
       )}
     </AppScreen>
