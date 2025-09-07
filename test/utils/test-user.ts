@@ -8,7 +8,6 @@ import { logger } from "../../utils/logging";
 export interface TestUser {
   email: string;
   password: string;
-  id?: string;
   createdAt?: string;
 }
 
@@ -20,7 +19,8 @@ export function createTestUser(): TestUser {
   const randomSuffix = Math.random().toString(36).substring(2, 8);
   
   return {
-    email: `test-user-${timestamp}-${randomSuffix}@workout-test.com`,
+    email: `test-user-${timestamp}.${randomSuffix}@workout.com`,
+    //email: `test-user-1757252759020.xoxv6s@workout.com`,
     password: 'TestPassword123!',
     createdAt: new Date().toISOString()
   };

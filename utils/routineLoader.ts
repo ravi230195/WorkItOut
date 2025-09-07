@@ -44,7 +44,7 @@ export async function loadRoutineExercisesWithSets(
     const rows = (await supabaseAPI.getUserRoutineExercisesWithDetails(
       routineId
     )) as SavedExerciseWithDetails[];
-    exerciseTimer.endWithLog("debug");
+    exerciseTimer.endWithLog();
 
     const metaTimer = timer.start("routineLoader - fetch exercise meta");
     const metaById = new Map<number, Exercise>();
@@ -61,7 +61,7 @@ export async function loadRoutineExercisesWithSets(
         }
       })
     );
-    metaTimer.endWithLog("debug");
+    metaTimer.endWithLog();
 
     const batches: SavedExerciseWithDetails[][] = [];
     for (let i = 0; i < rows.length; i += concurrency) {
@@ -110,7 +110,7 @@ export async function loadRoutineExercisesWithSets(
 
     return results;
   } finally {
-    mainTimer.endWithLog("info");
+    mainTimer.endWithLog();
   }
 }
 
