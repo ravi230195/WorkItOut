@@ -572,12 +572,16 @@ export class SupabaseDBWrite extends SupabaseBase {
             async () => {
                 const userId = await this.getUserId();
                 const payload = [{ ...data, user_id: userId }];
+                // Use PostgREST upsert semantics: when a measurement already exists for
+                // the same user + date, the unique constraint on
+                // (user_id, measured_on) will trigger and `resolution=merge-duplicates`
+                // tells Supabase to update that row instead of inserting a new one.
                 const rows = await this.fetchJson<BodyMeasurement[]>(
                     `${SUPABASE_URL}/rest/v1/user_body_measurements?on_conflict=user_id,measured_on`,
                     true,
                     "POST",
                     payload,
-                    "return=representation"
+                    "resolution=merge-duplicates, return=representation"
                 );
                 await this.refreshBodyMeasurements(userId);
                 return rows[0] ?? null;
