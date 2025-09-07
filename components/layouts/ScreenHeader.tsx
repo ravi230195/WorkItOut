@@ -80,14 +80,15 @@ export default function ScreenHeader({
 
         {/* Center: true-centered title with optional subtitle */}
         <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center m-0"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center m-0 pt-2 pb-2"
           style={{ maxWidth: titleMaxWidth }}
         >
           <h1
             className={[
-              "font-medium leading-none text-warm-brown truncate text-[clamp(16px,4.2vw,20px)]",
+              "font-medium leading-1.5 text-warm-brown truncate text-[clamp(16px,4.2vw,20px)]",
               titleClassName,
-            ].join(" ")}
+            ].join(" ")
+          }
           >
             {title}
           </h1>
