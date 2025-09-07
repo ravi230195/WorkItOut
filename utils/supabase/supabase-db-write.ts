@@ -435,6 +435,16 @@ export class SupabaseDBWrite extends SupabaseBase {
         return rows[0] ?? null;
     }
 
+    async deleteProfile(userId?: string): Promise<void> {
+        const id = userId ?? await this.getUserId();
+        await this.fetchJson(
+            `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${id}`,
+            true,
+            "DELETE"
+        );
+        await this.refreshProfile(id);
+    }
+
     // Steps write
     async createUserStepGoal(goal: number = 10000): Promise<number> {
         const userId = await this.getUserId();
