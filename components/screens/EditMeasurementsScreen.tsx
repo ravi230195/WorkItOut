@@ -147,8 +147,14 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
                 setEntries((prev) => {
                   const next = [...prev];
                   const date = next[index].measured_on;
-                  next[index] = { ...next[index], [m.key]: value };
-                  recordMeasurementUpdate(journalRef.current, date, m.key, value);
+                  const normalized = value === "" ? "" : String(parseFloat(value));
+                  next[index] = { ...next[index], [m.key]: normalized };
+                  recordMeasurementUpdate(
+                    journalRef.current,
+                    date,
+                    m.key,
+                    normalized
+                  );
                   return next;
                 })
               }
