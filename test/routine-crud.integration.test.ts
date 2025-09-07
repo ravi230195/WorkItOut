@@ -1,4 +1,5 @@
 import { supabaseAPI } from '../utils/supabase/supabase-api';
+import { localCache } from '../utils/cache/localCache';
 import { createTestUser, validateTestUser } from './utils/test-user';
 
 describe('Supabase API Routine CRUD Integration', () => {
@@ -24,6 +25,7 @@ describe('Supabase API Routine CRUD Integration', () => {
 
     supabaseAPI.setToken(token!);
 
+    localCache.clearPrefix();
     const exercises = await supabaseAPI.getExercises();
     exerciseId = exercises[0].exercise_id;
   }, 20000);
@@ -33,6 +35,7 @@ describe('Supabase API Routine CRUD Integration', () => {
     expect(routine).toBeTruthy();
     routineId = routine!.routine_template_id;
 
+    localCache.clearPrefix();
     const routines = await supabaseAPI.getUserRoutines();
     expect(routines.some(r => r.routine_template_id === routineId)).toBe(true);
 
@@ -40,6 +43,7 @@ describe('Supabase API Routine CRUD Integration', () => {
     expect(rtex).toBeTruthy();
     rtexId = rtex!.routine_template_exercise_id;
 
+    localCache.clearPrefix();
     const exercises = await supabaseAPI.getUserRoutineExercises(routineId);
     expect(exercises.some(e => e.routine_template_exercise_id === rtexId)).toBe(true);
 
@@ -49,6 +53,7 @@ describe('Supabase API Routine CRUD Integration', () => {
     expect(set).toBeTruthy();
     setId = set.routine_template_exercise_set_id;
 
+    localCache.clearPrefix();
     let sets = await supabaseAPI.getExerciseSetsForRoutine(rtexId);
     expect(sets.some(s => s.routine_template_exercise_set_id === setId)).toBe(true);
 
@@ -57,14 +62,17 @@ describe('Supabase API Routine CRUD Integration', () => {
     expect(updatedSet?.planned_weight_kg).toBe(55);
 
     await supabaseAPI.deleteExerciseSet(setId);
+    localCache.clearPrefix();
     sets = await supabaseAPI.getExerciseSetsForRoutine(rtexId);
     expect(sets.some(s => s.routine_template_exercise_set_id === setId)).toBe(false);
 
     await supabaseAPI.deleteRoutineExercise(rtexId);
+    localCache.clearPrefix();
     const afterExercises = await supabaseAPI.getUserRoutineExercises(routineId);
     expect(afterExercises.some(e => e.routine_template_exercise_id === rtexId)).toBe(false);
 
     await supabaseAPI.deleteRoutine(routineId);
+    localCache.clearPrefix();
     const afterRoutines = await supabaseAPI.getUserRoutines();
     expect(afterRoutines.some(r => r.routine_template_id === routineId)).toBe(false);
   }, 60000);

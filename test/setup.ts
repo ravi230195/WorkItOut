@@ -42,30 +42,32 @@ Object.defineProperty(window, 'scrollTo', {
   value: jest.fn(),
 });
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-  length: 0,
-  key: jest.fn(),
-};
-global.localStorage = localStorageMock as Storage;
+// Basic in-memory storage mocks to support caching
+function createStorageMock(): Storage {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => (key in store ? store[key] : null),
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+    key: (index: number) => Object.keys(store)[index] || null,
+    get length() {
+      return Object.keys(store).length;
+    },
+  } as Storage;
+}
 
+global.localStorage = createStorageMock();
 // Enable hard delete mode by default in tests
 global.localStorage.setItem('USE_HARD_DELETE', 'true');
 
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-  length: 0,
-  key: jest.fn(),
-};
-global.sessionStorage = sessionStorageMock as Storage;
+global.sessionStorage = createStorageMock();
 
 // Suppress console logs during tests (uncomment if needed)
 // global.console = {
