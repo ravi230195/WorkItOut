@@ -76,13 +76,5 @@ describe('Supabase API Routine CRUD Integration', () => {
     const afterRoutines = await supabaseAPI.getUserRoutines();
     expect(afterRoutines.some(r => r.routine_template_id === routineId)).toBe(false);
   }, 60000);
-
-  afterAll(async () => {
-    const user = await supabaseAPI.getCurrentUser().catch(() => null);
-    if (user?.id) {
-      await supabaseAPI.deleteProfile(user.id);
-    }
-    await supabaseAPI.signOut();
-  });
 });
 
