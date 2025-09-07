@@ -1,4 +1,4 @@
-import { SupabaseBase, SUPABASE_URL } from "./supabase-base";
+import { SupabaseBase, SUPABASE_URL, CACHE_TTL } from "./supabase-base";
 import type { UserRoutine, UserRoutineExercise, UserRoutineExerciseSet, Profile, Workout, WorkoutExercise, Set } from "./supabase-types";
 import { logger } from "../logging";
 
@@ -95,13 +95,12 @@ export class SupabaseDBWrite extends SupabaseBase {
     async hardDeleteRoutine(routineTemplateId: number): Promise<void> {
         const userId = await this.getUserId();
 
-        // Load all exercises for this routine
-        const exercises = await this.fetchJson<
+        // Load all exercises for this routine (prefer cache)
+        const exercisesUrl = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&is_active=is.true&select=routine_template_exercise_id`;
+        const exercisesKey = this.keyRoutineExercises(userId, routineTemplateId);
+        const { data: exercises } = await this.getOrFetchAndCache<
             Array<{ routine_template_exercise_id: number }>
-        >(
-            `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&select=routine_template_exercise_id`,
-            true
-        );
+        >(exercisesUrl, exercisesKey, CACHE_TTL.routineExercises, true);
 
         // Delegate deletion of each exercise (and its sets)
         for (const { routine_template_exercise_id: exId } of exercises) {
@@ -173,8 +172,12 @@ export class SupabaseDBWrite extends SupabaseBase {
 
     // Helper function to find routine ID for an exercise
     private async findRoutineIdForExercise(routineTemplateExerciseId: number): Promise<number> {
-        const lookup = await this.fetchJson<Array<{ routine_template_id: number }>>(
-            `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}&select=routine_template_id`,
+        const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}&select=routine_template_id`;
+        const cacheKey = `rtex:${routineTemplateExerciseId}:routine`;
+        const { data: lookup } = await this.getOrFetchAndCache<Array<{ routine_template_id: number }>>(
+            url,
+            cacheKey,
+            CACHE_TTL.routineExercises,
             true
         );
         const routineId = lookup[0]?.routine_template_id;
@@ -223,15 +226,14 @@ export class SupabaseDBWrite extends SupabaseBase {
             routineTemplateExerciseId
         );
 
-        // Load all set IDs for this exercise and delete via helper
-        const sets = await this.fetchJson<
+        // Load all set IDs for this exercise (prefer cache) and delete via helper
+        const setsUrl = `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}&is_active=is.true&select=routine_template_exercise_set_id`;
+        const setsKey = this.keyRoutineSets(userId, routineTemplateExerciseId);
+        const { data: sets } = await this.getOrFetchAndCache<
             Array<{ routine_template_exercise_set_id: number }>
-        >(
-            `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}&select=routine_template_exercise_set_id`,
-            true
-        );
+        >(setsUrl, setsKey, CACHE_TTL.routineSets, true);
         for (const { routine_template_exercise_set_id: setId } of sets) {
-            await this.hardDeleteExerciseSet(setId);
+            await this.hardDeleteExerciseSet(setId, routineTemplateExerciseId);
         }
 
         // Delete the exercise row itself
@@ -381,14 +383,21 @@ export class SupabaseDBWrite extends SupabaseBase {
         if (parentId) await this.refreshRoutineSets(userId, parentId);
     }
 
-    async hardDeleteExerciseSet(routineTemplateExerciseSetId: number): Promise<void> {
+    async hardDeleteExerciseSet(
+        routineTemplateExerciseSetId: number,
+        routineTemplateExerciseId?: number
+    ): Promise<void> {
         const userId = await this.getUserId();
 
-        const lookup = await this.fetchJson<Array<{ routine_template_exercise_id: number }>>(
-            `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_set_id=eq.${routineTemplateExerciseSetId}&select=routine_template_exercise_id`,
-            true
-        );
-        const parentId = lookup[0]?.routine_template_exercise_id;
+        let parentId = routineTemplateExerciseId;
+        if (!parentId) {
+            const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_set_id=eq.${routineTemplateExerciseSetId}&select=routine_template_exercise_id`;
+            const cacheKey = `rtexset:${routineTemplateExerciseSetId}:parent`;
+            const { data: lookup } = await this.getOrFetchAndCache<
+                Array<{ routine_template_exercise_id: number }>
+            >(url, cacheKey, CACHE_TTL.routineSets, true);
+            parentId = lookup[0]?.routine_template_exercise_id;
+        }
 
         await this.fetchJson(
             `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_set_id=eq.${routineTemplateExerciseSetId}`,
