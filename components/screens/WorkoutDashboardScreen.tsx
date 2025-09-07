@@ -241,7 +241,7 @@ export default function WorkoutDashboardScreen({
         {/* subtitle (title is in header) */}
         <Section variant="plain" padding="none" className="text-center">
           <p className="text-sm text-warm-brown/60 mt-1">
-            {view === "my"
+            {view === RoutinesView.My
               ? "Select a routine to start your workout"
               : "Explore prebuilt routines to get started"}
           </p>
@@ -268,14 +268,14 @@ export default function WorkoutDashboardScreen({
         <Section
           variant="plain"
           padding="none"
-          className="flex items-center justify-center"
+          className="flex items-center justify-start px-4"
         >
           <SegmentedToggle
             value={view}
             onChange={setView}
             options={[
-              { value: RoutinesView.Sample, label: "Sample routines" },
               { value: RoutinesView.My, label: "My routines" },
+              { value: RoutinesView.Sample, label: "Sample routines" },
             ]}
             size="sm"
             /* Light warm highlight when selected */
@@ -309,22 +309,20 @@ export default function WorkoutDashboardScreen({
         )}
       </Stack>
 
-      {canEdit && (
-        <FabSpeedDial
-          actions={[
-            {
-              label: "Create Routine",
-              onPress: onCreateRoutine,
-              icon: <Dumbbell className="w-6 h-6" />,
-            },
-            {
-              label: "Edit Measurement",
-              onPress: onEditMeasurements,
-              icon: <Ruler className="w-6 h-6" />,
-            },
-          ]}
-        />
-      )}
+      <FabSpeedDial
+        actions={[
+          {
+            label: "Create Routine",
+            onPress: onCreateRoutine,
+            icon: <Dumbbell className="w-6 h-6" />,
+          },
+          {
+            label: "Edit Measurement",
+            onPress: onEditMeasurements,
+            icon: <Ruler className="w-6 h-6" />,
+          },
+        ]}
+      />
     </AppScreen>
   );
 }
