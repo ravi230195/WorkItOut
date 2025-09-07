@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { logger } from "../utils/logging";
 
@@ -15,6 +15,8 @@ interface FabSpeedDialProps {
 
 export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProps) {
   const [open, setOpen] = useState(false);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const [overlayStyle, setOverlayStyle] = useState<React.CSSProperties | null>(null);
 
   const toggle = () => {
     setOpen((o) => {
@@ -29,32 +31,30 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
     onOpenChange?.(false);
   };
 
-  // --- geometry for overlay ---
-  const count = actions.length;
-  const spacing = 56;
-  const maxLabelLength = count ? Math.max(...actions.map((a) => a.label.length)) : 0;
-  const overlayWidth = maxLabelLength * 8 + 160;
-
-  // Place the overlay just above the FAB instead of from the bottom of the screen
-  const fabSize = 64; // w-16 / h-16
-  const fabOffsetFromBottom = 96; // bottom-24
-  const overlayBottom = fabSize + fabOffsetFromBottom; // start tinting above the FAB
-  const overlayHeight = count * spacing + 32; // cover all actions with a bit of padding
-
-  logger.info("overlayWidth", overlayWidth, "overlayHeight", overlayHeight);
+  useLayoutEffect(() => {
+    if (open && actionsRef.current) {
+      const rect = actionsRef.current.getBoundingClientRect();
+      setOverlayStyle({
+        width: rect.width,
+        height: rect.height,
+        right: window.innerWidth - rect.right,
+        bottom: window.innerHeight - rect.bottom,
+      });
+      logger.info("overlay", rect);
+    } else {
+      setOverlayStyle(null);
+    }
+  }, [open]);
 
   return (
     <>
-      {open && (
+      {open && overlayStyle && (
         <div className="fixed inset-0 z-30" onClick={close}>
           {/* Localized rectangular overlay anchored to the FAB */}
           <div
             className="absolute pointer-events-none rounded-lg"
             style={{
-              right: 16,
-              bottom: overlayBottom,
-              width: overlayWidth,
-              height: overlayHeight,
+              ...overlayStyle,
               background: "rgba(61,41,20,0.16)",
 
               // ↓ make the blur very subtle (tweak 0–2px)
@@ -68,27 +68,30 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
 
       {/* Actions + FAB */}
       <div className="fixed right-4 bottom-24 z-40 flex flex-col items-end gap-4">
-        {open &&
-          actions.map((action) => (
-            <button
-              key={action.label}
-              onClick={() => {
-                close();
-                action.onPress();
-              }}
-              className="flex items-center gap-3"
-              style={{ textShadow: "none" }}
-            >
-              <span className="uppercase whitespace-nowrap text-primary text-xl font-bold tracking-wide">
-                {action.label}
-              </span>
-              {action.icon && (
-                <span className="w-12 h-12 rounded-full bg-primary text-primary-foreground shadow flex items-center justify-center">
-                  {action.icon}
+        {open && (
+          <div ref={actionsRef} className="flex flex-col items-end gap-4 mb-4">
+            {actions.map((action) => (
+              <button
+                key={action.label}
+                onClick={() => {
+                  close();
+                  action.onPress();
+                }}
+                className="flex items-center gap-3"
+                style={{ textShadow: "none" }}
+              >
+                <span className="uppercase whitespace-nowrap text-primary text-xl font-bold tracking-wide">
+                  {action.label}
                 </span>
-              )}
-            </button>
-          ))}
+                {action.icon && (
+                  <span className="w-12 h-12 rounded-full bg-primary text-primary-foreground shadow flex items-center justify-center">
+                    {action.icon}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
 
         <button
           onClick={toggle}
