@@ -35,14 +35,22 @@ type MeasurementEntry = { measured_on: string } & Record<PartKey, string>;
 
 export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScreenProps) {
   const [entries, setEntries] = useState<MeasurementEntry[]>([]);
+  const [hasTodayEntry, setHasTodayEntry] = useState(true);
   const journalRef = useRef(makeMeasurementJournal());
   const savedSnapshotRef = useRef<MeasurementEntry[]>([]);
   const loadEntries = async () => {
     const rows = await supabaseAPI.getBodyMeasurements(4);
     const today = new Date().toISOString().split("T")[0];
+    const existingToday = rows.some((r) => r.measured_on === today);
     let data = rows as any[];
-    if (data[0]?.measured_on !== today) {
-      data = [{ measured_on: today }, ...data];
+    if (!existingToday) {
+      const last = rows[0];
+      const newRow: any = { measured_on: today };
+      measurementParts.forEach((part) => {
+        newRow[part.key] =
+          last && last[part.key] != null ? String(last[part.key]) : "";
+      });
+      data = [newRow, ...rows];
     }
     data = data.slice(0, 4);
     const mapped = data.map((r) => {
@@ -55,6 +63,7 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
     savedSnapshotRef.current = JSON.parse(JSON.stringify(mapped));
     journalRef.current = makeMeasurementJournal();
     setEntries(mapped);
+    setHasTodayEntry(existingToday);
   };
 
   useEffect(() => {
@@ -63,6 +72,17 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
 
   const handleSave = async () => {
     const collapsed = collapseMeasurementJournal(journalRef.current);
+    if (!hasTodayEntry) {
+      const todayEntry = entries[0];
+      const entryPayload: Record<string, string> = {};
+      measurementParts.forEach((part) => {
+        if (todayEntry[part.key]) entryPayload[part.key] = todayEntry[part.key];
+      });
+      collapsed[todayEntry.measured_on] = {
+        ...(collapsed[todayEntry.measured_on] ?? {}),
+        ...entryPayload,
+      };
+    }
     for (const [date, parts] of Object.entries(collapsed)) {
       const payload: Record<string, any> = { measured_on: date };
       for (const [key, value] of Object.entries(parts)) {
@@ -80,8 +100,9 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
 
   const hasChanges = useMemo(
     () =>
+      !hasTodayEntry ||
       JSON.stringify(entries) !== JSON.stringify(savedSnapshotRef.current),
-    [entries]
+    [entries, hasTodayEntry]
   );
 
   return (
@@ -92,18 +113,17 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       showHeaderBorder={false}
       showBottomBarBorder={false}
       bottomBar={
-        hasChanges ? (
-          <BottomNavigation>
-            <BottomNavigationButton
-              onClick={handleSave}
-              className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
-            >
-              SAVE CHANGES
-            </BottomNavigationButton>
-          </BottomNavigation>
-        ) : undefined
+        <BottomNavigation>
+          <BottomNavigationButton
+            onClick={handleSave}
+            disabled={!hasChanges}
+            className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile disabled:opacity-50"
+          >
+            SAVE CHANGES
+          </BottomNavigationButton>
+        </BottomNavigation>
       }
-      bottomBarSticky={hasChanges}
+      bottomBarSticky
       contentClassName=""
     >
       <Stack gap="fluid">
