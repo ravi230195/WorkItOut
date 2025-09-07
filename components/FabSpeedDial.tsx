@@ -34,7 +34,12 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
   const spacing = 56;
   const maxLabelLength = count ? Math.max(...actions.map((a) => a.label.length)) : 0;
   const overlayWidth = maxLabelLength * 8 + 160;
-  const overlayHeight = count * spacing + 160;
+
+  // Place the overlay just above the FAB instead of from the bottom of the screen
+  const fabSize = 64; // w-16 / h-16
+  const fabOffsetFromBottom = 96; // bottom-24
+  const overlayBottom = fabSize + fabOffsetFromBottom; // start tinting above the FAB
+  const overlayHeight = count * spacing + 32; // cover all actions with a bit of padding
 
   logger.info("overlayWidth", overlayWidth, "overlayHeight", overlayHeight);
 
@@ -42,24 +47,21 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
     <>
       {open && (
         <div className="fixed inset-0 z-30" onClick={close}>
-          {/* Localized overlay only (no global dim) */}
+          {/* Localized rectangular overlay anchored to the FAB */}
           <div
-            className="absolute right-0 bottom-0 pointer-events-none"
+            className="absolute pointer-events-none rounded-lg"
             style={{
+              right: 16,
+              bottom: overlayBottom,
               width: overlayWidth,
               height: overlayHeight,
               background: "rgba(61,41,20,0.16)",
-              WebkitMaskImage:
-                "radial-gradient(120% 120% at 100% 100%, #000 0%, #000 55%, transparent 78%)",
-              maskImage:
-                "radial-gradient(120% 120% at 100% 100%, #000 0%, #000 55%, transparent 78%)",
 
               // ↓ make the blur very subtle (tweak 0–2px)
               backdropFilter: "blur(0.2px)",
               WebkitBackdropFilter: "blur(0.2px)", // Safari
             }}
           />
-
         </div>
       )}
 
