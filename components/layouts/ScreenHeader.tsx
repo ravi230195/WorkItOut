@@ -62,7 +62,7 @@ export default function ScreenHeader({
   ].filter(Boolean).join(" ");
 
   const rowClasses = [
-    "flex items-center w-full",
+    "relative flex items-center w-full",
     !useFixed && legacy.minH,
     !useFixed && legacy.py,
   ].filter(Boolean).join(" ");
@@ -80,7 +80,7 @@ export default function ScreenHeader({
 
         {/* Center: true-centered title with optional subtitle */}
         <div
-          className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center m-0"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center m-0"
           style={{ maxWidth: titleMaxWidth }}
         >
           <h1
