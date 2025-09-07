@@ -53,6 +53,9 @@ const localStorageMock = {
 };
 global.localStorage = localStorageMock as Storage;
 
+// Enable hard delete mode by default in tests
+global.localStorage.setItem('USE_HARD_DELETE', 'true');
+
 // Mock sessionStorage
 const sessionStorageMock = {
   getItem: jest.fn(),

@@ -1,21 +1,21 @@
 # Hard Delete Configuration
 
-The application can perform *hard deletes* of routines, exercises, and sets when the `USE_HARD_DELETE` flag is enabled. By default, deletions are **soft** and rows are only marked inactive.
+The application performs *hard deletes* of routines, exercises, and sets by default. On startup it sets `USE_HARD_DELETE` to `true` in browser `localStorage`. You can override this flag to fall back to soft deletes if needed.
 
-## Enable hard deletes
+## Override hard deletes
 
-Set `USE_HARD_DELETE` to `true` in either of the following places:
+Set `USE_HARD_DELETE` to `false` in either of the following places to use soft deletes instead:
 
 ### Environment variable (Node, tests, CLI)
 ```bash
-USE_HARD_DELETE=true npm start
+USE_HARD_DELETE=false npm start
 # or
-USE_HARD_DELETE=true npm test
+USE_HARD_DELETE=false npm test
 ```
 
 ### Browser localStorage (during development)
 ```javascript
-localStorage.setItem('USE_HARD_DELETE', 'true');
+localStorage.setItem('USE_HARD_DELETE', 'false');
 ```
 
-If the flag is not set, the app continues to use soft delete behavior.
+If the flag is not set or is `true`, the app uses hard delete behavior.
