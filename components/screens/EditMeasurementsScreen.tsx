@@ -131,10 +131,7 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       contentClassName=""
     >
       <Stack gap="fluid">
-        <Section variant="card" padding="md" className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-soft-gray flex items-center justify-center shrink-0">
-            <TrendingUp className="text-warm-brown" size={20} />
-          </div>
+        <Section variant="card" className="flex items-center gap-3">
           <div className="min-w-0">
             <div className="text-base font-semibold text-warm-brown truncate">Track Your Progress</div>
             <div className="text-sm text-warm-brown/60 truncate">Record measurements to see changes over time</div>
