@@ -26,35 +26,43 @@ const measurementParts = [
 
 type PartKey = typeof measurementParts[number]["key"];
 
+type MeasurementEntry = { measured_on: string } & Record<PartKey, string>;
+
 export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScreenProps) {
-  const [values, setValues] = useState<Record<PartKey, string>>({} as Record<PartKey, string>);
-  const [history, setHistory] = useState<Record<PartKey, { date: string; value: string }[]>>({} as Record<PartKey, { date: string; value: string }[]>);
+  const [entries, setEntries] = useState<MeasurementEntry[]>([]);
 
   useEffect(() => {
     supabaseAPI.getBodyMeasurements(4).then((rows) => {
-      const anyRows = rows as any[];
-      const v: Record<string, string> = {};
-      const h: Record<string, { date: string; value: string }[]> = {};
-      measurementParts.forEach((part) => {
-        v[part.key] = anyRows[0]?.[part.key] != null ? String(anyRows[0][part.key]) : "";
-        h[part.key] = anyRows.slice(1).map((r) => ({
-          date: r.measured_on,
-          value: r[part.key] != null ? String(r[part.key]) : "",
-        }));
+      const today = new Date().toISOString().split("T")[0];
+      let data = rows as any[];
+      if (data[0]?.measured_on !== today) {
+        data = [{ measured_on: today }, ...data];
+      }
+      data = data.slice(0, 4);
+      const mapped = data.map((r) => {
+        const obj: any = { measured_on: r.measured_on };
+        measurementParts.forEach((part) => {
+          obj[part.key] = r[part.key] != null ? String(r[part.key]) : "";
+        });
+        return obj as MeasurementEntry;
       });
-      setValues(v as Record<PartKey, string>);
-      setHistory(h as Record<PartKey, { date: string; value: string }[]>);
+      setEntries(mapped);
     });
   }, []);
 
   const handleSave = async () => {
-    const today = new Date().toISOString().split("T")[0];
-    const payload: Record<string, any> = { measured_on: today };
-    measurementParts.forEach((part) => {
-      const num = parseFloat(values[part.key]);
-      if (!isNaN(num)) payload[part.key] = num;
-    });
-    await supabaseAPI.upsertBodyMeasurement(payload);
+    // regroup by date and upsert each row
+    for (const row of entries) {
+      const payload: Record<string, any> = { measured_on: row.measured_on };
+      measurementParts.forEach((part) => {
+        const num = parseFloat(row[part.key]);
+        if (!isNaN(num)) payload[part.key] = num;
+      });
+      // skip if no measurements entered
+      if (Object.keys(payload).length > 1) {
+        await supabaseAPI.upsertBodyMeasurement(payload);
+      }
+    }
     toast.success("Measurements saved");
     onBack();
   };
@@ -95,9 +103,14 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
             <MeasurementCard
               label={m.label}
               icon={m.icon}
-              value={values[m.key] || ""}
-              onValueChange={(v) => setValues((prev) => ({ ...prev, [m.key]: v }))}
-              history={history[m.key] || []}
+              entries={entries.map((e) => ({ date: e.measured_on, value: e[m.key] || "" }))}
+              onEntryChange={(index, value) =>
+                setEntries((prev) => {
+                  const next = [...prev];
+                  next[index] = { ...next[index], [m.key]: value };
+                  return next;
+                })
+              }
             />
           </div>
         ))}
