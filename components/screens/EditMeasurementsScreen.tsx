@@ -122,7 +122,6 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
           <BottomNavigationButton
             onClick={handleSave}
             disabled={!hasChanges}
-            className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile disabled:opacity-50"
           >
             SAVE CHANGES
           </BottomNavigationButton>

@@ -281,11 +281,7 @@ export function AddExercisesToRoutineScreen({
           <BottomNavigationButton
             onClick={handleAddExercise}
             disabled={selectedExercises.length === 0 || isAddingExercise}
-            className={`sm:w-auto px-6 md:px-8 font-medium border-0 transition-all ${
-              selectedExercises.length > 0
-                ? "bg-primary hover:bg-primary-hover text-primary-foreground opacity-90 btn-tactile"
-                : "bg-muted text-muted-foreground/60 cursor-not-allowed"
-            }`}
+            className="sm:w-auto"
           >
             {isAddingExercise
               ? "ADDING..."
