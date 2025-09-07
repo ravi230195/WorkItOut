@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { TrendingUp, Calendar, Award, Zap, Medal, Trophy, Footprints, Activity, Target, BarChart3, Star, Flame, Rocket, ChevronRight, Check, Dumbbell } from "lucide-react";
 import { Badge } from "../ui/badge";
+import MetricCard from "../progress/MetricCard";
 import { supabaseAPI, Workout, Profile } from "../../utils/supabase/supabase-api";
 import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
 import { logger } from "../../utils/logging";
@@ -249,6 +250,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
+  const [selectedMetric, setSelectedMetric] = useState<'steps' | 'workouts' | 'measurements'>('steps');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { userToken } = useAuth();
@@ -666,6 +668,34 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     
     return null;
   };
+  
+  const renderMeasurementsCard = () => {
+    return (
+      <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-warm-peach/20 rounded-full flex items-center justify-center">
+              <BarChart3 size={24} className="text-warm-peach" />
+            </div>
+            <h2 className="font-bold text-warm-brown text-xl">Body Measurements</h2>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-warm-brown/70">Track changes over time for weight, waist, chest and more.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-xl border border-white/30 bg-white/60">
+              <div className="text-xs text-warm-brown/60">Latest Weight</div>
+              <div className="text-warm-brown font-semibold">—</div>
+            </div>
+            <div className="p-3 rounded-xl border border-white/30 bg-white/60">
+              <div className="text-xs text-warm-brown/60">Latest Waist</div>
+              <div className="text-warm-brown font-semibold">—</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   // Render routine visualization for week view
   const renderRoutineVisualization = () => {
@@ -1046,142 +1076,104 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           </Section>
         )}
 
-        {/* Steps Overview Card - Hidden for Month and Year */}
-        {selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
+        {/* Metric Selector */}
+        <Section variant="plain" padding="none">
+          <div className="flex items-center justify-end">
+            <label htmlFor="metric" className="sr-only">View</label>
+            <div className="relative">
+              <select
+                id="metric"
+                value={selectedMetric}
+                onChange={(e) => setSelectedMetric(e.target.value as any)}
+                className="input-modern w-auto pr-8 pl-3 py-2 rounded-xl bg-[var(--input)] border border-[var(--input-border)] text-warm-brown shadow-sm"
+              >
+                <option value="steps">Steps</option>
+                <option value="workouts">Workouts</option>
+                <option value="measurements">Body Measurements</option>
+              </select>
+              <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-warm-brown/50">
+                ▾
+              </div>
+            </div>
+          </div>
+        </Section>
+
+        {/* Steps Overview Card - only when selected */}
+        {selectedMetric === 'steps' && selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
           <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader className="pb-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-warm-sage/20 rounded-full flex items-center justify-center">
-                      <Footprints size={24} className="text-black" />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-black text-xl">{getPeriodTitle()} Steps</h2>
-                      <p className="text-sm text-black">Goal: {(selectedPeriod==='day' ? stepGoal : currentData.steps.target).toLocaleString()}</p>
-                    </div>
-                  </div>
-                  {selectedPeriod === 'day' ? (
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      ((stepsLoading ? false : steps >= stepGoal) ) ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                    }`}>
-                      {((stepsLoading ? false : steps >= stepGoal)) ? (
-                        <Check size={20} className="text-black" />
-                      ) : (
-                        <div className="w-4 h-4 border-2 border-warm-sage rounded-sm" />
-                      )}
-                    </div>
+            <MetricCard
+              icon={Footprints}
+              iconClassName="text-warm-sage"
+              iconBgClassName="bg-warm-sage/20"
+              title={`${getPeriodTitle()} Steps`}
+              subtitle={`Goal: ${(selectedPeriod==='day' ? stepGoal : currentData.steps.target).toLocaleString()}`}
+              rightNode={selectedPeriod === 'day' ? (
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${((stepsLoading ? false : steps >= stepGoal)) ? 'bg-warm-sage' : 'bg-warm-sage/20'}`}>
+                  {((stepsLoading ? false : steps >= stepGoal)) ? (
+                    <Check size={20} className="text-white" />
                   ) : (
-                    <Badge className={`${currentData.steps.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'} text-black border-warm-sage/30 px-3 py-1 text-sm font-semibold`}>
-                      {currentData.steps.progress.toFixed(0)}%
-                    </Badge>
+                    <div className="w-4 h-4 border-2 border-warm-sage rounded-sm" />
                   )}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Steps Progress */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-4xl font-bold text-black">
-                      {(selectedPeriod==='day' ? steps : currentData.steps.current).toLocaleString()}
-                    </span>
-                    <span className="text-sm font-medium text-black">
-                      {selectedPeriod==='day'
-                        ? (stepsLoading
-                            ? 'Loading…'
-                            : steps < stepGoal
-                              ? `${(stepGoal - steps).toLocaleString()} remaining`
-                              : 'Goal achieved! 🎉')
-                        : currentData.steps.remaining > 0
-                          ? `${currentData.steps.remaining.toLocaleString()} remaining`
-                          : 'Goal achieved! 🎉'
-                      }
-                    </span>
-                  </div>
-                  {/* Progress bar - Always shown for steps */}
-                  <Progress
-                    value={selectedPeriod==='day' ? Math.min(100, Math.max(0, (steps / Math.max(1, stepGoal)) * 100)) : currentData.steps.progress}
-                    className="h-4 bg-warm-sage/20 rounded-full"
-                    style={{
-                      '--progress-color': 'hsl(var(--warm-sage))'
-                    } as React.CSSProperties}
-                  />
-                </div>
-
-                {/* Dynamic Visualization */}
-                {renderStepsVisualization()}
-              </CardContent>
-            </Card>
+              ) : (
+                <Badge className={`${currentData.steps.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'} text-warm-sage border-warm-sage/30 px-3 py-1 text-sm font-semibold`}>
+                  {currentData.steps.progress.toFixed(0)}%
+                </Badge>
+              )}
+              valueNode={<span className="text-4xl font-bold text-warm-brown">{(selectedPeriod==='day' ? steps : currentData.steps.current).toLocaleString()}</span>}
+              helperNode={<span className="text-sm font-medium text-warm-brown/60">{selectedPeriod==='day' ? (stepsLoading ? 'Loading…' : steps < stepGoal ? `${(stepGoal - steps).toLocaleString()} remaining` : 'Goal achieved! 🎉') : currentData.steps.remaining > 0 ? `${currentData.steps.remaining.toLocaleString()} remaining` : 'Goal achieved! 🎉'}</span>}
+              progress={selectedPeriod==='day' ? Math.min(100, Math.max(0, (steps / Math.max(1, stepGoal)) * 100)) : currentData.steps.progress}
+              progressTrackClassName="bg-warm-sage/20"
+              progressColorVar="hsl(var(--warm-sage))"
+            >
+              {renderStepsVisualization()}
+            </MetricCard>
           </Section>
         )}
 
-        {/* Workouts Overview Card - Hidden for Month and Year */}
-        {selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
+        {/* Workouts Overview Card - only when selected */}
+        {selectedMetric === 'workouts' && selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
           <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader className="pb-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-warm-coral/20 rounded-full flex items-center justify-center">
-                      <Dumbbell size={24} className="text-black" />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-black text-xl">{getPeriodTitle()} Workouts</h2>
-                      <p className="text-sm text-black">Goal: {selectedPeriod==='day' ? 1 : currentData.routines.target} {selectedPeriod==='day' ? 'workout' : 'routines'}</p>
-                    </div>
-                  </div>
-                  {selectedPeriod === 'day' ? (
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      (workoutsLoading ? false : workoutCount >= 1) ? 'bg-warm-coral' : 'bg-warm-coral/20'
-                    }`}>
-                      {(workoutsLoading ? false : workoutCount >= 1) ? (
-                        <Check size={20} className="text-black" />
-                      ) : (
-                        <div className="w-4 h-4 border-2 border-warm-coral rounded-sm" />
-                      )}
-                    </div>
+            <MetricCard
+              icon={Dumbbell}
+              iconClassName="text-warm-coral"
+              iconBgClassName="bg-warm-coral/20"
+              title={`${getPeriodTitle()} Workouts`}
+              subtitle={`Goal: ${selectedPeriod==='day' ? 1 : currentData.routines.target} ${selectedPeriod==='day' ? 'workout' : 'routines'}`}
+              rightNode={selectedPeriod === 'day' ? (
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${(workoutsLoading ? false : workoutCount >= 1) ? 'bg-warm-coral' : 'bg-warm-coral/20'}`}>
+                  {(workoutsLoading ? false : workoutCount >= 1) ? (
+                    <Check size={20} className="text-white" />
                   ) : (
-                    <Badge className={`${currentData.routines.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'} text-black border-warm-coral/30 px-3 py-1 text-sm font-semibold`}>
-                      {currentData.routines.progress.toFixed(0)}%
-                    </Badge>
+                    <div className="w-4 h-4 border-2 border-warm-coral rounded-sm" />
                   )}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Routines Progress - Hidden for Day view */}
-                {selectedPeriod !== 'day' && (
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-4xl font-bold text-black">
-                        {currentData.routines.current}
-                      </span>
-                      <span className="text-sm font-medium text-black">
-                        {currentData.routines.remaining > 0 
-                          ? `${currentData.routines.remaining} more to go`
-                          : 'Target exceeded! 🚀'
-                        }
-                      </span>
-                    </div>
-                    <Progress
-                      value={currentData.routines.progress}
-                      className="h-4 bg-warm-coral/20 rounded-full"
-                      style={{
-                        '--progress-color': 'hsl(var(--warm-coral))'
-                      } as React.CSSProperties}
-                    />
-                  </div>
-                )}
+              ) : (
+                <Badge className={`${currentData.routines.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'} text-warm-coral border-warm-coral/30 px-3 py-1 text-sm font-semibold`}>
+                  {currentData.routines.progress.toFixed(0)}%
+                </Badge>
+              )}
+              valueNode={selectedPeriod !== 'day' ? (
+                <span className="text-4xl font-bold text-warm-brown">{currentData.routines.current}</span>
+              ) : undefined}
+              helperNode={selectedPeriod !== 'day' ? (
+                <span className="text-sm font-medium text-warm-brown/60">{currentData.routines.remaining > 0 ? `${currentData.routines.remaining} more to go` : 'Target exceeded! 🚀'}</span>
+              ) : undefined}
+              progress={selectedPeriod !== 'day' ? currentData.routines.progress : undefined}
+              progressTrackClassName="bg-warm-coral/20"
+              progressColorVar="hsl(var(--warm-coral))"
+            >
+              {renderTodaysRoutines()}
+              {renderRoutineVisualization()}
+              {renderRoutineTypes()}
+            </MetricCard>
+          </Section>
+        )}
 
-                {/* Today's Routines for Day View */}
-                {renderTodaysRoutines()}
-
-                {/* Dynamic Routine Visualization */}
-                {renderRoutineVisualization()}
-
-                {/* Dynamic Routine Types */}
-                {renderRoutineTypes()}
-              </CardContent>
-            </Card>
+        {/* Measurements Overview Card - only when selected */}
+        {selectedMetric === 'measurements' && (
+          <Section variant="plain" padding="none">
+            {renderMeasurementsCard()}
           </Section>
         )}
 
