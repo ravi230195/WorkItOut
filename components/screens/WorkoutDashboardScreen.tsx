@@ -1,20 +1,19 @@
 import { useState, useEffect } from "react";
-import { TactileButton } from "../TactileButton";
-import { AlertCircle, Clock3 as Clock, TrendingUp, Dumbbell, Ruler } from "lucide-react";
+import { Dumbbell, Ruler } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { supabaseAPI, UserRoutine, Profile } from "../../utils/supabase/supabase-api";
 import { useAuth } from "../AuthContext";
-import { toast } from "sonner";
 import ProgressRings from "../circularStat/ProgressRings";
 import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
-import ActionSheet from "../sheets/ActionSheet";
 import SegmentedToggle from "../segmented/SegmentedToggle";
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets } from "../../utils/routineLoader";
-import ListItem from "../ui/ListItem";
 import FabSpeedDial from "../FabSpeedDial";
+import RoutinesList from "../workout-dashboard/RoutinesList";
+import RoutineActionSheet from "../workout-dashboard/RoutineActionSheet";
+import { RoutinesView } from "../workout-dashboard/types";
 
 interface WorkoutDashboardScreenProps {
   onCreateRoutine: () => void;
@@ -23,20 +22,6 @@ interface WorkoutDashboardScreenProps {
   onOverlayChange?: (open: boolean) => void;
   bottomBar?: React.ReactNode;
 }
-
-export enum RoutinesView {
-  My = "my",
-  Sample = "sample",
-}
-
-/** 🎨 App-palette avatars */
-const avatarPalette = [
-  { bg: "bg-soft-gray", iconBg: "bg-warm-coral", emoji: "🏋️" },
-  { bg: "bg-[var(--warm-cream)]", iconBg: "bg-[var(--warm-brown)]", emoji: "🏃" },
-  { bg: "bg-soft-gray", iconBg: "bg-[var(--warm-sage)]", emoji: "🧘" },
-  { bg: "bg-[var(--warm-cream)]", iconBg: "bg-warm-coral", emoji: "🤸" },
-  { bg: "bg-soft-gray", iconBg: "bg-[var(--warm-brown)]", emoji: "🔥" },
-];
 
 export default function WorkoutDashboardScreen({
   onCreateRoutine,
@@ -58,10 +43,6 @@ export default function WorkoutDashboardScreen({
 
   // bottom-sheet
   const [actionRoutine, setActionRoutine] = useState<UserRoutine | null>(null);
-  const [sheetMode, setSheetMode] = useState<"main" | "rename" | "delete">("main");
-  const [renameValue, setRenameValue] = useState("");
-  const [renameLoading, setRenameLoading] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Profile for greeting with user's name
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -221,16 +202,10 @@ export default function WorkoutDashboardScreen({
     if (!canEdit) return; // hide in sample view
     e.stopPropagation();
     setActionRoutine(routine);
-    setRenameValue(routine.name);
-    setSheetMode("main");
     onOverlayChange?.(true);
   };
   const closeActions = () => {
     setActionRoutine(null);
-    setSheetMode("main");
-    setRenameValue("");
-    setRenameLoading(false);
-    setDeleteLoading(false);
     onOverlayChange?.(false);
   };
 
@@ -310,215 +285,27 @@ export default function WorkoutDashboardScreen({
           />
         </Section>
 
-        {/* routines list with Section loading state */}
-        <Section
-          variant="plain"
-          padding="none"
-          className="space-y-3"
-          loading={isLoadingRoutines}
-          loadingBehavior="replace"
-        >
-          {!isLoadingRoutines && (
-            <>
-              {routinesError ? (
-                <Section
-                  variant="card"
-                  title="Error Loading Routines"
-                  actions={
-                    <TactileButton onClick={() => reloadRoutines()} variant="secondary" className="px-4 py-2 text-sm">
-                      Try Again
-                    </TactileButton>
-                  }
-                >
-                  <div className="text-center py-4">
-                    <div className="w-12 h-12 mx-auto mb-3 bg-destructive-light rounded-full flex items-center justify-center">
-                      <AlertCircle className="w-5 h-5 text-destructive" />
-                    </div>
-                    <p className="text-destructive text-sm">{routinesError}</p>
-                  </div>
-                </Section>
-              ) : routines.length === 0 ? (
-                <Section variant="card" className="text-center">
-                  <p className="text-warm-brown/60 text-sm">
-                    {view === "my" ? "Start by adding a new routine" : "No sample routines found"}
-                  </p>
-                </Section>
-              ) : (
-                <div className="space-y-3">
-                  {routines.map((routine, idx) => {
-                    const palette = avatarPalette[idx % avatarPalette.length];
-
-                    const muscleGroups =
-                      ((routine as any).muscle_group_summary as string | undefined)?.trim() || "—";
-
-                    const exerciseCount = exerciseCounts[routine.routine_template_id] ?? 0;
-                    const timeMin = exerciseCount > 0 ? exerciseCount * 10 : null;
-
-                    return (
-                      <button
-                        key={routine.routine_template_id}
-                        onClick={() =>
-                          onSelectRoutine(
-                            routine.routine_template_id,
-                            routine.name,
-                            view === RoutinesView.My ? RoutineAccess.Editable : RoutineAccess.ReadOnly
-                          )
-                        }
-                        className="w-full rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all text-left"
-                      >
-                        <ListItem
-                          leading={
-                            <div className={`w-8 h-8 ${palette.iconBg} rounded-lg grid place-items-center text-primary-foreground text-lg`}>
-                              <span>{palette.emoji}</span>
-                            </div>
-                          }
-                          leadingClassName={`w-12 h-12 rounded-xl flex items-center justify-center ${palette.bg}`}
-                          primary={routine.name}
-                          secondary={muscleGroups}
-                          tertiary={
-                            <div className="mt-2 flex items-center gap-4 text-warm-brown/70">
-                              <span className="inline-flex items-center gap-1">
-                                <Clock size={14} />
-                                {loadingCounts ? "—" : timeMin !== null ? `${timeMin} min` : "—"}
-                              </span>
-                              <span className="inline-flex items-center gap-1">
-                                <TrendingUp size={14} />
-                                {loadingCounts ? "—" : `${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}`}
-                              </span>
-                            </div>
-                          }
-                          primaryClassName="font-medium text-warm-brown text-[clamp(16px,4.5vw,19px)]"
-                          secondaryClassName="text-[clamp(11px,3.2vw,12px)] text-warm-brown/60"
-                          tertiaryClassName="text-[clamp(11px,3.2vw,12px)]"
-                          className="p-4"
-                          rightIcon={canEdit ? "kebab" : undefined}
-                          onRightIconClick={(e) => openActions(routine, e)}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          )}
-        </Section>
+        {/* routines list */}
+        <RoutinesList
+          routines={routines}
+          routinesError={routinesError}
+          isLoading={isLoadingRoutines}
+          reloadRoutines={() => reloadRoutines()}
+          view={view}
+          exerciseCounts={exerciseCounts}
+          loadingCounts={loadingCounts}
+          canEdit={canEdit}
+          onSelectRoutine={onSelectRoutine}
+          openActions={openActions}
+        />
 
         {/* action sheet flows when editing user's own routines */}
         {canEdit && actionRoutine && (
-          <>
-            {sheetMode === "main" && (
-              <ActionSheet
-                open={!!actionRoutine}
-                onClose={closeActions}
-                title={actionRoutine.name}
-                actions={[
-                  {
-                    label: "Rename Routine",
-                    onClick: () => {
-                      if (actionRoutine) setRenameValue(actionRoutine.name);
-                      setSheetMode("rename");
-                    },
-                    type: "button",
-                  },
-                  {
-                    label: "Delete Routine",
-                    onClick: () => setSheetMode("delete"),
-                    type: "button",
-                    variant: "destructive",
-                  },
-                ]}
-              />
-            )}
-            {sheetMode === "rename" && (
-              <ActionSheet
-                open={!!actionRoutine}
-                onClose={closeActions}
-                title="Rename Routine"
-                cancelText={null}
-                actions={[
-                  {
-                    label: renameLoading ? "Saving…" : "Save",
-                    onClick: async () => {
-                      if (!actionRoutine) return;
-                      const v = renameValue.trim();
-                      if (!v) return;
-                      setRenameLoading(true);
-                      await supabaseAPI.renameRoutine(actionRoutine.routine_template_id, v);
-                      await reloadRoutines(RoutinesView.My);
-                      toast.success("Routine renamed");
-                      setRenameLoading(false);
-                      closeActions();
-                    },
-                    type: "button",
-                    disabled: !renameValue.trim() || renameLoading,
-                  },
-                  {
-                    label: "Cancel",
-                    onClick: () => setSheetMode("main"),
-                    type: "button",
-                    variant: "secondary",
-                    disabled: renameLoading,
-                  },
-                ]}
-              >
-                <div className="space-y-3">
-                  <label className="text-sm text-gray-600">New name</label>
-                  <input
-                    autoFocus
-                    value={renameValue}
-                    onChange={(e) => setRenameValue(e.target.value)}
-                    className="w-full rounded-lg border border-border px-3 py-2 outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
-                    placeholder="Enter routine name"
-                    onKeyDown={async (e) => {
-                      if (e.key === "Enter") {
-                        const v = renameValue.trim();
-                        if (!v || renameLoading) return;
-                        setRenameLoading(true);
-                        await supabaseAPI.renameRoutine(actionRoutine.routine_template_id, v);
-                        await reloadRoutines(RoutinesView.My);
-                        toast.success("Routine renamed");
-                        setRenameLoading(false);
-                        closeActions();
-                      }
-                    }}
-                  />
-                </div>
-              </ActionSheet>
-            )}
-            {sheetMode === "delete" && (
-              <ActionSheet
-                open={!!actionRoutine}
-                onClose={closeActions}
-                title={`Delete ${actionRoutine.name}?`}
-                cancelText={null}
-                message="This will remove it from your list"
-                actions={[
-                  {
-                    label: deleteLoading ? "Deleting…" : "Delete",
-                    onClick: async () => {
-                      if (!actionRoutine) return;
-                      setDeleteLoading(true);
-                      await supabaseAPI.deleteRoutine(actionRoutine.routine_template_id);
-                      await reloadRoutines(RoutinesView.My);
-                      toast.success("Routine deleted");
-                      setDeleteLoading(false);
-                      closeActions();
-                    },
-                    type: "button",
-                    variant: "destructive",
-                    disabled: deleteLoading,
-                  },
-                  {
-                    label: "Cancel",
-                    onClick: () => setSheetMode("main"),
-                    type: "button",
-                    variant: "secondary",
-                    disabled: deleteLoading,
-                  },
-                ]}
-              />
-            )}
-          </>
+          <RoutineActionSheet
+            routine={actionRoutine}
+            onClose={closeActions}
+            reloadRoutines={() => reloadRoutines(RoutinesView.My)}
+          />
         )}
       </Stack>
 
