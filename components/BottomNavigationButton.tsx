@@ -19,7 +19,7 @@ export function BottomNavigationButton({
       variant={variant}
       size="sm"
       className={cn(
-        "px-6 md:px-8 font-medium border-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+        "px-6 md:px-8 py-1 font-medium border-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
         className
       )}
       {...props}
