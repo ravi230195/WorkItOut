@@ -25,6 +25,9 @@ describe('Supabase API Routine CRUD Integration', () => {
 
     supabaseAPI.setToken(token!);
 
+    // Ensure a profile row exists (normally created after email confirmation)
+    await supabaseAPI.upsertProfile('Test', 'User', 'Integration Tester');
+
     localCache.clearPrefix();
     const exercises = await supabaseAPI.getExercises();
     exerciseId = exercises[0].exercise_id;
