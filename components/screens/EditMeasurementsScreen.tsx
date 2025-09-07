@@ -4,8 +4,13 @@ import { BottomNavigationButton } from "../BottomNavigationButton";
 import { toast } from "sonner";
 import { TrendingUp } from "lucide-react";
 import MeasurementCard from "../measurements/MeasurementCard";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
+import {
+  collapseMeasurementJournal,
+  makeMeasurementJournal,
+  recordMeasurementUpdate,
+} from "../measurements/measurementJournal";
 
 interface EditMeasurementsScreenProps {
   onBack: () => void;
@@ -30,6 +35,8 @@ type MeasurementEntry = { measured_on: string } & Record<PartKey, string>;
 
 export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScreenProps) {
   const [entries, setEntries] = useState<MeasurementEntry[]>([]);
+  const journalRef = useRef(makeMeasurementJournal());
+  const savedSnapshotRef = useRef<MeasurementEntry[]>([]);
   const loadEntries = async () => {
     const rows = await supabaseAPI.getBodyMeasurements(4);
     const today = new Date().toISOString().split("T")[0];
@@ -45,6 +52,8 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       });
       return obj as MeasurementEntry;
     });
+    savedSnapshotRef.current = JSON.parse(JSON.stringify(mapped));
+    journalRef.current = makeMeasurementJournal();
     setEntries(mapped);
   };
 
@@ -53,21 +62,27 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
   }, []);
 
   const handleSave = async () => {
-    // regroup by date and upsert each row
-    for (const row of entries) {
-      const payload: Record<string, any> = { measured_on: row.measured_on };
-      measurementParts.forEach((part) => {
-        const num = parseFloat(row[part.key]);
-        if (!isNaN(num)) payload[part.key] = num;
-      });
-      // skip if no measurements entered
+    const collapsed = collapseMeasurementJournal(journalRef.current);
+    for (const [date, parts] of Object.entries(collapsed)) {
+      const payload: Record<string, any> = { measured_on: date };
+      for (const [key, value] of Object.entries(parts)) {
+        const num = parseFloat(value);
+        if (!isNaN(num)) payload[key] = num;
+      }
       if (Object.keys(payload).length > 1) {
         await supabaseAPI.upsertBodyMeasurement(payload);
       }
     }
+    journalRef.current = makeMeasurementJournal();
     await loadEntries();
     toast.success("Measurements saved");
   };
+
+  const hasChanges = useMemo(
+    () =>
+      JSON.stringify(entries) !== JSON.stringify(savedSnapshotRef.current),
+    [entries]
+  );
 
   return (
     <AppScreen
@@ -77,16 +92,18 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       showHeaderBorder={false}
       showBottomBarBorder={false}
       bottomBar={
-        <BottomNavigation>
-          <BottomNavigationButton
-            onClick={handleSave}
-            className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
-          >
-            SAVE CHANGES
-          </BottomNavigationButton>
-        </BottomNavigation>
+        hasChanges ? (
+          <BottomNavigation>
+            <BottomNavigationButton
+              onClick={handleSave}
+              className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
+            >
+              SAVE CHANGES
+            </BottomNavigationButton>
+          </BottomNavigation>
+        ) : undefined
       }
-      bottomBarSticky
+      bottomBarSticky={hasChanges}
       contentClassName=""
     >
       <Stack gap="fluid">
@@ -109,7 +126,9 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
               onEntryChange={(index, value) =>
                 setEntries((prev) => {
                   const next = [...prev];
+                  const date = next[index].measured_on;
                   next[index] = { ...next[index], [m.key]: value };
+                  recordMeasurementUpdate(journalRef.current, date, m.key, value);
                   return next;
                 })
               }
