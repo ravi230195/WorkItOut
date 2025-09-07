@@ -671,11 +671,6 @@ export function ExerciseSetupScreen({
     }
   };
 
-  const onCancelAll = async () => {
-    journalRef.current = makeJournal();
-    await reloadFromDb();
-  };
-
   const onSaveAll = async () => {
     if (!userToken) {
       toast.error("Please sign in to save changes");
@@ -777,31 +772,12 @@ export function ExerciseSetupScreen({
       if (hasUnsaved) {
         return (
           <BottomNavigation>
-            <div className="flex w-full gap-3">
-              <BottomNavigationButton
-                variant="secondary"
-                onClick={onCancelAll}
-                disabled={access === RoutineAccess.ReadOnly}
-                className={`flex-1 ${
-                  access === RoutineAccess.ReadOnly
-                    ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
-                    : "bg-transparent border-warm-brown/20 text-warm-brown/60 hover:bg-soft-gray"
-                } font-medium`}
-              >
-                CANCEL ALL
-              </BottomNavigationButton>
-              <BottomNavigationButton
-                onClick={onSaveAll}
-                disabled={savingAll || access === RoutineAccess.ReadOnly}
-                className={`flex-1 font-medium border-0 transition-all ${
-                  access === RoutineAccess.ReadOnly
-                    ? "opacity-50 cursor-not-allowed bg-gray-400"
-                    : "bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
-                }`}
-              >
-                {savingAll ? "SAVING..." : `SAVE ALL`}
-              </BottomNavigationButton>
-            </div>
+            <BottomNavigationButton
+              onClick={onSaveAll}
+              disabled={savingAll || access === RoutineAccess.ReadOnly}
+            >
+              {savingAll ? "SAVING..." : `SAVE ALL`}
+            </BottomNavigationButton>
           </BottomNavigation>
         );
       }
@@ -810,10 +786,7 @@ export function ExerciseSetupScreen({
       }
       return (
         <BottomNavigation>
-          <BottomNavigationButton
-            onClick={startWorkout}
-            className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
-          >
+          <BottomNavigationButton onClick={startWorkout}>
             START WORKOUT
           </BottomNavigationButton>
         </BottomNavigation>
@@ -824,7 +797,6 @@ export function ExerciseSetupScreen({
         <BottomNavigationButton
           onClick={() => setShowEndSheet(true)}
           disabled={savingWorkout}
-          className="px-6 md:px-8 font-medium border-0 transition-all bg-primary hover:bg-primary-hover text-primary-foreground btn-tactile"
         >
           {savingWorkout ? "SAVING..." : "END WORKOUT"}
         </BottomNavigationButton>

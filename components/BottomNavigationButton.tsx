@@ -1,5 +1,6 @@
 import { TactileButton } from "./TactileButton";
 import { ButtonHTMLAttributes, ReactNode } from "react";
+import { cn } from "./ui/utils";
 
 interface BottomNavigationButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -17,7 +18,10 @@ export function BottomNavigationButton({
     <TactileButton
       variant={variant}
       size="sm"
-      className={className}
+      className={cn(
+        "px-6 md:px-8 py-3 font-medium border-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+        className
+      )}
       {...props}
     >
       {children}
