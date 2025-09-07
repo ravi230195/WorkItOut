@@ -92,6 +92,37 @@ export class SupabaseDBWrite extends SupabaseBase {
         await this.refreshRoutines(userId);
     }
 
+    async hardDeleteRoutine(routineTemplateId: number): Promise<void> {
+        const userId = await this.getUserId();
+
+        // Load all exercises for this routine
+        const exercises = await this.fetchJson<
+            Array<{ routine_template_exercise_id: number }>
+        >(
+            `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&select=routine_template_exercise_id`,
+            true
+        );
+
+        // Delegate deletion of each exercise (and its sets)
+        for (const { routine_template_exercise_id: exId } of exercises) {
+            await this.hardDeleteRoutineExercise(exId);
+        }
+
+        // Delete the routine itself
+        await this.fetchJson(
+            `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`,
+            true,
+            "DELETE"
+        );
+
+        // Refresh caches for the now-removed routine
+        await Promise.all([
+            this.refreshRoutines(userId),
+            this.refreshRoutineExercises(userId, routineTemplateId),
+            this.refreshRoutineExercisesWithDetails(userId, routineTemplateId),
+        ]);
+    }
+
     // Routine exercises and sets
     async addExerciseToRoutine(
         routineTemplateId: number,
@@ -181,6 +212,38 @@ export class SupabaseDBWrite extends SupabaseBase {
         await Promise.all([
             this.refreshRoutineExercises(userId, routineId),        // Routine ID
             this.refreshRoutineExercisesWithDetails(userId, routineId), // Routine ID
+        ]);
+    }
+
+    async hardDeleteRoutineExercise(routineTemplateExerciseId: number): Promise<void> {
+        const userId = await this.getUserId();
+
+        // Determine parent routine before deleting rows
+        const routineId = await this.findRoutineIdForExercise(
+            routineTemplateExerciseId
+        );
+
+        // Load all set IDs for this exercise and delete via helper
+        const sets = await this.fetchJson<
+            Array<{ routine_template_exercise_set_id: number }>
+        >(
+            `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}&select=routine_template_exercise_set_id`,
+            true
+        );
+        for (const { routine_template_exercise_set_id: setId } of sets) {
+            await this.hardDeleteExerciseSet(setId);
+        }
+
+        // Delete the exercise row itself
+        await this.fetchJson(
+            `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}`,
+            true,
+            "DELETE"
+        );
+
+        await Promise.all([
+            this.refreshRoutineExercises(userId, routineId),
+            this.refreshRoutineExercisesWithDetails(userId, routineId),
         ]);
     }
 
@@ -314,6 +377,23 @@ export class SupabaseDBWrite extends SupabaseBase {
             "PATCH",
             { is_active: false },
             "return=minimal"
+        );
+        if (parentId) await this.refreshRoutineSets(userId, parentId);
+    }
+
+    async hardDeleteExerciseSet(routineTemplateExerciseSetId: number): Promise<void> {
+        const userId = await this.getUserId();
+
+        const lookup = await this.fetchJson<Array<{ routine_template_exercise_id: number }>>(
+            `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_set_id=eq.${routineTemplateExerciseSetId}&select=routine_template_exercise_id`,
+            true
+        );
+        const parentId = lookup[0]?.routine_template_exercise_id;
+
+        await this.fetchJson(
+            `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_set_id=eq.${routineTemplateExerciseSetId}`,
+            true,
+            "DELETE"
         );
         if (parentId) await this.refreshRoutineSets(userId, parentId);
     }
