@@ -38,9 +38,9 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
       const fabRect = fabRef.current.getBoundingClientRect();
       setOverlayStyle({
         width: actionsRect.width,
-        height: fabRect.bottom - actionsRect.top,
+        height: actionsRect.bottom - fabRect.bottom,
         right: window.innerWidth - actionsRect.right,
-        bottom: window.innerHeight - fabRect.bottom,
+        top: fabRect.bottom,
       });
       logger.info("overlay", { actionsRect, fabRect });
     } else {
@@ -70,8 +70,22 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
 
       {/* Actions + FAB */}
       <div className="fixed right-4 bottom-24 z-40 flex flex-col items-end gap-4">
+        <button
+          ref={fabRef}
+          onClick={toggle}
+          aria-label="Speed dial"
+          aria-expanded={open}
+          className="
+            w-16 h-16 rounded-full bg-primary text-primary-foreground
+            shadow-lg flex items-center justify-center
+            transition-transform
+          "
+        >
+          <Plus className={`w-6 h-6 transition-transform ${open ? "rotate-45" : ""}`} />
+        </button>
+
         {open && (
-          <div ref={actionsRef} className="flex flex-col items-end gap-4 mb-4">
+          <div ref={actionsRef} className="flex flex-col items-end gap-4 mt-4">
             {actions.map((action) => (
               <button
                 key={action.label}
@@ -94,20 +108,6 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
             ))}
           </div>
         )}
-
-        <button
-          ref={fabRef}
-          onClick={toggle}
-          aria-label="Speed dial"
-          aria-expanded={open}
-          className="
-            w-16 h-16 rounded-full bg-primary text-primary-foreground
-            shadow-lg flex items-center justify-center
-            transition-transform
-          "
-        >
-          <Plus className={`w-6 h-6 transition-transform ${open ? "rotate-45" : ""}`} />
-        </button>
       </div>
     </>
   );
