@@ -1,6 +1,6 @@
 // components/sets/SetList.tsx
 import * as React from "react";
-import { Input } from "../ui/input";
+import { NumberInput } from "../ui/number-input";
 import { TactileButton } from "../TactileButton";
 import { X, Plus, Trash2 } from "lucide-react";
 
@@ -129,29 +129,26 @@ const SetList: React.FC<SetListProps> = ({
                 {it.order}
               </span>
 
-              <Input
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
+              <NumberInput
+                mode="numeric"
+                step={1}
+                min={0}
                 value={it.reps ?? "0"}
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "reps", e.target.value)}
                 disabled={readOnly}
-                className={`bg-input-background border-border text-foreground text-center h-10 md:h-8 rounded-md focus:border-warm-sage focus:ring-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
-                min="0"
+                className={`bg-input-background border-border text-foreground text-center h-10 md:h-8 rounded-md focus:border-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
               />
 
-              <Input
-                type="number"
-                inputMode="decimal"
-                pattern="[0-9]*[.,]?[0-9]*"
-                step="0.5"
+              <NumberInput
+                mode="decimal"
+                step={0.5}
+                min={0}
                 value={it.weight ?? "0"}
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "weight", e.target.value)}
                 disabled={readOnly}
                 className={`bg-input-background border-border text-foreground text-center h-10 md:h-8 rounded-md focus:border-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
-                min="0"
               />
 
               {mode === "workout" ? (

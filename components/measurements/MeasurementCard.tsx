@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ExpandingCard from "../ui/ExpandingCard";
-import { Input } from "../ui/input";
+import { NumberInput } from "../ui/number-input";
 import { Minus, Plus } from "lucide-react";
 
 interface MeasurementEntry {
@@ -84,12 +84,10 @@ export default function MeasurementCard({
               <Minus size={14} />
             </button>
 
-            <Input
-              type="number"
-              inputMode="decimal"
-              pattern="[0-9]*[.,]?[0-9]*"
-              step="0.5"
-              min="0"
+            <NumberInput
+              step={step}
+              min={0}
+              mode="decimal"
               value={entries[0]?.value ?? ""}
               onChange={handleChange}
               placeholder={unit}
@@ -113,12 +111,10 @@ export default function MeasurementCard({
             <div key={i} className="flex items-center justify-between gap-2">
               <span className="text-sm text-warm-brown/60">{p.date}</span>
               <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  pattern="[0-9]*[.,]?[0-9]*"
-                  step="0.5"
-                  min="0"
+                <NumberInput
+                  step={step}
+                  min={0}
+                  mode="decimal"
                   value={p.value}
                   onChange={(e) => onEntryChange(i, e.target.value)}
                   className="h-7 text-center px-1 w-[6.5rem] sm:w-[7.5rem]"
