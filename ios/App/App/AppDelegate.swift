@@ -10,15 +10,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Override point for customization after application launch.
         // Ensure the window and root view controller have a white background so
         // that the safe area always renders with a white color.
-        window?.backgroundColor = .white
-        window?.rootViewController?.view.backgroundColor = .white
+        let appBackground = UIColor(red: 0xFE/255.0,
+                            green: 0xFC/255.0,
+                            blue: 0xFB/255.0,
+                            alpha: 1.0)
+        window?.backgroundColor = appBackground
+        window?.rootViewController?.view.backgroundColor = appBackground
 
         // The embedded Capacitor web view uses a WKScrollView which defaults to
         // a dynamic system background. Force both the web view and its scroll
         // view to white so that any exposed safe area is consistently white.
         if let bridge = window?.rootViewController as? CAPBridgeViewController {
-            bridge.webView?.backgroundColor = .white
-            bridge.webView?.scrollView.backgroundColor = .white
+            bridge.webView?.backgroundColor = appBackground
+            bridge.webView?.scrollView.backgroundColor = appBackground
         }
         return true
     }
