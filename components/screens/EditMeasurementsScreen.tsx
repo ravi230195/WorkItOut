@@ -112,7 +112,10 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
 
   return (
     <AppScreen
-      header={<ScreenHeader title="Body Measurements" onBack={onBack} showBorder={false} denseSmall contentHeightPx={74} titleClassName="text-[17px] font-bold" />}
+      header={<ScreenHeader title="Body Measurements" onBack={onBack} 
+      showBorder={false} 
+      denseSmall 
+      titleClassName="text-[17px] font-bold" />}
       maxContent="responsive"
       padContent={false}
       showHeaderBorder={false}

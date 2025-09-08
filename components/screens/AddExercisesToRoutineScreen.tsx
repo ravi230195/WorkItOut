@@ -268,7 +268,6 @@ export function AddExercisesToRoutineScreen({
           onBack={onBack}
           showBorder={false}
           denseSmall
-          contentHeightPx={74}
           titleClassName="text-[17px] font-bold"
         />
       }

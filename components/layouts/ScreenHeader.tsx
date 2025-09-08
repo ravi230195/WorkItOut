@@ -47,7 +47,7 @@ export default function ScreenHeader({
   reserveLeftPx = 44,
   reserveRightPx = 44,
   padSafeArea = false,
-  contentHeightPx = 74,
+  contentHeightPx = 0,
   titleClassName = "",
   subtitleClassName = "",
 }: ScreenHeaderProps) {
@@ -60,7 +60,7 @@ export default function ScreenHeader({
   };
   const { py, minH } = presets[sizeKey];
 
-  const useFixed = typeof contentHeightPx === "number";
+  const useFixed = contentHeightPx === 0 ? false : true;
 
   const containerClasses = clsx(
     sticky && "sticky top-0 z-30",

@@ -989,7 +989,6 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
       header={<ScreenHeader title={"Progress"}
         showBorder={false}
         denseSmall
-        contentHeightPx={74} 
         titleClassName="text-[17px] font-bold"/>}
       maxContent="responsive"
       showHeaderBorder={false}

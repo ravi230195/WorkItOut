@@ -217,7 +217,6 @@ export default function WorkoutDashboardScreen({
           title={"My Routines"}
           showBorder={false}
           denseSmall
-          contentHeightPx={74}
           titleClassName="text-[17px] font-bold"
         />
       }

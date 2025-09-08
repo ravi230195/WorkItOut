@@ -762,7 +762,6 @@ export function ExerciseSetupScreen({
         : {})}
       showBorder={false}
       denseSmall
-      contentHeightPx={74}
       titleClassName="text-[17px] font-bold"
     />
   );

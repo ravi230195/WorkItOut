@@ -106,7 +106,6 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
       header={<ScreenHeader title="Profile" 
       showBorder={false}
       denseSmall
-      contentHeightPx={74} 
       titleClassName="text-[17px] font-bold"/>}
       maxContent="responsive"
       showHeaderBorder={false}

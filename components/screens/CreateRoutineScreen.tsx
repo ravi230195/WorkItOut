@@ -53,7 +53,6 @@ export default function CreateRoutineScreen({
       onBack={onBack} 
       showBorder={false} 
       denseSmall 
-      contentHeightPx={74} 
       titleClassName="text-[17px] font-bold"/>}
       // Wider on tablets; let AppScreen own horizontal gutters
       maxContent="responsive"
