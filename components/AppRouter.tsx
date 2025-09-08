@@ -1,4 +1,4 @@
-import  WorkoutDashboardScreen  from "./screens/WorkoutDashboardScreen";
+import WorkoutDashboardScreen from "./screens/WorkoutDashboardScreen";
 import CreateRoutineScreen from "./screens/CreateRoutineScreen";
 import { AddExercisesToRoutineScreen } from "./screens/AddExercisesToRoutineScreen";
 import { ExerciseSetupScreen } from "./screens/ExerciseSetupScreen";
@@ -13,6 +13,7 @@ import { AppView } from "../utils/navigation";
 import { Exercise } from "../utils/supabase/supabase-api";
 import { RoutineAccess } from "../hooks/useAppNavigation";
 import { logger } from "../utils/logging";
+import { SlideTransition } from "./SlideTransition";
 
 interface AppRouterProps {
   currentView: AppView;
@@ -122,45 +123,65 @@ export function AppRouter({
         />
       )}
 
-      {currentView === "create-routine" && (
+      <SlideTransition
+        show={currentView === "create-routine"}
+        enterFrom="down"
+        exitTo="left"
+      >
         <CreateRoutineScreen
           onBack={onCloseCreateRoutine}
           onRoutineCreated={onRoutineCreated} // (name, id)
         />
-      )}
+      </SlideTransition>
 
-      {currentView === "edit-measurements" && (
+      <SlideTransition
+        show={currentView === "edit-measurements"}
+        enterFrom="down"
+        exitTo="left"
+      >
         <EditMeasurementsScreen onBack={onCloseEditMeasurements} />
-      )}
+      </SlideTransition>
 
-      {currentView === "add-exercises-to-routine" && currentRoutineName && (
+      <SlideTransition
+        show={currentView === "add-exercises-to-routine" && !!currentRoutineName}
+        enterFrom="down"
+        exitTo="left"
+      >
         <AddExercisesToRoutineScreen
           routineId={currentRoutineId || undefined}
           routineName={currentRoutineName}
-          onBack={currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine}
+          onBack={
+            currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine
+          }
           onExerciseSelected={(exercises: Exercise[]) => onExerciseSelected(exercises)}
           isFromExerciseSetup={!!currentRoutineId}
         />
-      )}
+      </SlideTransition>
 
-      {currentView === "exercise-setup" &&
-        currentRoutineId &&
-        currentRoutineName && (
-          <ExerciseSetupScreen
-            routineId={currentRoutineId}
-            routineName={currentRoutineName}
-            selectedExercisesForSetup={selectedExercisesForSetup}
-            setSelectedExercisesForSetup={setSelectedExercisesForSetup}
-            onBack={onCloseExerciseSetupToRoutines}
-            onSave={onExerciseSetupComplete}
-            onAddMoreExercises={onCloseExerciseSetup}
-            isEditingExistingRoutine={true}
-            onShowExerciseSelector={onCloseExerciseSetup}
-            access={routineAccess}
-            initialMode={exerciseSetupMode}
-            onModeChange={setExerciseSetupMode}
-          />
-        )}
+      <SlideTransition
+        show={
+          currentView === "exercise-setup" &&
+          currentRoutineId !== null &&
+          !!currentRoutineName
+        }
+        enterFrom="right"
+        exitTo="left"
+      >
+        <ExerciseSetupScreen
+          routineId={currentRoutineId!}
+          routineName={currentRoutineName}
+          selectedExercisesForSetup={selectedExercisesForSetup}
+          setSelectedExercisesForSetup={setSelectedExercisesForSetup}
+          onBack={onCloseExerciseSetupToRoutines}
+          onSave={onExerciseSetupComplete}
+          onAddMoreExercises={onCloseExerciseSetup}
+          isEditingExistingRoutine={true}
+          onShowExerciseSelector={onCloseExerciseSetup}
+          access={routineAccess}
+          initialMode={exerciseSetupMode}
+          onModeChange={setExerciseSetupMode}
+        />
+      </SlideTransition>
 
       {currentView === "progress" && <ProgressScreen bottomBar={bottomBar} />}
       {currentView === "profile" && <ProfileScreen bottomBar={bottomBar} />}
