@@ -3,6 +3,12 @@ import BackButton from "../BackButton";
 import { TactileButton } from "../TactileButton";
 import { Plus } from "lucide-react";
 
+const headerActionProps = {
+  variant: "secondary" as const,
+  size: "sm" as const,
+  className: "p-2 h-auto",
+};
+
 type ScreenHeaderProps = {
   title: string;
   /** optional secondary line beneath title */
@@ -75,7 +81,7 @@ export default function ScreenHeader({
       <div className={rowClasses} style={useFixed ? { height: contentHeightPx } : undefined}>
         {/* Left */}
         <div className="shrink-0 flex items-center" style={{ width: reserveLeftPx }}>
-          {onBack ? <BackButton onClick={onBack} /> : null}
+          {onBack ? <BackButton onClick={onBack} {...headerActionProps} /> : null}
         </div>
 
         {/* Center: true-centered title with optional subtitle */}
@@ -107,7 +113,7 @@ export default function ScreenHeader({
         {/* Right */}
         <div className="ml-auto shrink-0 flex items-center justify-end" style={{ width: reserveRightPx }}>
           {right ?? (onAdd ? (
-            <TactileButton variant="secondary" size="sm" onClick={onAdd} className="p-2 h-auto">
+            <TactileButton onClick={onAdd} {...headerActionProps}>
               <Plus size={20} />
             </TactileButton>
           ) : null)}
