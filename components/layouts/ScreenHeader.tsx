@@ -1,4 +1,5 @@
 import * as React from "react";
+import clsx from "clsx";
 import BackButton from "../BackButton";
 import { TactileButton } from "../TactileButton";
 import { Plus } from "lucide-react";
@@ -50,35 +51,37 @@ export default function ScreenHeader({
   titleClassName = "",
   subtitleClassName = "",
 }: ScreenHeaderProps) {
-  const sizeKey = denseSmall ? "compactTiny" : dense ? "compact" : "comfortable";
-  const legacy = {
+  type SizeKey = "compactTiny" | "compact" | "comfortable";
+  const sizeKey: SizeKey = denseSmall ? "compactTiny" : dense ? "compact" : "comfortable";
+  const presets: Record<SizeKey, { py: string; minH: string }> = {
     compactTiny: { py: "py-1.5", minH: "min-h-[44px]" },
-    compact:     { py: "py-2",   minH: "min-h-[52px]" },
-    comfortable: { py: "py-3",   minH: "min-h-[64px]" },
-  }[sizeKey as "compactTiny" | "compact" | "comfortable"];
+    compact: { py: "py-2", minH: "min-h-[52px]" },
+    comfortable: { py: "py-3", minH: "min-h-[64px]" },
+  };
+  const { py, minH } = presets[sizeKey];
 
   const useFixed = typeof contentHeightPx === "number";
 
-  const containerClasses = [
-    sticky ? "sticky top-0 z-30" : "",
+  const containerClasses = clsx(
+    sticky && "sticky top-0 z-30",
     "relative w-full bg-background",
     padSafeArea && "pt-safe",
-    showBorder ? "border-b border-border" : "",
-    className,
-  ].filter(Boolean).join(" ");
+    showBorder && "border-b border-border",
+    className
+  );
 
-  const rowClasses = [
+  const rowClasses = clsx(
     "relative flex items-center w-full",
-    !useFixed && legacy.minH,
-    !useFixed && legacy.py,
-  ].filter(Boolean).join(" ");
+    !useFixed && minH,
+    !useFixed && py
+  );
 
   const titleMaxWidth = `calc(100% - ${reserveLeftPx + reserveRightPx}px)`;
 
-  return (
-    <div className={containerClasses}>
-      {/* Content row (height excludes safe-area padding) */}
-      <div className={rowClasses} style={useFixed ? { height: contentHeightPx } : undefined}>
+    return (
+      <header className={containerClasses}>
+        {/* Content row (height excludes safe-area padding) */}
+        <div className={rowClasses} style={useFixed ? { height: contentHeightPx } : undefined}>
         {/* Left */}
         <div className="shrink-0 flex items-center" style={{ width: reserveLeftPx }}>
           {onBack ? <BackButton onClick={onBack} {...headerActionProps} /> : null}
@@ -90,23 +93,19 @@ export default function ScreenHeader({
           style={{ maxWidth: titleMaxWidth }}
         >
           <h1
-            className={[
+            className={clsx(
               "font-medium leading-1.5 text-warm-brown truncate text-[clamp(16px,4.2vw,20px)]",
-              titleClassName,
-            ].join(" ")
-          }
+              titleClassName
+            )}
           >
             {title}
           </h1>
           {subtitle ? (
-            <span
-              className={[
-                "mt-1",
-                subtitleClassName || "text-xs text-warm-brown",
-              ].join(" ")}
+            <p
+              className={clsx("mt-1", subtitleClassName ?? "text-xs text-warm-brown")}
             >
               {subtitle}
-            </span>
+            </p>
           ) : null}
         </div>
 
@@ -118,7 +117,7 @@ export default function ScreenHeader({
             </TactileButton>
           ) : null)}
         </div>
-      </div>
-    </div>
-  );
-}
+        </div>
+      </header>
+    );
+  }
