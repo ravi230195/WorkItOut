@@ -2,7 +2,7 @@
 import React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-type Direction = "left" | "right" | "up" | "down";
+type Direction = "left" | "right" | "up" | "down" | "center";
 
 function getAxisOffset(dir: Direction) {
   switch (dir) {
@@ -14,6 +14,8 @@ function getAxisOffset(dir: Direction) {
       return { y: "-100%" };
     case "down":
       return { y: "100%" };
+    case "center":
+      return { x: 0, y: 0 };
     default:
       return { x: 0 };
   }

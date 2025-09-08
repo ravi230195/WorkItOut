@@ -126,7 +126,7 @@ export function AppRouter({
       <SlideTransition
         show={currentView === "create-routine"}
         enterFrom="down"
-        exitTo="left"
+        exitTo="down"
       >
         <CreateRoutineScreen
           onBack={onCloseCreateRoutine}
@@ -137,15 +137,15 @@ export function AppRouter({
       <SlideTransition
         show={currentView === "edit-measurements"}
         enterFrom="down"
-        exitTo="left"
+        exitTo="down"
       >
         <EditMeasurementsScreen onBack={onCloseEditMeasurements} />
       </SlideTransition>
 
       <SlideTransition
         show={currentView === "add-exercises-to-routine" && !!currentRoutineName}
-        enterFrom="down"
-        exitTo="left"
+        enterFrom="center"
+        exitTo="center"
       >
         <AddExercisesToRoutineScreen
           routineId={currentRoutineId || undefined}
@@ -164,7 +164,7 @@ export function AppRouter({
           currentRoutineId !== null &&
           !!currentRoutineName
         }
-        enterFrom="right"
+        enterFrom="left"
         exitTo="left"
       >
         <ExerciseSetupScreen

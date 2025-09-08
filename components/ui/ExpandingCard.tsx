@@ -1,6 +1,6 @@
 // components/ui/ExpandingCard.tsx
 import * as React from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, type Transition } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 type Variant = "glass" | "solid" | "plain";
@@ -25,6 +25,7 @@ type BaseProps = {
   size?: "sm" | "md" | "lg";
   disableChevron?: boolean;
   disabled?: boolean;
+  transition?: Transition;
 };
 
 // 👇 This ensures JSX `children` is always accepted.
@@ -59,6 +60,7 @@ export default function ExpandingCard({
   size = "md",
   disableChevron = false,
   disabled = false,
+  transition = {duration: 0.3}
 }: Props) {
   const bodyId = React.useId();
 
@@ -66,6 +68,7 @@ export default function ExpandingCard({
     <motion.div
       layout
       initial={false}
+      transition={transition}
       className={[
         containerByVariant[variant],
         expanded ? "ring-1 ring-border" : "",
@@ -116,7 +119,7 @@ export default function ExpandingCard({
         {!disableChevron && (
           <motion.div
             animate={{ rotate: expanded ? 180 : 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 24 }}
+            transition={{ type: "spring", stiffness: 300, damping: 24 ,...transition}}
             className={[
               "ml-1",
               variant === "glass" ? "text-primary-foreground opacity-70" : "text-warm-brown/70",
@@ -136,6 +139,7 @@ export default function ExpandingCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={transition}
             className={[
               "pt-1 pb-4 px-4",
               bodyClassName,
