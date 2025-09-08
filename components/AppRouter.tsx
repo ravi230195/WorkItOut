@@ -142,15 +142,21 @@ export function AppRouter({
         <EditMeasurementsScreen onBack={onCloseEditMeasurements} />
       </SlideTransition>
 
-      {currentView === "add-exercises-to-routine" && currentRoutineName && (
+      <SlideTransition
+        show={currentView === "add-exercises-to-routine" && !!currentRoutineName}
+        enterFrom="down"
+        exitTo="left"
+      >
         <AddExercisesToRoutineScreen
           routineId={currentRoutineId || undefined}
           routineName={currentRoutineName}
-          onBack={currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine}
+          onBack={
+            currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine
+          }
           onExerciseSelected={(exercises: Exercise[]) => onExerciseSelected(exercises)}
           isFromExerciseSetup={!!currentRoutineId}
         />
-      )}
+      </SlideTransition>
 
       <SlideTransition
         show={
