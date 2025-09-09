@@ -12,7 +12,6 @@ import { BottomNavigation } from "../BottomNavigation";
 import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
 import ListItem from "../ui/ListItem";
-import { FixedSizeList as VirtualList, ListChildComponentProps } from "react-window";
 
 interface AddExercisesToRoutineScreenProps {
   routineId?: number;
@@ -106,22 +105,17 @@ function ExerciseList({
   hasMore: boolean;
   isLoadingMore: boolean;
 }) {
-  const items = useMemo(() => {
-    const out: Array<{ type: "header"; letter: string } | { type: "exercise"; exercise: Exercise }> = [];
-    const letters = Object.keys(groupedAZ).sort((a, b) => a.localeCompare(b));
-    letters.forEach((letter) => {
-      out.push({ type: "header", letter });
-      groupedAZ[letter].forEach((ex) => out.push({ type: "exercise", exercise: ex }));
-    });
-    return out;
-  }, [groupedAZ]);
+  const letters = useMemo(
+    () => Object.keys(groupedAZ).sort((a, b) => a.localeCompare(b)),
+    [groupedAZ]
+  );
 
   const selectedIds = useMemo(
     () => selectedExercises.map((e) => e.exercise_id),
     [selectedExercises]
   );
 
-  if (items.length === 0) {
+  if (letters.length === 0) {
     return (
       <Section variant="card" className="text-center">
         <p className="text-muted-foreground">No exercises found</p>
@@ -129,52 +123,59 @@ function ExerciseList({
     );
   }
 
-  const itemCount = items.length + (hasMore ? 1 : 0);
-  const loadMoreIndex = Math.max(0, items.length - LOAD_MORE_PRELOAD);
+  // Total number of exercises rendered (headers excluded)
+  const totalExercises = useMemo(
+    () => letters.reduce((sum, l) => sum + groupedAZ[l].length, 0),
+    [letters, groupedAZ]
+  );
 
-  const Row = ({ index, style }: ListChildComponentProps) => {
-    if (index >= items.length) {
-      return (
-        <div style={style} className="text-center text-muted-foreground">
-          {isLoadingMore ? "Loading..." : ""}
-        </div>
-      );
-    }
-    const item = items[index];
-    if (item.type === "header") {
-      return (
-        <div style={style}>
-          <h2 className="text-xs md:text-sm text-muted-foreground font-medium mb-3 px-2 tracking-wide">
-            {item.letter}
-          </h2>
-        </div>
-      );
-    }
-    return (
-      <div style={style}>
-        <ExerciseRow
-          exercise={item.exercise}
-          selected={selectedIds.includes(item.exercise.exercise_id)}
-          onSelect={onSelect}
-        />
-      </div>
-    );
-  };
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+        onLoadMore();
+      }
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [onLoadMore, hasMore, isLoadingMore, totalExercises]);
+
+  let renderIndex = -1;
 
   return (
-    <VirtualList
-      height={400}
-      itemCount={itemCount}
-      itemSize={80}
-      width="100%"
-      onItemsRendered={({ overscanStopIndex }) => {
-        if (hasMore && !isLoadingMore && overscanStopIndex >= loadMoreIndex) {
-          onLoadMore();
-        }
-      }}
-    >
-      {Row}
-    </VirtualList>
+    <>
+      {letters.map((letter) => (
+        <div key={letter}>
+          <h2 className="text-xs md:text-sm text-muted-foreground font-medium mb-3 px-2 tracking-wide">
+            {letter}
+          </h2>
+          <div className="space-y-2">
+            {groupedAZ[letter].map((exercise) => {
+              renderIndex++;
+              const ref =
+                renderIndex === totalExercises - LOAD_MORE_PRELOAD
+                  ? loadMoreRef
+                  : undefined;
+              return (
+                <div key={exercise.exercise_id} ref={ref}>
+                  <ExerciseRow
+                    exercise={exercise}
+                    selected={selectedIds.includes(exercise.exercise_id)}
+                    onSelect={onSelect}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      {isLoadingMore && (
+        <div className="text-center text-muted-foreground py-4">Loading...</div>
+      )}
+    </>
   );
 }
 
