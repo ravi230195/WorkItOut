@@ -114,15 +114,6 @@ function ExerciseList({
     () => selectedExercises.map((e) => e.exercise_id),
     [selectedExercises]
   );
-
-  if (letters.length === 0) {
-    return (
-      <Section variant="card" className="text-center">
-        <p className="text-muted-foreground">No exercises found</p>
-      </Section>
-    );
-  }
-
   // Total number of exercises rendered (headers excluded)
   const totalExercises = useMemo(
     () => letters.reduce((sum, l) => sum + groupedAZ[l].length, 0),
@@ -142,6 +133,14 @@ function ExerciseList({
     observer.observe(node);
     return () => observer.disconnect();
   }, [onLoadMore, hasMore, isLoadingMore, totalExercises]);
+
+  if (letters.length === 0) {
+    return (
+      <Section variant="card" className="text-center">
+        <p className="text-muted-foreground">No exercises found</p>
+      </Section>
+    );
+  }
 
   let renderIndex = -1;
 
