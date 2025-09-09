@@ -415,25 +415,26 @@ export function AddExercisesToRoutineScreen({
 
         {/* Exercise List */}
         <Section variant="plain" padding="none" className="space-y-6">
-          {isLoading ? (
-            showSlowSpinner ? (
-              <div className="py-6 flex justify-center">
-                <div className="animate-spin w-8 h-8 border-4 border-warm-coral border-t-transparent rounded-full" />
-              </div>
-            ) : null
-          ) : loadError ? (
+          {loadError ? (
             <Section variant="card" className="text-center">
               <p className="text-muted-foreground">Failed to load exercises</p>
             </Section>
           ) : (
-            <ExerciseList
-              groupedAZ={groupedAZ}
-              selectedExercises={selectedExercises}
-              onSelect={handleSelectExercise}
-              onLoadMore={() => fetchExercises(false)}
-              hasMore={hasMore}
-              isLoadingMore={isLoadingMore}
-            />
+            <>
+              <ExerciseList
+                groupedAZ={groupedAZ}
+                selectedExercises={selectedExercises}
+                onSelect={handleSelectExercise}
+                onLoadMore={() => fetchExercises(false)}
+                hasMore={hasMore}
+                isLoadingMore={isLoadingMore}
+              />
+              {isLoading && showSlowSpinner && (
+                <div className="py-6 flex justify-center">
+                  <div className="animate-spin w-8 h-8 border-4 border-warm-coral border-t-transparent rounded-full" />
+                </div>
+              )}
+            </>
           )}
         </Section>
 
