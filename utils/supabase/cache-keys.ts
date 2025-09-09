@@ -1,10 +1,14 @@
-// All cache keys renamed to “fullCacheKey*” as requested
-
-export const fullCacheKeyExercises = () => 
-  `supabase:exercises`;
-export const fullCacheKeyExercise = (exerciseId: number) => 
+// All cache keys use the `fullCacheKey*` naming convention
+export const fullCacheKeyExercise = (exerciseId: number) =>
   `supabase:exercise:${exerciseId}`;
-export const fullCacheKeyUserRoutines = (userId: string) => 
+export const fullCacheKeyExercisesPage = (limit: number, offset: number) =>
+  `supabase:exercises:${limit}:${offset}`;
+export const fullCacheKeyExercisesMuscleGroup = (
+  group: string,
+  limit: number,
+  offset: number
+) => `supabase:exercises:muscle_group:${group}:${limit}:${offset}`;
+export const fullCacheKeyUserRoutines = (userId: string) =>
   `supabase:${userId}:routines`;
 export const fullCacheKeyRoutineExercises = (userId: string, routineTemplateId: number) => 
   `supabase:${userId}:routine:${routineTemplateId}:exercises`;

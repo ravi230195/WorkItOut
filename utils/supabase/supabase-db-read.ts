@@ -11,20 +11,45 @@ import { localCache } from "../cache/localCache";
 
 export class SupabaseDBRead extends SupabaseBase {
   // Exercises (global)
-  async getExercises(): Promise<Exercise[]> {
-    const url = `${SUPABASE_URL}/rest/v1/exercises?select=*`;
-    const key = this.keyExercises();
-    
-    const { data: exercises, status } = await this.getOrFetchAndCache<Exercise[]>(url, key, CACHE_TTL.exercises, true);
-    
+  async getExercises(opts: {
+    limit?: number;
+    offset?: number;
+    muscleGroup?: string;
+    search?: string;
+  } = {}): Promise<Exercise[]> {
+    const { limit, offset, muscleGroup, search } = opts;
+
+    let url = `${SUPABASE_URL}/rest/v1/exercises?select=*`;
+    if (muscleGroup) {
+      url += `&muscle_group=eq.${encodeURIComponent(muscleGroup)}`;
+    }
+    if (search) {
+      url += `&name=ilike.*${encodeURIComponent(search)}*`;
+    }
+    if (limit != null) url += `&limit=${limit}`;
+    if (offset != null) url += `&offset=${offset}`;
+
+    const pageLimit = limit ?? 0;
+    const pageOffset = offset ?? 0;
+    const key = muscleGroup
+      ? this.keyExercisesMuscleGroup(muscleGroup, pageLimit, pageOffset)
+      : this.keyExercisesPage(pageLimit, pageOffset);
+
+    const { data: exercises, status } = await this.getOrFetchAndCache<Exercise[]>(
+      url,
+      key,
+      CACHE_TTL.exercises,
+      true
+    );
+
     // ✅ ONLY cache individually if this was a fresh fetch (not cache hit)
     if (status === CacheStatus.FRESH_FETCH) {
-      exercises.forEach(exercise => {
-        const individualKey = this.keyExercise(exercise.exercise_id);  // ✅ Using correct property name
+      exercises.forEach((exercise) => {
+        const individualKey = this.keyExercise(exercise.exercise_id); // ✅ Using correct property name
         localCache.set(individualKey, exercise, CACHE_TTL.exercises);
       });
     }
-    
+
     return exercises;
   }
 

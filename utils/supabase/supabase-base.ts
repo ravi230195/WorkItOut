@@ -1,8 +1,9 @@
 import { localCache } from "../cache/localCache";
 import type { AuthUser } from "./supabase-types";
 import {
-  fullCacheKeyExercises,
   fullCacheKeyExercise,
+  fullCacheKeyExercisesPage,
+  fullCacheKeyExercisesMuscleGroup,
   fullCacheKeyProfile,
   fullCacheKeyRoutineExercises,
   fullCacheKeyRoutineExercisesWithDetails,
@@ -280,7 +281,13 @@ export class SupabaseBase {
   }
 
   // ---------- Common keys (exported so reads/writes can use) ----------
-  protected keyExercises = () => fullCacheKeyExercises();
+  protected keyExercisesPage = (limit: number, offset: number) =>
+    fullCacheKeyExercisesPage(limit, offset);
+  protected keyExercisesMuscleGroup = (
+    group: string,
+    limit: number,
+    offset: number
+  ) => fullCacheKeyExercisesMuscleGroup(group, limit, offset);
   protected keyExercise = (id: number) => fullCacheKeyExercise(id);
   protected keyUserRoutines = (userId: string) => fullCacheKeyUserRoutines(userId);
   protected keyRoutineExercises = (userId: string, rtId: number) => fullCacheKeyRoutineExercises(userId, rtId);
