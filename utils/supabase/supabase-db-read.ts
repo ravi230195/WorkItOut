@@ -16,12 +16,15 @@ export class SupabaseDBRead extends SupabaseBase {
     offset?: number;
     muscleGroup?: string;
     search?: string;
+    other?: boolean;
   } = {}): Promise<Exercise[]> {
-    const { limit, offset, muscleGroup, search } = opts;
+    const { limit, offset, muscleGroup, search, other } = opts;
 
     let url = `${SUPABASE_URL}/rest/v1/exercises?select=*`;
     if (muscleGroup) {
       url += `&muscle_group=eq.${encodeURIComponent(muscleGroup)}`;
+    } else if (other) {
+      url += `&or=(muscle_group.is.null,muscle_group.eq.)`;
     }
     if (search) {
       url += `&name=ilike.*${encodeURIComponent(search)}*`;
@@ -33,6 +36,8 @@ export class SupabaseDBRead extends SupabaseBase {
     const pageOffset = offset ?? 0;
     const key = muscleGroup
       ? this.keyExercisesMuscleGroup(muscleGroup, pageLimit, pageOffset)
+      : other
+      ? this.keyExercisesMuscleGroup("other", pageLimit, pageOffset)
       : this.keyExercisesPage(pageLimit, pageOffset);
 
     const { data: exercises, status } = await this.getOrFetchAndCache<Exercise[]>(
@@ -51,6 +56,24 @@ export class SupabaseDBRead extends SupabaseBase {
     }
 
     return exercises;
+  }
+
+  async getMuscleGroups(): Promise<string[]> {
+    const url =
+      `${SUPABASE_URL}/rest/v1/exercises?select=muscle_group&muscle_group=not.is.null` +
+      `&order=muscle_group`;
+    const { data } = await this.getOrFetchAndCache<
+      { muscle_group: string | null }[]
+    >(url, this.keyExerciseMuscleGroups(), CACHE_TTL.exercises, true);
+    const set = new Set<string>();
+    let hasOther = false;
+    for (const row of data) {
+      const g = (row.muscle_group || "").trim();
+      if (g) set.add(g);
+      else hasOther = true;
+    }
+    if (hasOther) set.add("Other");
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
   }
 
   // Individual exercise by ID

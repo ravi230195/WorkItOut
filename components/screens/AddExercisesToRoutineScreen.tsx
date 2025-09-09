@@ -200,6 +200,7 @@ export function AddExercisesToRoutineScreen({
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const pageRef = useRef(0);
+  const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
 
   // Component render timing
   useEffect(() => {
@@ -226,7 +227,11 @@ export function AddExercisesToRoutineScreen({
         const data = await supabaseAPI.getExercises({
           limit: PAGE_SIZE,
           offset: page * PAGE_SIZE,
-          muscleGroup: muscleFilter === "all" ? undefined : muscleFilter,
+          muscleGroup:
+            muscleFilter === "all" || muscleFilter === OTHER_GROUP
+              ? undefined
+              : muscleFilter,
+          other: muscleFilter === OTHER_GROUP,
           search: searchQuery.trim() || undefined,
         });
         const fetchTime = fetchTimer.end();
@@ -253,15 +258,14 @@ export function AddExercisesToRoutineScreen({
     return () => clearTimeout(handle);
   }, [fetchExercises]);
 
-  // unique muscle groups
-  const muscleGroups = useMemo(() => {
-    const s = new Set<string>();
-    for (const ex of exercises) {
-      const g = (ex.muscle_group || "").trim();
-      s.add(g || OTHER_GROUP);
-    }
-    return Array.from(s).sort((a, b) => a.localeCompare(b));
-  }, [exercises]);
+  useEffect(() => {
+    supabaseAPI
+      .getMuscleGroups()
+      .then((groups) => setMuscleGroups(groups))
+      .catch((error) =>
+        logger.error("[AddExercises] failed to load muscle groups", error)
+      );
+  }, []);
 
   // index by group
   const byGroup = useMemo(() => {

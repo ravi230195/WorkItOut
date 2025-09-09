@@ -8,6 +8,8 @@ export const fullCacheKeyExercisesMuscleGroup = (
   limit: number,
   offset: number
 ) => `supabase:exercises:muscle_group:${group}:${limit}:${offset}`;
+export const fullCacheKeyExerciseMuscleGroups =
+  "supabase:exercises:muscle_groups";
 export const fullCacheKeyUserRoutines = (userId: string) =>
   `supabase:${userId}:routines`;
 export const fullCacheKeyRoutineExercises = (userId: string, routineTemplateId: number) => 
