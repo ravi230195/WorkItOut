@@ -59,21 +59,23 @@ export class SupabaseDBRead extends SupabaseBase {
   }
 
   async getMuscleGroups(): Promise<string[]> {
-    // Use a grouped query so Supabase returns each muscle group only once
-    const url = `${SUPABASE_URL}/rest/v1/exercises?select=muscle_group&group=muscle_group&order=muscle_group`;
+    // Fetch just the muscle_group column for all exercises and
+    // deduplicate client-side. This avoids using PostgREST
+    // `group` queries, which can fail on some deployments.
+    const url = `${SUPABASE_URL}/rest/v1/exercises?select=muscle_group&order=muscle_group`;
     const { data } = await this.getOrFetchAndCache<
       { muscle_group: string | null }[]
     >(url, this.keyExerciseMuscleGroups(), CACHE_TTL.exerciseMuscleGroups, true);
 
-    const groups: string[] = [];
+    const set = new Set<string>();
     let hasOther = false;
     for (const row of data) {
       const g = (row.muscle_group || "").trim();
-      if (g) groups.push(g);
+      if (g) set.add(g);
       else hasOther = true;
     }
 
-    groups.sort((a, b) => a.localeCompare(b));
+    const groups = Array.from(set).sort((a, b) => a.localeCompare(b));
     if (hasOther) groups.push("Other");
 
     return groups;
