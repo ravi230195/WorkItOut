@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { AppScreen, ScreenHeader, Section, Stack, Spacer } from "../layouts";
 import { BottomNavigation } from "../BottomNavigation";
 import { logger } from "../../utils/logging";
+import { performanceTimer } from "../../utils/performanceTimer";
 import ListItem from "../ui/ListItem";
 
 interface AddExercisesToRoutineScreenProps {
@@ -173,13 +174,26 @@ export function AddExercisesToRoutineScreen({
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingExercise, setIsAddingExercise] = useState(false);
 
+  // Component render timing
+  useEffect(() => {
+    const renderTimer = performanceTimer.start("AddExercisesToRoutineScreen render");
+    return () => {
+      const renderTime = renderTimer.end();
+      logger.info(`[ADD_EXERCISES] Component render: ${renderTime.duration.toFixed(2)}ms`);
+    };
+  }, []);
+
   // fetch once
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         setIsLoading(true);
+        const fetchTimer = performanceTimer.start("AddExercisesToRoutineScreen fetch exercises");
         const data = await supabaseAPI.getExercises();
+        const fetchTime = fetchTimer.end();
+        logger.info(`[ADD_EXERCISES] Fetch exercises: ${fetchTime.duration.toFixed(2)}ms`);
+        
         if (cancelled) return;
         setExercises(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -217,6 +231,8 @@ export function AddExercisesToRoutineScreen({
 
   // filter + search + group to A–Z
   const groupedAZ = useMemo(() => {
+    const filterTimer = performanceTimer.start("AddExercisesToRoutineScreen filter exercises");
+    
     const base = muscleFilter === "all" ? exercises : (byGroup.get(muscleFilter) ?? []);
     const q = searchQuery.trim().toLowerCase();
     const filtered = q ? base.filter((ex) => ex.name.toLowerCase().includes(q)) : base;
@@ -226,6 +242,10 @@ export function AddExercisesToRoutineScreen({
       const k = (ex.name?.[0] || "#").toUpperCase();
       (out[k] ||= []).push(ex);
     }
+    
+    const filterTime = filterTimer.end();
+    logger.info(`[ADD_EXERCISES] Filter exercises (${filtered.length} results): ${filterTime.duration.toFixed(2)}ms`);
+    
     return out;
   }, [exercises, byGroup, muscleFilter, searchQuery]);
 
