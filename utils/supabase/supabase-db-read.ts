@@ -43,7 +43,7 @@ export class SupabaseDBRead extends SupabaseBase {
     const { data: exercises, status } = await this.getOrFetchAndCache<Exercise[]>(
       url,
       key,
-      CACHE_TTL.exercises,
+      CACHE_TTL.exercisePages,
       true
     );
 
@@ -62,7 +62,7 @@ export class SupabaseDBRead extends SupabaseBase {
     const url = `${SUPABASE_URL}/rest/v1/exercises?select=muscle_group`;
     const { data } = await this.getOrFetchAndCache<
       { muscle_group: string | null }[]
-    >(url, this.keyExerciseMuscleGroups(), CACHE_TTL.exercises, true);
+    >(url, this.keyExerciseMuscleGroups(), CACHE_TTL.exerciseMuscleGroups, true);
 
     const set = new Set<string>();
     let hasOther = false;

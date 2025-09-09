@@ -22,7 +22,9 @@ export const SUPABASE_ANON_KEY =
 
 // TTLs and read strategy
 export const CACHE_TTL = {
-  exercises: 24 * 60 * 60 * 1000, // 24h
+  exercises: 24 * 60 * 60 * 1000, // individual exercise records
+  exercisePages: 24 * 60 * 60 * 1000, // paginated exercise results
+  exerciseMuscleGroups: 24 * 60 * 60 * 1000, // distinct muscle-group list
   routines: 60 * 60 * 1000,
   routineExercises: 60 * 60 * 1000,
   routineExercisesWithDetails: 60 * 60 * 1000,
