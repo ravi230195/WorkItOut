@@ -101,6 +101,7 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
     journalRef.current = makeMeasurementJournal();
     await loadEntries();
     toast.success("Measurements saved");
+    onBack();
   };
 
   const hasChanges = useMemo(
