@@ -137,7 +137,7 @@ function ExerciseList({
   if (letters.length === 0) {
     return (
       <Section variant="card" className="text-center">
-        <p className="text-muted-foreground">No exercises found</p>
+        <p className="text-muted-foreground">No exercises match your filters</p>
       </Section>
     );
   }
@@ -198,6 +198,7 @@ export function AddExercisesToRoutineScreen({
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const pageRef = useRef(0);
   const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
 
@@ -220,6 +221,7 @@ export function AddExercisesToRoutineScreen({
         } else {
           setIsLoadingMore(true);
         }
+        setLoadError(false);
         const fetchTimer = performanceTimer.start(
           "AddExercisesToRoutineScreen fetch exercises"
         );
@@ -240,10 +242,12 @@ export function AddExercisesToRoutineScreen({
         setExercises((prev) => (reset ? data : [...prev, ...data]));
         setHasMore(data.length === PAGE_SIZE);
         pageRef.current = page + 1;
+        setLoadError(false);
       } catch (error) {
         logger.error("[AddExercises] fetch error:", error);
         toast.error("Failed to load exercises");
         if (reset) setExercises([]);
+        setLoadError(true);
       } finally {
         if (reset) setIsLoading(false);
         else setIsLoadingMore(false);
@@ -393,7 +397,12 @@ export function AddExercisesToRoutineScreen({
           loadingBehavior="replace"
           className="space-y-6"
         >
-          {!isLoading && (
+          {!isLoading && loadError && (
+            <Section variant="card" className="text-center">
+              <p className="text-muted-foreground">Failed to load exercises</p>
+            </Section>
+          )}
+          {!isLoading && !loadError && (
             <ExerciseList
               groupedAZ={groupedAZ}
               selectedExercises={selectedExercises}
