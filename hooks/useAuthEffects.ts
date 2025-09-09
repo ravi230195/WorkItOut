@@ -41,10 +41,10 @@ export function useAuthEffects({ currentView, setCurrentView }: UseAuthEffectsPr
     if (!authReady) return;
 
     if (!isAuthenticated) {
-      if (currentView !== "signin" && currentView !== "signup") {
-        setCurrentView("signin");
+      if (currentView !== "signin" && currentView !== "signup" && currentView !== "landing") {
+        setCurrentView("landing");
       }
-    } else if (currentView === "signin" || currentView === "signup") {
+    } else if (currentView === "signin" || currentView === "signup" || currentView === "landing") {
       setCurrentView("workouts");
     }
   }, [authReady, isAuthenticated, currentView, setCurrentView]);

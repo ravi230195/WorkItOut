@@ -5,6 +5,7 @@ import { ExerciseSetupScreen } from "./screens/ExerciseSetupScreen";
 import EditMeasurementsScreen from "./screens/EditMeasurementsScreen";
 
 import { ProgressScreen } from "./screens/ProgressScreen";
+import {LandingScreen} from "./screens/LandingScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { SignInScreen } from "./screens/SignInScreen";
 import { SignUpScreen } from "./screens/SignUpScreen";
@@ -93,7 +94,7 @@ export function AppRouter({
 }: AppRouterProps) {
   logger.debug(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
 
-  if (!isAuthenticated || currentView === "signin" || currentView === "signup") {
+  if (!isAuthenticated) {
     if (currentView === "signup") {
       return (
         <SignUpScreen
@@ -103,9 +104,18 @@ export function AppRouter({
         />
       );
     }
+    if (currentView === "signin") {
+      return (
+        <SignInScreen
+          onAuthSuccess={onAuthSuccess}
+          onNavigateToSignUp={onNavigateToSignUp}
+          bottomBar={bottomBar}
+        />
+      );
+    }
     return (
-      <SignInScreen
-        onAuthSuccess={onAuthSuccess}
+      <LandingScreen
+        onNavigateToSignIn={onNavigateToSignIn}
         onNavigateToSignUp={onNavigateToSignUp}
         bottomBar={bottomBar}
       />

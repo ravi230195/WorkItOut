@@ -18,7 +18,7 @@ The `useAppNavigation` hook serves as the central navigation controller, managin
 
 #### Key State Variables:
 ```typescript
-const [currentView, setCurrentView] = useState<ViewType>("workouts");
+const [currentView, setCurrentView] = useState<ViewType>("landing");
 const [activeTab, setActiveTab] = useState<"workouts" | "progress" | "profile">("workouts");
 const [currentRoutineId, setCurrentRoutineId] = useState<number | null>(null);
 const [currentRoutineName, setCurrentRoutineName] = useState<string>("");
@@ -41,7 +41,8 @@ Defines all possible navigation states:
 
 ```typescript
 export type AppView = 
-  | "signin"
+  | "landing"
+| "signin"
   | "signup"
   | "workouts" 
   | "create-routine"
@@ -56,6 +57,8 @@ export type AppView =
 ### 1. Authentication Flow
 
 ```
+Landing Screen → Sign In or Sign Up
+     ↓
 SignIn Screen → Authentication Success → Workouts Dashboard
      ↓
 SignUp Screen → Account Creation → Workouts Dashboard

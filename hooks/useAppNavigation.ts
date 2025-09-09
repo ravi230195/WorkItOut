@@ -10,7 +10,7 @@ export enum RoutineAccess {
 }
 
 export function useAppNavigation() {
-  const [currentView, setCurrentView] = useState<ViewType>("workouts");
+  const [currentView, setCurrentView] = useState<ViewType>("landing");
   const [activeTab, setActiveTab] = useState<"workouts" | "progress" | "profile">("workouts");
 
   const [currentRoutineId, setCurrentRoutineId] = useState<number | null>(null);
