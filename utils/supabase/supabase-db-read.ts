@@ -11,21 +11,71 @@ import { localCache } from "../cache/localCache";
 
 export class SupabaseDBRead extends SupabaseBase {
   // Exercises (global)
-  async getExercises(): Promise<Exercise[]> {
-    const url = `${SUPABASE_URL}/rest/v1/exercises?select=*`;
-    const key = this.keyExercises();
-    
-    const { data: exercises, status } = await this.getOrFetchAndCache<Exercise[]>(url, key, CACHE_TTL.exercises, true);
-    
+  async getExercises(opts: {
+    limit?: number;
+    offset?: number;
+    muscleGroup?: string;
+    search?: string;
+    other?: boolean;
+  } = {}): Promise<Exercise[]> {
+    const { limit, offset, muscleGroup, search, other } = opts;
+
+    let url = `${SUPABASE_URL}/rest/v1/exercises?select=*`;
+    if (muscleGroup) {
+      url += `&muscle_group=eq.${encodeURIComponent(muscleGroup)}`;
+    } else if (other) {
+      url += `&or=(muscle_group.is.null,muscle_group.eq.)`;
+    }
+    if (search) {
+      url += `&name=ilike.*${encodeURIComponent(search)}*`;
+    }
+    if (limit != null) url += `&limit=${limit}`;
+    if (offset != null) url += `&offset=${offset}`;
+
+    const pageLimit = limit ?? 0;
+    const pageOffset = offset ?? 0;
+    const key = muscleGroup
+      ? this.keyExercisesMuscleGroup(muscleGroup, pageLimit, pageOffset)
+      : other
+      ? this.keyExercisesMuscleGroup("other", pageLimit, pageOffset)
+      : this.keyExercisesPage(pageLimit, pageOffset);
+
+    const { data: exercises, status } = await this.getOrFetchAndCache<Exercise[]>(
+      url,
+      key,
+      CACHE_TTL.exercises,
+      true
+    );
+
     // ✅ ONLY cache individually if this was a fresh fetch (not cache hit)
     if (status === CacheStatus.FRESH_FETCH) {
-      exercises.forEach(exercise => {
-        const individualKey = this.keyExercise(exercise.exercise_id);  // ✅ Using correct property name
+      exercises.forEach((exercise) => {
+        const individualKey = this.keyExercise(exercise.exercise_id); // ✅ Using correct property name
         localCache.set(individualKey, exercise, CACHE_TTL.exercises);
       });
     }
-    
+
     return exercises;
+  }
+
+  async getMuscleGroups(): Promise<string[]> {
+    const url =
+      `${SUPABASE_URL}/rest/v1/exercises?select=muscle_group&group=muscle_group&order=muscle_group`;
+    const { data } = await this.getOrFetchAndCache<
+      { muscle_group: string | null }[]
+    >(url, this.keyExerciseMuscleGroups(), CACHE_TTL.exercises, true);
+
+    const groups = data
+      .map((row) => (row.muscle_group || "").trim())
+      .filter((g) => g.length > 0)
+      .sort((a, b) => a.localeCompare(b));
+
+    const hasOther = data.some(
+      (row) => !row.muscle_group || row.muscle_group.trim().length === 0
+    );
+    if (hasOther) groups.push("Other");
+
+    return groups;
   }
 
   // Individual exercise by ID
