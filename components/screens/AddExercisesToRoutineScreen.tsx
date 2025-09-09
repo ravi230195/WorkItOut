@@ -387,17 +387,23 @@ export function AddExercisesToRoutineScreen({
 
         {/* Segmented muscle-group filter */}
         <Section variant="plain" padding="none">
-          <div className="overflow-x-auto no-scrollbar">
-            <SegmentedToggle<MuscleFilter>
-              value={muscleFilter}
-              onChange={setMuscleFilter}
-              options={segmentOptions}
-              size="sm"
-              variant="filled"
-              tone="accent"
-              className="min-w-max"
-            />
-          </div>
+          {!filtersReady ? (
+            <div className="py-2 flex justify-center">
+              <div className="w-6 h-6 border-4 border-warm-coral border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto no-scrollbar">
+              <SegmentedToggle<MuscleFilter>
+                value={muscleFilter}
+                onChange={setMuscleFilter}
+                options={segmentOptions}
+                size="sm"
+                variant="filled"
+                tone="accent"
+                className="min-w-max"
+              />
+            </div>
+          )}
         </Section>
 
         {/* Search */}
