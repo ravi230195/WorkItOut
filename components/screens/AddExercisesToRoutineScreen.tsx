@@ -135,11 +135,7 @@ function ExerciseList({
   }, [onLoadMore, hasMore, isLoadingMore, totalExercises]);
 
   if (letters.length === 0) {
-    return (
-      <Section variant="card" className="text-center">
-        <p className="text-muted-foreground">No exercises match your filters</p>
-      </Section>
-    );
+    return null;
   }
 
   let renderIndex = -1;
@@ -199,6 +195,7 @@ export function AddExercisesToRoutineScreen({
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [showSlowSpinner, setShowSlowSpinner] = useState(false);
   const pageRef = useRef(0);
   const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
   const [filtersReady, setFiltersReady] = useState(false);
@@ -280,6 +277,16 @@ export function AddExercisesToRoutineScreen({
     const handle = setTimeout(() => fetchExercises(true), 300);
     return () => clearTimeout(handle);
   }, [fetchExercises, filtersReady]);
+
+  useEffect(() => {
+    let t: NodeJS.Timeout;
+    if (isLoading) {
+      t = setTimeout(() => setShowSlowSpinner(true), 1000);
+    } else {
+      setShowSlowSpinner(false);
+    }
+    return () => clearTimeout(t);
+  }, [isLoading]);
 
   // index by group
   const byGroup = useMemo(() => {
@@ -401,19 +408,18 @@ export function AddExercisesToRoutineScreen({
         <Spacer y="xss" />
 
         {/* Exercise List */}
-        <Section
-          variant="plain"
-          padding="none"
-          loading={isLoading}
-          loadingBehavior="replace"
-          className="space-y-6"
-        >
-          {!isLoading && loadError && (
+        <Section variant="plain" padding="none" className="space-y-6">
+          {isLoading ? (
+            showSlowSpinner ? (
+              <div className="py-6 flex justify-center">
+                <div className="animate-spin w-8 h-8 border-4 border-warm-coral border-t-transparent rounded-full" />
+              </div>
+            ) : null
+          ) : loadError ? (
             <Section variant="card" className="text-center">
               <p className="text-muted-foreground">Failed to load exercises</p>
             </Section>
-          )}
-          {!isLoading && !loadError && (
+          ) : (
             <ExerciseList
               groupedAZ={groupedAZ}
               selectedExercises={selectedExercises}
