@@ -43,6 +43,7 @@ function AppContent() {
     completeRoutineCreation,
     handleExercisesSelected,
     closeExerciseSetup,
+    closeAddExercises,
     handleExerciseSetupComplete,
     onRoutineSelection,
     closeExerciseSetupToRoutines,
@@ -95,6 +96,7 @@ function AppContent() {
           onCompleteRoutineCreation={completeRoutineCreation}
           onExerciseSelected={handleExercisesSelected}
           onCloseExerciseSetup={closeExerciseSetup}
+          onCloseAddExercises={closeAddExercises}
           onExerciseSetupComplete={handleExerciseSetupComplete}
           exerciseSetupMode={exerciseSetupMode}
           setExerciseSetupMode={setExerciseSetupMode}

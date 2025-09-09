@@ -43,6 +43,7 @@ interface AppRouterProps {
 
   onExerciseSelected: (exercises: Exercise[]) => void;
   onCloseExerciseSetup: () => void;
+  onCloseAddExercises: () => void;
   onExerciseSetupComplete: () => void;
 
 
@@ -80,6 +81,7 @@ export function AppRouter({
 
   onExerciseSelected,
   onCloseExerciseSetup,
+  onCloseAddExercises,
   onExerciseSetupComplete,
 
 
@@ -151,7 +153,7 @@ export function AppRouter({
           routineId={currentRoutineId || undefined}
           routineName={currentRoutineName}
           onBack={
-            currentRoutineId ? onCloseExerciseSetupToRoutines : onCloseCreateRoutine
+            currentRoutineId ? onCloseAddExercises : onCloseCreateRoutine
           }
           onExerciseSelected={(exercises: Exercise[]) => onExerciseSelected(exercises)}
           isFromExerciseSetup={!!currentRoutineId}
