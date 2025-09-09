@@ -201,6 +201,7 @@ export function AddExercisesToRoutineScreen({
   const [loadError, setLoadError] = useState(false);
   const pageRef = useRef(0);
   const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
+  const [filtersReady, setFiltersReady] = useState(false);
 
   // Component render timing
   useEffect(() => {
@@ -257,18 +258,28 @@ export function AddExercisesToRoutineScreen({
   );
 
   useEffect(() => {
-    const handle = setTimeout(() => fetchExercises(true), 300);
-    return () => clearTimeout(handle);
-  }, [fetchExercises]);
-
-  useEffect(() => {
+    let active = true;
     supabaseAPI
       .getMuscleGroups()
-      .then((groups) => setMuscleGroups(groups))
+      .then((groups) => {
+        if (active) setMuscleGroups(groups);
+      })
       .catch((error) =>
         logger.error("[AddExercises] failed to load muscle groups", error)
-      );
+      )
+      .finally(() => {
+        if (active) setFiltersReady(true);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
+
+  useEffect(() => {
+    if (!filtersReady) return;
+    const handle = setTimeout(() => fetchExercises(true), 300);
+    return () => clearTimeout(handle);
+  }, [fetchExercises, filtersReady]);
 
   // index by group
   const byGroup = useMemo(() => {

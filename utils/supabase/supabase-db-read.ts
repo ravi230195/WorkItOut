@@ -60,20 +60,23 @@ export class SupabaseDBRead extends SupabaseBase {
 
   async getMuscleGroups(): Promise<string[]> {
     const url =
-      `${SUPABASE_URL}/rest/v1/exercises?select=muscle_group&muscle_group=not.is.null` +
+      `${SUPABASE_URL}/rest/v1/exercises?select=muscle_group&group=muscle_group` +
       `&order=muscle_group`;
     const { data } = await this.getOrFetchAndCache<
       { muscle_group: string | null }[]
     >(url, this.keyExerciseMuscleGroups(), CACHE_TTL.exercises, true);
-    const set = new Set<string>();
-    let hasOther = false;
-    for (const row of data) {
-      const g = (row.muscle_group || "").trim();
-      if (g) set.add(g);
-      else hasOther = true;
-    }
-    if (hasOther) set.add("Other");
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+
+    const groups = data
+      .map((row) => (row.muscle_group || "").trim())
+      .filter((g) => g.length > 0)
+      .sort((a, b) => a.localeCompare(b));
+
+    const hasOther = data.some(
+      (row) => !row.muscle_group || row.muscle_group.trim().length === 0
+    );
+    if (hasOther) groups.push("Other");
+
+    return groups;
   }
 
   // Individual exercise by ID
