@@ -84,6 +84,11 @@ export function useAppNavigation() {
     setCurrentView("add-exercises-to-routine");
   };
 
+  /** Back from AddExercises → ExerciseSetup */
+  const closeAddExercises = () => {
+    setCurrentView("exercise-setup");
+  };
+
   /** Back from ExerciseSetup → Workouts/Routines */
   const closeExerciseSetupToRoutines = () => {
     setCurrentRoutineId(null);
@@ -161,6 +166,7 @@ export function useAppNavigation() {
 
     handleExercisesSelected,
     closeExerciseSetup,
+    closeAddExercises,
     handleExerciseSetupComplete,
     onRoutineSelection,
 
