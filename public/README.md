@@ -24,6 +24,6 @@
 - Secondary: #f4e8c1 (warm cream) 
 - Accent: #a7c4a0 (sage green)
 - Background: #fefcfb (warm white)
-- Dark: #3d2914 (warm brown)
+- Dark: #000000 (black)
 
 Generated on: 8/16/2025, 10:55:21 AM

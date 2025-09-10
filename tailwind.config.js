@@ -29,12 +29,8 @@ export default {
         "input-focus": "var(--input-focus)",
         success: "var(--success)",
         "success-light": "var(--success-light)",
-        warning: "var(--warning)",
-        "warning-light": "var(--warning-light)",
         destructive: "var(--destructive)",
         "destructive-light": "var(--destructive-light)",
-        info: "var(--info)",
-        "info-light": "var(--info-light)",
 
         /* Text & brand (HSL so /opacity works) */
         foreground: "hsl(var(--foreground-hsl))",
@@ -51,8 +47,6 @@ export default {
         "warm-cream": "hsl(var(--warm-cream-hsl))",
         "warm-peach": "hsl(var(--warm-peach-hsl))",
         "warm-mint": "hsl(var(--warm-mint-hsl))",
-        "warm-rose": "hsl(var(--warm-rose-hsl))",
-        "warm-lavender": "hsl(var(--warm-lavender-hsl))",
         "soft-gray": "hsl(var(--soft-gray-hsl))",
         "accent-blue": "hsl(var(--accent-blue-hsl))",
         "ring-track-gray": "hsl(var(--ring-track-gray-hsl))",
@@ -109,8 +103,6 @@ export default {
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
         xl: "var(--shadow-xl)",
-        soft: "var(--shadow-soft)",
-        glow: "var(--shadow-glow)",
       },
       transitionDuration: {
         fast: "var(--transition-fast)",
