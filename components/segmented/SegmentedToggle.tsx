@@ -34,9 +34,9 @@ const toneVars: Record<Tone, { text: string; border: string; bgSoft: string; bgH
   },
   brown: {
     text: "text-warm-brown",
-    border: "border-[var(--warm-brown)]",
-    bgSoft: "bg-[var(--warm-brown)]/10",
-    bgHover: "hover:bg-[var(--warm-brown)]/8",
+    border: "border-[var(--foreground)]",
+    bgSoft: "bg-[var(--foreground)]/10",
+    bgHover: "hover:bg-[var(--foreground)]/8",
   },
 };
 
@@ -68,7 +68,7 @@ export default function SegmentedToggle<V extends string = string>({
         const selected = opt.value === value;
         const baseBtn =
           "relative isolate rounded-md transition-colors select-none " +
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--warm-brown)]/20";
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--foreground)]/20";
         const directSelected = cx(
           s.pad,
           s.text,
