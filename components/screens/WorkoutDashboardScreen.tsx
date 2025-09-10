@@ -298,6 +298,7 @@ export default function WorkoutDashboardScreen({
           openActions={openActions}
         />
 
+        <Spacer y="lg" />
         {/* action sheet flows when editing user's own routines */}
         {canEdit && actionRoutine && (
           <RoutineActionSheet

@@ -29,7 +29,7 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
   };
 
   return (
-    <div className="fixed right-4 bottom-24 z-40 flex flex-col items-end gap-4">
+    <div className="fixed right-4 bottom-20 z-40 flex flex-col items-end gap-4">
       {open && (
         <div className="flex flex-col items-end gap-4 mb-4">
           {actions.map((action) => (
