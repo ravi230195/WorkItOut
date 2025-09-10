@@ -14,7 +14,7 @@ export default {
       },
       colors: {
         /* App surface tokens */
-        background: "var(--background)",
+        background: "hsl(var(--background-hsl))",
         card: "hsl(var(--card-hsl))",
         "card-foreground": "var(--card-foreground)",
         popover: "var(--popover)",
@@ -29,12 +29,8 @@ export default {
         "input-focus": "var(--input-focus)",
         success: "var(--success)",
         "success-light": "var(--success-light)",
-        warning: "var(--warning)",
-        "warning-light": "var(--warning-light)",
         destructive: "var(--destructive)",
         "destructive-light": "var(--destructive-light)",
-        info: "var(--info)",
-        "info-light": "var(--info-light)",
 
         /* Text & brand (HSL so /opacity works) */
         foreground: "hsl(var(--foreground-hsl))",
@@ -44,16 +40,13 @@ export default {
         "primary-hover": "var(--primary-hover)",
         "primary-light": "var(--primary-light)",
 
-        /* Warm palette (HSL so /opacity works) */
-        "warm-brown": "hsl(var(--warm-brown-hsl))",
-        "warm-coral": "hsl(var(--warm-coral-hsl))",
-        "warm-sage": "hsl(var(--warm-sage-hsl))",
-        "warm-cream": "hsl(var(--warm-cream-hsl))",
-        "warm-peach": "hsl(var(--warm-peach-hsl))",
-        "warm-mint": "hsl(var(--warm-mint-hsl))",
-        "warm-rose": "hsl(var(--warm-rose-hsl))",
-        "warm-lavender": "hsl(var(--warm-lavender-hsl))",
-        "soft-gray": "hsl(var(--soft-gray-hsl))",
+        /* Warm palette (now mapped to the background color) */
+        "warm-brown": "hsl(var(--foreground-hsl))",
+        "warm-coral": "hsl(var(--background-hsl))",
+        "warm-sage": "hsl(var(--background-hsl))",
+        "warm-peach": "hsl(var(--background-hsl))",
+        "warm-mint": "hsl(var(--background-hsl))",
+        "soft-gray": "hsl(var(--background-hsl))",
         "accent-blue": "hsl(var(--accent-blue-hsl))",
         "ring-track-gray": "hsl(var(--ring-track-gray-hsl))",
         "recovery-yellow": "hsl(var(--recovery-yellow-hsl))",
@@ -109,8 +102,6 @@ export default {
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
         xl: "var(--shadow-xl)",
-        soft: "var(--shadow-soft)",
-        glow: "var(--shadow-glow)",
       },
       transitionDuration: {
         fast: "var(--transition-fast)",

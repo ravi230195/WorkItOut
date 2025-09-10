@@ -113,7 +113,7 @@ export function AppRouter({
   }
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
+    <div className="min-h-[100dvh] bg-background">
       {currentView === "workouts" && (
         <WorkoutDashboardScreen
           onCreateRoutine={onCreateRoutine}
