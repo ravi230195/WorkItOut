@@ -69,7 +69,7 @@ function NumberInput({
       />
       {customKeyboard && showKeyboard
         ? createPortal(
-            <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background p-4">
+            <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-black text-white p-4">
               <NumericKeyboard
                 value={(props.value ?? "").toString()}
                 onChange={handleKeyboardChange}
