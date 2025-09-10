@@ -12,6 +12,7 @@ import { BottomNavigation } from "../BottomNavigation";
 import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
 import ListItem from "../ui/ListItem";
+import LoadingPage from "../LoadingPage";
 
 interface AddExercisesToRoutineScreenProps {
   routineId?: number;
@@ -209,6 +210,10 @@ export function AddExercisesToRoutineScreen({
     };
   }, []);
 
+  if (isLoading) {
+    return <LoadingPage message="Loading exercises..." />;
+  }
+
   // unique muscle groups
   const muscleGroups = useMemo(() => {
     const s = new Set<string>();
@@ -339,20 +344,12 @@ export function AddExercisesToRoutineScreen({
         <Spacer y="xss" />
 
         {/* Exercise List */}
-        <Section
-          variant="plain"
-          padding="none"
-          loading={isLoading}
-          loadingBehavior="replace"
-          className="space-y-6"
-        >
-          {!isLoading && (
-            <ExerciseList
-              groupedAZ={groupedAZ}
-              selectedExercises={selectedExercises}
-              onSelect={handleSelectExercise}
-            />
-          )}
+        <Section variant="plain" padding="none" className="space-y-6">
+          <ExerciseList
+            groupedAZ={groupedAZ}
+            selectedExercises={selectedExercises}
+            onSelect={handleSelectExercise}
+          />
         </Section>
 
         <Spacer y="xl" />
