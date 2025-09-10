@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 
 import { Input } from "./input";
 import { cn } from "./utils";
@@ -66,17 +67,21 @@ function NumberInput({
         readOnly={customKeyboard}
         {...props}
       />
-      {customKeyboard && showKeyboard ? (
-        <div className="mt-2">
-          <NumericKeyboard
-            value={(props.value ?? "").toString()}
-            onChange={handleKeyboardChange}
-            onClose={() => setShowKeyboard(false)}
-            step={numericStep}
-            mode={resolvedMode}
-          />
-        </div>
-      ) : null}
+      {customKeyboard && showKeyboard
+        ? createPortal(
+            <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background p-4">
+              <NumericKeyboard
+                value={(props.value ?? "").toString()}
+                onChange={handleKeyboardChange}
+                onClose={() => setShowKeyboard(false)}
+                step={numericStep}
+                mode={resolvedMode}
+                className="w-full"
+              />
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
