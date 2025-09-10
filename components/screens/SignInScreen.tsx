@@ -55,7 +55,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
     <AppScreen
       padHeader={false}
       padBottomBar={false}
-      className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
+      className="bg-background"
       scrollAreaClassName="grid place-items-center"
       bottomBar={bottomBar}
       contentClassName=""
