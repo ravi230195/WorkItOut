@@ -100,8 +100,8 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       // Auth screen: no header / bottom bar
       padHeader={false}
       padBottomBar={false}
-      // Keep your gradient background
-      className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
+      // Unified flat background
+      className="bg-background"
       // Center the card; allow the page (not the card) to manage the primary scroll
       scrollAreaClassName="grid place-items-center"
       // Slightly narrower max width than default for auth flows

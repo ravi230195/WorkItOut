@@ -44,7 +44,6 @@ export default {
         "warm-brown": "hsl(var(--foreground-hsl))",
         "warm-coral": "hsl(var(--warm-coral-hsl))",
         "warm-sage": "hsl(var(--warm-sage-hsl))",
-        "warm-cream": "hsl(var(--warm-cream-hsl))",
         "warm-peach": "hsl(var(--warm-peach-hsl))",
         "warm-mint": "hsl(var(--warm-mint-hsl))",
         "soft-gray": "hsl(var(--soft-gray-hsl))",

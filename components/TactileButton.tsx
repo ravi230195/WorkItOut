@@ -19,9 +19,9 @@ export function TactileButton({
   
   const variantClasses = {
     primary: "bg-primary hover:bg-primary-hover text-primary-foreground",
-    secondary: "bg-warm-cream hover:bg-warm-cream/90 text-warm-brown",
+    secondary: "bg-soft-gray hover:bg-soft-gray/90 text-foreground",
     sage: "bg-warm-sage hover:bg-warm-sage/90 text-primary-foreground btn-tactile-sage",
-    peach: "bg-warm-peach hover:bg-warm-peach/90 text-warm-brown",
+    peach: "bg-warm-peach hover:bg-warm-peach/90 text-foreground",
     mint: "bg-warm-mint hover:bg-warm-mint/90 text-primary-foreground"
   };
 

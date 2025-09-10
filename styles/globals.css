@@ -85,7 +85,6 @@
   /* Legacy Support (keeping for existing components) */
   --warm-coral: #e07a5f;
   --warm-sage: #a7c4a0;
-  --warm-cream: #f4e8c1;
   --soft-gray: #f7f3f0;
 
   /* Additional tokens for progress components */
@@ -107,7 +106,6 @@
   /* HSL triplets for Tailwind /opacity support (adds warm palette + soft gray) */
   --warm-coral-hsl: 12.56 67.54% 62.55%;
   --warm-sage-hsl: 108.33 23.38% 69.80%;
-  --warm-cream-hsl: 45.88 69.86% 85.69%;
   --warm-peach-hsl: 36.97 79.20% 75.49%;
   --warm-mint-hsl: 150.61 24.14% 60.20%;
   --soft-gray-hsl: 25.71 30.43% 95.49%;
@@ -155,7 +153,6 @@
   --muted-foreground-hsl: 240 5% 65%;
   --warm-coral-hsl: 12.56 67.54% 62.55%;
   --warm-sage-hsl: 108.33 23.38% 69.80%;
-  --warm-cream-hsl: 45.88 69.86% 85.69%;
   --warm-peach-hsl: 36.97 79.20% 75.49%;
   --warm-mint-hsl: 150.61 24.14% 60.20%;
   --soft-gray-hsl: 0 0% 20%;

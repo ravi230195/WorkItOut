@@ -57,7 +57,7 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
     <div className={["rounded-2xl bg-card/70 border border-border p-3 md:p-4", className].join(" ")}
     /* RAVI DBG: style={{ border: "2px solid red" }}*/>
       {note && (
-        <p className="text-xs md:text-sm text-muted-foreground mb-3 italic bg-[var(--warm-cream)]/60 p-3 rounded-lg">
+        <p className="text-xs md:text-sm text-muted-foreground mb-3 italic bg-soft-gray/60 p-3 rounded-lg">
           {note}
         </p>
       )}
