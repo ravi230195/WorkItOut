@@ -48,20 +48,61 @@ export function NumericKeyboard({
   return (
     <div className={cn("grid grid-cols-4 gap-2", className)}>
       {/* Row 1 */}
-      <button type="button" className="p-4 text-xl rounded-md bg-card" onClick={() => append("1")}>1</button>
-      <button type="button" className="p-4 text-xl rounded-md bg-card" onClick={() => append("2")}>2</button>
-      <button type="button" className="p-4 text-xl rounded-md bg-card" onClick={() => append("3")}>3</button>
-      <button type="button" className="p-4 rounded-md bg-card flex items-center justify-center" onClick={onClose} aria-label="Hide keyboard">
+      <button
+        type="button"
+        className="p-4 text-xl rounded-md bg-card text-black"
+        onClick={() => append("1")}
+      >
+        1
+      </button>
+      <button
+        type="button"
+        className="p-4 text-xl rounded-md bg-card text-black"
+        onClick={() => append("2")}
+      >
+        2
+      </button>
+      <button
+        type="button"
+        className="p-4 text-xl rounded-md bg-card text-black"
+        onClick={() => append("3")}
+      >
+        3
+      </button>
+      <button
+        type="button"
+        className="p-4 rounded-md bg-card text-black flex items-center justify-center"
+        onClick={onClose}
+        aria-label="Hide keyboard"
+      >
         <ChevronDown className="h-5 w-5" />
       </button>
 
       {/* Row 2 */}
-      <button type="button" className="p-4 text-xl rounded-md bg-card" onClick={() => append("4")}>4</button>
-      <button type="button" className="p-4 text-xl rounded-md bg-card" onClick={() => append("5")}>5</button>
-      <button type="button" className="p-4 text-xl rounded-md bg-card" onClick={() => append("6")}>6</button>
       <button
         type="button"
-        className="p-4 rounded-md bg-card flex items-center justify-center"
+        className="p-4 text-xl rounded-md bg-card text-black"
+        onClick={() => append("4")}
+      >
+        4
+      </button>
+      <button
+        type="button"
+        className="p-4 text-xl rounded-md bg-card text-black"
+        onClick={() => append("5")}
+      >
+        5
+      </button>
+      <button
+        type="button"
+        className="p-4 text-xl rounded-md bg-card text-black"
+        onClick={() => append("6")}
+      >
+        6
+      </button>
+      <button
+        type="button"
+        className="p-4 rounded-md bg-card text-black flex items-center justify-center"
         onClick={handleIncrement}
         aria-label="Increment"
       >
@@ -69,12 +110,30 @@ export function NumericKeyboard({
       </button>
 
       {/* Row 3 */}
-      <button type="button" className="p-4 text-xl rounded-md bg-card" onClick={() => append("7")}>7</button>
-      <button type="button" className="p-4 text-xl rounded-md bg-card" onClick={() => append("8")}>8</button>
-      <button type="button" className="p-4 text-xl rounded-md bg-card" onClick={() => append("9")}>9</button>
       <button
         type="button"
-        className="p-4 rounded-md bg-card flex items-center justify-center"
+        className="p-4 text-xl rounded-md bg-card text-black"
+        onClick={() => append("7")}
+      >
+        7
+      </button>
+      <button
+        type="button"
+        className="p-4 text-xl rounded-md bg-card text-black"
+        onClick={() => append("8")}
+      >
+        8
+      </button>
+      <button
+        type="button"
+        className="p-4 text-xl rounded-md bg-card text-black"
+        onClick={() => append("9")}
+      >
+        9
+      </button>
+      <button
+        type="button"
+        className="p-4 rounded-md bg-card text-black flex items-center justify-center"
         onClick={handleDecrement}
         aria-label="Decrement"
       >
@@ -85,7 +144,7 @@ export function NumericKeyboard({
       {mode === "decimal" ? (
         <button
           type="button"
-          className="p-4 text-xl rounded-md bg-card"
+          className="p-4 text-xl rounded-md bg-card text-black"
           onClick={handleDecimal}
         >
           .
@@ -93,10 +152,16 @@ export function NumericKeyboard({
       ) : (
         <div />
       )}
-      <button type="button" className="p-4 text-xl rounded-md bg-card" onClick={() => append("0")}>0</button>
       <button
         type="button"
-        className="p-4 rounded-md bg-card flex items-center justify-center"
+        className="p-4 text-xl rounded-md bg-card text-black"
+        onClick={() => append("0")}
+      >
+        0
+      </button>
+      <button
+        type="button"
+        className="p-4 rounded-md bg-card text-black flex items-center justify-center"
         onClick={handleBackspace}
         aria-label="Backspace"
       >
