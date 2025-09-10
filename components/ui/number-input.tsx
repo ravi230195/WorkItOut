@@ -13,6 +13,7 @@ interface NumberInputProps extends React.ComponentProps<"input"> {
   mode?: "decimal" | "numeric";
   /**
    * Use the custom on-screen numeric keyboard instead of the native one.
+   * Defaults to `true`.
    */
   customKeyboard?: boolean;
 }
@@ -25,7 +26,7 @@ function NumberInput({
   inputMode,
   pattern,
   onFocus,
-  customKeyboard,
+  customKeyboard = true,
   ...props
 }: NumberInputProps) {
   const resolvedMode = mode ?? "decimal";
