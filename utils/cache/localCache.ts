@@ -45,10 +45,13 @@ export type CacheEntry<T> = {
         const entry: CacheEntry<T> = { storedAtMs: Date.now(), value, hintTtlMs };
         const raw = JSON.stringify(entry);
         localStorage.setItem(storeKey, raw);
-        logger.db("🔍 [CACHE SET]", storeKey, { bytes: raw.length, hasTTL: !!hintTtlMs });
-        if (this.debug) {
-            this.debugDumpValuesChunked(); // false = don't print full values, just metadata
-        }
+        logger.db("🔍 [CACHE SET]", storeKey, {
+          bytes: raw.length,
+          hasTTL: !!hintTtlMs,
+        });
+        // Debug dumping the entire cache on every set caused noisy repeated logs
+        // for existing entries (e.g., muscle-group lists). Avoid logging the full
+        // snapshot here so each cache write only reports the entry being stored.
       } catch {
         logger.db("🔍 [CACHE SET] [failed]", key);
       }
@@ -59,9 +62,6 @@ export type CacheEntry<T> = {
       try {
         localStorage.removeItem(storeKey);
         logger.db("🔍 [CACHE REMOVE]", storeKey);
-        if (this.debug) {
-            this.debugDumpValuesChunked(); // false = don't print full values, just metadata
-        }
       } catch {
         logger.db("🔍 [CACHE REMOVE] [failed]", storeKey);
       }

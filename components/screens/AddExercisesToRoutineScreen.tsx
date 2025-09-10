@@ -1,5 +1,5 @@
 // components/screens/AddExercisesToRoutineScreen.tsx
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState, useEffect, useMemo, memo, useCallback, useRef } from "react";
 import { Search } from "lucide-react";
 import { Input } from "../ui/input";
 import { BottomNavigationButton } from "../BottomNavigationButton";
@@ -23,6 +23,8 @@ interface AddExercisesToRoutineScreenProps {
 
 type MuscleFilter = "all" | string;
 const OTHER_GROUP = "Other";
+const PAGE_SIZE = 30;
+const LOAD_MORE_PRELOAD = 5;
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Small reusable UI bits
@@ -88,69 +90,86 @@ const ExerciseRow = memo(function ExerciseRow({
   );
 });
 
-const ExerciseGroup = memo(function ExerciseGroup({
-  letter,
-  items,
-  selectedIds,
-  onSelect,
-}: {
-  letter: string;
-  items: Exercise[];
-  selectedIds: number[];
-  onSelect: (ex: Exercise) => void;
-}) {
-  return (
-    <div>
-      <h2 className="text-xs md:text-sm text-muted-foreground font-medium mb-3 px-2 tracking-wide">
-        {letter}
-      </h2>
-      <div className="space-y-2">
-        {items.map((exercise) => (
-          <ExerciseRow
-            key={exercise.exercise_id}
-            exercise={exercise}
-            selected={selectedIds.includes(exercise.exercise_id)}
-            onSelect={onSelect}
-          />
-        ))}
-      </div>
-    </div>
-  );
-});
-
 function ExerciseList({
   groupedAZ,
   selectedExercises,
   onSelect,
+  onLoadMore,
+  hasMore,
+  isLoadingMore,
 }: {
   groupedAZ: Record<string, Exercise[]>;
   selectedExercises: Exercise[];
   onSelect: (ex: Exercise) => void;
+  onLoadMore: () => void;
+  hasMore: boolean;
+  isLoadingMore: boolean;
 }) {
   const letters = useMemo(
     () => Object.keys(groupedAZ).sort((a, b) => a.localeCompare(b)),
     [groupedAZ]
   );
 
+  const selectedIds = useMemo(
+    () => selectedExercises.map((e) => e.exercise_id),
+    [selectedExercises]
+  );
+  // Total number of exercises rendered (headers excluded)
+  const totalExercises = useMemo(
+    () => letters.reduce((sum, l) => sum + groupedAZ[l].length, 0),
+    [letters, groupedAZ]
+  );
+
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+        onLoadMore();
+      }
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [onLoadMore, hasMore, isLoadingMore, totalExercises]);
+
   if (letters.length === 0) {
-    return (
-      <Section variant="card" className="text-center">
-        <p className="text-muted-foreground">No exercises found</p>
-      </Section>
-    );
+    return null;
   }
+
+  let renderIndex = -1;
 
   return (
     <>
       {letters.map((letter) => (
-        <ExerciseGroup
-          key={letter}
-          letter={letter}
-          items={groupedAZ[letter]}
-          selectedIds={selectedExercises.map((e) => e.exercise_id)}
-          onSelect={onSelect}
-        />
+        <div key={letter}>
+          <h2 className="text-xs md:text-sm text-muted-foreground font-medium mb-3 px-2 tracking-wide">
+            {letter}
+          </h2>
+          <div className="space-y-2">
+            {groupedAZ[letter].map((exercise) => {
+              renderIndex++;
+              const ref =
+                renderIndex === totalExercises - LOAD_MORE_PRELOAD
+                  ? loadMoreRef
+                  : undefined;
+              return (
+                <div key={exercise.exercise_id} ref={ref}>
+                  <ExerciseRow
+                    exercise={exercise}
+                    selected={selectedIds.includes(exercise.exercise_id)}
+                    onSelect={onSelect}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
       ))}
+      {isLoadingMore && (
+        <div className="text-center text-muted-foreground py-4">Loading...</div>
+      )}
     </>
   );
 }
@@ -168,11 +187,20 @@ export function AddExercisesToRoutineScreen({
   const { userToken } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>("all");
+  const [selectedFilter, setSelectedFilter] = useState<MuscleFilter>("all");
+  const [appliedFilter, setAppliedFilter] = useState<MuscleFilter>("all");
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingExercise, setIsAddingExercise] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [showSlowSpinner, setShowSlowSpinner] = useState(false);
+  const pageRef = useRef(0);
+  const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
+  const [filtersReady, setFiltersReady] = useState(false);
+  const selectedFilterRef = useRef<MuscleFilter>("all");
 
   // Component render timing
   useEffect(() => {
@@ -183,41 +211,95 @@ export function AddExercisesToRoutineScreen({
     };
   }, []);
 
-  // fetch once
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  const fetchExercises = useCallback(
+    async (
+      reset: boolean,
+      filter: MuscleFilter,
+      search: string
+    ) => {
+      const page = reset ? 0 : pageRef.current;
       try {
-        setIsLoading(true);
-        const fetchTimer = performanceTimer.start("AddExercisesToRoutineScreen fetch exercises");
-        const data = await supabaseAPI.getExercises();
+        if (reset) {
+          setIsLoading(true);
+          setHasMore(false);
+          pageRef.current = 0;
+        } else {
+          setIsLoadingMore(true);
+        }
+        setLoadError(false);
+        const fetchTimer = performanceTimer.start(
+          "AddExercisesToRoutineScreen fetch exercises"
+        );
+        const data = await supabaseAPI.getExercises({
+          limit: PAGE_SIZE,
+          offset: page * PAGE_SIZE,
+          muscleGroup:
+            filter === "all" || filter === OTHER_GROUP ? undefined : filter,
+          other: filter === OTHER_GROUP,
+          search: search.trim() || undefined,
+        });
         const fetchTime = fetchTimer.end();
-        logger.info(`[ADD_EXERCISES] Fetch exercises: ${fetchTime.duration.toFixed(2)}ms`);
-        
-        if (cancelled) return;
-        setExercises(Array.isArray(data) ? data : []);
+        logger.info(
+          `[ADD_EXERCISES] Fetch exercises: ${fetchTime.duration.toFixed(2)}ms`
+        );
+        setExercises((prev) => (reset ? data : [...prev, ...data]));
+        setHasMore(data.length === PAGE_SIZE);
+        pageRef.current = page + 1;
+        setAppliedFilter(filter);
+        setLoadError(false);
       } catch (error) {
         logger.error("[AddExercises] fetch error:", error);
         toast.error("Failed to load exercises");
-        setExercises([]);
+        if (reset) setExercises([]);
+        setLoadError(true);
       } finally {
-        if (!cancelled) setIsLoading(false);
+        if (reset) setIsLoading(false);
+        else setIsLoadingMore(false);
       }
-    })();
+    },
+    []
+  );
+
+  useEffect(() => {
+    let active = true;
+    supabaseAPI
+      .getMuscleGroups()
+      .then((groups) => {
+        if (active) setMuscleGroups(groups);
+      })
+      .catch((error) =>
+        logger.error("[AddExercises] failed to load muscle groups", error)
+      )
+      .finally(() => {
+        if (active) setFiltersReady(true);
+      });
     return () => {
-      cancelled = true;
+      active = false;
     };
   }, []);
 
-  // unique muscle groups
-  const muscleGroups = useMemo(() => {
-    const s = new Set<string>();
-    for (const ex of exercises) {
-      const g = (ex.muscle_group || "").trim();
-      s.add(g || OTHER_GROUP);
+  useEffect(() => {
+    selectedFilterRef.current = selectedFilter;
+  }, [selectedFilter]);
+
+  useEffect(() => {
+    if (!filtersReady) return;
+    const handle = setTimeout(
+      () => fetchExercises(true, selectedFilterRef.current, searchQuery),
+      300
+    );
+    return () => clearTimeout(handle);
+  }, [filtersReady, searchQuery, fetchExercises]);
+
+  useEffect(() => {
+    let t: NodeJS.Timeout;
+    if (isLoading) {
+      t = setTimeout(() => setShowSlowSpinner(true), 1000);
+    } else {
+      setShowSlowSpinner(false);
     }
-    return Array.from(s).sort((a, b) => a.localeCompare(b));
-  }, [exercises]);
+    return () => clearTimeout(t);
+  }, [isLoading]);
 
   // index by group
   const byGroup = useMemo(() => {
@@ -233,7 +315,8 @@ export function AddExercisesToRoutineScreen({
   const groupedAZ = useMemo(() => {
     const filterTimer = performanceTimer.start("AddExercisesToRoutineScreen filter exercises");
     
-    const base = muscleFilter === "all" ? exercises : (byGroup.get(muscleFilter) ?? []);
+    const base =
+      appliedFilter === "all" ? exercises : (byGroup.get(appliedFilter) ?? []);
     const q = searchQuery.trim().toLowerCase();
     const filtered = q ? base.filter((ex) => ex.name.toLowerCase().includes(q)) : base;
 
@@ -247,7 +330,7 @@ export function AddExercisesToRoutineScreen({
     logger.info(`[ADD_EXERCISES] Filter exercises (${filtered.length} results): ${filterTime.duration.toFixed(2)}ms`);
     
     return out;
-  }, [exercises, byGroup, muscleFilter, searchQuery]);
+  }, [exercises, byGroup, appliedFilter, searchQuery]);
 
   const handleSelectExercise = (exercise: Exercise) => {
     setSelectedExercises((prev) => {
@@ -318,17 +401,26 @@ export function AddExercisesToRoutineScreen({
 
         {/* Segmented muscle-group filter */}
         <Section variant="plain" padding="none">
-          <div className="overflow-x-auto no-scrollbar">
-            <SegmentedToggle<MuscleFilter>
-              value={muscleFilter}
-              onChange={setMuscleFilter}
-              options={segmentOptions}
-              size="sm"
-              variant="filled"
-              tone="accent"
-              className="min-w-max"
-            />
-          </div>
+          {!filtersReady ? (
+            <div className="py-2 flex justify-center">
+              <div className="w-6 h-6 border-4 border-warm-coral border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto no-scrollbar">
+              <SegmentedToggle<MuscleFilter>
+                value={selectedFilter}
+                onChange={(f) => {
+                  setSelectedFilter(f);
+                  fetchExercises(true, f, searchQuery);
+                }}
+                options={segmentOptions}
+                size="sm"
+                variant="filled"
+                tone="accent"
+                className="min-w-max"
+              />
+            </div>
+          )}
         </Section>
 
         {/* Search */}
@@ -339,19 +431,27 @@ export function AddExercisesToRoutineScreen({
         <Spacer y="xss" />
 
         {/* Exercise List */}
-        <Section
-          variant="plain"
-          padding="none"
-          loading={isLoading}
-          loadingBehavior="replace"
-          className="space-y-6"
-        >
-          {!isLoading && (
-            <ExerciseList
-              groupedAZ={groupedAZ}
-              selectedExercises={selectedExercises}
-              onSelect={handleSelectExercise}
-            />
+        <Section variant="plain" padding="none" className="space-y-6">
+          {loadError ? (
+            <Section variant="card" className="text-center">
+              <p className="text-muted-foreground">Failed to load exercises</p>
+            </Section>
+          ) : (
+            <>
+              <ExerciseList
+                groupedAZ={groupedAZ}
+                selectedExercises={selectedExercises}
+                onSelect={handleSelectExercise}
+                onLoadMore={() => fetchExercises(false, appliedFilter, searchQuery)}
+                hasMore={hasMore}
+                isLoadingMore={isLoadingMore}
+              />
+              {isLoading && showSlowSpinner && (
+                <div className="py-6 flex justify-center">
+                  <div className="animate-spin w-8 h-8 border-4 border-warm-coral border-t-transparent rounded-full" />
+                </div>
+              )}
+            </>
           )}
         </Section>
 

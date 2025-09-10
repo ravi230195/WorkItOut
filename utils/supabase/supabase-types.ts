@@ -3,12 +3,7 @@
 export interface Exercise {
     exercise_id: number;
     name: string;
-    category: string;
     muscle_group: string;
-    equipment?: string;
-    description?: string;
-    added_by_user_id?: number;
-    created_at?: string;
   }
   
   export interface Workout {
@@ -115,15 +110,3 @@ export interface Exercise {
     right_calf_cm?: number | null;
     notes?: string | null;
   }
-  // src/utils/supabase/supabase-types.ts
-export interface Exercise { /* ... */ }
-export interface Workout { /* ... */ }
-export interface WorkoutExercise { /* ... */ }
-export interface Set { /* ... */ }
-export interface Profile { /* ... */ }
-export interface AuthUser { id: string; email: string }
-export interface AuthResponse { /* ... */ }
-export interface UserSteps { /* ... */ }
-export interface UserRoutine { /* ... */ }
-export interface UserRoutineExercise { /* ... */ }
-export interface UserRoutineExerciseSet { /* ... */ }

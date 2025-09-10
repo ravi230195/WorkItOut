@@ -11,26 +11,79 @@ import { localCache } from "../cache/localCache";
 
 export class SupabaseDBRead extends SupabaseBase {
   // Exercises (global)
-  async getExercises(): Promise<Exercise[]> {
-    const url = `${SUPABASE_URL}/rest/v1/exercises?select=*`;
-    const key = this.keyExercises();
-    
-    const { data: exercises, status } = await this.getOrFetchAndCache<Exercise[]>(url, key, CACHE_TTL.exercises, true);
-    
+  async getExercises(opts: {
+    limit?: number;
+    offset?: number;
+    muscleGroup?: string;
+    search?: string;
+    other?: boolean;
+  } = {}): Promise<Exercise[]> {
+    const { limit, offset, muscleGroup, search, other } = opts;
+
+    let url = `${SUPABASE_URL}/rest/v1/exercises?select=exercise_id,name,muscle_group`;
+    if (muscleGroup) {
+      url += `&muscle_group=eq.${encodeURIComponent(muscleGroup)}`;
+    } else if (other) {
+      url += `&or=(muscle_group.is.null,muscle_group.eq.)`;
+    }
+    if (search) {
+      url += `&name=ilike.*${encodeURIComponent(search)}*`;
+    }
+    if (limit != null) url += `&limit=${limit}`;
+    if (offset != null) url += `&offset=${offset}`;
+
+    const pageLimit = limit ?? 0;
+    const pageOffset = offset ?? 0;
+    const key = muscleGroup
+      ? this.keyExercisesMuscleGroup(muscleGroup, pageLimit, pageOffset)
+      : other
+      ? this.keyExercisesMuscleGroup("other", pageLimit, pageOffset)
+      : this.keyExercisesPage(pageLimit, pageOffset);
+
+    const { data: exercises, status } = await this.getOrFetchAndCache<Exercise[]>(
+      url,
+      key,
+      CACHE_TTL.exercisePages,
+      true
+    );
+
     // ✅ ONLY cache individually if this was a fresh fetch (not cache hit)
     if (status === CacheStatus.FRESH_FETCH) {
-      exercises.forEach(exercise => {
-        const individualKey = this.keyExercise(exercise.exercise_id);  // ✅ Using correct property name
+      exercises.forEach((exercise) => {
+        const individualKey = this.keyExercise(exercise.exercise_id); // ✅ Using correct property name
         localCache.set(individualKey, exercise, CACHE_TTL.exercises);
       });
     }
-    
+
     return exercises;
+  }
+
+  async getMuscleGroups(): Promise<string[]> {
+    // Fetch just the muscle_group column for all exercises and
+    // deduplicate client-side. This avoids using PostgREST
+    // `group` queries, which can fail on some deployments.
+    const url = `${SUPABASE_URL}/rest/v1/exercises?select=muscle_group&order=muscle_group`;
+    const { data } = await this.getOrFetchAndCache<
+      { muscle_group: string | null }[]
+    >(url, this.keyExerciseMuscleGroups(), CACHE_TTL.exerciseMuscleGroups, true);
+
+    const set = new Set<string>();
+    let hasOther = false;
+    for (const row of data) {
+      const g = (row.muscle_group || "").trim();
+      if (g) set.add(g);
+      else hasOther = true;
+    }
+
+    const groups = Array.from(set).sort((a, b) => a.localeCompare(b));
+    if (hasOther) groups.push("Other");
+
+    return groups;
   }
 
   // Individual exercise by ID
   async getExercise(id: number): Promise<Exercise | null> {
-    const url = `${SUPABASE_URL}/rest/v1/exercises?exercise_id=eq.${id}&select=*&limit=1`;
+    const url = `${SUPABASE_URL}/rest/v1/exercises?exercise_id=eq.${id}&select=exercise_id,name,muscle_group&limit=1`;
     const key = this.keyExercise(id);
 
     const { data: result } = await this.getOrFetchAndCache<Exercise[]>(url, key, CACHE_TTL.exercises, true);

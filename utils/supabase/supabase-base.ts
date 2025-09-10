@@ -1,8 +1,10 @@
 import { localCache } from "../cache/localCache";
 import type { AuthUser } from "./supabase-types";
 import {
-  fullCacheKeyExercises,
   fullCacheKeyExercise,
+  fullCacheKeyExercisesPage,
+  fullCacheKeyExercisesMuscleGroup,
+  fullCacheKeyExerciseMuscleGroups,
   fullCacheKeyProfile,
   fullCacheKeyRoutineExercises,
   fullCacheKeyRoutineExercisesWithDetails,
@@ -20,7 +22,9 @@ export const SUPABASE_ANON_KEY =
 
 // TTLs and read strategy
 export const CACHE_TTL = {
-  exercises: 24 * 60 * 60 * 1000, // 24h
+  exercises: 24 * 60 * 60 * 1000, // individual exercise records
+  exercisePages: 24 * 60 * 60 * 1000, // paginated exercise results
+  exerciseMuscleGroups: 24 * 60 * 60 * 1000, // distinct muscle-group list
   routines: 60 * 60 * 1000,
   routineExercises: 60 * 60 * 1000,
   routineExercisesWithDetails: 60 * 60 * 1000,
@@ -280,7 +284,14 @@ export class SupabaseBase {
   }
 
   // ---------- Common keys (exported so reads/writes can use) ----------
-  protected keyExercises = () => fullCacheKeyExercises();
+  protected keyExercisesPage = (limit: number, offset: number) =>
+    fullCacheKeyExercisesPage(limit, offset);
+  protected keyExercisesMuscleGroup = (
+    group: string,
+    limit: number,
+    offset: number
+  ) => fullCacheKeyExercisesMuscleGroup(group, limit, offset);
+  protected keyExerciseMuscleGroups = () => fullCacheKeyExerciseMuscleGroups;
   protected keyExercise = (id: number) => fullCacheKeyExercise(id);
   protected keyUserRoutines = (userId: string) => fullCacheKeyUserRoutines(userId);
   protected keyRoutineExercises = (userId: string, rtId: number) => fullCacheKeyRoutineExercises(userId, rtId);
