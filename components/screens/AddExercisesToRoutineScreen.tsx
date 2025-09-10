@@ -187,7 +187,8 @@ export function AddExercisesToRoutineScreen({
   const { userToken } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [muscleFilter, setMuscleFilter] = useState<MuscleFilter>("all");
+  const [selectedFilter, setSelectedFilter] = useState<MuscleFilter>("all");
+  const [appliedFilter, setAppliedFilter] = useState<MuscleFilter>("all");
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -199,6 +200,7 @@ export function AddExercisesToRoutineScreen({
   const pageRef = useRef(0);
   const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
   const [filtersReady, setFiltersReady] = useState(false);
+  const selectedFilterRef = useRef<MuscleFilter>("all");
 
   // Component render timing
   useEffect(() => {
@@ -210,11 +212,16 @@ export function AddExercisesToRoutineScreen({
   }, []);
 
   const fetchExercises = useCallback(
-    async (reset = false) => {
+    async (
+      reset: boolean,
+      filter: MuscleFilter,
+      search: string
+    ) => {
       const page = reset ? 0 : pageRef.current;
       try {
         if (reset) {
           setIsLoading(true);
+          setHasMore(false);
           pageRef.current = 0;
         } else {
           setIsLoadingMore(true);
@@ -227,11 +234,9 @@ export function AddExercisesToRoutineScreen({
           limit: PAGE_SIZE,
           offset: page * PAGE_SIZE,
           muscleGroup:
-            muscleFilter === "all" || muscleFilter === OTHER_GROUP
-              ? undefined
-              : muscleFilter,
-          other: muscleFilter === OTHER_GROUP,
-          search: searchQuery.trim() || undefined,
+            filter === "all" || filter === OTHER_GROUP ? undefined : filter,
+          other: filter === OTHER_GROUP,
+          search: search.trim() || undefined,
         });
         const fetchTime = fetchTimer.end();
         logger.info(
@@ -240,6 +245,7 @@ export function AddExercisesToRoutineScreen({
         setExercises((prev) => (reset ? data : [...prev, ...data]));
         setHasMore(data.length === PAGE_SIZE);
         pageRef.current = page + 1;
+        setAppliedFilter(filter);
         setLoadError(false);
       } catch (error) {
         logger.error("[AddExercises] fetch error:", error);
@@ -251,7 +257,7 @@ export function AddExercisesToRoutineScreen({
         else setIsLoadingMore(false);
       }
     },
-    [muscleFilter, searchQuery]
+    []
   );
 
   useEffect(() => {
@@ -273,10 +279,17 @@ export function AddExercisesToRoutineScreen({
   }, []);
 
   useEffect(() => {
+    selectedFilterRef.current = selectedFilter;
+  }, [selectedFilter]);
+
+  useEffect(() => {
     if (!filtersReady) return;
-    const handle = setTimeout(() => fetchExercises(true), 300);
+    const handle = setTimeout(
+      () => fetchExercises(true, selectedFilterRef.current, searchQuery),
+      300
+    );
     return () => clearTimeout(handle);
-  }, [fetchExercises, filtersReady]);
+  }, [filtersReady, searchQuery, fetchExercises]);
 
   useEffect(() => {
     let t: NodeJS.Timeout;
@@ -302,7 +315,8 @@ export function AddExercisesToRoutineScreen({
   const groupedAZ = useMemo(() => {
     const filterTimer = performanceTimer.start("AddExercisesToRoutineScreen filter exercises");
     
-    const base = muscleFilter === "all" ? exercises : (byGroup.get(muscleFilter) ?? []);
+    const base =
+      appliedFilter === "all" ? exercises : (byGroup.get(appliedFilter) ?? []);
     const q = searchQuery.trim().toLowerCase();
     const filtered = q ? base.filter((ex) => ex.name.toLowerCase().includes(q)) : base;
 
@@ -316,7 +330,7 @@ export function AddExercisesToRoutineScreen({
     logger.info(`[ADD_EXERCISES] Filter exercises (${filtered.length} results): ${filterTime.duration.toFixed(2)}ms`);
     
     return out;
-  }, [exercises, byGroup, muscleFilter, searchQuery]);
+  }, [exercises, byGroup, appliedFilter, searchQuery]);
 
   const handleSelectExercise = (exercise: Exercise) => {
     setSelectedExercises((prev) => {
@@ -394,8 +408,11 @@ export function AddExercisesToRoutineScreen({
           ) : (
             <div className="overflow-x-auto no-scrollbar">
               <SegmentedToggle<MuscleFilter>
-                value={muscleFilter}
-                onChange={setMuscleFilter}
+                value={selectedFilter}
+                onChange={(f) => {
+                  setSelectedFilter(f);
+                  fetchExercises(true, f, searchQuery);
+                }}
                 options={segmentOptions}
                 size="sm"
                 variant="filled"
@@ -425,7 +442,7 @@ export function AddExercisesToRoutineScreen({
                 groupedAZ={groupedAZ}
                 selectedExercises={selectedExercises}
                 onSelect={handleSelectExercise}
-                onLoadMore={() => fetchExercises(false)}
+                onLoadMore={() => fetchExercises(false, appliedFilter, searchQuery)}
                 hasMore={hasMore}
                 isLoadingMore={isLoadingMore}
               />
