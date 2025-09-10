@@ -161,8 +161,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Don't render children until auth state is initialized
   if (!isInitialized) {
     return (
-      <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex items-center justify-center">
-        <div className="text-warm-brown">Loading...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-foreground">Loading...</div>
       </div>
     );
   }
