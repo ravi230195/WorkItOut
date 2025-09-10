@@ -1,12 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: "class",
-  content: [
-    "./index.html",
-    "./App.tsx",
-    "./src/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./App.tsx", "./src/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       fontFamily: {
@@ -92,17 +87,17 @@ export default {
         bold: "var(--font-weight-bold)",
       },
       spacing: {
-        "1": "var(--space-1)",
-        "2": "var(--space-2)",
-        "3": "var(--space-3)",
-        "4": "var(--space-4)",
-        "5": "var(--space-5)",
-        "6": "var(--space-6)",
-        "8": "var(--space-8)",
-        "10": "var(--space-10)",
-        "12": "var(--space-12)",
-        "16": "var(--space-16)",
-        "20": "var(--space-20)",
+        1: "var(--space-1)",
+        2: "var(--space-2)",
+        3: "var(--space-3)",
+        4: "var(--space-4)",
+        5: "var(--space-5)",
+        6: "var(--space-6)",
+        8: "var(--space-8)",
+        10: "var(--space-10)",
+        12: "var(--space-12)",
+        16: "var(--space-16)",
+        20: "var(--space-20)",
       },
       boxShadow: {
         sm: "var(--shadow-sm)",
@@ -126,9 +121,5 @@ export default {
       },
     },
   },
-  plugins: [
-    require("@tailwindcss/forms"),
-    require("@tailwindcss/typography"),
-    require("@tailwindcss/aspect-ratio"),
-  ],
+  plugins: [require("@tailwindcss/forms")],
 };
