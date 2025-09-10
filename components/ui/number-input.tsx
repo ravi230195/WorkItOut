@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { Input } from "./input";
 import { cn } from "./utils";
+import { NumericKeyboard } from "./numeric-keyboard";
 
 interface NumberInputProps extends React.ComponentProps<"input"> {
   /**
@@ -9,6 +10,10 @@ interface NumberInputProps extends React.ComponentProps<"input"> {
    * Use "numeric" for integers.
    */
   mode?: "decimal" | "numeric";
+  /**
+   * Use the custom on-screen numeric keyboard instead of the native one.
+   */
+  customKeyboard?: boolean;
 }
 
 function NumberInput({
@@ -19,6 +24,7 @@ function NumberInput({
   inputMode,
   pattern,
   onFocus,
+  customKeyboard,
   ...props
 }: NumberInputProps) {
   const resolvedMode = mode ?? "decimal";
@@ -26,22 +32,50 @@ function NumberInput({
   const resolvedPattern =
     pattern ?? (resolvedMode === "numeric" ? "[0-9]*" : "[0-9]*[.,]?[0-9]*");
 
+  const [showKeyboard, setShowKeyboard] = React.useState(false);
+
+  const handleKeyboardChange = (val: string) => {
+    const event = {
+      target: { value: val },
+    } as React.ChangeEvent<HTMLInputElement>;
+    props.onChange?.(event);
+  };
+
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.target.select();
     onFocus?.(e);
+    if (customKeyboard) {
+      setShowKeyboard(true);
+    }
   };
 
+  const numericStep =
+    typeof step === "number" ? step : step ? parseFloat(step) : undefined;
+
   return (
-    <Input
-      type="number"
-      inputMode={resolvedInputMode}
-      pattern={resolvedPattern}
-      step={step}
-      min={min}
-      className={cn(className)}
-      onFocus={handleFocus}
-      {...props}
-    />
+    <div className="relative">
+      <Input
+        type="number"
+        inputMode={resolvedInputMode}
+        pattern={resolvedPattern}
+        step={step}
+        min={min}
+        className={cn(className)}
+        onFocus={handleFocus}
+        {...props}
+      />
+      {customKeyboard && showKeyboard ? (
+        <div className="mt-2">
+          <NumericKeyboard
+            value={(props.value ?? "").toString()}
+            onChange={handleKeyboardChange}
+            onClose={() => setShowKeyboard(false)}
+            step={numericStep}
+            mode={resolvedMode}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }
 
