@@ -14,7 +14,7 @@ export function TrendChart({ data, height = 80 }: TrendChartProps) {
             dataKey="week" 
             axisLine={false} 
             tickLine={false}
-            tick={{ fontSize: 12, fill: 'var(--warm-brown)', opacity: 0.6 }}
+            tick={{ fontSize: 12, fill: 'var(--foreground)', opacity: 0.6 }}
           />
           <Line 
             type="monotone" 

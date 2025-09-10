@@ -3,17 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --font-size: 14px;
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
 
   /* Core Colors - Modern & Accessible */
   --background: #fefcfb;
-  --foreground: #3d2914;
+  --foreground: #000000;
   --card-hsl: 0 0% 100%;
-  --card: hsl(var(--card-hsl));
-  --card-foreground: #3d2914;
+  --card-foreground: #000000;
   --popover: #ffffff;
-  --popover-foreground: #3d2914;
+  --popover-foreground: #000000;
 
   /* Primary Brand Colors */
   --primary: #e07a5f;
@@ -21,26 +19,14 @@
   --primary-hover: #d06a4f;
   --primary-light: #fdf2f0;
 
-  /* Secondary & Accent */
-  --secondary: #f4e8c1;
-  --secondary-foreground: #3d2914;
-  --accent: #a7c4a0;
-  --accent-foreground: #ffffff;
-  --accent-light: #f0f7ed;
-
   /* Semantic Colors */
   --success: #28a745;
   --success-light: #d4edda;
-  --warning: #ffc107;
-  --warning-light: #fff3cd;
   --destructive: #dc3545;
   --destructive-light: #f8d7da;
-  --info: #17a2b8;
-  --info-light: #d1ecf1;
 
   /* Neutral Colors */
   --muted: #f7f3f0;
-  --muted-foreground: #8b7766;
   --border: rgba(224, 122, 95, 0.15);
   --border-light: #f1f3f4;
   --input: #ffffff;
@@ -96,16 +82,10 @@
   --transition-normal: 250ms ease-out;
   --transition-slow: 350ms ease-out;
 
-  /* Legacy Support (keeping for existing components) */
-  --warm-coral: #e07a5f;
-  --warm-sage: #a7c4a0;
-  --warm-cream: #f4e8c1;
-  --warm-peach: #f2cc8f;
-  --warm-mint: #81b29a;
-  --warm-rose: #e8b4b8;
-  --warm-lavender: #d4a4eb;
-  --soft-gray: #f7f3f0;
-  --warm-brown: #8b7766;
+  /* Legacy Support (now aliased to the background color) */
+  --warm-coral: var(--background);
+  --warm-sage: var(--background);
+  --soft-gray: var(--background);
 
   /* Additional tokens for progress components */
   --accent-blue: #4aa3df;
@@ -117,22 +97,12 @@
 
 
   /* HSL triplets for Tailwind /opacity support */
-  --foreground-hsl: 30.73 50.62% 15.88%;
+  --foreground-hsl: 0 0% 0%;
   --primary-hsl: 12.56 67.54% 62.55%;
   --muted-foreground-hsl: 27.57 15.35% 47.25%;
-  --warm-brown-hsl: 27.57 15.35% 47.25%;
   --overlay-hsl: 0 0% 0%;
   --shadow-hsl: 0 0% 0%;
-
-  /* HSL triplets for Tailwind /opacity support (adds warm palette + soft gray) */
-  --warm-coral-hsl: 12.56 67.54% 62.55%;
-  --warm-sage-hsl: 108.33 23.38% 69.80%;
-  --warm-cream-hsl: 45.88 69.86% 85.69%;
-  --warm-peach-hsl: 36.97 79.20% 75.49%;
-  --warm-mint-hsl: 150.61 24.14% 60.20%;
-  --warm-rose-hsl: 355.38 53.06% 80.78%;
-  --warm-lavender-hsl: 280.56 63.96% 78.24%;
-  --soft-gray-hsl: 25.71 30.43% 95.49%;
+  --background-hsl: 20 60% 99%;
 
   /* Progress component HSL tokens */
   --accent-blue-hsl: 204.16 69.95% 58.24%;
@@ -146,7 +116,6 @@
   /* Core Colors - Dark Mode */
   --background: #0f0f0f;
   --foreground: #f5f5f5;
-  --card: #1a1a1a;
   --card-foreground: #f5f5f5;
   --popover: #1a1a1a;
   --popover-foreground: #f5f5f5;
@@ -157,26 +126,14 @@
   --primary-hover: #cf694f;
   --primary-light: #4a2a22;
 
-  /* Secondary & Accent */
-  --secondary: #3f3727;
-  --secondary-foreground: #f5f5f5;
-  --accent: #56756b;
-  --accent-foreground: #ffffff;
-  --accent-light: #2d3f36;
-
   /* Semantic Colors */
   --success: #3fa969;
   --success-light: #1e4932;
-  --warning: #e9b949;
-  --warning-light: #4a3d1f;
   --destructive: #e74c5b;
   --destructive-light: #4f1f25;
-  --info: #209fb5;
-  --info-light: #163f4a;
 
   /* Neutral Colors */
   --muted: #1e1e1e;
-  --muted-foreground: #d4d4d8;
   --border: rgba(224, 122, 95, 0.3);
   --border-light: #2d2d2d;
   --input: #1e1e1e;
@@ -188,15 +145,7 @@
   --foreground-hsl: 0 0% 96%;
   --primary-hsl: 12.56 67.54% 62.55%;
   --muted-foreground-hsl: 240 5% 65%;
-  --warm-brown-hsl: 27.57 15.35% 47.25%;
-  --warm-coral-hsl: 12.56 67.54% 62.55%;
-  --warm-sage-hsl: 108.33 23.38% 69.80%;
-  --warm-cream-hsl: 45.88 69.86% 85.69%;
-  --warm-peach-hsl: 36.97 79.20% 75.49%;
-  --warm-mint-hsl: 150.61 24.14% 60.20%;
-  --warm-rose-hsl: 355.38 53.06% 80.78%;
-  --warm-lavender-hsl: 280.56 63.96% 78.24%;
-  --soft-gray-hsl: 0 0% 20%;
+  --background-hsl: 0 0% 6%;
 }
 
 @layer base {
@@ -218,7 +167,7 @@
   }
 
   html {
-    font-size: var(--font-size);
+    font-size: 14px;
     scroll-behavior: smooth;
   }
 
@@ -392,7 +341,6 @@
 
   p {
     font-size: 1rem;
-    color: var(--muted-foreground);
     line-height: 1.7;
   }
 
@@ -437,21 +385,6 @@
 
 @layer components {
 
-  /* Modern Card Component */
-  .card-modern {
-    background-color: var(--card);
-    border-radius: var(--radius-xl);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-    transition: all 0.2s ease;
-    backdrop-filter: blur(10px);
-  }
-
-  .card-modern:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
-  }
-
   /* Modern Button System */
   .btn-primary {
     background-color: var(--primary);
@@ -471,21 +404,6 @@
 
   .btn-primary:active {
     transform: translateY(0);
-  }
-
-  .btn-secondary {
-    background-color: var(--secondary);
-    color: var(--secondary-foreground);
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-lg);
-    font-weight: var(--font-weight-medium);
-    transition: all 0.2s ease;
-    border: 1px solid var(--border);
-  }
-
-  .btn-secondary:hover {
-    background-color: var(--border-light);
-    box-shadow: var(--shadow-sm);
   }
 
   .btn-ghost {
@@ -525,23 +443,6 @@
   }
 
   /* Modern Navigation */
-  .nav-item {
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-lg);
-    color: var(--muted-foreground);
-    transition: all 0.2s ease;
-  }
-
-  .nav-item:hover {
-    color: var(--foreground);
-    background-color: var(--muted);
-  }
-
-  .nav-item.active {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-  }
-
   /* Modern Badge System */
   .badge {
     display: inline-flex;
@@ -560,11 +461,6 @@
   .badge-success {
     background-color: var(--success-light);
     color: var(--success);
-  }
-
-  .badge-warning {
-    background-color: var(--warning-light);
-    color: var(--warning);
   }
 
   .badge-destructive {
@@ -594,15 +490,6 @@
     background: rgba(255, 255, 255, 0.25);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.18);
-  }
-
-  /* Modern Gradients */
-  .gradient-primary {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  }
-
-  .gradient-secondary {
-    background: linear-gradient(135deg, var(--secondary) 0%, var(--muted) 100%);
   }
 
   /* Enhanced Shadows */
@@ -770,7 +657,7 @@
 }
 
 .hover-glow:hover {
-  box-shadow: var(--shadow-glow);
+  box-shadow: 0 0 20px rgba(224, 122, 95, 0.3);
 }
 
 /* Safe Area Utilities */
@@ -819,11 +706,6 @@
 
 
 
-/* Future screens - just add one line here */
-/* .screen-container.workout-bg { 
-  background: linear-gradient(to bottom right, var(--warm-coral), var(--warm-peach));
-} */
-
 /* Force Bottom Navigation to be truly fixed */
 .force-fixed-bottom {
   position: fixed !important;
@@ -833,14 +715,4 @@
   z-index: 9999 !important;
   transform: none !important;
   will-change: auto !important;
-}
-
-
-.dark {
-  /* dark overrides */
-  --warm-brown-hsl: 28 18% 78%;
-  --muted-foreground-hsl: 28 12% 70%;
-  --foreground-hsl: 28 47% 92%;
-  --primary-hsl: 12.6 68% 63%;
-  /* or tweak for dark */
 }
