@@ -7,7 +7,7 @@
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
 
   /* Core Colors - Modern & Accessible */
-  --background: #000000;
+  --background: #fefcfb;
   --foreground: #000000;
   --card-hsl: 0 0% 100%;
   --card: hsl(var(--card-hsl));
@@ -136,63 +136,6 @@
   --accent-blue-hsl: 204.16 69.95% 58.24%;
   --ring-track-gray-hsl: 216 12.2% 83.92%;
   --recovery-yellow-hsl: 45.18 86.46% 62.35%;
-}
-
-.dark,
-[data-theme="dark"] {
-  /* Core Colors - Dark Mode */
-  --background: #000000;
-  --foreground: #000000;
-  --card: #1a1a1a;
-  --card-foreground: #000000;
-  --popover: #1a1a1a;
-  --popover-foreground: #000000;
-
-  /* Primary Brand Colors */
-  --primary: #e07a5f;
-  --primary-foreground: #000000;
-  --primary-hover: #cf694f;
-  --primary-light: #4a2a22;
-
-  /* Secondary & Accent */
-  --secondary: #3f3727;
-  --secondary-foreground: #000000;
-  --accent: #56756b;
-  --accent-foreground: #000000;
-  --accent-light: #2d3f36;
-
-  /* Semantic Colors */
-  --success: #3fa969;
-  --success-light: #1e4932;
-  --warning: #e9b949;
-  --warning-light: #4a3d1f;
-  --destructive: #e74c5b;
-  --destructive-light: #4f1f25;
-  --info: #209fb5;
-  --info-light: #163f4a;
-
-  /* Neutral Colors */
-  --muted: #1e1e1e;
-  --muted-foreground: #000000;
-  --border: rgba(224, 122, 95, 0.3);
-  --border-light: #2d2d2d;
-  --input: #1e1e1e;
-  --input-background: #1e1e1e;
-  --input-border: #3f3f46;
-  --input-focus: #e07a5f;
-
-  /* HSL triplets for Tailwind /opacity support */
-  --primary-hsl: 12.56 67.54% 62.55%;
-  --muted-foreground-hsl: 0 0% 0%;
-  --warm-brown-hsl: 27.57 15.35% 47.25%;
-  --warm-coral-hsl: 12.56 67.54% 62.55%;
-  --warm-sage-hsl: 108.33 23.38% 69.8%;
-  --warm-cream-hsl: 45.88 69.86% 85.69%;
-  --warm-peach-hsl: 36.97 79.2% 75.49%;
-  --warm-mint-hsl: 150.61 24.14% 60.2%;
-  --warm-rose-hsl: 355.38 53.06% 80.78%;
-  --warm-lavender-hsl: 280.56 63.96% 78.24%;
-  --soft-gray-hsl: 0 0% 20%;
 }
 
 @layer base {
@@ -385,10 +328,6 @@
   a {
     color: var(--foreground);
     transition: color 0.2s ease;
-  }
-
-  a:hover {
-    color: var(--foreground);
   }
 
   /* Modern Button Reset */
