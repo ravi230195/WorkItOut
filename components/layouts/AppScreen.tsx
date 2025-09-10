@@ -41,6 +41,7 @@ export type AppScreenProps = React.PropsWithChildren<{
   contentGuttersPreset?: "none" | "compact" | "responsive";
   contentBottomPaddingClassName?: string;
   headerInScrollArea?: boolean;
+  onScroll?: React.UIEventHandler<HTMLDivElement>;
 }>;
 
 const cx = (...xs: Array<string | undefined | null | false>) =>
@@ -79,6 +80,7 @@ export default function AppScreen({
 
   children,
   headerInScrollArea = false,
+  onScroll,
 }: AppScreenProps) {
   // Single global provider of --app-kb-inset / --kb-inset / --keyboard-inset
   useKeyboardInset();
@@ -191,7 +193,10 @@ export default function AppScreen({
       {header && !headerInScrollArea ? renderHeaderShell() : null}
 
       {/* Scroll area */}
-      <div className={cx("flex-1 min-h-0 overflow-y-auto w-full", scrollAreaClassName)}>
+      <div
+        className={cx("flex-1 min-h-0 overflow-y-auto w-full", scrollAreaClassName)}
+        onScroll={onScroll}
+      >
         {header && headerInScrollArea ? renderHeaderShell() : null}
 
         <div

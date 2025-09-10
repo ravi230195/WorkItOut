@@ -12,6 +12,7 @@ import { BottomNavigation } from "../BottomNavigation";
 import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
 import ListItem from "../ui/ListItem";
+import { useKeyboardVisible } from "../../hooks/useKeyboardVisible";
 
 interface AddExercisesToRoutineScreenProps {
   routineId?: number;
@@ -185,6 +186,13 @@ export function AddExercisesToRoutineScreen({
   isFromExerciseSetup = true,
 }: AddExercisesToRoutineScreenProps) {
   const { userToken } = useAuth();
+  const keyboardVisible = useKeyboardVisible();
+
+  const handleScroll = useCallback(() => {
+    if (keyboardVisible) {
+      (document.activeElement as HTMLElement | null)?.blur();
+    }
+  }, [keyboardVisible]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState<MuscleFilter>("all");
@@ -395,6 +403,7 @@ export function AddExercisesToRoutineScreen({
       }
       bottomBarSticky
       contentClassName=""
+      onScroll={handleScroll}
     >
       <Stack gap="fluid">
         <Spacer y="xss" />
