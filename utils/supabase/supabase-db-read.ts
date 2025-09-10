@@ -20,7 +20,7 @@ export class SupabaseDBRead extends SupabaseBase {
   } = {}): Promise<Exercise[]> {
     const { limit, offset, muscleGroup, search, other } = opts;
 
-    let url = `${SUPABASE_URL}/rest/v1/exercises?select=*`;
+    let url = `${SUPABASE_URL}/rest/v1/exercises?select=exercise_id,name,muscle_group`;
     if (muscleGroup) {
       url += `&muscle_group=eq.${encodeURIComponent(muscleGroup)}`;
     } else if (other) {
@@ -83,7 +83,7 @@ export class SupabaseDBRead extends SupabaseBase {
 
   // Individual exercise by ID
   async getExercise(id: number): Promise<Exercise | null> {
-    const url = `${SUPABASE_URL}/rest/v1/exercises?exercise_id=eq.${id}&select=*&limit=1`;
+    const url = `${SUPABASE_URL}/rest/v1/exercises?exercise_id=eq.${id}&select=exercise_id,name,muscle_group&limit=1`;
     const key = this.keyExercise(id);
 
     const { data: result } = await this.getOrFetchAndCache<Exercise[]>(url, key, CACHE_TTL.exercises, true);
