@@ -28,7 +28,8 @@ function NumberInput({
   ...props
 }: NumberInputProps) {
   const resolvedMode = mode ?? "decimal";
-  const resolvedInputMode = inputMode ?? resolvedMode;
+  const resolvedInputMode = customKeyboard ? "none" : inputMode ?? resolvedMode;
+  const resolvedType = customKeyboard ? "text" : "number";
   const resolvedPattern =
     pattern ?? (resolvedMode === "numeric" ? "[0-9]*" : "[0-9]*[.,]?[0-9]*");
 
@@ -55,13 +56,14 @@ function NumberInput({
   return (
     <div className="relative">
       <Input
-        type="number"
+        type={resolvedType}
         inputMode={resolvedInputMode}
         pattern={resolvedPattern}
         step={step}
         min={min}
         className={cn(className)}
         onFocus={handleFocus}
+        readOnly={customKeyboard}
         {...props}
       />
       {customKeyboard && showKeyboard ? (
