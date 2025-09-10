@@ -31,8 +31,8 @@ export default {
         info: "var(--info)",
         "info-light": "var(--info-light)",
 
-        /* Text & brand (HSL so /opacity works) */
-        foreground: "hsl(var(--foreground-hsl))",
+        /* Text & brand */
+        foreground: "var(--foreground)",
         "muted-foreground": "hsl(var(--muted-foreground-hsl))",
         primary: "hsl(var(--primary-hsl))",
         "primary-foreground": "var(--primary-foreground)",
