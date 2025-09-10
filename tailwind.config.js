@@ -14,7 +14,7 @@ export default {
       },
       colors: {
         /* App surface tokens */
-        background: "var(--background)",
+        background: "hsl(var(--background-hsl))",
         card: "hsl(var(--card-hsl))",
         "card-foreground": "var(--card-foreground)",
         popover: "var(--popover)",
@@ -40,13 +40,13 @@ export default {
         "primary-hover": "var(--primary-hover)",
         "primary-light": "var(--primary-light)",
 
-        /* Warm palette (HSL so /opacity works) */
+        /* Warm palette (now mapped to the background color) */
         "warm-brown": "hsl(var(--foreground-hsl))",
-        "warm-coral": "hsl(var(--warm-coral-hsl))",
-        "warm-sage": "hsl(var(--warm-sage-hsl))",
-        "warm-peach": "hsl(var(--warm-peach-hsl))",
-        "warm-mint": "hsl(var(--warm-mint-hsl))",
-        "soft-gray": "hsl(var(--soft-gray-hsl))",
+        "warm-coral": "hsl(var(--background-hsl))",
+        "warm-sage": "hsl(var(--background-hsl))",
+        "warm-peach": "hsl(var(--background-hsl))",
+        "warm-mint": "hsl(var(--background-hsl))",
+        "soft-gray": "hsl(var(--background-hsl))",
         "accent-blue": "hsl(var(--accent-blue-hsl))",
         "ring-track-gray": "hsl(var(--ring-track-gray-hsl))",
         "recovery-yellow": "hsl(var(--recovery-yellow-hsl))",

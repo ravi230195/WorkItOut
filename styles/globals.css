@@ -82,10 +82,10 @@
   --transition-normal: 250ms ease-out;
   --transition-slow: 350ms ease-out;
 
-  /* Legacy Support (keeping for existing components) */
-  --warm-coral: #e07a5f;
-  --warm-sage: #a7c4a0;
-  --soft-gray: #f7f3f0;
+  /* Legacy Support (now aliased to the background color) */
+  --warm-coral: var(--background);
+  --warm-sage: var(--background);
+  --soft-gray: var(--background);
 
   /* Additional tokens for progress components */
   --accent-blue: #4aa3df;
@@ -102,13 +102,7 @@
   --muted-foreground-hsl: 27.57 15.35% 47.25%;
   --overlay-hsl: 0 0% 0%;
   --shadow-hsl: 0 0% 0%;
-
-  /* HSL triplets for Tailwind /opacity support (adds warm palette + soft gray) */
-  --warm-coral-hsl: 12.56 67.54% 62.55%;
-  --warm-sage-hsl: 108.33 23.38% 69.80%;
-  --warm-peach-hsl: 36.97 79.20% 75.49%;
-  --warm-mint-hsl: 150.61 24.14% 60.20%;
-  --soft-gray-hsl: 25.71 30.43% 95.49%;
+  --background-hsl: 20 60% 99%;
 
   /* Progress component HSL tokens */
   --accent-blue-hsl: 204.16 69.95% 58.24%;
@@ -151,11 +145,7 @@
   --foreground-hsl: 0 0% 96%;
   --primary-hsl: 12.56 67.54% 62.55%;
   --muted-foreground-hsl: 240 5% 65%;
-  --warm-coral-hsl: 12.56 67.54% 62.55%;
-  --warm-sage-hsl: 108.33 23.38% 69.80%;
-  --warm-peach-hsl: 36.97 79.20% 75.49%;
-  --warm-mint-hsl: 150.61 24.14% 60.20%;
-  --soft-gray-hsl: 0 0% 20%;
+  --background-hsl: 0 0% 6%;
 }
 
 @layer base {
