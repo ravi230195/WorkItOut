@@ -77,11 +77,12 @@ const ExerciseRow = memo(function ExerciseRow({
       primaryClassName="font-medium text-black text-[clamp(16px,4.5vw,19px)]"
       secondaryClassName="text-[clamp(11px,3.2vw,12px)] text-black"
       className={[
-        "w-full card-modern shadow-xl hover:shadow-xl transition-all text-left border-2 border-border px-4",
+        "w-full rounded-2xl border border-border card-modern shadow-xl hover:shadow-xl transition-all text-left px-4",
         selected
           ? "bg-warm-coral/20 border-warm-coral/30"
           : "hover:bg-soft-gray/50",
       ].join(" ")}
+      style={{ border: "2px solid var(--border)" }}
       trailing={
         <div className="text-black">
           <div className="w-6 h-6 rounded-full border border-border grid place-items-center">ⓘ</div>
