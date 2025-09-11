@@ -10,7 +10,6 @@ export default {
         /* App surface tokens */
         background: "var(--background)",
         card: "hsl(var(--card-hsl))",
-        "card-foreground": "var(--card-foreground)",
         popover: "var(--popover)",
         "popover-foreground": "var(--popover-foreground)",
 
@@ -31,10 +30,7 @@ export default {
         "info-light": "var(--info-light)",
 
         /* Text & brand */
-        foreground: "var(--foreground)",
-        "muted-foreground": "hsl(var(--muted-foreground-hsl))",
         primary: "hsl(var(--primary-hsl))",
-        "primary-foreground": "var(--primary-foreground)",
         "primary-hover": "var(--primary-hover)",
         "primary-light": "var(--primary-light)",
 

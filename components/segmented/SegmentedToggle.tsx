@@ -33,7 +33,7 @@ const toneVars: Record<Tone, { text: string; border: string; bgSoft: string; bgH
     bgHover: "hover:bg-[var(--warm-sage)]/12",
   },
   brown: {
-    text: "text-warm-brown",
+    text: "text-black",
     border: "border-[var(--warm-brown)]",
     bgSoft: "bg-[var(--warm-brown)]/10",
     bgHover: "hover:bg-[var(--warm-brown)]/8",
@@ -81,23 +81,23 @@ export default function SegmentedToggle<V extends string = string>({
           s.pad,
           s.text,
           "border border-transparent",
-          "text-warm-brown/60",
-          "hover:text-warm-brown",
+          "text-black",
+          "hover:text-black",
           t.bgHover
         );
 
         const filledSelected = cx(
           s.pad,
           s.text,
-          "font-medium text-primary-foreground",
+          "font-medium text-black",
           t.border,
           "bg-primary"
         );
         const filledIdle = cx(
           s.pad,
           s.text,
-          "text-warm-brown/70",
-          "hover:text-warm-brown"
+          "text-black",
+          "hover:text-black"
         );
 
         const classes =

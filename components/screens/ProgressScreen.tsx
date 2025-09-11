@@ -167,10 +167,10 @@ const progressData: Record<'day' | 'week' | 'month' | 'year', PeriodData> = {
       remaining: 4,
       achieved: false,
       types: [
-        { name: "Walking", count: 121, icon: Footprints, color: "text-warm-sage", target: 150 },
-        { name: "Running", count: 62, icon: Activity, color: "text-warm-coral", target: 80 },
-        { name: "Cycling", count: 33, icon: Activity, color: "text-warm-peach", target: 40 },
-        { name: "Strength", count: 45, icon: Dumbbell, color: "text-warm-mint", target: 50 }
+        { name: "Walking", count: 121, icon: Footprints, color: "text-black", target: 150 },
+        { name: "Running", count: 62, icon: Activity, color: "text-black", target: 80 },
+        { name: "Cycling", count: 33, icon: Activity, color: "text-black", target: 40 },
+        { name: "Strength", count: 45, icon: Dumbbell, color: "text-black", target: 50 }
       ],
       weeklyBreakdown: [
         { week: "W1", timeSpent: 180, target: 150, achieved: true },
@@ -603,11 +603,11 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     if (selectedPeriod === 'week' && currentData.steps.dailyBreakdown) {
       return (
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-warm-brown/80">Daily Breakdown</h3>
+          <h3 className="text-sm font-semibold text-black">Daily Breakdown</h3>
           <div className="flex gap-3">
             {currentData.steps.dailyBreakdown.map((day, index) => (
               <div key={index} className="flex-1 text-center">
-                <div className="text-xs font-medium text-warm-brown/60 mb-2">{day.day}</div>
+                <div className="text-xs font-medium text-black mb-2">{day.day}</div>
                 <div className="relative">
                   <div 
                     className={`w-full rounded-lg transition-all duration-300 ${
@@ -623,7 +623,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                     </div>
                   )}
                 </div>
-                <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                <div className="text-xs font-medium text-black mt-2">
                   {(day.steps / 1000).toFixed(0)}k
                 </div>
               </div>
@@ -634,11 +634,11 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     } else if (selectedPeriod === 'month' && currentData.steps.weeklyBreakdown) {
       return (
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-warm-brown/80">Weekly Breakdown</h3>
+          <h3 className="text-sm font-semibold text-black">Weekly Breakdown</h3>
           <div className="flex gap-3">
             {currentData.steps.weeklyBreakdown.map((week, index) => (
               <div key={index} className="flex-1 text-center">
-                <div className="text-xs font-medium text-warm-brown/60 mb-2">{week.week}</div>
+                <div className="text-xs font-medium text-black mb-2">{week.week}</div>
                 <div className="relative">
                   <div 
                     className={`w-full rounded-lg transition-all duration-300 ${
@@ -654,7 +654,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                     </div>
                   )}
                 </div>
-                <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                <div className="text-xs font-medium text-black mt-2">
                   {(week.steps / 1000).toFixed(0)}k
                 </div>
               </div>
@@ -672,11 +672,11 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     if (selectedPeriod === 'week' && currentData.routines.dailyBreakdown) {
       return (
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-warm-brown/80">Daily Routine Time</h3>
+          <h3 className="text-sm font-semibold text-black">Daily Routine Time</h3>
           <div className="flex gap-3">
             {currentData.routines.dailyBreakdown.map((day, index) => (
               <div key={index} className="flex-1 text-center">
-                <div className="text-xs font-medium text-warm-brown/60 mb-2">{day.day}</div>
+                <div className="text-xs font-medium text-black mb-2">{day.day}</div>
                 <div className="relative">
                   <div 
                     className={`w-full rounded-lg transition-all duration-300 ${
@@ -692,7 +692,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                     </div>
                   )}
                 </div>
-                <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                <div className="text-xs font-medium text-black mt-2">
                   {day.timeSpent}m
                 </div>
               </div>
@@ -710,7 +710,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     if (selectedPeriod === 'month' && currentData.routines.types) {
       return (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-warm-brown/80">Routine Types</h3>
+          <h3 className="text-sm font-semibold text-black">Routine Types</h3>
           <div className="space-y-2">
             {currentData.routines.types.map((type, index) => (
               <div key={index} className="flex items-center justify-between p-4 bg-white/60 rounded-xl hover:bg-white/80 transition-all duration-200 border border-white/20">
@@ -718,11 +718,11 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                   <div className={`w-10 h-10 ${type.color} bg-current/10 rounded-full flex items-center justify-center`}>
                     <type.icon size={18} />
                   </div>
-                  <span className="font-semibold text-warm-brown">{type.name}</span>
+                  <span className="font-semibold text-black">{type.name}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-warm-brown/70">{type.count} times</span>
-                  <ChevronRight size={16} className="text-warm-brown/40" />
+                  <span className="text-sm font-medium text-black">{type.count} times</span>
+                  <ChevronRight size={16} className="text-black" />
                 </div>
               </div>
             ))}
@@ -740,11 +740,11 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
       return (
         <div className="space-y-6">
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-warm-brown/80">Weekly Steps Targets</h3>
+            <h3 className="text-sm font-semibold text-black">Weekly Steps Targets</h3>
             <div className="flex gap-3">
               {currentData.steps.weeklyBreakdown.map((week, index) => (
                 <div key={index} className="flex-1 text-center">
-                  <div className="text-xs font-medium text-warm-brown/60 mb-2">{week.week}</div>
+                  <div className="text-xs font-medium text-black mb-2">{week.week}</div>
                   <div className="relative">
                     <div 
                       className={`w-full rounded-lg transition-all duration-300 ${
@@ -760,7 +760,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                       </div>
                     )}
                   </div>
-                  <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                  <div className="text-xs font-medium text-black mt-2">
                     {(week.steps / 1000).toFixed(0)}k
                   </div>
                 </div>
@@ -769,11 +769,11 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           </div>
           
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-warm-brown/80">Weekly Routine Targets</h3>
+            <h3 className="text-sm font-semibold text-black">Weekly Routine Targets</h3>
             <div className="flex gap-3">
               {currentData.routines.weeklyBreakdown.map((week, index) => (
                 <div key={index} className="flex-1 text-center">
-                  <div className="text-xs font-medium text-warm-brown/60 mb-2">{week.week}</div>
+                  <div className="text-xs font-medium text-black mb-2">{week.week}</div>
                   <div className="relative">
                     <div 
                       className={`w-full rounded-lg transition-all duration-300 ${
@@ -789,7 +789,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                       </div>
                     )}
                   </div>
-                  <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                  <div className="text-xs font-medium text-black mt-2">
                     {week.timeSpent}m
                   </div>
                 </div>
@@ -809,12 +809,12 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
       return (
         <div className="space-y-6">
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Steps Targets</h3>
+            <h3 className="text-sm font-semibold text-black">Monthly Steps Targets</h3>
             <div className="overflow-x-auto">
               <div className="flex gap-2 min-w-max">
                 {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
                   <div key={index} className="w-16 text-center">
-                    <div className="text-xs font-medium text-warm-brown/60 mb-2">{month.month}</div>
+                    <div className="text-xs font-medium text-black mb-2">{month.month}</div>
                     <div className="relative">
                       <div 
                         className={`w-full rounded-lg transition-all duration-300 ${
@@ -830,7 +830,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                         </div>
                       )}
                     </div>
-                    <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                    <div className="text-xs font-medium text-black mt-2">
                       {(month.steps / 1000).toFixed(0)}k
                     </div>
                   </div>
@@ -840,12 +840,12 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           </div>
           
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-warm-brown/80">Monthly Routine Targets</h3>
+            <h3 className="text-sm font-semibold text-black">Monthly Routine Targets</h3>
             <div className="overflow-x-auto">
               <div className="flex gap-2 min-w-max">
                 {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
                   <div key={index} className="w-16 text-center">
-                    <div className="text-xs font-medium text-warm-brown/60 mb-2">{month.month}</div>
+                    <div className="text-xs font-medium text-black mb-2">{month.month}</div>
                     <div className="relative">
                       <div 
                         className={`w-full rounded-lg transition-all duration-300 ${
@@ -861,7 +861,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                         </div>
                       )}
                     </div>
-                    <div className="text-xs font-medium text-warm-brown/70 mt-2">
+                    <div className="text-xs font-medium text-black mt-2">
                       {month.routines}
                     </div>
                   </div>
@@ -885,22 +885,22 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
       return (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-warm-brown/80">Activity Calendar</h3>
+            <h3 className="text-sm font-semibold text-black">Activity Calendar</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => navigateMonth('prev')}
                 className="p-1 rounded-full hover:bg-white/20 transition-colors"
               >
-                <ChevronRight size={16} className="text-warm-brown/60 rotate-180" />
+                <ChevronRight size={16} className="text-black rotate-180" />
               </button>
-              <span className="text-sm font-medium text-warm-brown/80 min-w-[80px] text-center">
+              <span className="text-sm font-medium text-black min-w-[80px] text-center">
                 {getMonthName(selectedMonth)} {selectedYear}
               </span>
               <button
                 onClick={() => navigateMonth('next')}
                 className="p-1 rounded-full hover:bg-white/20 transition-colors"
               >
-                <ChevronRight size={16} className="text-warm-brown/60" />
+                <ChevronRight size={16} className="text-black" />
               </button>
             </div>
           </div>
@@ -908,7 +908,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           <div className="grid grid-cols-7 gap-1">
             {/* Day headers */}
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-              <div key={day} className="text-xs font-medium text-warm-brown/60 text-center p-1">
+              <div key={day} className="text-xs font-medium text-black text-center p-1">
                 {day}
               </div>
             ))}
@@ -931,7 +931,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
               
               return (
                 <div key={day} className="relative w-8 h-8 flex items-center justify-center">
-                  <span className="text-xs text-warm-brown/60">{day}</span>
+                  <span className="text-xs text-black">{day}</span>
                   {hasSteps && (
                     <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-warm-sage rounded-full" />
                   )}
@@ -943,7 +943,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
             })}
           </div>
           
-          <div className="flex items-center gap-4 text-xs text-warm-brown/60 justify-center">
+          <div className="flex items-center gap-4 text-xs text-black justify-center">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-warm-sage rounded-full" />
               <span>Steps</span>
@@ -965,15 +965,15 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     if (selectedPeriod === 'day') {
       return (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-warm-brown/80">Today's Workouts</h3>
+          <h3 className="text-sm font-semibold text-black">Today's Workouts</h3>
           <div className="p-4 bg-white/60 rounded-xl border border-white/20 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-warm-coral/20 rounded-full flex items-center justify-center">
-                <Dumbbell size={18} className="text-warm-coral" />
+                <Dumbbell size={18} className="text-black" />
               </div>
               <div>
-                <span className="font-semibold text-warm-brown">{workoutsLoading ? 'Loading…' : `${workoutCount} workout${workoutCount === 1 ? '' : 's'}`}</span>
-                <div className="text-xs text-warm-brown/60">{workoutsLoading ? '' : `${workoutMinutes} min total`}</div>
+                <span className="font-semibold text-black">{workoutsLoading ? 'Loading…' : `${workoutCount} workout${workoutCount === 1 ? '' : 's'}`}</span>
+                <div className="text-xs text-black">{workoutsLoading ? '' : `${workoutMinutes} min total`}</div>
               </div>
             </div>
           </div>
@@ -1003,7 +1003,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         {(
           <Section variant="plain" padding="none">
             <div className="px-1">
-              <h2 className="text-2xl font-bold text-warm-brown">{getMotivationMessage()}</h2>
+              <h2 className="text-2xl font-bold text-black">{getMotivationMessage()}</h2>
             </div>
           </Section>
         )}
@@ -1018,7 +1018,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                 className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   selectedPeriod === period
                     ? 'bg-warm-sage text-white shadow-md'
-                    : 'text-warm-brown/70 hover:text-warm-brown/90 hover:bg-white/40'
+                    : 'text-black hover:text-black hover:bg-white/40'
                 }`}
               >
                 {period.charAt(0).toUpperCase() + period.slice(1)}
@@ -1034,9 +1034,9 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
               <CardHeader>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-warm-peach/20 rounded-full flex items-center justify-center">
-                    <BarChart3 size={24} className="text-warm-peach" />
+                    <BarChart3 size={24} className="text-black" />
                   </div>
-                  <h2 className="font-bold text-warm-brown text-xl">Weekly Targets</h2>
+                  <h2 className="font-bold text-black text-xl">Weekly Targets</h2>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -1054,11 +1054,11 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-warm-sage/20 rounded-full flex items-center justify-center">
-                      <Footprints size={24} className="text-warm-sage" />
+                      <Footprints size={24} className="text-black" />
                     </div>
                     <div>
-                      <h2 className="font-bold text-warm-brown text-xl">{getPeriodTitle()} Steps</h2>
-                      <p className="text-sm text-warm-brown/60">Goal: {(selectedPeriod==='day' ? stepGoal : currentData.steps.target).toLocaleString()}</p>
+                      <h2 className="font-bold text-black text-xl">{getPeriodTitle()} Steps</h2>
+                      <p className="text-sm text-black">Goal: {(selectedPeriod==='day' ? stepGoal : currentData.steps.target).toLocaleString()}</p>
                     </div>
                   </div>
                   {selectedPeriod === 'day' ? (
@@ -1072,7 +1072,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                       )}
                     </div>
                   ) : (
-                    <Badge className={`${currentData.steps.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'} text-warm-sage border-warm-sage/30 px-3 py-1 text-sm font-semibold`}>
+                    <Badge className={`${currentData.steps.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'} text-black border-warm-sage/30 px-3 py-1 text-sm font-semibold`}>
                       {currentData.steps.progress.toFixed(0)}%
                     </Badge>
                   )}
@@ -1082,10 +1082,10 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                 {/* Steps Progress */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-4xl font-bold text-warm-brown">
+                    <span className="text-4xl font-bold text-black">
                       {(selectedPeriod==='day' ? steps : currentData.steps.current).toLocaleString()}
                     </span>
-                    <span className="text-sm font-medium text-warm-brown/60">
+                    <span className="text-sm font-medium text-black">
                       {selectedPeriod==='day'
                         ? (stepsLoading
                             ? 'Loading…'
@@ -1123,11 +1123,11 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-warm-coral/20 rounded-full flex items-center justify-center">
-                      <Dumbbell size={24} className="text-warm-coral" />
+                      <Dumbbell size={24} className="text-black" />
                     </div>
                     <div>
-                      <h2 className="font-bold text-warm-brown text-xl">{getPeriodTitle()} Workouts</h2>
-                      <p className="text-sm text-warm-brown/60">Goal: {selectedPeriod==='day' ? 1 : currentData.routines.target} {selectedPeriod==='day' ? 'workout' : 'routines'}</p>
+                      <h2 className="font-bold text-black text-xl">{getPeriodTitle()} Workouts</h2>
+                      <p className="text-sm text-black">Goal: {selectedPeriod==='day' ? 1 : currentData.routines.target} {selectedPeriod==='day' ? 'workout' : 'routines'}</p>
                     </div>
                   </div>
                   {selectedPeriod === 'day' ? (
@@ -1141,7 +1141,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                       )}
                     </div>
                   ) : (
-                    <Badge className={`${currentData.routines.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'} text-warm-coral border-warm-coral/30 px-3 py-1 text-sm font-semibold`}>
+                    <Badge className={`${currentData.routines.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'} text-black border-warm-coral/30 px-3 py-1 text-sm font-semibold`}>
                       {currentData.routines.progress.toFixed(0)}%
                     </Badge>
                   )}
@@ -1152,10 +1152,10 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                 {selectedPeriod !== 'day' && (
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-4xl font-bold text-warm-brown">
+                      <span className="text-4xl font-bold text-black">
                         {currentData.routines.current}
                       </span>
-                      <span className="text-sm font-medium text-warm-brown/60">
+                      <span className="text-sm font-medium text-black">
                         {currentData.routines.remaining > 0 
                           ? `${currentData.routines.remaining} more to go`
                           : 'Target exceeded! 🚀'
@@ -1192,9 +1192,9 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
               <CardHeader>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-warm-coral/20 rounded-full flex items-center justify-center">
-                    <Dumbbell size={24} className="text-warm-coral" />
+                    <Dumbbell size={24} className="text-black" />
                   </div>
-                  <h2 className="font-bold text-warm-brown text-xl">Routine Types</h2>
+                  <h2 className="font-bold text-black text-xl">Routine Types</h2>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -1211,9 +1211,9 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
               <CardHeader>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-warm-peach/20 rounded-full flex items-center justify-center">
-                    <BarChart3 size={24} className="text-warm-peach" />
+                    <BarChart3 size={24} className="text-black" />
                   </div>
-                  <h2 className="font-bold text-warm-brown text-xl">Monthly Breakdown</h2>
+                  <h2 className="font-bold text-black text-xl">Monthly Breakdown</h2>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -1230,9 +1230,9 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
               <CardHeader>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-warm-mint/20 rounded-full flex items-center justify-center">
-                    <Calendar size={24} className="text-warm-mint" />
+                    <Calendar size={24} className="text-black" />
                   </div>
-                  <h2 className="font-bold text-warm-brown text-xl">Activity Calendar</h2>
+                  <h2 className="font-bold text-black text-xl">Activity Calendar</h2>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">

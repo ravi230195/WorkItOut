@@ -120,8 +120,8 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       >
         <CardHeader className="text-center">
           <Stack gap="xs">
-            <h1 className="text-2xl font-medium text-warm-brown">Create Account</h1>
-            <p className="text-warm-brown/70">Join and start tracking your workouts</p>
+            <h1 className="text-2xl font-medium text-black">Create Account</h1>
+            <p className="text-black">Join and start tracking your workouts</p>
           </Stack>
         </CardHeader>
 
@@ -135,7 +135,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="First Name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-black placeholder:text-black focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                     disabled={isLoading}
                     autoComplete="given-name"
                     required
@@ -147,7 +147,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="Last Name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-black placeholder:text-black focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                     disabled={isLoading}
                     autoComplete="family-name"
                     required
@@ -161,7 +161,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                   placeholder="Display Name"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-black placeholder:text-black focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                   disabled={isLoading}
                   autoComplete="nickname"
                   required
@@ -175,7 +175,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="Height (cm)"
                     value={height}
                     onChange={(e) => setHeight(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-black placeholder:text-black focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                     disabled={isLoading}
                     min="1"
                   />
@@ -186,7 +186,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                     placeholder="Weight (kg)"
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-black placeholder:text-black focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                     disabled={isLoading}
                     min="1"
                   />
@@ -199,7 +199,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                   placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-black placeholder:text-black focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                   disabled={isLoading}
                   autoComplete="email"
                   required
@@ -212,7 +212,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
                   placeholder="Password (min 6 characters)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-warm-brown placeholder:text-warm-brown/50 focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-black placeholder:text-black focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                   disabled={isLoading}
                   autoComplete="new-password"
                   required
@@ -222,11 +222,11 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
               <TactileButton
                 type="submit"
                 disabled={disabledSubmit}
-                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-primary-foreground disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-black disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 animate-spin border-2 border-primary-foreground border-t-transparent rounded-full" />
+                    <div className="w-4 h-4 animate-spin border-2 border-black border-t-transparent rounded-full" />
                     Creating Account...
                   </div>
                 ) : (
@@ -238,11 +238,11 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
             <Spacer y="xs" />
 
             <div className="text-center">
-              <div className="text-sm text-warm-brown/60">
+              <div className="text-sm text-black">
                 Already have an account?{" "}
                 <button
                   onClick={onNavigateToSignIn}
-                  className="text-warm-coral hover:text-warm-coral/80 transition-colors font-medium"
+                  className="text-black hover:text-black transition-colors font-medium"
                   disabled={isLoading}
                 >
                   Sign in

@@ -42,13 +42,13 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
               className="flex items-center gap-3"
             >
               <span
-                className="uppercase whitespace-nowrap text-primary text-xl font-bold tracking-wide"
+                className="uppercase whitespace-nowrap text-black text-xl font-bold tracking-wide"
                 style={{ textShadow: "0 2px 2px rgba(0,0,0,0.3)" }}
               >
                 {action.label}
               </span>
               {action.icon && (
-                <span className="w-12 h-12 rounded-full bg-primary text-primary-foreground shadow flex items-center justify-center">
+                <span className="w-12 h-12 rounded-full bg-primary text-black shadow flex items-center justify-center">
                   {action.icon}
                 </span>
               )}
@@ -62,7 +62,7 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
         aria-label="Speed dial"
         aria-expanded={open}
         className="
-          w-16 h-16 rounded-full bg-primary text-primary-foreground
+          w-16 h-16 rounded-full bg-primary text-black
           shadow-lg flex items-center justify-center
           transition-transform
         "

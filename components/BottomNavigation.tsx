@@ -72,15 +72,15 @@ export function BottomNavigation({
                   <tab.icon
                     size={20}
                     className={
-                      isActive ? "text-warm-brown-bold-800" : "text-warm-brown"
+                      isActive ? "text-black" : "text-black"
                     }
                   />
                 </span>
                 <span
                   className={
                     isActive
-                      ? "font-medium text-warm-brown-bold-800"
-                      : "text-warm-brown"
+                      ? "font-medium text-black"
+                      : "text-black"
                   }
                 >
                   {tab.label}

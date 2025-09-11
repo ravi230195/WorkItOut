@@ -30,11 +30,11 @@ export default function ListItem({
   leading,
   leadingClassName = "w-12 h-12 rounded-xl bg-warm-brown/10 flex items-center justify-center",
   primary,
-  primaryClassName = "text-base font-semibold text-warm-brown",
+  primaryClassName = "text-base font-semibold text-black",
   secondary,
-  secondaryClassName = "text-sm text-warm-brown/60",
+  secondaryClassName = "text-sm text-black",
   tertiary,
-  tertiaryClassName = "text-sm text-warm-brown/60",
+  tertiaryClassName = "text-sm text-black",
   trailing,
   rightIcon,
   rightIconRotated = false,
@@ -70,7 +70,7 @@ export default function ListItem({
             e.stopPropagation();
             onRightIconClick?.(e);
           }}
-          className="ml-2 text-warm-brown/70"
+          className="ml-2 text-black"
         >
           {rightIcon === "kebab" ? (
             <MoreVertical size={18} />

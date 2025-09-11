@@ -842,7 +842,7 @@ export function ExerciseSetupScreen({
           title={ex.name}
           subtitle={subtitle}
           leading={
-            <span className="text-sm md:text-base font-medium text-warm-brown/60">
+            <span className="text-sm md:text-base font-medium text-black">
               {initials}
             </span>
           }
@@ -853,7 +853,7 @@ export function ExerciseSetupScreen({
                 checked={ex.completed}
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => void onToggleExerciseDone(ex.id, e.target.checked)}
-                className="w-5 h-5 rounded-full border-2 border-border text-success accent-success checked:border-success"
+                className="w-5 h-5 rounded-full border-2 border-border text-black accent-success checked:border-success"
               />
             ) : undefined
           }
@@ -864,7 +864,7 @@ export function ExerciseSetupScreen({
           {isLoading || !ex.loaded ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin w-4 h-4 border-2 border-warm-coral border-t-transparent rounded-full" />
-              <span className="ml-2 text-sm text-warm-brown/60">Loading sets...</span>
+              <span className="ml-2 text-sm text-black">Loading sets...</span>
             </div>
           ) : (
             <ExerciseSetEditorCard
@@ -931,7 +931,7 @@ export function ExerciseSetupScreen({
     if (visible.length === 0) {
       return (
         <div className="text-center py-4">
-          <p className="text-muted-foreground">Ready to add exercises to this routine</p>
+          <p className="text-black">Ready to add exercises to this routine</p>
         </div>
       );
     }
@@ -956,12 +956,12 @@ export function ExerciseSetupScreen({
             <div className="mt-2 mb-6">
               {inWorkout ? (
                 completedCount > 0 && (
-                  <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                  <h3 className="text-xs md:text-sm text-black uppercase tracking-wider mb-3">
                     {completedCount} COMPLETED
                   </h3>
                 )
               ) : (
-                <h3 className="text-xs md:text-sm text-muted-foreground uppercase tracking-wider mb-3">
+                <h3 className="text-xs md:text-sm text-black uppercase tracking-wider mb-3">
                   EXERCISES IN ROUTINE ({visible.length})
                 </h3>
               )}

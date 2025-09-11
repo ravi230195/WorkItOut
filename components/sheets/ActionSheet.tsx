@@ -45,7 +45,7 @@ export default function ActionSheet({
   const header = title ? (
     <div className="text-center">
       {typeof title === "string" ? (
-        <h3 className="font-medium text-warm-brown text-[clamp(14px,3.8vw,18px)]">
+        <h3 className="font-medium text-black text-[clamp(14px,3.8vw,18px)]">
           {title}
         </h3>
       ) : (
@@ -75,7 +75,7 @@ export default function ActionSheet({
     >
       <div className="p-4 space-y-4">
         {message && (
-          <p className="text-sm text-gray-700">{message}</p>
+          <p className="text-sm text-black">{message}</p>
         )}
         {children}
         <div className="space-y-3">
@@ -90,7 +90,7 @@ export default function ActionSheet({
                   className={cn(
                     "w-full",
                     a.variant === "destructive" &&
-                      "bg-destructive hover:bg-destructive/90 text-primary-foreground"
+                      "bg-destructive hover:bg-destructive/90 text-black"
                   )}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -106,7 +106,7 @@ export default function ActionSheet({
                 className={cn(
                   "flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50",
                   a.variant === "destructive" &&
-                    "text-destructive hover:bg-destructive-light"
+                    "text-black hover:bg-destructive-light"
                 )}
                 onClick={a.onClick}
                 disabled={a.disabled}

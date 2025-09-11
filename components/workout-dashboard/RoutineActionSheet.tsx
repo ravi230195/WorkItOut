@@ -90,7 +90,7 @@ export default function RoutineActionSheet({ routine, onClose, reloadRoutines }:
           ]}
         >
           <div className="space-y-3">
-            <label className="text-sm text-gray-600">New name</label>
+            <label className="text-sm text-black">New name</label>
             <input
               autoFocus
               value={renameValue}

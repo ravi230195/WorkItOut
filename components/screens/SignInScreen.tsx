@@ -71,12 +71,12 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
         <CardHeader className="text-center pb-6">
           <Stack gap="md">
             <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto">
-              <Dumbbell size={32} className="text-primary-foreground" />
+              <Dumbbell size={32} className="text-black" />
             </div>
 
             <div>
-              <h1 className="text-2xl font-medium text-warm-brown">Welcome Back</h1>
-              <p className="text-warm-brown/60">Sign in to continue your fitness journey</p>
+              <h1 className="text-2xl font-medium text-black">Welcome Back</h1>
+              <p className="text-black">Sign in to continue your fitness journey</p>
             </div>
           </Stack>
         </CardHeader>
@@ -85,7 +85,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
           <Stack gap="lg">
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-warm-brown">Email</Label>
+                <Label htmlFor="email" className="text-black">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -99,7 +99,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-warm-brown">Password</Label>
+                <Label htmlFor="password" className="text-black">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -114,7 +114,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-brown/60 hover:text-warm-brown transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-black hover:text-black transition-colors"
                     disabled={isLoading}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
@@ -125,12 +125,12 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
 
               <TactileButton
                 type="submit"
-                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-primary-foreground"
+                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-black"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 animate-spin border-2 border-primary-foreground border-t-transparent rounded-full" />
+                    <div className="w-4 h-4 animate-spin border-2 border-black border-t-transparent rounded-full" />
                     Signing In...
                   </div>
                 ) : (
@@ -142,7 +142,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
             <Stack gap="md" className="text-center">
               <button
                 onClick={() => toast.info("Password reset coming soon!")}
-                className="text-sm text-warm-coral hover:text-warm-coral/80 transition-colors"
+                className="text-sm text-black hover:text-black transition-colors"
                 disabled={isLoading}
               >
                 Forgot your password?
@@ -150,15 +150,15 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
 
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-px bg-border" />
-                <span className="text-sm text-warm-brown/60">or</span>
+                <span className="text-sm text-black">or</span>
                 <div className="flex-1 h-px bg-border" />
               </div>
 
-              <div className="text-sm text-warm-brown/60">
+              <div className="text-sm text-black">
                 Don&apos;t have an account?{" "}
                 <button
                   onClick={onNavigateToSignUp}
-                  className="text-warm-coral hover:text-warm-coral/80 transition-colors font-medium"
+                  className="text-black hover:text-black transition-colors font-medium"
                   disabled={isLoading}
                 >
                   Sign up

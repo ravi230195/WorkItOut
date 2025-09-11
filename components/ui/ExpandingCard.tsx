@@ -97,7 +97,7 @@ export default function ExpandingCard({
           <div
             className={[
               "truncate font-semibold",
-              variant === "glass" ? "text-primary-foreground opacity-95" : "text-foreground",
+              variant === "glass" ? "text-black opacity-95" : "text-black",
             ].join(" ")}
           >
             {title}
@@ -106,7 +106,7 @@ export default function ExpandingCard({
             <div
               className={[
                 "truncate text-sm",
-                variant === "glass" ? "text-primary-foreground opacity-60" : "text-muted-foreground",
+                variant === "glass" ? "text-black opacity-60" : "text-black",
               ].join(" ")}
             >
               {subtitle}
@@ -122,7 +122,7 @@ export default function ExpandingCard({
             transition={{ type: "spring", stiffness: 300, damping: 24 ,...transition}}
             className={[
               "ml-1",
-              variant === "glass" ? "text-primary-foreground opacity-70" : "text-warm-brown/70",
+              variant === "glass" ? "text-black opacity-70" : "text-black",
             ].join(" ")}
           >
             <ChevronDown size={18} />
@@ -143,7 +143,7 @@ export default function ExpandingCard({
             className={[
               "pt-1 pb-4 px-4",
               bodyClassName,
-              variant === "glass" ? "text-primary-foreground opacity-90" : "text-foreground",
+              variant === "glass" ? "text-black opacity-90" : "text-black",
             ].join(" ")}
           >
             {children}

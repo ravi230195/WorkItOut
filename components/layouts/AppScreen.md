@@ -255,11 +255,11 @@ Exact pixel control for specific use cases.
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <span>Email</span>
-          <span className="text-muted-foreground">user@example.com</span>
+          <span className="text-black">user@example.com</span>
         </div>
         <div className="flex items-center justify-between">
           <span>Member Since</span>
-          <span className="text-muted-foreground">Jan 2024</span>
+          <span className="text-black">Jan 2024</span>
         </div>
       </div>
     </div>
@@ -300,7 +300,7 @@ Exact pixel control for specific use cases.
   <div className="space-y-6">
     <div className="space-y-4">
       <h2>Bench Press</h2>
-      <p className="text-muted-foreground">
+      <p className="text-black">
         Compound exercise targeting chest, shoulders, and triceps
       </p>
     </div>
@@ -340,7 +340,7 @@ Exact pixel control for specific use cases.
   <div className="space-y-4">
     {/* Search bar full width */}
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-black" />
       <Input 
         placeholder="Search exercises..." 
         className="pl-10"
@@ -431,7 +431,7 @@ Exact pixel control for specific use cases.
 <AppScreen 
   bottomBar={
     <div className="flex items-center justify-between">
-      <span className="text-sm text-muted-foreground">
+      <span className="text-sm text-black">
         3 exercises selected
       </span>
       <Button onClick={onAddSelected}>Add Selected</Button>

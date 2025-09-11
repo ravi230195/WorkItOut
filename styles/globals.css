@@ -10,23 +10,15 @@
   --background: #000000;
   --foreground: #000000;
   --card-hsl: 0 0% 100%;
-  --card: hsl(var(--card-hsl));
-  --card-foreground: #000000;
-  --popover: #ffffff;
+  --card: hsl(var(--card-hsl));  --popover: #ffffff;
   --popover-foreground: #000000;
 
   /* Primary Brand Colors */
-  --primary: #e07a5f;
-  --primary-foreground: #000000;
-  --primary-hover: #d06a4f;
+  --primary: #e07a5f;  --primary-hover: #d06a4f;
   --primary-light: #fdf2f0;
 
   /* Secondary & Accent */
-  --secondary: #f4e8c1;
-  --secondary-foreground: #000000;
-  --accent: #a7c4a0;
-  --accent-foreground: #000000;
-  --accent-light: #f0f7ed;
+  --secondary: #f4e8c1;  --accent: #a7c4a0;  --accent-light: #f0f7ed;
 
   /* Semantic Colors */
   --success: #28a745;
@@ -39,9 +31,7 @@
   --info-light: #d1ecf1;
 
   /* Neutral Colors */
-  --muted: #f7f3f0;
-  --muted-foreground: #000000;
-  --border: rgba(224, 122, 95, 0.15);
+  --muted: #f7f3f0;  --border: rgba(224, 122, 95, 0.15);
   --border-light: #f1f3f4;
   --input: #ffffff;
   --input-background: #faf8f6;
@@ -116,9 +106,7 @@
   --app-bottom-h: 64px;
 
   /* HSL triplets for Tailwind /opacity support */
-  --primary-hsl: 12.56 67.54% 62.55%;
-  --muted-foreground-hsl: 0 0% 0%;
-  --warm-brown-hsl: 0 0% 0%;
+  --primary-hsl: 12.56 67.54% 62.55%;  --warm-brown-hsl: 0 0% 0%;
   --overlay-hsl: 0 0% 0%;
   --shadow-hsl: 0 0% 0%;
 
@@ -374,56 +362,6 @@
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
   }
-
-  /* Modern Button System */
-  .btn-primary {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-lg);
-    font-weight: var(--font-weight-medium);
-    transition: all 0.2s ease;
-    box-shadow: var(--shadow-sm);
-  }
-
-  .btn-primary:hover {
-    background-color: var(--primary-hover);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-  }
-
-  .btn-primary:active {
-    transform: translateY(0);
-  }
-
-  .btn-secondary {
-    background-color: var(--secondary);
-    color: var(--foreground);
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-lg);
-    font-weight: var(--font-weight-medium);
-    transition: all 0.2s ease;
-    border: 1px solid var(--border);
-  }
-
-  .btn-secondary:hover {
-    background-color: var(--border-light);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .btn-ghost {
-    background-color: transparent;
-    color: var(--foreground);
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius-lg);
-    font-weight: var(--font-weight-medium);
-    transition: all 0.2s ease;
-  }
-
-  .btn-ghost:hover {
-    background-color: var(--muted);
-  }
-
   /* Modern Input System */
   .input-modern {
     width: 100%;

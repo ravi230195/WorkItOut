@@ -67,7 +67,7 @@ export default function MeasurementCard({
           <div className="truncate">{label}</div>
         </div>
       }
-      subtitle={diffText && <span className="text-sm text-warm-brown/60">{diffText}</span>}
+      subtitle={diffText && <span className="text-sm text-black">{diffText}</span>}
       leading={<span className="text-xl">{icon}</span>}
       /* 40% controls, leave 10% for chevron via margin-right */
       trailing={
@@ -79,7 +79,7 @@ export default function MeasurementCard({
             <button
               type="button"
               onClick={handleDec}
-              className="w-7 h-7 rounded-full bg-soft-gray flex items-center justify-center text-warm-brown"
+              className="w-7 h-7 rounded-full bg-soft-gray flex items-center justify-center text-black"
             >
               <Minus size={14} />
             </button>
@@ -97,7 +97,7 @@ export default function MeasurementCard({
             <button
               type="button"
               onClick={handleInc}
-              className="w-7 h-7 rounded-full bg-soft-gray flex items-center justify-center text-warm-brown"
+              className="w-7 h-7 rounded-full bg-soft-gray flex items-center justify-center text-black"
             >
               <Plus size={14} />
             </button>
@@ -109,7 +109,7 @@ export default function MeasurementCard({
         <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
           {entries.slice(0, 4).map((p, i) => (
             <div key={i} className="flex items-center justify-between gap-2">
-              <span className="text-sm text-warm-brown/60">{p.date}</span>
+              <span className="text-sm text-black">{p.date}</span>
               <div className="flex items-center gap-2">
                 <NumberInput
                   step={step}
@@ -119,7 +119,7 @@ export default function MeasurementCard({
                   onChange={(e) => onEntryChange(i, e.target.value)}
                   className="h-7 text-center px-1 w-[6.5rem] sm:w-[7.5rem]"
                 />
-                <span className="text-sm text-warm-brown">{unit}</span>
+                <span className="text-sm text-black">{unit}</span>
               </div>
             </div>
           ))}

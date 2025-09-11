@@ -763,13 +763,13 @@ The component uses these CSS custom properties for theming:
 ```tsx
 // Before - Manual styling
 <div className="bg-card rounded-2xl shadow-sm p-4 border-b border-gray-200">
-  <h2 className="text-lg font-medium text-gray-900 mb-3">Title</h2>
-  <div className="text-gray-600">Content</div>
+  <h2 className="text-lg font-medium text-black mb-3">Title</h2>
+  <div className="text-black">Content</div>
 </div>
 
 // After - Using Section
 <Section variant="card" title="Title" divider="bottom">
-  <div className="text-gray-600">Content</div>
+  <div className="text-black">Content</div>
 </Section>
 ```
 

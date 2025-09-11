@@ -41,12 +41,12 @@ const SearchField = memo(function SearchField({
 }) {
   return (
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-black" size={20} />
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder ?? "Search for an exercise..."}
-        className="bg-input-background border-border text-foreground placeholder:text-muted-foreground h-12 md:h-12 pl-10 pr-4 rounded-xl focus:border-warm-coral focus:ring-warm-coral/20"
+        className="bg-input-background border-border text-black placeholder:text-black h-12 md:h-12 pl-10 pr-4 rounded-xl focus:border-warm-coral focus:ring-warm-coral/20"
       />
     </div>
   );
@@ -70,12 +70,12 @@ const ExerciseRow = memo(function ExerciseRow({
       type="button"
       aria-pressed={selected}
       onClick={() => onSelect(exercise)}
-      leading={<span className="font-medium text-muted-foreground">{initials}</span>}
+      leading={<span className="font-medium text-black">{initials}</span>}
       leadingClassName="w-12 h-12 rounded-xl bg-card/10 grid place-items-center"
       primary={exercise.name}
       secondary={subtitle}
-      primaryClassName="font-medium text-foreground text-[clamp(16px,4.5vw,19px)]"
-      secondaryClassName="text-[clamp(11px,3.2vw,12px)] text-muted-foreground"
+      primaryClassName="font-medium text-black text-[clamp(16px,4.5vw,19px)]"
+      secondaryClassName="text-[clamp(11px,3.2vw,12px)] text-black"
       className={[
         "w-full rounded-2xl border border-border bg-card shadow-sm transition-all px-4",
         selected
@@ -83,7 +83,7 @@ const ExerciseRow = memo(function ExerciseRow({
           : "hover:bg-soft-gray/50 hover:shadow-md",
       ].join(" ")}
       trailing={
-        <div className="text-muted-foreground">
+        <div className="text-black">
           <div className="w-6 h-6 rounded-full border border-border grid place-items-center">ⓘ</div>
         </div>
       }
@@ -145,7 +145,7 @@ function ExerciseList({
     <>
       {letters.map((letter) => (
         <div key={letter}>
-          <h2 className="text-xs md:text-sm text-muted-foreground font-medium mb-3 px-2 tracking-wide">
+          <h2 className="text-xs md:text-sm text-black font-medium mb-3 px-2 tracking-wide">
             {letter}
           </h2>
           <div className="space-y-2">
@@ -169,7 +169,7 @@ function ExerciseList({
         </div>
       ))}
       {isLoadingMore && (
-        <div className="text-center text-muted-foreground py-4">Loading...</div>
+        <div className="text-center text-black py-4">Loading...</div>
       )}
     </>
   );
@@ -443,7 +443,7 @@ export function AddExercisesToRoutineScreen({
         <Section variant="plain" padding="none" className="space-y-6">
           {loadError ? (
             <Section variant="card" className="text-center">
-              <p className="text-muted-foreground">Failed to load exercises</p>
+              <p className="text-black">Failed to load exercises</p>
             </Section>
           ) : (
             <>

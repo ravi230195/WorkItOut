@@ -18,11 +18,11 @@ export function TactileButton({
   const baseClasses = "btn-tactile rounded-xl border-0 font-medium";
   
   const variantClasses = {
-    primary: "bg-primary hover:bg-primary-hover text-primary-foreground",
-    secondary: "bg-warm-cream hover:bg-warm-cream/90 text-warm-brown",
-    sage: "bg-warm-sage hover:bg-warm-sage/90 text-primary-foreground btn-tactile-sage",
-    peach: "bg-warm-peach hover:bg-warm-peach/90 text-warm-brown",
-    mint: "bg-warm-mint hover:bg-warm-mint/90 text-primary-foreground"
+    primary: "bg-primary hover:bg-primary-hover text-black",
+    secondary: "bg-warm-cream hover:bg-warm-cream/90 text-black",
+    sage: "bg-warm-sage hover:bg-warm-sage/90 text-black btn-tactile-sage",
+    peach: "bg-warm-peach hover:bg-warm-peach/90 text-black",
+    mint: "bg-warm-mint hover:bg-warm-mint/90 text-black"
   };
 
   const sizeClasses = {

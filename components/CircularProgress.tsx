@@ -54,11 +54,11 @@ export function CircularProgress({
       
       {/* Center content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <div className="font-medium text-warm-brown" style={{ fontSize: size * 0.15 }}>
+        <div className="font-medium text-black" style={{ fontSize: size * 0.15 }}>
           {value}
         </div>
         {sublabel && (
-          <div className="text-warm-brown/60" style={{ fontSize: size * 0.08 }}>
+          <div className="text-black" style={{ fontSize: size * 0.08 }}>
             {sublabel}
           </div>
         )}
