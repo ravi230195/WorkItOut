@@ -7,7 +7,7 @@
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
 
   /* Core Colors - Modern & Accessible */
-  --background: #fefcfb;
+  --background: #000000;
   --foreground: #000000;
   --card-hsl: 0 0% 100%;
   --card: hsl(var(--card-hsl));
@@ -105,7 +105,7 @@
   --warm-rose: #e8b4b8;
   --warm-lavender: #d4a4eb;
   --soft-gray: #f7f3f0;
-  --warm-brown: #8b7766;
+  --warm-brown: #000000;
 
   /* Additional tokens for progress components */
   --accent-blue: #4aa3df;
@@ -118,7 +118,7 @@
   /* HSL triplets for Tailwind /opacity support */
   --primary-hsl: 12.56 67.54% 62.55%;
   --muted-foreground-hsl: 0 0% 0%;
-  --warm-brown-hsl: 27.57 15.35% 47.25%;
+  --warm-brown-hsl: 0 0% 0%;
   --overlay-hsl: 0 0% 0%;
   --shadow-hsl: 0 0% 0%;
 

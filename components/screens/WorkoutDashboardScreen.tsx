@@ -230,7 +230,7 @@ export default function WorkoutDashboardScreen({
     >
       <Stack gap="fluid">
         <Section variant="plain" padding="none" className="text-center">
-          <p className="text-3xl text-warm-brown/60 mt-1">
+          <p className="text-3xl text-foreground/60 mt-1">
             {getFirstName() ? `Welcome back, ${getFirstName()}!` : "Welcome back!"}
           </p>
         </Section>
@@ -239,7 +239,7 @@ export default function WorkoutDashboardScreen({
 
         {/* subtitle (title is in header) */}
         <Section variant="plain" padding="none" className="text-center">
-          <p className="text-sm text-warm-brown/60 mt-1">
+          <p className="text-sm text-foreground/60 mt-1">
             {view === RoutinesView.My
               ? "Select a routine to start your workout"
               : "Explore prebuilt routines to get started"}
@@ -278,7 +278,7 @@ export default function WorkoutDashboardScreen({
             ]}
             size="sm"
             /* Light warm highlight when selected */
-            className="data-[checked=true]:bg-warm-coral/20 data-[checked=true]:text-warm-brown"
+            className="data-[checked=true]:bg-warm-coral/20 data-[checked=true]:text-foreground"
             variant="filled"
             tone="accent"
           />
