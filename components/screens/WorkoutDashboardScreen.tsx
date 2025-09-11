@@ -109,11 +109,11 @@ export default function WorkoutDashboardScreen({
     let cancelled = false;
     const fetchExerciseCounts = async () => {
       const timer = performanceTimer.start('fetchExerciseCounts');
-      
+
       if (routines.length === 0) {
         logger.debug("🔍 DGB [WORKOUT_SCREEN] No routines, skipping");
         setExerciseCounts({});
-        timer.endWithLog('debug');
+        timer.endWithLog();
         return;
       }
       setLoadingCounts(true);
@@ -139,7 +139,7 @@ export default function WorkoutDashboardScreen({
               }
             }
 
-            routineTimer.endWithLog('debug');
+            routineTimer.endWithLog();
             return { id: r.routine_template_id, count: active.length, needsRecompute: needsRecomp };
           })
         );
@@ -152,10 +152,10 @@ export default function WorkoutDashboardScreen({
         // only recompute summaries for "my" data
         if (canEdit && needsRecompute.length > 0) {
           const recomputeTimer = performanceTimer.start('fetchExerciseCounts - muscle summary recompute');
-          
+
           logger.debug("🔍 DGB [WORKOUT_SCREEN] Triggering muscle summary recompute for routines:", needsRecompute);
           logger.debug("🔍 DGB [WORKOUT_SCREEN] canEdit:", canEdit, "needsRecompute count:", needsRecompute.length);
-          
+
           const results = await Promise.allSettled(
             needsRecompute.map((id) => {
               logger.debug("🔍 DGB [WORKOUT_SCREEN] Calling recomputeAndSaveRoutineMuscleSummary for routine ID:", id);
@@ -167,21 +167,21 @@ export default function WorkoutDashboardScreen({
             // Since recomputeAndSaveRoutineMuscleSummary returns void, we just check if it succeeded
             const successfulCount = results.filter(res => res.status === "fulfilled").length;
             logger.debug("🔍 DGB [WORKOUT_SCREEN] Successful recomputes:", successfulCount, "out of", needsRecompute.length);
-            
+
             if (successfulCount > 0) {
               logger.debug("🔍 DGB [WORKOUT_SCREEN] Muscle summary recompute completed successfully");
               logger.debug("🔍 DGB [WORKOUT_SCREEN] No need to trigger routine state update - let cache handle it");
               // Don't trigger setRoutines here - it causes infinite loop!
             }
           }
-          
-          recomputeTimer.endWithLog('debug');
+
+          recomputeTimer.endWithLog();
         }
       } catch (e) {
         logger.error("Failed to load exercise counts / recompute summaries", e);
       } finally {
         if (!cancelled) setLoadingCounts(false);
-        timer.endWithLog('info'); // Main function timing at INFO level
+        timer.endWithLog(); // Main function timing at INFO level
       }
     };
 
@@ -230,10 +230,11 @@ export default function WorkoutDashboardScreen({
     >
       <Stack gap="fluid">
         <Section variant="plain" padding="none" className="text-center">
-          <p className="text-3xl text-black mt-1">
+          <p className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-orange-400 to-amber-500 drop-shadow-sm">
             {getFirstName() ? `Welcome back, ${getFirstName()}!` : "Welcome back!"}
           </p>
         </Section>
+
 
         <Spacer y="sm" />
 
@@ -255,9 +256,9 @@ export default function WorkoutDashboardScreen({
             goal={isLoadingSteps ? null : goal}
             recoveryPercent={null}
             strain={null}
-            onStepsClick={() => {}}
-            onRecoveryClick={() => {}}
-            onStrainClick={() => {}}
+            onStepsClick={() => { }}
+            onRecoveryClick={() => { }}
+            onStrainClick={() => { }}
           />
         </Section>
 

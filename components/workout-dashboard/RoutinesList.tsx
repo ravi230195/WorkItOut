@@ -86,7 +86,8 @@ export default function RoutinesList({
                     onClick={() =>
                       onSelectRoutine(routine.routine_template_id, routine.name, access)
                     }
-                    className="w-full rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all text-left"
+                    className="w-full rounded-2xl border border-border card-modern shadow-xl hover:shadow-xl transition-all text-left"
+                    style={{border: "2px solid var(--border)"}}
                   >
                     <ListItem
                       leading={
