@@ -28,7 +28,7 @@ interface ListItemProps
 export default function ListItem({
   as = "div",
   leading,
-  leadingClassName = "w-12 h-12 rounded-xl bg-warm-brown/10 flex items-center justify-center",
+  leadingClassName = "w-12 h-12 rounded-xl bg-black/10 flex items-center justify-center",
   primary,
   primaryClassName = "text-base font-semibold text-black",
   secondary,

@@ -1017,7 +1017,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                 onClick={() => setSelectedPeriod(period)}
                 className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   selectedPeriod === period
-                    ? 'bg-warm-sage text-white shadow-md'
+                    ? 'bg-warm-sage text-black shadow-md'
                     : 'text-black hover:text-black hover:bg-white/40'
                 }`}
               >
@@ -1066,7 +1066,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                       ((stepsLoading ? false : steps >= stepGoal) ) ? 'bg-warm-sage' : 'bg-warm-sage/20'
                     }`}>
                       {((stepsLoading ? false : steps >= stepGoal)) ? (
-                        <Check size={20} className="text-white" />
+                        <Check size={20} className="text-black" />
                       ) : (
                         <div className="w-4 h-4 border-2 border-warm-sage rounded-sm" />
                       )}
@@ -1135,7 +1135,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
                       (workoutsLoading ? false : workoutCount >= 1) ? 'bg-warm-coral' : 'bg-warm-coral/20'
                     }`}>
                       {(workoutsLoading ? false : workoutCount >= 1) ? (
-                        <Check size={20} className="text-white" />
+                        <Check size={20} className="text-black" />
                       ) : (
                         <div className="w-4 h-4 border-2 border-warm-coral rounded-sm" />
                       )}

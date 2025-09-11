@@ -725,7 +725,6 @@ The component uses these CSS custom properties for theming:
 
 /* Background colors */
 --soft-gray: #f9fafb;
---warm-brown: #374151;
 --warm-coral: #f97316;
 ```
 

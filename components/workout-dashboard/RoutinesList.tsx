@@ -8,10 +8,10 @@ import { RoutinesView } from "./types";
 
 const avatarPalette = [
   { bg: "bg-soft-gray", iconBg: "bg-warm-coral", emoji: "🏋️" },
-  { bg: "bg-[var(--warm-cream)]", iconBg: "bg-[var(--warm-brown)]", emoji: "🏃" },
+  { bg: "bg-[var(--warm-cream)]", iconBg: "bg-black", emoji: "🏃" },
   { bg: "bg-soft-gray", iconBg: "bg-[var(--warm-sage)]", emoji: "🧘" },
   { bg: "bg-[var(--warm-cream)]", iconBg: "bg-warm-coral", emoji: "🤸" },
-  { bg: "bg-soft-gray", iconBg: "bg-[var(--warm-brown)]", emoji: "🔥" },
+  { bg: "bg-soft-gray", iconBg: "bg-black", emoji: "🔥" },
 ];
 
 interface RoutinesListProps {

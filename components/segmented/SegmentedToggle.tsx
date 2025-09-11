@@ -21,22 +21,22 @@ type Props<V extends string = string> = {
 
 const toneVars: Record<Tone, { text: string; border: string; bgSoft: string; bgHover: string }> = {
   accent: {
-    text: "text-[var(--warm-coral)]",
+    text: "text-black",
     border: "border-warm-coral",
     bgSoft: "bg-warm-coral/14",
     bgHover: "hover:bg-warm-coral/12",
   },
   sage: {
-    text: "text-[var(--warm-sage)]",
+    text: "text-black",
     border: "border-[var(--warm-sage)]",
     bgSoft: "bg-[var(--warm-sage)]/14",
     bgHover: "hover:bg-[var(--warm-sage)]/12",
   },
   brown: {
     text: "text-black",
-    border: "border-[var(--warm-brown)]",
-    bgSoft: "bg-[var(--warm-brown)]/10",
-    bgHover: "hover:bg-[var(--warm-brown)]/8",
+    border: "border-black",
+    bgSoft: "bg-black/10",
+    bgHover: "hover:bg-black/8",
   },
 };
 
@@ -68,7 +68,7 @@ export default function SegmentedToggle<V extends string = string>({
         const selected = opt.value === value;
         const baseBtn =
           "relative isolate rounded-md transition-colors select-none " +
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--warm-brown)]/20";
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20";
         const directSelected = cx(
           s.pad,
           s.text,

@@ -35,7 +35,6 @@ export default {
         "primary-light": "var(--primary-light)",
 
         /* Warm palette (HSL so /opacity works) */
-        "warm-brown": "hsl(var(--warm-brown-hsl))",
         "warm-coral": "hsl(var(--warm-coral-hsl))",
         "warm-sage": "hsl(var(--warm-sage-hsl))",
         "warm-cream": "hsl(var(--warm-cream-hsl))",
