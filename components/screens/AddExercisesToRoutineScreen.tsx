@@ -79,8 +79,8 @@ const ExerciseRow = memo(function ExerciseRow({
       className={[
         "w-full rounded-2xl border border-border card-modern shadow-xl hover:shadow-xl transition-all text-left px-4",
         selected
-          ? "bg-warm-coral/20 border-warm-coral/30"
-          : "hover:bg-soft-gray/50",
+          ? "bg-warm-coral/60 border-warm-coral/60"
+          : "hover:bg-soft-gray",
       ].join(" ")}
       style={{ border: "2px solid var(--border)" }}
       trailing={
