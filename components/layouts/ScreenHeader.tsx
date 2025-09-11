@@ -3,6 +3,10 @@ import clsx from "clsx";
 import BackButton from "../BackButton";
 import { Plus } from "lucide-react";
 
+const headerActionProps = {
+  className: "p-0 m-0 bg-transparent border-0 text-black",
+};
+
 type ScreenHeaderProps = {
   title: string;
   /** optional secondary line beneath title */
@@ -76,9 +80,9 @@ export default function ScreenHeader({
         {/* Content row (height excludes safe-area padding) */}
         <div className={rowClasses} style={useFixed ? { height: contentHeightPx } : undefined}>
         {/* Left */}
-        <div className="shrink-0 flex items-center" style={{ width: reserveLeftPx }}>
-          {onBack ? <BackButton onClick={onBack} /> : null}
-        </div>
+          <div className="shrink-0 flex items-center" style={{ width: reserveLeftPx }}>
+            {onBack ? <BackButton onClick={onBack} {...headerActionProps} /> : null}
+          </div>
 
         {/* Center: true-centered title with optional subtitle */}
         <div
@@ -104,15 +108,11 @@ export default function ScreenHeader({
 
         {/* Right */}
         <div className="ml-auto shrink-0 flex items-center justify-end" style={{ width: reserveRightPx }}>
-          {right ?? (onAdd ? (
-            <button
-              onClick={onAdd}
-              aria-label="Add"
-              className="p-0 m-0 bg-transparent border-0 text-black"
-            >
-              <Plus size={20} />
-            </button>
-          ) : null)}
+            {right ?? (onAdd ? (
+              <button onClick={onAdd} aria-label="Add" {...headerActionProps}>
+                <Plus size={20} />
+              </button>
+            ) : null)}
         </div>
         </div>
       </header>
