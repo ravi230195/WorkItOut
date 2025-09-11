@@ -162,7 +162,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   if (!isInitialized) {
     return (
       <div className="bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30 flex items-center justify-center">
-        <div className="text-warm-brown">Loading...</div>
+        <div className="text-black">Loading...</div>
       </div>
     );
   }

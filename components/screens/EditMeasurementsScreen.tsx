@@ -137,8 +137,8 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       <Stack gap="fluid">
         <Section variant="card" className="flex items-center gap-3">
           <div className="min-w-0">
-            <div className="text-base font-semibold text-warm-brown truncate">Track Your Progress</div>
-            <div className="text-sm text-warm-brown/60 truncate">Record measurements to see changes over time</div>
+            <div className="text-base font-semibold text-black truncate">Track Your Progress</div>
+            <div className="text-sm text-black truncate">Record measurements to see changes over time</div>
           </div>
         </Section>
         <Spacer y="sm" />

@@ -1,12 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: "class",
-  content: [
-    "./index.html",
-    "./App.tsx",
-    "./src/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./App.tsx", "./src/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       fontFamily: {
@@ -16,7 +10,6 @@ export default {
         /* App surface tokens */
         background: "var(--background)",
         card: "hsl(var(--card-hsl))",
-        "card-foreground": "var(--card-foreground)",
         popover: "var(--popover)",
         "popover-foreground": "var(--popover-foreground)",
 
@@ -36,16 +29,12 @@ export default {
         info: "var(--info)",
         "info-light": "var(--info-light)",
 
-        /* Text & brand (HSL so /opacity works) */
-        foreground: "hsl(var(--foreground-hsl))",
-        "muted-foreground": "hsl(var(--muted-foreground-hsl))",
+        /* Text & brand */
         primary: "hsl(var(--primary-hsl))",
-        "primary-foreground": "var(--primary-foreground)",
         "primary-hover": "var(--primary-hover)",
         "primary-light": "var(--primary-light)",
 
         /* Warm palette (HSL so /opacity works) */
-        "warm-brown": "hsl(var(--warm-brown-hsl))",
         "warm-coral": "hsl(var(--warm-coral-hsl))",
         "warm-sage": "hsl(var(--warm-sage-hsl))",
         "warm-cream": "hsl(var(--warm-cream-hsl))",
@@ -92,25 +81,23 @@ export default {
         bold: "var(--font-weight-bold)",
       },
       spacing: {
-        "1": "var(--space-1)",
-        "2": "var(--space-2)",
-        "3": "var(--space-3)",
-        "4": "var(--space-4)",
-        "5": "var(--space-5)",
-        "6": "var(--space-6)",
-        "8": "var(--space-8)",
-        "10": "var(--space-10)",
-        "12": "var(--space-12)",
-        "16": "var(--space-16)",
-        "20": "var(--space-20)",
+        1: "var(--space-1)",
+        2: "var(--space-2)",
+        3: "var(--space-3)",
+        4: "var(--space-4)",
+        5: "var(--space-5)",
+        6: "var(--space-6)",
+        8: "var(--space-8)",
+        10: "var(--space-10)",
+        12: "var(--space-12)",
+        16: "var(--space-16)",
+        20: "var(--space-20)",
       },
       boxShadow: {
         sm: "var(--shadow-sm)",
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
         xl: "var(--shadow-xl)",
-        soft: "var(--shadow-soft)",
-        glow: "var(--shadow-glow)",
       },
       transitionDuration: {
         fast: "var(--transition-fast)",
@@ -126,9 +113,5 @@ export default {
       },
     },
   },
-  plugins: [
-    require("@tailwindcss/forms"),
-    require("@tailwindcss/typography"),
-    require("@tailwindcss/aspect-ratio"),
-  ],
+  plugins: [require("@tailwindcss/forms")],
 };

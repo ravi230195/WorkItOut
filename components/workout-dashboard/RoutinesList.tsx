@@ -8,10 +8,10 @@ import { RoutinesView } from "./types";
 
 const avatarPalette = [
   { bg: "bg-soft-gray", iconBg: "bg-warm-coral", emoji: "🏋️" },
-  { bg: "bg-[var(--warm-cream)]", iconBg: "bg-[var(--warm-brown)]", emoji: "🏃" },
+  { bg: "bg-[var(--warm-cream)]", iconBg: "bg-black", emoji: "🏃" },
   { bg: "bg-soft-gray", iconBg: "bg-[var(--warm-sage)]", emoji: "🧘" },
   { bg: "bg-[var(--warm-cream)]", iconBg: "bg-warm-coral", emoji: "🤸" },
-  { bg: "bg-soft-gray", iconBg: "bg-[var(--warm-brown)]", emoji: "🔥" },
+  { bg: "bg-soft-gray", iconBg: "bg-black", emoji: "🔥" },
 ];
 
 interface RoutinesListProps {
@@ -61,14 +61,14 @@ export default function RoutinesList({
             >
               <div className="text-center py-4">
                 <div className="w-12 h-12 mx-auto mb-3 bg-destructive-light rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-5 h-5 text-destructive" />
+                  <AlertCircle className="w-5 h-5 text-black" />
                 </div>
-                <p className="text-destructive text-sm">{routinesError}</p>
+                <p className="text-black text-sm">{routinesError}</p>
               </div>
             </Section>
           ) : routines.length === 0 ? (
             <Section variant="card" className="text-center">
-              <p className="text-warm-brown/60 text-sm">
+              <p className="text-black text-sm">
                 {view === RoutinesView.My ? "Start by adding a new routine" : "No sample routines found"}
               </p>
             </Section>
@@ -90,7 +90,7 @@ export default function RoutinesList({
                   >
                     <ListItem
                       leading={
-                        <div className={`w-8 h-8 ${palette.iconBg} rounded-lg grid place-items-center text-primary-foreground text-lg`}>
+                        <div className={`w-8 h-8 ${palette.iconBg} rounded-lg grid place-items-center text-black text-lg`}>
                           <span>{palette.emoji}</span>
                         </div>
                       }
@@ -98,7 +98,7 @@ export default function RoutinesList({
                       primary={routine.name}
                       secondary={muscleGroups}
                       tertiary={
-                        <div className="mt-2 flex items-center gap-4 text-warm-brown/70">
+                        <div className="mt-2 flex items-center gap-4 text-black">
                           <span className="inline-flex items-center gap-1">
                             <Clock size={14} />
                             {loadingCounts ? "—" : timeMin !== null ? `${timeMin} min` : "—"}
@@ -109,8 +109,8 @@ export default function RoutinesList({
                           </span>
                         </div>
                       }
-                      primaryClassName="font-medium text-warm-brown text-[clamp(16px,4.5vw,19px)]"
-                      secondaryClassName="text-[clamp(11px,3.2vw,12px)] text-warm-brown/60"
+                      primaryClassName="font-medium text-black text-[clamp(16px,4.5vw,19px)]"
+                      secondaryClassName="text-[clamp(11px,3.2vw,12px)] text-black"
                       tertiaryClassName="text-[clamp(11px,3.2vw,12px)]"
                       className="p-4"
                       rightIcon={canEdit ? "kebab" : undefined}

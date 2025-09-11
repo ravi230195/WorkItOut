@@ -120,21 +120,21 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         <Section variant="plain" padding="none">
           <Card className="bg-gradient-to-r from-warm-coral/10 to-warm-peach/10 border-warm-coral/20">
             <CardContent className="p-6 text-center">
-              <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-primary-foreground">
-                <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+              <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-black">
+                <AvatarFallback className="bg-primary text-black text-lg">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
 
               {isLoading ? (
-                <div className="text-warm-brown/60">Loading profile...</div>
+                <div className="text-black">Loading profile...</div>
               ) : (
                 <>
-                  <h1 className="text-xl font-medium text-warm-brown mb-2">
+                  <h1 className="text-xl font-medium text-black mb-2">
                     {getDisplayName()}
                   </h1>
                   {profile?.height_cm && profile?.weight_kg && (
-                    <div className="flex justify-center gap-4 text-sm text-warm-brown/60">
+                    <div className="flex justify-center gap-4 text-sm text-black">
                       <span>{profile.height_cm} cm</span>
                       <span>•</span>
                       <span>{profile.weight_kg} kg</span>
@@ -146,14 +146,14 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
               <div className="flex justify-center gap-2 mt-4">
                 <Badge
                   variant="secondary"
-                  className="bg-warm-sage/20 text-warm-sage border-warm-sage/30"
+                  className="bg-warm-sage/20 text-black border-warm-sage/30"
                 >
                   <Zap size={12} className="mr-1" />
                   Intermediate
                 </Badge>
                 <Badge
                   variant="secondary"
-                  className="bg-warm-peach/20 text-warm-peach border-warm-peach/30"
+                  className="bg-warm-peach/20 text-black border-warm-peach/30"
                 >
                   <Target size={12} className="mr-1" />
                   5 Week Streak
@@ -169,30 +169,30 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
             <Card className="bg-card/80 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
                 <div className="w-8 h-8 rounded-full bg-warm-coral/20 flex items-center justify-center mx-auto mb-2">
-                  <Dumbbell size={16} className="text-warm-coral" />
+                  <Dumbbell size={16} className="text-black" />
                 </div>
-                <div className="text-lg font-medium text-warm-brown">124</div>
-                <div className="text-xs text-warm-brown/60">Workouts</div>
+                <div className="text-lg font-medium text-black">124</div>
+                <div className="text-xs text-black">Workouts</div>
               </CardContent>
             </Card>
 
             <Card className="bg-card/80 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
                 <div className="w-8 h-8 rounded-full bg-warm-sage/20 flex items-center justify-center mx-auto mb-2">
-                  <Calendar size={16} className="text-warm-sage" />
+                  <Calendar size={16} className="text-black" />
                 </div>
-                <div className="text-lg font-medium text-warm-brown">186</div>
-                <div className="text-xs text-warm-brown/60">Days Active</div>
+                <div className="text-lg font-medium text-black">186</div>
+                <div className="text-xs text-black">Days Active</div>
               </CardContent>
             </Card>
 
             <Card className="bg-card/80 backdrop-blur-sm">
               <CardContent className="p-4 text-center">
                 <div className="w-8 h-8 rounded-full bg-warm-peach/20 flex items-center justify-center mx-auto mb-2">
-                  <TrendingUp size={16} className="text-warm-peach" />
+                  <TrendingUp size={16} className="text-black" />
                 </div>
-                <div className="text-lg font-medium text-warm-brown">+12%</div>
-                <div className="text-xs text-warm-brown/60">Strength</div>
+                <div className="text-lg font-medium text-black">+12%</div>
+                <div className="text-xs text-black">Strength</div>
               </CardContent>
             </Card>
           </div>
@@ -202,8 +202,8 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         <Section variant="plain" padding="none">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Trophy size={20} className="text-warm-coral" />
-              <h2 className="text-lg text-warm-brown">Personal Bests</h2>
+              <Trophy size={20} className="text-black" />
+              <h2 className="text-lg text-black">Personal Bests</h2>
             </div>
 
             <div className="space-y-2">
@@ -212,16 +212,16 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
                   <CardContent className="p-4">
                     <div className="flex justify-between items-center">
                       <div>
-                        <h3 className="font-medium text-warm-brown">
+                        <h3 className="font-medium text-black">
                           {pb.exercise}
                         </h3>
-                        <p className="text-sm text-warm-brown/60">{pb.date}</p>
+                        <p className="text-sm text-black">{pb.date}</p>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium text-warm-brown">
+                        <div className="font-medium text-black">
                           {pb.weight} lbs
                         </div>
-                        <div className="text-sm text-warm-brown/60">
+                        <div className="text-sm text-black">
                           {pb.reps} reps
                         </div>
                       </div>
@@ -237,8 +237,8 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         <Section variant="plain" padding="none">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Settings size={20} className="text-warm-brown" />
-              <h2 className="text-lg text-warm-brown">Logging Level</h2>
+              <Settings size={20} className="text-black" />
+              <h2 className="text-lg text-black">Logging Level</h2>
             </div>
             
             <div className="grid grid-cols-2 gap-2">
@@ -257,7 +257,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
               ))}
             </div>
             
-            <div className="text-xs text-warm-brown/60 text-center">
+            <div className="text-xs text-black text-center">
               Current: {getLogLevel().toUpperCase()}
             </div>
           </div>
@@ -294,10 +294,10 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         <Section variant="plain" padding="none">
           <Card className="bg-gradient-to-r from-warm-sage/10 to-warm-mint/10 border-warm-sage/20">
             <CardContent className="p-4 text-center">
-              <div className="text-sm text-warm-brown/60">
+              <div className="text-sm text-black">
                 Workout Tracker v1.0
               </div>
-              <div className="text-xs text-warm-brown/40 mt-1">
+              <div className="text-xs text-black mt-1">
                 Powered by Supabase
               </div>
             </CardContent>

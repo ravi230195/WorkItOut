@@ -140,12 +140,12 @@ export default function Section<T extends keyof JSX.IntrinsicElements = "section
         <div className="mb-3 flex items-start gap-3">
           <div className="min-w-0 flex-1">
             {title ? (
-              <h2 id={titleId} className="font-medium text-warm-brown truncate">
+              <h2 id={titleId} className="font-medium text-black truncate">
                 {title}
               </h2>
             ) : null}
             {subtitle ? (
-              <p className="text-sm text-warm-brown/60 mt-0.5 truncate">
+              <p className="text-sm text-black mt-0.5 truncate">
                 {subtitle}
               </p>
             ) : null}
@@ -159,7 +159,7 @@ export default function Section<T extends keyof JSX.IntrinsicElements = "section
       {/* Loading overlay */}
       {loading && loadingBehavior === "overlay" && (
         <div className="absolute inset-0 rounded-inherit bg-card/60 backdrop-blur-[2px] grid place-items-center pointer-events-none">
-          <div className="flex items-center gap-2 text-warm-brown/70">
+          <div className="flex items-center gap-2 text-black">
             <div className="animate-spin w-5 h-5 border-2 border-warm-coral border-t-transparent rounded-full" />
             <span className="text-sm">Loading…</span>
           </div>

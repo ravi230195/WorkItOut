@@ -88,7 +88,7 @@ const SetList: React.FC<SetListProps> = ({
   return (
     <div className={className}>
       {/* Header row — identical to configure card */}
-      <div className="grid grid-cols-4 gap-3 md:gap-4 text-[10px] md:text-xs text-warm-brown/200 uppercase tracking-wider mb-2"
+      <div className="grid grid-cols-4 gap-3 md:gap-4 text-[10px] md:text-xs text-black uppercase tracking-wider mb-2"
       /* RAVI DBG: style={{ border: "2px solid green" }}*/>
         <span>Set</span>
         <span className="text-center">Reps</span>
@@ -125,7 +125,7 @@ const SetList: React.FC<SetListProps> = ({
               key={it.key}
               className="grid grid-cols-4 gap-3 md:gap-4 items-center py-2 px-3 bg-soft-gray/30 rounded-lg border border-border/20"
               /*RAVI DBG: style={{ border: "2px solid yellow" }}*/>
-              <span className="text-sm font-medium text-warm-brown/80">
+              <span className="text-sm font-medium text-black">
                 {it.order}
               </span>
 
@@ -137,7 +137,7 @@ const SetList: React.FC<SetListProps> = ({
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "reps", e.target.value)}
                 disabled={readOnly}
-                className={`bg-input-background border-border text-foreground text-center h-10 md:h-8 rounded-md focus:border-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`bg-input-background border-border text-black text-center h-10 md:h-8 rounded-md focus:border-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
               />
 
               <NumberInput
@@ -148,7 +148,7 @@ const SetList: React.FC<SetListProps> = ({
                 onFocus={onFocusScroll}
                 onChange={(e) => onChange?.(it.key, "weight", e.target.value)}
                 disabled={readOnly}
-                className={`bg-input-background border-border text-foreground text-center h-10 md:h-8 rounded-md focus:border-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`bg-input-background border-border text-black text-center h-10 md:h-8 rounded-md focus:border-warm-sage/20 text-sm ${readOnly ? "opacity-50 cursor-not-allowed" : ""}`}
               />
 
               {mode === "workout" ? (
@@ -157,7 +157,7 @@ const SetList: React.FC<SetListProps> = ({
                     type="checkbox"
                     checked={!!it.done}
                     onChange={(e) => onToggleDone?.(it.key, e.target.checked)}
-                    className="w-5 h-5 ml-auto rounded-full border-2 border-border text-success accent-success checked:border-success"
+                    className="w-5 h-5 ml-auto rounded-full border-2 border-border text-black accent-success checked:border-success"
                   />
                 </div>
               ) : canRemove ? (
@@ -165,7 +165,7 @@ const SetList: React.FC<SetListProps> = ({
                   variant="secondary"
                   size="sm"
                   onClick={() => onRemove?.(it.key)}
-                  className="p-1 h-auto bg-destructive-light text-destructive hover:bg-destructive ml-auto"
+                  className="p-1 h-auto bg-destructive-light text-black hover:bg-destructive ml-auto"
                   title="Remove this set"
                 >
                   <X size={14} />
@@ -186,7 +186,7 @@ const SetList: React.FC<SetListProps> = ({
           {onAdd ? (
             <TactileButton
               onClick={onAdd}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg btn-tactile bg-card/70 border-border text-foreground hover:bg-card"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg btn-tactile bg-card/70 border-border text-black hover:bg-card"
               disabled={isDisabled}
               title={
                 isDisabled
@@ -214,7 +214,7 @@ const SetList: React.FC<SetListProps> = ({
               disabled={deleteDisabled || readOnly}
               className={`p-2 h-auto rounded-lg ${deleteDisabled || readOnly
                 ? "opacity-50 cursor-not-allowed"
-                : "bg-destructive-light text-destructive hover:bg-destructive"
+                : "bg-destructive-light text-black hover:bg-destructive"
                 }`}
               title={deleteTitle}
             >

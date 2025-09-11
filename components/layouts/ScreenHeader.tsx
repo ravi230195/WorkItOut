@@ -94,7 +94,7 @@ export default function ScreenHeader({
         >
           <h1
             className={clsx(
-              "font-medium leading-1.5 text-warm-brown truncate text-[clamp(16px,4.2vw,20px)]",
+              "font-medium leading-1.5 text-black truncate text-[clamp(16px,4.2vw,20px)]",
               titleClassName
             )}
           >
@@ -102,7 +102,7 @@ export default function ScreenHeader({
           </h1>
           {subtitle ? (
             <p
-              className={clsx("mt-1", subtitleClassName ?? "text-xs text-warm-brown")}
+              className={clsx("mt-1", subtitleClassName ?? "text-xs text-black")}
             >
               {subtitle}
             </p>

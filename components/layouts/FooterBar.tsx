@@ -118,7 +118,7 @@ export default function FooterBar({
         {/* Loading overlay */}
         {loading && (
           <div className="absolute inset-0 grid place-items-center">
-            <div className="flex items-center gap-2 text-warm-brown/70">
+            <div className="flex items-center gap-2 text-black">
               <div className="animate-spin w-5 h-5 border-2 border-warm-coral border-t-transparent rounded-full" />
               <span className="text-sm">{loadingText}</span>
             </div>
