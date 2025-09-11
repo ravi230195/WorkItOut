@@ -18,7 +18,7 @@ import { useAuth } from "../AuthContext";
 import { supabaseAPI, Profile } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { AppScreen, Section, ScreenHeader, Stack } from "../layouts";
-import { logger, getLogLevel, setLogLevel, getAvailableLogLevels, type LogLevel } from "../../utils/logging";
+import { logger, getLogLevel, setLogLevel, getAvailableLogLevels } from "../../utils/logging";
 
 interface PersonalBest {
   exercise: string;

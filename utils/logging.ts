@@ -45,6 +45,7 @@ export const LOG_LEVELS = {
     INFO:  "info",
     DEBUG: "debug",
     DB:    "db",
+    PERF:  "perf",
     LOG:   "log",    // alias used by logger.log()
   };
   

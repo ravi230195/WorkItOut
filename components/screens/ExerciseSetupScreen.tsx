@@ -1,5 +1,5 @@
 // components/screens/ExerciseSetupScreen.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
 import { BottomNavigation } from "../BottomNavigation";
@@ -11,7 +11,6 @@ import { useAuth } from "../AuthContext";
 import {
   Exercise,
   supabaseAPI,
-  type UserRoutineExercise,
   type UserRoutineExerciseSet,
 } from "../../utils/supabase/supabase-api";
 import { logger } from "../../utils/logging";
@@ -37,13 +36,6 @@ import { tempId, type Id } from "../routine-editor/journalTypes";
 /* =======================================================================================
    Types used by this screen (UI state only)
    ======================================================================================= */
-
-type SavedExerciseWithDetails = UserRoutineExercise & {
-  exercise_name?: string;
-  category?: string;
-  exercise_id: number;
-  muscle_group?: string;
-};
 
 type ExerciseMeta = { exercise_id: number; name: string; muscle_group?: string | null };
 
@@ -239,7 +231,7 @@ export function ExerciseSetupScreen({
         toast.error('Failed to load exercises');
       } finally {
         if (!cancelled) setLoadingSaved(false);
-        timer.endWithLog('info');
+        timer.endWithLog();
       }
     })();
 
@@ -267,7 +259,7 @@ export function ExerciseSetupScreen({
         window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" })
       );
 
-      timer.endWithLog('debug');
+      timer.endWithLog();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedExercisesForSetup, loadingSaved]);
@@ -325,7 +317,7 @@ export function ExerciseSetupScreen({
         delete n[String(ex.id)];
         return n;
       });
-      timer.endWithLog('debug');
+      timer.endWithLog();
     }
   };
 
@@ -349,7 +341,7 @@ export function ExerciseSetupScreen({
         if (!name) name = normalizeField(meta.name) || name;
         if (!muscle_group) muscle_group = normalizeField(meta.muscle_group) || muscle_group;
       }
-      metaTimer.endWithLog('debug');
+      metaTimer.endWithLog();
     }
 
     // 1) Update UI
@@ -371,7 +363,7 @@ export function ExerciseSetupScreen({
     recordExAdd(journalRef.current, newExId, x.exercise_id, name);
     recordSetAdd(journalRef.current, newExId, initialSetId, 1, "0", "0");
 
-    timer.endWithLog('debug');
+    timer.endWithLog();
   };
 
   const toggleExpanded = async (exId: Id) => {
@@ -717,7 +709,6 @@ export function ExerciseSetupScreen({
           const saved = JSON.stringify(savedSnapshotRef.current);
           return current !== saved;
         },
-        "debug"
       ),
     [exercises]
   );
@@ -738,12 +729,12 @@ export function ExerciseSetupScreen({
         "You have unsaved changes. Leave without saving?"
       );
       if (!proceed) {
-        timer.endWithLog("debug");
+        timer.endWithLog();
         return;
       }
     }
     onBack();
-    timer.endWithLog("debug");
+    timer.endWithLog();
   };
 
   const renderHeader = () => (

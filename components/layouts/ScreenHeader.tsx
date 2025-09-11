@@ -74,14 +74,14 @@ export default function ScreenHeader({
   );
 
   const titleMaxWidth = `calc(100% - ${reserveLeftPx + reserveRightPx}px)`;
-
+  const buttonSize = 28;
     return (
       <header className={containerClasses}>
         {/* Content row (height excludes safe-area padding) */}
         <div className={rowClasses} style={useFixed ? { height: contentHeightPx } : undefined}>
         {/* Left */}
           <div className="shrink-0 flex items-center" style={{ width: reserveLeftPx }}>
-            {onBack ? <BackButton onClick={onBack} {...headerActionProps} /> : null}
+            {onBack ? <BackButton onClick={onBack} {...headerActionProps} iconSize={buttonSize} /> : null}
           </div>
 
         {/* Center: true-centered title with optional subtitle */}
@@ -91,7 +91,7 @@ export default function ScreenHeader({
         >
           <h1
             className={clsx(
-              "font-medium leading-1.5 text-black truncate text-[clamp(16px,4.2vw,20px)]",
+              "font-medium leading-1.5 text-black truncate text-[clamp(16px,4.2vw,28px)]",
               titleClassName
             )}
           >
@@ -110,7 +110,7 @@ export default function ScreenHeader({
         <div className="ml-auto shrink-0 flex items-center justify-end" style={{ width: reserveRightPx }}>
             {right ?? (onAdd ? (
               <button onClick={onAdd} aria-label="Add" {...headerActionProps}>
-                <Plus size={20} />
+                <Plus size={buttonSize} />
               </button>
             ) : null)}
         </div>

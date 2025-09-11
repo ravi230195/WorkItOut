@@ -12,7 +12,7 @@ type BackButtonProps = {
 export default function BackButton({
     onClick,
     className,
-    iconSize = 20,
+    iconSize = 24,
     ariaLabel = "Go back",
 }: BackButtonProps) {
     return (

@@ -1,5 +1,5 @@
 // Performance timing utility for measuring operation latency
-import { logger, shouldLog } from './logging';
+import { logger } from './logging';
 
 export interface TimerResult {
   label: string;
@@ -60,13 +60,11 @@ export const performanceTimer = {
    * Time a synchronous operation
    * @param label - Name of the operation
    * @param operation - Function to execute and time
-   * @param level - Log level for the timing result
    * @returns Result of the operation
    */
   timeSync: <T>(
     label: string, 
     operation: () => T, 
-    level: 'debug' | 'info' | 'warn' = 'info'
   ): T => {
     const timer = performanceTimer.start(label);
     try {

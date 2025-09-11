@@ -2,7 +2,6 @@ import { AppScreen, ScreenHeader, Section, Stack, Spacer } from "../layouts";
 import { BottomNavigation } from "../BottomNavigation";
 import { BottomNavigationButton } from "../BottomNavigationButton";
 import { toast } from "sonner";
-import { TrendingUp } from "lucide-react";
 import MeasurementCard from "../measurements/MeasurementCard";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
@@ -95,7 +94,7 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
         if (!isNaN(num)) payload[key] = num;
       }
       if (Object.keys(payload).length > 1) {
-        await supabaseAPI.upsertBodyMeasurement(payload);
+        await supabaseAPI.upsertBodyMeasurement(payload as any);
       }
     }
     journalRef.current = makeMeasurementJournal();
