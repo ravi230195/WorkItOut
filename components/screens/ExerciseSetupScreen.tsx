@@ -849,7 +849,10 @@ export function ExerciseSetupScreen({
             ) : undefined
           }
           disableChevron={inWorkout}
-          className={`w-full card-modern shadow-xl hover:shadow-xl transition-all text-left border-2 border-border ${ex.completed && !ex.expanded ? "bg-success-light" : "bg-card/80"}`}
+          className={`w-full rounded-2xl border border-border card-modern shadow-xl hover:shadow-xl transition-all text-left ${
+            ex.completed && !ex.expanded ? "bg-success-light" : "bg-card/80"
+          }`}
+          style={{ border: "2px solid var(--border)" }}
           bodyClassName="pt-2"
         >
           {isLoading || !ex.loaded ? (
