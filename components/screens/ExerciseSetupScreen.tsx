@@ -826,7 +826,7 @@ export function ExerciseSetupScreen({
     return (
       <div key={ex.id} className="scroll-mt-24">
         <ExpandingCard
-          variant="solid"
+          variant="plain"
           size="md"
           expanded={ex.expanded}
           onToggle={() => toggleExpanded(ex.id)}
@@ -849,7 +849,7 @@ export function ExerciseSetupScreen({
             ) : undefined
           }
           disableChevron={inWorkout}
-          className={`${ex.completed && !ex.expanded ? "bg-success-light" : "bg-card/80"} border-border`}
+          className={`w-full card-modern shadow-xl hover:shadow-xl transition-all text-left border-2 border-border ${ex.completed && !ex.expanded ? "bg-success-light" : "bg-card/80"}`}
           bodyClassName="pt-2"
         >
           {isLoading || !ex.loaded ? (
