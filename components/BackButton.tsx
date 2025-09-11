@@ -1,14 +1,12 @@
 // src/components/BackButton.tsx
 import { ArrowLeft } from "lucide-react";
-import { TactileButton } from "./TactileButton";
+import { cn } from "./ui/utils";
 
 type BackButtonProps = {
     onClick: () => void;
     className?: string;
     iconSize?: number;
     ariaLabel?: string;
-    variant?: "primary" | "secondary";
-    size?: "sm" | "md" | "lg";
 };
 
 export default function BackButton({
@@ -16,18 +14,14 @@ export default function BackButton({
     className,
     iconSize = 20,
     ariaLabel = "Go back",
-    variant = "secondary",
-    size = "sm",
 }: BackButtonProps) {
     return (
-        <TactileButton
-            variant={variant}
-            size={size}
+        <button
             onClick={onClick}
-            className={className}
             aria-label={ariaLabel}
+            className={cn("p-0 m-0 bg-transparent border-0 text-black", className)}
         >
             <ArrowLeft size={iconSize} />
-        </TactileButton>
+        </button>
     );
 }
