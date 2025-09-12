@@ -49,10 +49,10 @@ const sizeMap = {
 
 const bgMap: Record<Bg, string> = {
   solid:
-    "bg-card border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.04)]",
+    "bg-background border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.04)]",
   translucent:
-    "bg-card/95 backdrop-blur-sm border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.04)]",
-  elevated: "bg-card shadow-lg border-t border-border",
+    "bg-background/95 backdrop-blur-sm border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.04)]",
+  elevated: "bg-background shadow-lg border-t border-border",
 };
 
 const alignMap: Record<Align, string> = {
