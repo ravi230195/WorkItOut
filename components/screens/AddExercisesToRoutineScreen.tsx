@@ -71,23 +71,18 @@ const ExerciseRow = memo(function ExerciseRow({
       aria-pressed={selected}
       onClick={() => onSelect(exercise)}
       leading={<span className="font-medium text-black">{initials}</span>}
-      leadingClassName="w-10 h-10 rounded-xl bg-card/10 grid place-items-center"
+      leadingClassName="w-8 h-8 rounded-xl bg-card/10 grid place-items-center"
       primary={exercise.name}
       secondary={subtitle}
       primaryClassName="font-medium text-black text-[clamp(16px,4.5vw,19px)]"
       secondaryClassName="text-[clamp(11px,3.2vw,12px)] text-black"
       className={[
-        "w-full rounded-2xl border border-border card-modern shadow-xl hover:shadow-xl transition-all text-left px-4 py-3",
+        "w-full rounded-2xl border border-border card-modern shadow-xl hover:shadow-xl transition-all text-left px-4 py-0",
         selected
-          ? "bg-warm-coral/60 border-warm-coral/60"
-          : "hover:bg-soft-gray",
+          ? "bg-warm-coral border-warm-coral"
+          : "hover:bg-warm-coral/10",
       ].join(" ")}
       style={{ border: "2px solid var(--border)" }}
-      trailing={
-        <div className="text-black">
-          <div className="w-6 h-6 rounded-full border border-border grid place-items-center">ⓘ</div>
-        </div>
-      }
     />
   );
 });
