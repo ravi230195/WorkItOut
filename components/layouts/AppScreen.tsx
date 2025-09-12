@@ -194,7 +194,10 @@ export default function AppScreen({
 
       {/* Scroll area */}
       <div
-        className={cx("flex-1 min-h-0 overflow-y-auto w-full", scrollAreaClassName)}
+        className={cx(
+          "flex-1 min-h-0 overflow-y-auto w-full bg-background",
+          scrollAreaClassName
+        )}
         onScroll={onScroll}
       >
         {header && headerInScrollArea ? renderHeaderShell() : null}
@@ -225,14 +228,14 @@ export default function AppScreen({
           className={cx(
             "shrink-0",
             bottomBarSticky && "sticky bottom-0 z-30",
-            showDoneBar ? "bg-white dark:bg-black" : "bg-card/95 backdrop-blur-sm",
+            "bg-background",
             showBottomBarBorder && "border-t border-border",
             bottomBarShellClassName,
           )}
           style={
             showDoneBar
-              ? { marginBottom: `calc(${kbInsetChain} - env(safe-area-inset-bottom))`, }
-              : { paddingBottom: `${kbInsetChain})` }
+              ? { marginBottom: `calc(${kbInsetChain} - env(safe-area-inset-bottom))` }
+              : { paddingBottom: kbInsetChain }
           }
         >
           <div
