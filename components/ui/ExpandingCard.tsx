@@ -26,6 +26,7 @@ type BaseProps = {
   disableChevron?: boolean;
   disabled?: boolean;
   transition?: Transition;
+  style?: React.CSSProperties;
 };
 
 // 👇 This ensures JSX `children` is always accepted.
@@ -60,7 +61,8 @@ export default function ExpandingCard({
   size = "md",
   disableChevron = false,
   disabled = false,
-  transition = {duration: 0.3}
+  transition = {duration: 0.3},
+  style,
 }: Props) {
   const bodyId = React.useId();
 
@@ -69,6 +71,7 @@ export default function ExpandingCard({
       layout
       initial={false}
       transition={transition}
+      style={style}
       className={[
         containerByVariant[variant],
         expanded ? "ring-1 ring-border" : "",
