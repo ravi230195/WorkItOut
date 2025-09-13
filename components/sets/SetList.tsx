@@ -98,7 +98,7 @@ const SetList: React.FC<SetListProps> = ({
 
       <div className="space-y-3"
       /*RAVI DBG:  style={{ border: "2px solid blue" }}*/>
-        {items.map((it) => {
+        {items.map((it, index) => {  
           const canRemove =
             mode === "edit" && !readOnly && !!onRemove && (it.removable ?? true) && items.length > 1;
 
@@ -126,7 +126,7 @@ const SetList: React.FC<SetListProps> = ({
               className="grid grid-cols-4 gap-3 md:gap-4 items-center py-2 px-3 bg-soft-gray/30 rounded-lg border border-border/20"
               /*RAVI DBG: style={{ border: "2px solid yellow" }}*/>
               <span className="text-sm font-medium text-black">
-                {it.order}
+                {index + 1}
               </span>
 
               <NumberInput
