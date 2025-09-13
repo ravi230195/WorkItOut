@@ -55,6 +55,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
     <AppScreen
       padHeader={false}
       padBottomBar={false}
+      padContent={false}
       disableSafeArea={true}
       backgroundImageSrc="/Workout/Images/LandingPage.png"
       backgroundOverlayClassName="bg-black/50"
