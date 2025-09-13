@@ -32,7 +32,8 @@ export function detectAndApplySafeArea() {
 
 function applyManualSafeArea() {
   const isIPhone = /iPhone/i.test(navigator.userAgent);
-  const isStandalone = window.navigator.standalone === true;
+  // `navigator.standalone` is a non-standard iOS Safari property
+  const isStandalone = (window.navigator as any).standalone === true;
   const isFullscreen = window.matchMedia('(display-mode: standalone)').matches;
   
   if (isIPhone && (isStandalone || isFullscreen)) {
