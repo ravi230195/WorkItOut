@@ -100,7 +100,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       // Auth screen: no header / bottom bar
       padHeader={false}
       padBottomBar={false}
-      className="bg-[url('/Workout/Images/LandingPage.png')] bg-cover bg-center before:absolute before:inset-0 before:bg-background/60 before:content-['']"
+      className="bg-[url('/Workout/Images/LandingPage.png')] bg-cover bg-center before:absolute before:inset-0 before:bg-black/60 before:content-[''] before:-z-10"
       // Slightly narrower max width than default for auth flows
       maxContent="responsive"
       bottomBar={bottomBar}
