@@ -228,7 +228,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, onNavigateToWe
               <TactileButton
                 type="submit"
                 disabled={disabledSubmit}
-                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-black disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-black rounded-xl border-0 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">

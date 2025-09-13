@@ -32,12 +32,12 @@ export function WelcomeScreen({
         </Stack>
       </div>
       <div className="w-full px-4 pb-8 space-y-4">
-        <TactileButton className="w-full" onClick={onNavigateToSignUp}>
+        <TactileButton className="w-full rounded-xl border-0 font-medium" onClick={onNavigateToSignUp}>
           Sign Up
         </TactileButton>
         <TactileButton
           variant="secondary"
-          className="w-full"
+          className="w-full rounded-xl border-0 font-medium"
           onClick={onNavigateToSignIn}
         >
           Sign In

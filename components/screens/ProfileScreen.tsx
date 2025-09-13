@@ -246,7 +246,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
                 <TactileButton
                   key={level}
                   variant={getLogLevel() === level ? "primary" : "secondary"}
-                  className="text-sm"
+                  className="text-sm rounded-xl border-0 font-medium"
                   onClick={() => {
                     setLogLevel(level);
                     toast.success(`Log level set to: ${level}`);
@@ -268,7 +268,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
           <div className="space-y-3">
             <TactileButton
               variant="secondary"
-              className="w-full flex items-center justify-center gap-2"
+              className="w-full flex items-center justify-center gap-2 rounded-xl border-0 font-medium"
             >
               <Settings size={16} />
               Settings
@@ -276,7 +276,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
 
             <TactileButton
               variant="sage"
-              className="w-full flex items-center justify-center gap-2"
+              className="w-full flex items-center justify-center gap-2 rounded-xl border-0 font-medium"
               onClick={handleSignOut}
               disabled={isSigningOut}
             >

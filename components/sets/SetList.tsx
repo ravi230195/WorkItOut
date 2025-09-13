@@ -162,10 +162,11 @@ const SetList: React.FC<SetListProps> = ({
                 </div>
               ) : canRemove ? (
                 <TactileButton
-                  variant="secondary"
+                  type="button"
+                  variant="ghost"
                   size="sm"
                   onClick={() => onRemove?.(it.key)}
-                  className="p-1 h-auto bg-destructive-light text-black hover:bg-destructive ml-auto"
+                  className="p-1 h-auto ml-auto"
                   title="Remove this set"
                 >
                   <X size={14} />
@@ -186,7 +187,8 @@ const SetList: React.FC<SetListProps> = ({
           {onAdd ? (
             <TactileButton
               onClick={onAdd}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg btn-tactile bg-card/70 border-border text-black hover:bg-card"
+              variant="primary"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium"
               disabled={isDisabled}
               title={
                 isDisabled
@@ -212,7 +214,7 @@ const SetList: React.FC<SetListProps> = ({
               size="sm"
               onClick={onDeleteExercise}
               disabled={deleteDisabled || readOnly}
-              className={`p-2 h-auto rounded-lg ${deleteDisabled || readOnly
+              className={`p-2 h-auto rounded-lg font-medium ${deleteDisabled || readOnly
                 ? "opacity-50 cursor-not-allowed"
                 : "bg-destructive-light text-black hover:bg-destructive"
                 }`}

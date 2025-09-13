@@ -84,7 +84,7 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
             size="sm"
             onClick={onCancel}
             disabled={disabled}
-            className={`p-3 h-auto bg-card/70 border-destructive-light text-black hover:bg-destructive-light btn-tactile ${
+            className={`p-3 h-auto bg-card/70 border-destructive-light text-black hover:bg-destructive-light btn-tactile rounded-xl font-medium ${
               disabled ? "opacity-50 cursor-not-allowed" : ""
             }`}
             title="Cancel"
