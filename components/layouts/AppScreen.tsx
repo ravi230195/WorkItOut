@@ -42,12 +42,6 @@ export type AppScreenProps = React.PropsWithChildren<{
   contentBottomPaddingClassName?: string;
   headerInScrollArea?: boolean;
   onScroll?: React.UIEventHandler<HTMLDivElement>;
-  /** Render a full-screen background image behind all content */
-  backgroundImageSrc?: string;
-  /** Optional overlay class applied over the background image */
-  backgroundOverlayClassName?: string;
-  /** Disable safe area insets for full-bleed layouts */
-  disableSafeArea?: boolean;
 }>;
 
 const cx = (...xs: Array<string | undefined | null | false>) =>
@@ -87,9 +81,6 @@ export default function AppScreen({
   children,
   headerInScrollArea = false,
   onScroll,
-  backgroundImageSrc,
-  backgroundOverlayClassName,
-  disableSafeArea = false,
 }: AppScreenProps) {
   // Single global provider of --app-kb-inset / --kb-inset / --keyboard-inset
   useKeyboardInset();
@@ -195,22 +186,10 @@ export default function AppScreen({
         className
       )}
       style={{
-        paddingLeft: disableSafeArea ? undefined : "max(env(safe-area-inset-left), 0px)",
-        paddingRight: disableSafeArea ? undefined : "max(env(safe-area-inset-right), 0px)",
+        paddingLeft: "max(env(safe-area-inset-left), 0px)",
+        paddingRight: "max(env(safe-area-inset-right), 0px)",
       }}
     >
-      {backgroundImageSrc && (
-        <div className="absolute inset-0 -z-10">
-          <img
-            src={backgroundImageSrc}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-          {backgroundOverlayClassName && (
-            <div className={cx("absolute inset-0", backgroundOverlayClassName)} />
-          )}
-        </div>
-      )}
       {header && !headerInScrollArea ? renderHeaderShell() : null}
 
       {/* Scroll area */}
@@ -234,9 +213,7 @@ export default function AppScreen({
             ...innerWidthStyle,
             paddingBottom: renderedBottomBar
               ? `var(--app-bottom-h, 0px)`
-              : disableSafeArea
-                ? kbInsetChain
-                : `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
+              : `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
             // RAVI: Debug border commented out
             //border: "2px solid red",
           }}
@@ -256,13 +233,9 @@ export default function AppScreen({
             bottomBarShellClassName,
           )}
           style={
-            disableSafeArea
-              ? showDoneBar
-                ? { marginBottom: kbInsetChain }
-                : { paddingBottom: kbInsetChain }
-              : showDoneBar
-                ? { marginBottom: `calc(${kbInsetChain} - env(safe-area-inset-bottom))` }
-                : { paddingBottom: kbInsetChain }
+            showDoneBar
+              ? { marginBottom: `calc(${kbInsetChain} - env(safe-area-inset-bottom))` }
+              : { paddingBottom: kbInsetChain }
           }
         >
           <div
