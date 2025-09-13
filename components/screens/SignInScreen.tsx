@@ -135,7 +135,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, onNavigateToWe
 
               <TactileButton
                 type="submit"
-                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-black"
+                className="w-full bg-gradient-to-r from-warm-coral to-warm-peach text-black rounded-xl border-0 font-medium"
                 disabled={isLoading}
               >
                 {isLoading ? (

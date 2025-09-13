@@ -63,7 +63,7 @@ export default function ActionSheet({
         cancelText !== null ? (
           <TactileButton
             variant="secondary"
-            className="w-full py-3"
+            className="w-full py-3 rounded-xl border-0 font-medium"
             onClick={onClose}
           >
             {cancelText}
@@ -88,7 +88,7 @@ export default function ActionSheet({
                   disabled={a.disabled}
                   variant={a.variant === "secondary" ? "secondary" : "primary"}
                   className={cn(
-                    "w-full",
+                    "w-full rounded-xl border-0 font-medium",
                     a.variant === "destructive" &&
                       "bg-destructive hover:bg-destructive/90 text-black"
                   )}
