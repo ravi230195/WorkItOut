@@ -205,7 +205,7 @@ export default function AppScreen({
     >
       {/* Background Image */}
       {backgroundImageSrc && (
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 -z-10">
           <img
             src={backgroundImageSrc}
             alt=""
