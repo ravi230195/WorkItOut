@@ -56,8 +56,9 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
       padHeader={false}
       padBottomBar={false}
       className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
+      scrollAreaClassName="flex min-h-[100dvh]"
       bottomBar={bottomBar}
-      contentClassName="flex min-h-[100dvh]"
+      contentClassName=""
       maxContent="responsive"
     >
       <img

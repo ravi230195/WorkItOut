@@ -102,10 +102,12 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       padBottomBar={false}
       // Keep your gradient background
       className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
+      // Use flex layout to display image beside form on larger screens
+      scrollAreaClassName="flex min-h-[100dvh]"
       // Slightly narrower max width than default for auth flows
       maxContent="responsive"
       bottomBar={bottomBar}
-      contentClassName="flex min-h-[100dvh]"
+      contentClassName=""
     >
       <img
         src="/Workout/Images/LandingPage.png"
