@@ -100,19 +100,21 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       // Auth screen: no header / bottom bar
       padHeader={false}
       padBottomBar={false}
-      // Keep your gradient background
-      className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
+      className="relative"
       // Slightly narrower max width than default for auth flows
       maxContent="responsive"
       bottomBar={bottomBar}
-      contentClassName="flex min-h-[100dvh]"
+      contentClassName="relative flex min-h-[100dvh]"
     >
-      <img
-        src="/Workout/Images/LandingPage.png"
-        alt="Workout graphic"
-        className="hidden md:block w-1/2 object-cover"
-      />
-      <div className="flex flex-1 items-center justify-center p-4">
+      <div className="absolute inset-0 z-0">
+        <img
+          src="/Workout/Images/LandingPage.png"
+          alt="Workout background"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-background/60" />
+      </div>
+      <div className="relative z-10 flex flex-1 items-center justify-center p-4">
       <Card
         className="
           w-full max-w-md

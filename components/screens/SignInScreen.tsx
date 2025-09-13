@@ -55,21 +55,21 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
     <AppScreen
       padHeader={false}
       padBottomBar={false}
-      className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
+      className="relative"
       bottomBar={bottomBar}
-      contentClassName="flex min-h-[100dvh]"
+      contentClassName="relative flex min-h-[100dvh]"
       maxContent="responsive"
     >
-      <img
-        src="/Workout/Images/LandingPage.png"
-        alt="Workout graphic"
-        className="hidden md:block w-1/2 object-cover"
-        style={{
-          border: "2px solid red",
-        }}
-      />
+      <div className="absolute inset-0 z-0">
+        <img
+          src="/Workout/Images/LandingPage.png"
+          alt="Workout background"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-background/60" />
+      </div>
 
-       <div className="flex flex-1 items-center justify-center p-4">
+      <div className="relative z-10 flex flex-1 items-center justify-center p-4">
         <Card
           className="
             w-full max-w-md
