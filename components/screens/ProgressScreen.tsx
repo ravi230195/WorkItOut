@@ -249,8 +249,10 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     monthlyTarget: 20,
   });
   const [isLoading, setIsLoading] = useState(false);
+  // New top controls
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
-  const [selectedMetric, setSelectedMetric] = useState<'steps' | 'workouts' | 'measurements'>('steps');
+  const [selectedRange, setSelectedRange] = useState<'week' | '3m' | '6m'>('week');
+  const [selectedMetric, setSelectedMetric] = useState<'strength' | 'cardio' | 'measurements'>('cardio');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { userToken } = useAuth();
@@ -1038,20 +1040,44 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           </Section>
         )}
 
-        {/* Period Selector */}
+        {/* Metric Dropdown (orange) */}
+        <Section variant="plain" padding="none">
+          <div className="flex items-center">
+            <label htmlFor="metric-type" className="sr-only">Workout Type</label>
+            <div className="relative inline-flex">
+              <select
+                id="metric-type"
+                value={selectedMetric}
+                onChange={(e) => setSelectedMetric(e.target.value as any)}
+                className="appearance-none px-4 pr-10 py-2 rounded-xl font-semibold shadow-sm bg-warm-coral text-white border border-warm-coral focus:outline-none"
+              >
+                <option value="strength">Strength</option>
+                <option value="cardio">Cardio</option>
+                <option value="measurements">Measurements</option>
+              </select>
+              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/90">▾</div>
+            </div>
+          </div>
+        </Section>
+
+        {/* Range Toggle: Week / 3 Month / 6 Months */}
         <Section variant="plain" padding="none">
           <div className="flex bg-white/60 rounded-2xl p-1 border border-white/20">
-            {(['day', 'week', 'month', 'year'] as const).map((period) => (
+            {([
+              { key: 'week', label: 'Week' },
+              { key: '3m', label: '3 Month' },
+              { key: '6m', label: '6 Months' },
+            ] as const).map(({ key, label }) => (
               <button
-                key={period}
-                onClick={() => setSelectedPeriod(period)}
+                key={key}
+                onClick={() => setSelectedRange(key)}
                 className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  selectedPeriod === period
+                  selectedRange === key
                     ? 'bg-warm-sage text-black shadow-md'
                     : 'text-black hover:text-black hover:bg-white/40'
                 }`}
               >
-                {period.charAt(0).toUpperCase() + period.slice(1)}
+                {label}
               </button>
             ))}
           </div>
@@ -1076,30 +1102,10 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           </Section>
         )}
 
-        {/* Metric Selector */}
-        <Section variant="plain" padding="none">
-          <div className="flex items-center justify-end">
-            <label htmlFor="metric" className="sr-only">View</label>
-            <div className="relative">
-              <select
-                id="metric"
-                value={selectedMetric}
-                onChange={(e) => setSelectedMetric(e.target.value as any)}
-                className="input-modern w-auto pr-8 pl-3 py-2 rounded-xl bg-[var(--input)] border border-[var(--input-border)] text-warm-brown shadow-sm"
-              >
-                <option value="steps">Steps</option>
-                <option value="workouts">Workouts</option>
-                <option value="measurements">Body Measurements</option>
-              </select>
-              <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-warm-brown/50">
-                ▾
-              </div>
-            </div>
-          </div>
-        </Section>
+        {/* Removed old Metric Selector */}
 
         {/* Steps Overview Card - only when selected */}
-        {selectedMetric === 'steps' && selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
+        {(selectedMetric === 'cardio') && selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
           <Section variant="plain" padding="none">
             <MetricCard
               icon={Footprints}
@@ -1132,7 +1138,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         )}
 
         {/* Workouts Overview Card - only when selected */}
-        {selectedMetric === 'workouts' && selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
+        {(selectedMetric === 'strength') && selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
           <Section variant="plain" padding="none">
             <MetricCard
               icon={Dumbbell}
@@ -1171,7 +1177,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         )}
 
         {/* Measurements Overview Card - only when selected */}
-        {selectedMetric === 'measurements' && (
+        {(selectedMetric === 'measurements') && (
           <Section variant="plain" padding="none">
             {renderMeasurementsCard()}
           </Section>
