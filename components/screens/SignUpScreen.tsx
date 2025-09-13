@@ -100,22 +100,13 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       // Auth screen: no header / bottom bar
       padHeader={false}
       padBottomBar={false}
-      className="relative"
+      className="bg-[url('/Workout/Images/LandingPage.png')] bg-cover bg-center before:absolute before:inset-0 before:bg-background/60 before:content-['']"
       // Slightly narrower max width than default for auth flows
       maxContent="responsive"
       bottomBar={bottomBar}
-      contentClassName="relative flex min-h-[100dvh]"
+      contentClassName="flex min-h-full items-center justify-center p-4"
       safeArea={false}
     >
-      <div className="absolute inset-0 z-0">
-        <img
-          src="/Workout/Images/LandingPage.png"
-          alt="Workout background"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-background/60" />
-      </div>
-      <div className="relative z-10 flex flex-1 items-center justify-center p-4">
       <Card
         className="
           w-full max-w-md
@@ -259,7 +250,6 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
           </Stack>
         </CardContent>
       </Card>
-      </div>
     </AppScreen>
   );
 }

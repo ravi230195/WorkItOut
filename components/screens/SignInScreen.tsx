@@ -55,29 +55,19 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
     <AppScreen
       padHeader={false}
       padBottomBar={false}
-      className="relative"
+      className="bg-[url('/Workout/Images/LandingPage.png')] bg-cover bg-center before:absolute before:inset-0 before:bg-background/60 before:content-['']"
       maxContent="responsive"
       bottomBar={bottomBar}
-      contentClassName="relative flex min-h-[100dvh]"
+      contentClassName="flex min-h-full items-center justify-center p-4"
       safeArea={false}
     >
-      <div className="absolute inset-0 z-0">
-        <img
-          src="/Workout/Images/LandingPage.png"
-          alt="Workout background"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-background/60" />
-      </div>
-
-      <div className="relative z-10 flex flex-1 items-center justify-center p-4">
-        <Card
-          className="
+      <Card
+        className="
             w-full max-w-md
             bg-card/80 backdrop-blur-sm border-border
             shadow-soft
           "
-        >
+      >
         <CardHeader className="text-center pb-6">
           <Stack gap="md">
             <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto">
@@ -180,7 +170,6 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
           </Stack>
         </CardContent>
       </Card>
-      </div>
     </AppScreen>
   );
 }
