@@ -187,7 +187,8 @@ const SetList: React.FC<SetListProps> = ({
           {onAdd ? (
             <TactileButton
               onClick={onAdd}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg btn-tactile bg-card/70 border-border text-black hover:bg-card font-medium"
+              variant="primary"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium"
               disabled={isDisabled}
               title={
                 isDisabled
