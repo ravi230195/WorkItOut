@@ -27,7 +27,7 @@ export function WelcomeScreen({
     >
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <Stack gap="sm">
-          <h1 className="text-3xl font-semibold">Welcome to Strong</h1>
+          <h1 className="text-3xl font-semibold">Welcome to WorkItOut</h1>
           <p className="text-base">Your workout journey starts here.</p>
         </Stack>
       </div>
