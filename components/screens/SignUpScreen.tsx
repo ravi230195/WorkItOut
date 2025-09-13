@@ -100,27 +100,23 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       // Auth screen: no header / bottom bar
       padHeader={false}
       padBottomBar={false}
-      className="overflow-hidden"
+      className="overflow-hidden bg-transparent"
       // Slightly narrower max width than default for auth flows
       maxContent="responsive"
       bottomBar={bottomBar}
       contentClassName="flex min-h-full items-center justify-center p-4"
       safeArea={false}
     >
-      <img
-        src="/Workout/Images/LandingPage.png"
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover -z-20"
-      />
-      <div className="absolute inset-0 bg-black/60 -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <img
+          src="/Workout/Images/LandingPage.png"
+          alt=""
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black/60" />
+      </div>
       <Card
-        className="
-          w-full max-w-md
-          bg-card/90 backdrop-blur-sm border-border
-          shadow-soft
-          max-h-[100svh] overflow-y-auto
-          pt-safe pb-safe kb-aware
-        "
+        className="relative z-10 w-full max-w-md bg-card/90 backdrop-blur-sm border-border shadow-soft max-h-[100svh] overflow-y-auto pt-safe pb-safe kb-aware"
       >
         <CardHeader className="text-center">
           <Stack gap="xs">
