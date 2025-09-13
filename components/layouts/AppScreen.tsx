@@ -200,7 +200,7 @@ export default function AppScreen({
       }}
     >
       {backgroundImageSrc && (
-        <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 z-0">
           <img
             src={backgroundImageSrc}
             alt=""
@@ -216,7 +216,7 @@ export default function AppScreen({
       {/* Scroll area */}
       <div
         className={cx(
-          "flex-1 min-h-0 overflow-y-auto w-full bg-background",
+          "flex-1 min-h-0 overflow-y-auto w-full bg-transparent",
           scrollAreaClassName
         )}
         onScroll={onScroll}
