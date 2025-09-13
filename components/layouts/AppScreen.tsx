@@ -195,8 +195,10 @@ export default function AppScreen({
         className
       )}
       style={{
-        paddingLeft: disableSafeArea ? undefined : "max(env(safe-area-inset-left), 0px)",
-        paddingRight: disableSafeArea ? undefined : "max(env(safe-area-inset-right), 0px)",
+        paddingLeft: disableSafeArea ? 0 : "max(env(safe-area-inset-left), 0px)",
+        paddingRight: disableSafeArea ? 0 : "max(env(safe-area-inset-right), 0px)",
+        paddingTop: disableSafeArea ? 0 : undefined,
+        paddingBottom: disableSafeArea ? 0 : undefined,
       }}
     >
       {backgroundImageSrc && (
