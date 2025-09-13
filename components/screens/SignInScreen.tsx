@@ -64,9 +64,12 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
         src="/Workout/Images/LandingPage.png"
         alt="Workout graphic"
         className="hidden md:block w-1/2 object-cover"
+        style={{
+          border: "2px solid red",
+        }}
       />
 
-      <div className="flex flex-1 items-center justify-center p-4">
+       <div className="flex flex-1 items-center justify-center p-4">
         <Card
           className="
             w-full max-w-md
@@ -176,7 +179,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
           </Stack>
         </CardContent>
       </Card>
-      </div>
+      </div> 
     </AppScreen>
   );
 }
