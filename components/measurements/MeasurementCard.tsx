@@ -57,10 +57,12 @@ export default function MeasurementCard({
 
   return (
     <ExpandingCard
-      variant="solid"
-      size="lg"
+      variant="plain"
+      size="md"
       expanded={expanded}
       onToggle={() => setExpanded((v) => !v)}
+      className="w-full rounded-2xl border border-border card-modern shadow-xl hover:shadow-xl transition-all text-left"
+      style={{ border: "2px solid var(--border)" }}
       /* 50% title area */
       title={
         <div className="min-w-0 flex-[0_0_50%]">
