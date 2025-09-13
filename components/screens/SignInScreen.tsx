@@ -7,7 +7,7 @@ import { Label } from "../ui/label";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
-import { AppScreen, Stack, Spacer } from "../layouts";
+import { Stack, Spacer } from "../layouts";
 import { logger } from "../../utils/logging";
 
 interface SignInScreenProps {
@@ -52,14 +52,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
   };
 
   return (
-    <AppScreen
-      padHeader={false}
-      padBottomBar={false}
-      className="relative"
-      bottomBar={bottomBar}
-      contentClassName="relative flex min-h-[100dvh]"
-      maxContent="responsive"
-    >
+    <div className="relative flex min-h-[100dvh] flex-col">
       <div className="absolute inset-0 z-0">
         <img
           src="/Workout/Images/LandingPage.png"
@@ -179,7 +172,8 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
           </Stack>
         </CardContent>
       </Card>
-      </div> 
-    </AppScreen>
+      </div>
+      {bottomBar ? <div className="relative z-10">{bottomBar}</div> : null}
+    </div>
   );
 }
