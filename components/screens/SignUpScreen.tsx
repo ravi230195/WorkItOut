@@ -102,13 +102,19 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       padBottomBar={false}
       // Keep your gradient background
       className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
-      // Center the card; allow the page (not the card) to manage the primary scroll
-      scrollAreaClassName="grid place-items-center"
+      // Use flex layout to display image beside form on larger screens
+      scrollAreaClassName="flex min-h-[100dvh]"
       // Slightly narrower max width than default for auth flows
       maxContent="responsive"
       bottomBar={bottomBar}
       contentClassName=""
     >
+      <img
+        src="/Workout/Images/LandingPage.png"
+        alt="Workout graphic"
+        className="hidden md:block w-1/2 object-cover"
+      />
+      <div className="flex flex-1 items-center justify-center p-4">
       <Card
         className="
           w-full max-w-md
@@ -252,6 +258,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
           </Stack>
         </CardContent>
       </Card>
+      </div>
     </AppScreen>
   );
 }
