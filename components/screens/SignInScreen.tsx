@@ -55,12 +55,18 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
     <AppScreen
       padHeader={false}
       padBottomBar={false}
-      className="bg-[url('/Workout/Images/LandingPage.png')] bg-cover bg-center before:absolute before:inset-0 before:bg-black/60 before:content-[''] before:-z-10"
+      className="overflow-hidden"
       maxContent="responsive"
       bottomBar={bottomBar}
       contentClassName="flex min-h-full items-center justify-center p-4"
       safeArea={false}
     >
+      <img
+        src="/Workout/Images/LandingPage.png"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover -z-20"
+      />
+      <div className="absolute inset-0 bg-black/60 -z-10" />
       <Card
         className="
             w-full max-w-md
