@@ -34,6 +34,7 @@ function AppContent() {
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,
+    navigateToWelcome,
     handleTabChange,
     showCreateRoutine,
     showEditMeasurements,
@@ -88,6 +89,7 @@ function AppContent() {
           onAuthSuccess={(token, refreshToken) => handleAuthSuccess(token, refreshToken, setUserToken)}
           onNavigateToSignUp={navigateToSignUp}
           onNavigateToSignIn={navigateToSignIn}
+          onNavigateToWelcome={navigateToWelcome}
           onCreateRoutine={showCreateRoutine}
           onEditMeasurements={showEditMeasurements}
           onRoutineCreated={handleRoutineCreated}

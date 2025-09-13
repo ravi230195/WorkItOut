@@ -32,6 +32,7 @@ interface AppRouterProps {
   onAuthSuccess: (token: string, refreshToken: string) => void;
   onNavigateToSignUp: () => void;
   onNavigateToSignIn: () => void;
+  onNavigateToWelcome: () => void;
 
   onCreateRoutine: () => void;
   onEditMeasurements: () => void;
@@ -72,6 +73,7 @@ export function AppRouter({
   onAuthSuccess,
   onNavigateToSignUp,
   onNavigateToSignIn,
+  onNavigateToWelcome,
 
   onCreateRoutine,
   onEditMeasurements,
@@ -105,6 +107,7 @@ export function AppRouter({
         <SignUpScreen
           onAuthSuccess={onAuthSuccess}
           onNavigateToSignIn={onNavigateToSignIn}
+          onNavigateToWelcome={onNavigateToWelcome}
           bottomBar={bottomBar}
         />
       );
@@ -114,6 +117,7 @@ export function AppRouter({
         <SignInScreen
           onAuthSuccess={onAuthSuccess}
           onNavigateToSignUp={onNavigateToSignUp}
+          onNavigateToWelcome={onNavigateToWelcome}
           bottomBar={bottomBar}
         />
       );

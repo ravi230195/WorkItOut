@@ -13,10 +13,11 @@ import { logger } from "../../utils/logging";
 interface SignInScreenProps {
   onAuthSuccess: (token: string, refreshToken: string) => void;
   onNavigateToSignUp: () => void;
+  onNavigateToWelcome: () => void;
   bottomBar?: React.ReactNode;
 }
 
-export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: SignInScreenProps) {
+export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, onNavigateToWelcome, bottomBar }: SignInScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -58,18 +59,25 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
       disableSafeArea={true}
       backgroundImageSrc="/Workout/Images/LandingPage.png"
       backgroundOverlayClassName="bg-black/40"
-      scrollAreaClassName="grid place-items-center"
+      scrollAreaClassName="flex flex-col"
       bottomBar={bottomBar}
       contentClassName=""
       maxContent="responsive"
     >
-      <Card
-        className="
-          w-full
-          bg-card/80 backdrop-blur-sm border-border
-          shadow-soft
-        "
+      <button
+        onClick={onNavigateToWelcome}
+        className="text-white p-4 self-start"
       >
+        &lt; Back
+      </button>
+      <div className="flex-1 flex items-center justify-center">
+        <Card
+          className="
+            w-full
+            bg-card/80 backdrop-blur-sm border-border
+            shadow-soft
+          "
+        >
         <CardHeader className="text-center pb-6">
           <Stack gap="md">
             <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto">
@@ -171,7 +179,8 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
             <Spacer y="xs" />
           </Stack>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </AppScreen>
   );
 }
