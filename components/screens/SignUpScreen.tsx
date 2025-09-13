@@ -9,10 +9,11 @@ import { AppScreen, Stack, Spacer } from "../layouts";
 interface SignUpScreenProps {
   onAuthSuccess: (token: string, refreshToken: string) => void;
   onNavigateToSignIn: () => void;
+  onNavigateToWelcome: () => void;
   bottomBar?: React.ReactNode;
 }
 
-export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: SignUpScreenProps) {
+export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, onNavigateToWelcome, bottomBar }: SignUpScreenProps) {
   // Keyboard-aware insets (updates --kb-inset)
 
   const [firstName, setFirstName]   = useState("");
@@ -97,27 +98,32 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
 
   return (
     <AppScreen
-      // Auth screen: no header / bottom bar
       padHeader={false}
       padBottomBar={false}
-      // Keep your gradient background
-      className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
-      // Center the card; allow the page (not the card) to manage the primary scroll
-      scrollAreaClassName="grid place-items-center"
-      // Slightly narrower max width than default for auth flows
+      disableSafeArea={true}
+      backgroundImageSrc="/Workout/Images/LandingPage.png"
+      backgroundOverlayClassName="bg-black/40"
+      scrollAreaClassName="flex flex-col"
       maxContent="responsive"
       bottomBar={bottomBar}
       contentClassName=""
     >
-      <Card
-        className="
-          w-full max-w-md
-          bg-card/90 backdrop-blur-sm border-border
-          shadow-soft
-          max-h-[100svh] overflow-y-auto
-          pt-safe pb-safe kb-aware
-        "
+      <button
+        onClick={onNavigateToWelcome}
+        className="text-blue-500 text-2xl p-4 self-start"
       >
+        &lt; Back
+      </button>
+      <div className="flex-1 flex items-center justify-center">
+        <Card
+          className="
+            w-full max-w-md
+            bg-card/90 backdrop-blur-sm border-border
+            shadow-soft
+            max-h-[100svh] overflow-y-auto
+            pt-safe pb-safe kb-aware
+          "
+        >
         <CardHeader className="text-center">
           <Stack gap="xs">
             <h1 className="text-2xl font-medium text-black">Create Account</h1>
@@ -251,7 +257,8 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
             </div>
           </Stack>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </AppScreen>
   );
 }

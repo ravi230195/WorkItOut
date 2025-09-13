@@ -30,7 +30,7 @@ export function useAppNavigation() {
   const handleUnauthorizedError = (error: Error) => {
     if (error.message === "UNAUTHORIZED") {
       toast.error("Session expired. Please sign in.");
-      setCurrentView("signin");
+      setCurrentView("welcome");
       return true;
     }
     return false;
@@ -44,6 +44,7 @@ export function useAppNavigation() {
 
   const navigateToSignUp = () => setCurrentView("signup");
   const navigateToSignIn = () => setCurrentView("signin");
+  const navigateToWelcome = () => setCurrentView("welcome");
 
   const handleTabChange = (tab: "workouts" | "progress" | "profile") => {
     setActiveTab(tab);
@@ -155,6 +156,7 @@ export function useAppNavigation() {
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,
+    navigateToWelcome,
     handleTabChange,
 
     showCreateRoutine,

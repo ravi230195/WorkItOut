@@ -8,6 +8,7 @@ import { ProgressScreen } from "./screens/ProgressScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { SignInScreen } from "./screens/SignInScreen";
 import { SignUpScreen } from "./screens/SignUpScreen";
+import { WelcomeScreen } from "./screens/WelcomeScreen";
 
 import { AppView } from "../utils/navigation";
 import { Exercise } from "../utils/supabase/supabase-api";
@@ -31,6 +32,7 @@ interface AppRouterProps {
   onAuthSuccess: (token: string, refreshToken: string) => void;
   onNavigateToSignUp: () => void;
   onNavigateToSignIn: () => void;
+  onNavigateToWelcome: () => void;
 
   onCreateRoutine: () => void;
   onEditMeasurements: () => void;
@@ -71,6 +73,7 @@ export function AppRouter({
   onAuthSuccess,
   onNavigateToSignUp,
   onNavigateToSignIn,
+  onNavigateToWelcome,
 
   onCreateRoutine,
   onEditMeasurements,
@@ -93,20 +96,36 @@ export function AppRouter({
 }: AppRouterProps) {
   logger.debug(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
 
-  if (!isAuthenticated || currentView === "signin" || currentView === "signup") {
+  if (
+    !isAuthenticated ||
+    currentView === "signin" ||
+    currentView === "signup" ||
+    currentView === "welcome"
+  ) {
     if (currentView === "signup") {
       return (
         <SignUpScreen
           onAuthSuccess={onAuthSuccess}
           onNavigateToSignIn={onNavigateToSignIn}
+          onNavigateToWelcome={onNavigateToWelcome}
+          bottomBar={bottomBar}
+        />
+      );
+    }
+    if (currentView === "signin") {
+      return (
+        <SignInScreen
+          onAuthSuccess={onAuthSuccess}
+          onNavigateToSignUp={onNavigateToSignUp}
+          onNavigateToWelcome={onNavigateToWelcome}
           bottomBar={bottomBar}
         />
       );
     }
     return (
-      <SignInScreen
-        onAuthSuccess={onAuthSuccess}
+      <WelcomeScreen
         onNavigateToSignUp={onNavigateToSignUp}
+        onNavigateToSignIn={onNavigateToSignIn}
         bottomBar={bottomBar}
       />
     );
