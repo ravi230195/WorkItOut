@@ -38,6 +38,9 @@ export type AppScreenProps = React.PropsWithChildren<{
 
   padHeaderSafeArea?: boolean;
 
+  /** Apply device safe area insets on left/right and bottom */
+  safeArea?: boolean;
+
   contentGuttersPreset?: "none" | "compact" | "responsive";
   contentBottomPaddingClassName?: string;
   headerInScrollArea?: boolean;
@@ -74,6 +77,8 @@ export default function AppScreen({
   headerShellClassName = "",
   bottomBarShellClassName = "",
   padHeaderSafeArea = false,
+
+  safeArea = true,
 
   contentGuttersPreset = "responsive",
   contentBottomPaddingClassName = "",
@@ -186,8 +191,8 @@ export default function AppScreen({
         className
       )}
       style={{
-        paddingLeft: "max(env(safe-area-inset-left), 0px)",
-        paddingRight: "max(env(safe-area-inset-right), 0px)",
+        paddingLeft: safeArea ? "max(env(safe-area-inset-left), 0px)" : undefined,
+        paddingRight: safeArea ? "max(env(safe-area-inset-right), 0px)" : undefined,
       }}
     >
       {header && !headerInScrollArea ? renderHeaderShell() : null}
@@ -213,7 +218,9 @@ export default function AppScreen({
             ...innerWidthStyle,
             paddingBottom: renderedBottomBar
               ? `var(--app-bottom-h, 0px)`
-              : `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`,
+              : safeArea
+                ? `calc(env(safe-area-inset-bottom) + ${kbInsetChain})`
+                : kbInsetChain,
             // RAVI: Debug border commented out
             //border: "2px solid red",
           }}
@@ -234,7 +241,9 @@ export default function AppScreen({
           )}
           style={
             showDoneBar
-              ? { marginBottom: `calc(${kbInsetChain} - env(safe-area-inset-bottom))` }
+              ? safeArea
+                ? { marginBottom: `calc(${kbInsetChain} - env(safe-area-inset-bottom))` }
+                : { marginBottom: kbInsetChain }
               : { paddingBottom: kbInsetChain }
           }
         >

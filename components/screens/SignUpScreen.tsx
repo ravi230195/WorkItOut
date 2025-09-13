@@ -105,6 +105,7 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
       maxContent="responsive"
       bottomBar={bottomBar}
       contentClassName="relative flex min-h-[100dvh]"
+      safeArea={false}
     >
       <div className="absolute inset-0 z-0">
         <img
