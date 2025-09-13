@@ -1,9 +1,7 @@
 import React from "react";
 import { MoreVertical, ChevronDown } from "lucide-react";
 
-interface ListItemProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    React.ButtonHTMLAttributes<HTMLButtonElement> {
+type BaseListItemProps = {
   /** Render as a regular div (default) or button for full-row actions */
   as?: "div" | "button";
   leading?: React.ReactNode;
@@ -23,7 +21,17 @@ interface ListItemProps
   /** Rotate the chevron 180 degrees when true */
   rightIconRotated?: boolean;
   onRightIconClick?: (e: React.MouseEvent) => void;
-}
+  /** Additional custom classes applied to the root element */
+  className?: string;
+};
+
+type DivListItemProps = BaseListItemProps &
+  React.HTMLAttributes<HTMLDivElement> & { as?: "div" };
+
+type ButtonListItemProps = BaseListItemProps &
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { as: "button" };
+
+type ListItemProps = DivListItemProps | ButtonListItemProps;
 
 export default function ListItem({
   as = "div",
@@ -46,10 +54,10 @@ export default function ListItem({
   const pyClass = hasSub ? "py-4" : "py-3";
   const baseInteractive =
     as === "button" ? "w-full text-left focus:outline-none" : "";
-  const Component = as === "button" ? "button" : "div";
+  const Component: any = as === "button" ? "button" : "div";
 
   return (
-    <Component className={`flex items-center gap-3 ${pyClass} ${baseInteractive} ${className}`} {...rest}>
+    <Component className={`flex items-center gap-3 ${pyClass} ${baseInteractive} ${className}`} {...(rest as any)}>
       {leading && (
         <div className={`shrink-0 ${leadingClassName}`}>{leading}</div>
       )}
