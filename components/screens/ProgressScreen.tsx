@@ -254,7 +254,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
   const { userToken } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   // Live health data
-  const { steps, goal: stepGoal, isLoading: stepsLoading, forceRefreshStepData } = useStepTracking();
+  const { steps, goal: stepGoal, isLoading: stepsLoading, forceRefreshStepData } = useStepTracking(true);
   const { count: workoutCount, totalMinutes: workoutMinutes, isLoading: workoutsLoading, refresh: refreshWorkouts } = useWorkoutTracking();
 
   // Fetch user profile for display name
