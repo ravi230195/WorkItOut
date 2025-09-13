@@ -66,7 +66,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, onNavigateToWe
     >
       <button
         onClick={onNavigateToWelcome}
-        className="text-white p-4 self-start"
+        className="text-blue-500 text-2xl p-4 self-start"
       >
         &lt; Back
       </button>
