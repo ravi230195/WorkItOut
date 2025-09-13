@@ -56,18 +56,24 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
       padHeader={false}
       padBottomBar={false}
       className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
-      scrollAreaClassName="grid place-items-center"
       bottomBar={bottomBar}
-      contentClassName=""
+      contentClassName="flex min-h-[100dvh]"
       maxContent="responsive"
     >
-      <Card
-        className="
-          w-full
-          bg-card/80 backdrop-blur-sm border-border
-          shadow-soft
-        "
-      >
+      <img
+        src="/Workout/Images/LandingPage.png"
+        alt="Workout graphic"
+        className="hidden md:block w-1/2 object-cover"
+      />
+
+      <div className="flex flex-1 items-center justify-center p-4">
+        <Card
+          className="
+            w-full max-w-md
+            bg-card/80 backdrop-blur-sm border-border
+            shadow-soft
+          "
+        >
         <CardHeader className="text-center pb-6">
           <Stack gap="md">
             <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto">
@@ -170,6 +176,7 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
           </Stack>
         </CardContent>
       </Card>
+      </div>
     </AppScreen>
   );
 }
