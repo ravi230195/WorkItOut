@@ -97,14 +97,12 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, bottomBar }: S
 
   return (
     <AppScreen
-      // Auth screen: no header / bottom bar
       padHeader={false}
       padBottomBar={false}
-      // Keep your gradient background
-      className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
-      // Center the card; allow the page (not the card) to manage the primary scroll
+      disableSafeArea={true}
+      backgroundImageSrc="/Workout/Images/LandingPage.png"
+      backgroundOverlayClassName="bg-black/40"
       scrollAreaClassName="grid place-items-center"
-      // Slightly narrower max width than default for auth flows
       maxContent="responsive"
       bottomBar={bottomBar}
       contentClassName=""

@@ -55,7 +55,9 @@ export function SignInScreen({ onAuthSuccess, onNavigateToSignUp, bottomBar }: S
     <AppScreen
       padHeader={false}
       padBottomBar={false}
-      className="bg-gradient-to-br from-soft-gray via-background to-warm-cream/30"
+      disableSafeArea={true}
+      backgroundImageSrc="/Workout/Images/LandingPage.png"
+      backgroundOverlayClassName="bg-black/40"
       scrollAreaClassName="grid place-items-center"
       bottomBar={bottomBar}
       contentClassName=""
