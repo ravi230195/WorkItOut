@@ -8,6 +8,7 @@ import { ProgressScreen } from "./screens/ProgressScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { SignInScreen } from "./screens/SignInScreen";
 import { SignUpScreen } from "./screens/SignUpScreen";
+import { WelcomeScreen } from "./screens/WelcomeScreen";
 
 import { AppView } from "../utils/navigation";
 import { Exercise } from "../utils/supabase/supabase-api";
@@ -93,7 +94,12 @@ export function AppRouter({
 }: AppRouterProps) {
   logger.debug(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
 
-  if (!isAuthenticated || currentView === "signin" || currentView === "signup") {
+  if (
+    !isAuthenticated ||
+    currentView === "signin" ||
+    currentView === "signup" ||
+    currentView === "welcome"
+  ) {
     if (currentView === "signup") {
       return (
         <SignUpScreen
@@ -103,10 +109,19 @@ export function AppRouter({
         />
       );
     }
+    if (currentView === "signin") {
+      return (
+        <SignInScreen
+          onAuthSuccess={onAuthSuccess}
+          onNavigateToSignUp={onNavigateToSignUp}
+          bottomBar={bottomBar}
+        />
+      );
+    }
     return (
-      <SignInScreen
-        onAuthSuccess={onAuthSuccess}
+      <WelcomeScreen
         onNavigateToSignUp={onNavigateToSignUp}
+        onNavigateToSignIn={onNavigateToSignIn}
         bottomBar={bottomBar}
       />
     );

@@ -30,7 +30,7 @@ export function useAppNavigation() {
   const handleUnauthorizedError = (error: Error) => {
     if (error.message === "UNAUTHORIZED") {
       toast.error("Session expired. Please sign in.");
-      setCurrentView("signin");
+      setCurrentView("welcome");
       return true;
     }
     return false;
