@@ -226,6 +226,11 @@ export function ExerciseSetupScreen({
      ------------------------------------------------------------------------------------- */
   useEffect(() => {
     if (!userToken) return;
+    // If state was restored from app-state cache, skip fetching
+    if (exercises.length > 0) {
+      setLoadingSaved(false);
+      return;
+    }
     let cancelled = false;
 
     (async () => {
@@ -262,7 +267,7 @@ export function ExerciseSetupScreen({
     return () => {
       cancelled = true;
     };
-  }, [routineId, userToken]);
+  }, [routineId, userToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* -------------------------------------------------------------------------------------
      Add selected exercises AFTER initial load completes
