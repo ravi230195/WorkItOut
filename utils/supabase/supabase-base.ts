@@ -47,18 +47,27 @@ export class SupabaseBase {
   private cachedUser: AuthUser | null = null;
 
   setToken(token: string | null) {
-    if (token !== this.userToken) {
+    const prevToken = this.userToken;
+    const wasLoggedIn = prevToken !== null;
+    const isLoggedIn = token !== null;
+    const tokenChanged = token !== prevToken;
+
+    if (tokenChanged) {
       this.cachedUser = null;
     }
+
     this.userToken = token;
 
-    if (token) {
-      // 🔐 [DBG] Token set - Clear cache for fresh user session
-      logger.db("🔐 [DBG] Token set - Clearing cache for fresh user session");
-      localCache.clearPrefix();
-    } else {
-      // 🔐 [DBG] Token cleared - Clear cache on sign out
-      logger.db("🔐 [DBG] Token cleared - Clearing cache on sign out");
+    // Only clear cache when login state changes (sign in/out),
+    // not on token refreshes for the same user.
+    if (isLoggedIn !== wasLoggedIn) {
+      if (isLoggedIn) {
+        // 🔐 [DBG] Token set - Clear cache for fresh user session
+        logger.db("🔐 [DBG] Token set - Clearing cache for fresh user session");
+      } else {
+        // 🔐 [DBG] Token cleared - Clear cache on sign out
+        logger.db("🔐 [DBG] Token cleared - Clearing cache on sign out");
+      }
       localCache.clearPrefix();
     }
   }

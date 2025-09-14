@@ -14,6 +14,7 @@ import { VIEWS_WITHOUT_BOTTOM_NAV } from "./utils/navigation";
 
 // ✅ add this (path to your boundary component)
 import ErrorBoundary from "./components/system/ErrorBoundary";
+import "./utils/appState";
 
 // App.tsx
 function AppContent() {
