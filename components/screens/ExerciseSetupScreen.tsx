@@ -18,6 +18,7 @@ import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../utils/routineLoader";
 import ListItem from "../ui/ListItem";
 import ActionSheet from "../sheets/ActionSheet";
+import { useAppStateSaver } from "../../utils/appState";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -120,6 +121,24 @@ export function ExerciseSetupScreen({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const workoutStartRef = useRef<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  type SaverState = {
+    exercises: UIExercise[];
+    screenMode: ScreenMode;
+    selectedExercisesForSetup: Exercise[];
+    elapsedSeconds: number;
+  };
+
+  useAppStateSaver<SaverState>(
+    "exercise-setup",
+    { exercises, screenMode, selectedExercisesForSetup, elapsedSeconds },
+    (s) => {
+      setExercises(s.exercises ?? []);
+      setScreenMode(s.screenMode ?? initialMode);
+      setSelectedExercisesForSetup(s.selectedExercisesForSetup ?? []);
+      setElapsedSeconds(s.elapsedSeconds ?? 0);
+    }
+  );
 
   const formatHHMMSS = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
