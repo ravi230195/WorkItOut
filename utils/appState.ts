@@ -10,6 +10,7 @@ interface Saver<T = unknown> {
 }
 
 const savers: Saver[] = [];
+let lastIsActive: boolean | null = null;
 
 export function registerAppStateSaver<T>(
   key: string,
@@ -38,6 +39,10 @@ export function registerAppStateSaver<T>(
 }
 
 function handleStateChange(isActive: boolean) {
+  if (lastIsActive === isActive) {
+    return;
+  }
+  lastIsActive = isActive;
   logger.info(
     `[APP-STATE] App state changed - isActive: ${isActive}, total savers: ${savers.length}`
   );
