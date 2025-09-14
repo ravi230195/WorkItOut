@@ -24,11 +24,13 @@ const RoundCheckButton: React.FC<RoundCheckButtonProps> = ({
         e.stopPropagation();
         onChange?.(!checked);
       }}
-      className={`${dimension} rounded-full border-2 bg-white flex items-center justify-center ${checked ? "border-success" : "border-success-light"} ${className}`}
+      className={`${dimension} rounded-full border-2 flex items-center justify-center ${
+        checked ? "border-black bg-black" : "border-black bg-white"
+      } ${className}`}
     >
       <Check
         size={iconSize}
-        className={checked ? "text-success" : "text-success-light"}
+        className={checked ? "text-white" : "text-black"}
       />
     </button>
   );
