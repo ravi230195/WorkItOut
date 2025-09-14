@@ -18,6 +18,7 @@ import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../utils/routineLoader";
 import ListItem from "../ui/ListItem";
 import ActionSheet from "../sheets/ActionSheet";
+import { Check } from "lucide-react";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -839,13 +840,20 @@ export function ExerciseSetupScreen({
           }
           trailing={
             inWorkout ? (
-              <input
-                type="checkbox"
-                checked={ex.completed}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => void onToggleExerciseDone(ex.id, e.target.checked)}
-                className="w-5 h-5 rounded-full border-2 border-border text-black accent-success checked:border-success"
-              />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void onToggleExerciseDone(ex.id, !ex.completed);
+                }}
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  ex.completed ? "bg-success border-success" : "border-success-light"
+                }`}
+              >
+                <Check
+                  size={12}
+                  className={ex.completed ? "text-black" : "text-success-light"}
+                />
+              </button>
             ) : undefined
           }
           disableChevron={inWorkout}
