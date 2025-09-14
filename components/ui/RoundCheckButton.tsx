@@ -26,7 +26,7 @@ const RoundCheckButton: React.FC<RoundCheckButtonProps> = ({
   let iconClasses = "";
 
   if (variant === "success") {
-    buttonClasses = `border-success bg-white`;
+    buttonClasses = "border-black bg-white";
     iconClasses = checked ? "text-success" : "text-success-light";
   } else {
     buttonClasses = checked ? "border-black bg-black" : "border-black bg-white";

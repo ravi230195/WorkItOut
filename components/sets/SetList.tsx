@@ -158,6 +158,7 @@ const SetList: React.FC<SetListProps> = ({
                     checked={!!it.done}
                     onChange={(done) => onToggleDone?.(it.key, done)}
                     size="sm"
+                    variant="success"
                   />
                 </div>
               ) : canRemove ? (
