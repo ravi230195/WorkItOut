@@ -53,7 +53,18 @@ export function useAppStateSaver<T>(key: string, data: T, setData: (value: T) =>
   useEffect(() => {
     ref.current = data;
   }, [data]);
-  useEffect(() => registerAppStateSaver(key, () => ref.current, setData), [key, setData]);
+  useEffect(() => {
+    const cacheKey = `appstate:${key}`;
+    const cached = localCache.get(cacheKey, Number.MAX_SAFE_INTEGER);
+    if (cached !== null) {
+      try {
+        setData(cached);
+      } finally {
+        localCache.remove(cacheKey);
+      }
+    }
+    return registerAppStateSaver(key, () => ref.current, setData);
+  }, [key, setData]);
 }
 
 App.addListener('appStateChange', ({ isActive }) => handleStateChange(isActive));
