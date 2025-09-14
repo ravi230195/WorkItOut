@@ -18,7 +18,7 @@ import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../utils/routineLoader";
 import ListItem from "../ui/ListItem";
 import ActionSheet from "../sheets/ActionSheet";
-import { Check } from "lucide-react";
+import RoundCheckButton from "../ui/RoundCheckButton";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -840,20 +840,11 @@ export function ExerciseSetupScreen({
           }
           trailing={
             inWorkout ? (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void onToggleExerciseDone(ex.id, !ex.completed);
-                }}
-                className={`w-5 h-5 rounded-full border-2 bg-white flex items-center justify-center ${
-                  ex.completed ? "border-success" : "border-success-light"
-                }`}
-              >
-                <Check
-                  size={12}
-                  className={ex.completed ? "text-success" : "text-success-light"}
-                />
-              </button>
+              <RoundCheckButton
+                checked={ex.completed}
+                onChange={(done) => void onToggleExerciseDone(ex.id, done)}
+                size="sm"
+              />
             ) : undefined
           }
           disableChevron={inWorkout}
