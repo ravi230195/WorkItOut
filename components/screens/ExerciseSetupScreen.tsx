@@ -138,6 +138,7 @@ export function ExerciseSetupScreen({
     [initialMode, setSelectedExercisesForSetup]
   );
 
+  // Persist this screen's working state across app background/foreground cycles
   useAppStateSaver<SaverState>(
     "exercise-setup",
     { exercises, screenMode, selectedExercisesForSetup, elapsedSeconds },
