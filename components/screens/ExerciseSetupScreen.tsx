@@ -127,6 +127,9 @@ export function ExerciseSetupScreen({
     screenMode: ScreenMode;
     selectedExercisesForSetup: Exercise[];
     elapsedSeconds: number;
+    journal: ReturnType<typeof makeJournal>;
+    savedSnapshot: any[];
+    preWorkoutExercises: UIExercise[];
   };
   const restoreState = useCallback(
     (s: SaverState) => {
@@ -134,6 +137,9 @@ export function ExerciseSetupScreen({
       setScreenMode(s.screenMode ?? initialMode);
       setSelectedExercisesForSetup(s.selectedExercisesForSetup ?? []);
       setElapsedSeconds(s.elapsedSeconds ?? 0);
+      journalRef.current = s.journal ?? makeJournal();
+      savedSnapshotRef.current = s.savedSnapshot ?? [];
+      preWorkoutExercisesRef.current = s.preWorkoutExercises ?? [];
     },
     [initialMode, setSelectedExercisesForSetup]
   );
@@ -141,7 +147,15 @@ export function ExerciseSetupScreen({
   // Persist this screen's working state across app background/foreground cycles
   useAppStateSaver<SaverState>(
     "exercise-setup",
-    { exercises, screenMode, selectedExercisesForSetup, elapsedSeconds },
+    {
+      exercises,
+      screenMode,
+      selectedExercisesForSetup,
+      elapsedSeconds,
+      journal: journalRef.current,
+      savedSnapshot: savedSnapshotRef.current,
+      preWorkoutExercises: preWorkoutExercisesRef.current,
+    },
     restoreState
   );
 
