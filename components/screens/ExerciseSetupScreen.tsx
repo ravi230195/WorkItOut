@@ -845,13 +845,13 @@ export function ExerciseSetupScreen({
                   e.stopPropagation();
                   void onToggleExerciseDone(ex.id, !ex.completed);
                 }}
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  ex.completed ? "bg-success border-success" : "border-success-light"
+                className={`w-5 h-5 rounded-full border-2 bg-white flex items-center justify-center ${
+                  ex.completed ? "border-success" : "border-success-light"
                 }`}
               >
                 <Check
                   size={12}
-                  className={ex.completed ? "text-black" : "text-success-light"}
+                  className={ex.completed ? "text-success" : "text-success-light"}
                 />
               </button>
             ) : undefined
