@@ -1,5 +1,5 @@
 // components/screens/ExerciseSetupScreen.tsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
 import { BottomNavigation } from "../BottomNavigation";
@@ -128,16 +128,20 @@ export function ExerciseSetupScreen({
     selectedExercisesForSetup: Exercise[];
     elapsedSeconds: number;
   };
-
-  useAppStateSaver<SaverState>(
-    "exercise-setup",
-    { exercises, screenMode, selectedExercisesForSetup, elapsedSeconds },
-    (s) => {
+  const restoreState = useCallback(
+    (s: SaverState) => {
       setExercises(s.exercises ?? []);
       setScreenMode(s.screenMode ?? initialMode);
       setSelectedExercisesForSetup(s.selectedExercisesForSetup ?? []);
       setElapsedSeconds(s.elapsedSeconds ?? 0);
-    }
+    },
+    [initialMode, setSelectedExercisesForSetup]
+  );
+
+  useAppStateSaver<SaverState>(
+    "exercise-setup",
+    { exercises, screenMode, selectedExercisesForSetup, elapsedSeconds },
+    restoreState
   );
 
   const formatHHMMSS = (totalSeconds: number) => {
