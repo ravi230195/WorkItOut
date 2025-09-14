@@ -843,7 +843,8 @@ export function ExerciseSetupScreen({
               <RoundCheckButton
                 checked={ex.completed}
                 onChange={(done) => void onToggleExerciseDone(ex.id, done)}
-                size="sm"
+                size="lg"
+                variant="success"
               />
             ) : undefined
           }
