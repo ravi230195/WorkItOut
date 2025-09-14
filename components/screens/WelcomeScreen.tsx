@@ -25,19 +25,24 @@ export function WelcomeScreen({
       bottomBar={bottomBar}
       maxContent="responsive"
     >
-      <div className="flex-1 flex flex-col items-center justify-center px-4">
-        <Stack gap="sm">
-          <h1 className="text-3xl font-semibold">Welcome to WorkItOut</h1>
-          <p className="text-base">Your workout journey starts here.</p>
+      <div className="flex-1 flex flex-col items-center justify-start pt-10">
+        <Stack>
+          <h1 className="text-4xl sm:text-5xl font-white tracking-tight leading-tight text-white">
+            Welcome to WorkItOut
+          </h1>
+          <p className="mt-2 text-xl text-white">
+            Your workout journey starts here.
+          </p>
+
         </Stack>
       </div>
-      <div className="w-full px-4 pb-8 space-y-4">
-        <TactileButton className="w-full rounded-xl border-0 font-medium" onClick={onNavigateToSignUp}>
+      <div className="w-full px-4 pb-8 flex flex-col gap-6 items-center justify-center text-center">
+        <TactileButton className="rounded-xl border-0 font-medium items-center justify-center" onClick={onNavigateToSignUp}>
           Sign Up
         </TactileButton>
         <TactileButton
           variant="secondary"
-          className="w-full rounded-xl border-0 font-medium"
+          className="rounded-xl border-0 font-medium items-center justify-center"
           onClick={onNavigateToSignIn}
         >
           Sign In
