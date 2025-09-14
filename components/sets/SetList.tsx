@@ -123,7 +123,9 @@ const SetList: React.FC<SetListProps> = ({
           return (
             <div
               key={it.key}
-              className="grid grid-cols-4 gap-3 md:gap-4 items-center py-2 px-3 bg-soft-gray/30 rounded-lg border border-border/20"
+              className={`grid grid-cols-4 gap-3 md:gap-4 items-center py-2 px-3 rounded-lg border border-border/20 ${
+                it.done ? "bg-success-light" : "bg-soft-gray/30"
+              }`}
               /*RAVI DBG: style={{ border: "2px solid yellow" }}*/>
               <span className="text-sm font-medium text-black">
                 {index + 1}

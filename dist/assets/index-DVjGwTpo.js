@@ -1,1 +1,0 @@
-import{registerPlugin as o}from"./index-DK4ckt0e.js";var e,i,n,t;(i=e||(e={})).Dark="DARK",i.Light="LIGHT",i.Default="DEFAULT",(t=n||(n={})).Body="body",t.Ionic="ionic",t.Native="native",t.None="none";const a=o("Keyboard");export{a as Keyboard,n as KeyboardResize,e as KeyboardStyle};
