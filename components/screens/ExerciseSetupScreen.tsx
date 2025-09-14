@@ -18,6 +18,7 @@ import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../utils/routineLoader";
 import ListItem from "../ui/ListItem";
 import ActionSheet from "../sheets/ActionSheet";
+import RoundCheckButton from "../ui/RoundCheckButton";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -839,12 +840,11 @@ export function ExerciseSetupScreen({
           }
           trailing={
             inWorkout ? (
-              <input
-                type="checkbox"
+              <RoundCheckButton
                 checked={ex.completed}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => void onToggleExerciseDone(ex.id, e.target.checked)}
-                className="w-5 h-5 rounded-full border-2 border-border text-black accent-success checked:border-success"
+                onChange={(done) => void onToggleExerciseDone(ex.id, done)}
+                size="lg"
+                variant="success"
               />
             ) : undefined
           }

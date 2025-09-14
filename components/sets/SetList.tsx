@@ -3,6 +3,7 @@ import * as React from "react";
 import { NumberInput } from "../ui/number-input";
 import { TactileButton } from "../TactileButton";
 import { X, Plus, Trash2 } from "lucide-react";
+import RoundCheckButton from "../ui/RoundCheckButton";
 
 export type SetListMode = "view" | "edit" | "workout";
 
@@ -153,11 +154,11 @@ const SetList: React.FC<SetListProps> = ({
 
               {mode === "workout" ? (
                 <div className="flex justify-end">
-                  <input
-                    type="checkbox"
+                  <RoundCheckButton
                     checked={!!it.done}
-                    onChange={(e) => onToggleDone?.(it.key, e.target.checked)}
-                    className="w-5 h-5 ml-auto rounded-full border-2 border-border text-black accent-success checked:border-success"
+                    onChange={(done) => onToggleDone?.(it.key, done)}
+                    size="sm"
+                    variant="success"
                   />
                 </div>
               ) : canRemove ? (
