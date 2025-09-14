@@ -91,13 +91,13 @@ function handleStateChange(isActive: boolean) {
   }
 }
 
-export function useAppStateSaver<T>(key: string, data: T, setData: (value: T) => void) {
+export function useAppStateSaver<T>(
+  key: string,
+  data: T,
+  setData: (value: T) => void
+) {
   const ref = useRef(data);
   useEffect(() => {
-    logger.info(
-      `[APP-STATE] useAppStateSaver - data updated for key: ${key}`,
-      data
-    );
     ref.current = data;
   }, [data, key]);
   useEffect(() => {
