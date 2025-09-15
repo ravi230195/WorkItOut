@@ -6,6 +6,8 @@ import { performanceTimer } from "../performanceTimer";
 type OAuthProvider = "Apple" | "Google";
 
 const NATIVE_PROTOCOLS = new Set(["capacitor:", "ionic:", "ms-appx:", "ms-appx-web:"]);
+const BLOCKED_REDIRECT_PROTOCOLS = new Set(["javascript:", "vbscript:", "data:"]);
+const CUSTOM_SCHEME_PATTERN = /^[a-z][a-z0-9+\-.]*:$/i;
 
 const coerceString = (value: unknown): string | null => {
     if (typeof value !== "string") return null;
@@ -32,17 +34,24 @@ const readConfiguredOAuthRedirect = (): string | null => {
     return null;
 };
 
-const ensureWebRedirectUrl = (url: string, sourceLabel: string): string => {
+const normalizeRedirectUrl = (url: string, sourceLabel: string): string => {
     try {
         const parsed = new URL(url);
-        if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        const protocol = parsed.protocol?.toLowerCase();
+
+        if (!protocol || !CUSTOM_SCHEME_PATTERN.test(protocol)) {
             throw new Error();
         }
+
+        if (BLOCKED_REDIRECT_PROTOCOLS.has(protocol)) {
+            throw new Error();
+        }
+
         parsed.hash = "";
         return parsed.toString();
     } catch {
         throw new Error(
-            `${sourceLabel} must be an absolute http(s) URL. Update it to something like https://your-app.com/auth/callback before retrying.`
+            `${sourceLabel} must be an absolute URL that uses http(s) or a custom app scheme like myapp://auth. Update it before retrying.`
         );
     }
 };
@@ -55,7 +64,7 @@ const resolveOAuthRedirectTarget = (explicit?: string): string => {
 
     const configured = readConfiguredOAuthRedirect();
     if (configured) {
-        return ensureWebRedirectUrl(configured, "VITE_SUPABASE_OAUTH_REDIRECT");
+        return normalizeRedirectUrl(configured, "VITE_SUPABASE_OAUTH_REDIRECT");
     }
 
     if (typeof window === "undefined") {
@@ -66,14 +75,19 @@ const resolveOAuthRedirectTarget = (explicit?: string): string => {
 
     const { protocol, origin, pathname, search } = window.location;
     const normalizedProtocol = protocol?.toLowerCase() ?? "";
+    const candidate = `${origin}${pathname}${search}`;
 
-    if (NATIVE_PROTOCOLS.has(normalizedProtocol)) {
-        throw new Error(
-            "Configure VITE_SUPABASE_OAUTH_REDIRECT with a https URL (and add it to Supabase Authentication → URL Configuration) so native builds can complete the OAuth hand-off."
-        );
+    try {
+        return normalizeRedirectUrl(candidate, "window.location");
+    } catch (error) {
+        if (NATIVE_PROTOCOLS.has(normalizedProtocol)) {
+            throw new Error(
+                "Set VITE_SUPABASE_OAUTH_REDIRECT to your app's deep link (for example capacitor://localhost/auth/callback) and whitelist it under Supabase Authentication → URL Configuration so native builds can complete the OAuth hand-off."
+            );
+        }
+
+        throw error instanceof Error ? error : new Error(String(error));
     }
-
-    return `${origin}${pathname}${search}`;
 };
 
 export class SupabaseDBWrite extends SupabaseBase {
