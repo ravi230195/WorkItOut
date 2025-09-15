@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { supabaseAPI } from "../utils/supabase/supabase-api";
+import type { AuthUserMetadata } from "../utils/supabase/supabase-api";
 import { logger } from "../utils/logging";
 import { toast } from "sonner";
 
@@ -44,6 +45,62 @@ const resolveOAuthErrorMessage = (rawError: string, providerSlug: string | null)
   }
 
   return rawError;
+};
+
+const DEFAULT_PROFILE_FALLBACK = "New member";
+
+const pickFirstString = (...values: Array<unknown>): string | null => {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return null;
+};
+
+const deriveProfileFieldsFromMetadata = (
+  metadata: AuthUserMetadata | undefined,
+  email: string | null
+): { firstName: string; lastName: string; displayName: string } => {
+  const emailHandle = (() => {
+    if (typeof email !== "string") return null;
+    const [localPart] = email.split("@");
+    if (!localPart) return null;
+    const trimmed = localPart.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  })();
+
+  const fallbackName = emailHandle ?? DEFAULT_PROFILE_FALLBACK;
+
+  const fullName = pickFirstString(metadata?.full_name, metadata?.name, metadata?.display_name);
+  const preferredHandle = pickFirstString(metadata?.preferred_username, metadata?.nickname);
+
+  const firstName =
+    pickFirstString(metadata?.given_name, metadata?.first_name, fullName ? fullName.split(/\s+/)[0] : null) ??
+    fallbackName;
+
+  const lastName =
+    pickFirstString(
+      metadata?.family_name,
+      metadata?.last_name,
+      fullName ? fullName.split(/\s+/).slice(1).join(" ") : null
+    ) ?? "";
+
+  const displayName =
+    pickFirstString(
+      preferredHandle,
+      fullName,
+      [firstName, lastName].filter(Boolean).join(" "),
+      fallbackName
+    ) ?? fallbackName;
+
+  return {
+    firstName,
+    lastName,
+    displayName,
+  };
 };
 
 /**
@@ -100,6 +157,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [setUserToken]);
 
+  const ensureProfileForSession = useCallback(async () => {
+    let existingProfile: Awaited<ReturnType<typeof supabaseAPI.getMyProfile>> | null = null;
+
+    try {
+      existingProfile = await supabaseAPI.getMyProfile();
+    } catch (error) {
+      logger.error("Failed to load profile after sign-in:", error);
+    }
+
+    if (existingProfile) {
+      return true;
+    }
+
+    try {
+      const user = await supabaseAPI.getCurrentUser();
+      const { firstName, lastName, displayName } = deriveProfileFieldsFromMetadata(
+        user.user_metadata,
+        user.email
+      );
+      await supabaseAPI.upsertProfile(firstName, lastName, displayName);
+      return true;
+    } catch (error) {
+      logger.error("Failed to finish profile setup after OAuth sign-in:", error);
+      toast.error("We couldn't finish setting up your profile. Please try signing in again.");
+      return false;
+    }
+  }, []);
+
   const handleOAuthRedirect = useCallback(() => {
     if (typeof window === "undefined") return false;
 
@@ -122,13 +207,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } else if (accessToken) {
       setUserToken(accessToken, refreshTokenValue);
       toast.success(providerName ? `Signed in with ${providerName}` : "Signed in successfully");
+      void ensureProfileForSession();
     }
 
     const cleanUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
     window.history.replaceState({}, document.title, cleanUrl);
 
     return true;
-  }, [setUserToken]);
+  }, [ensureProfileForSession, setUserToken]);
 
   // Initialize auth state from localStorage
   useEffect(() => {
@@ -145,19 +231,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (storedToken && storedRefreshToken) {
         const tokenAge = getTokenAge(storedToken);
-        
+
         if (tokenAge > 60 * 60 * 1000) { // Older than 1 hour
           await refreshTokenOnAppStart(storedRefreshToken);
         } else {
           setUserToken(storedToken, storedRefreshToken);
         }
       }
-      
+
       setIsInitialized(true);
     };
 
     initializeAuth();
   }, [handleOAuthRedirect, refreshTokenOnAppStart, setUserToken]);
+
+  useEffect(() => {
+    if (!userToken) return;
+
+    void ensureProfileForSession();
+  }, [ensureProfileForSession, userToken]);
   const signOut = async () => {
     // Sign out from Supabase
     if (userToken) {

@@ -5,6 +5,77 @@ import { performanceTimer } from "../performanceTimer";
 
 type OAuthProvider = "Apple" | "Google";
 
+const NATIVE_PROTOCOLS = new Set(["capacitor:", "ionic:", "ms-appx:", "ms-appx-web:"]);
+
+const coerceString = (value: unknown): string | null => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+};
+
+const readConfiguredOAuthRedirect = (): string | null => {
+    if (typeof import.meta !== "undefined") {
+        const candidate = coerceString((import.meta as any)?.env?.VITE_SUPABASE_OAUTH_REDIRECT);
+        if (candidate) return candidate;
+    }
+
+    if (typeof process !== "undefined" && typeof process.env === "object") {
+        const candidate = coerceString((process.env as Record<string, string | undefined>).VITE_SUPABASE_OAUTH_REDIRECT);
+        if (candidate) return candidate;
+    }
+
+    if (typeof globalThis !== "undefined") {
+        const candidate = coerceString((globalThis as any).VITE_SUPABASE_OAUTH_REDIRECT);
+        if (candidate) return candidate;
+    }
+
+    return null;
+};
+
+const ensureWebRedirectUrl = (url: string, sourceLabel: string): string => {
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+            throw new Error();
+        }
+        parsed.hash = "";
+        return parsed.toString();
+    } catch {
+        throw new Error(
+            `${sourceLabel} must be an absolute http(s) URL. Update it to something like https://your-app.com/auth/callback before retrying.`
+        );
+    }
+};
+
+const resolveOAuthRedirectTarget = (explicit?: string): string => {
+    const direct = coerceString(explicit);
+    if (direct) {
+        return direct;
+    }
+
+    const configured = readConfiguredOAuthRedirect();
+    if (configured) {
+        return ensureWebRedirectUrl(configured, "VITE_SUPABASE_OAUTH_REDIRECT");
+    }
+
+    if (typeof window === "undefined") {
+        throw new Error(
+            "Supabase OAuth needs a browser context to determine redirect_to. Set VITE_SUPABASE_OAUTH_REDIRECT to a web URL that you've whitelisted under Authentication → URL Configuration in Supabase."
+        );
+    }
+
+    const { protocol, origin, pathname, search } = window.location;
+    const normalizedProtocol = protocol?.toLowerCase() ?? "";
+
+    if (NATIVE_PROTOCOLS.has(normalizedProtocol)) {
+        throw new Error(
+            "Configure VITE_SUPABASE_OAUTH_REDIRECT with a https URL (and add it to Supabase Authentication → URL Configuration) so native builds can complete the OAuth hand-off."
+        );
+    }
+
+    return `${origin}${pathname}${search}`;
+};
+
 export class SupabaseDBWrite extends SupabaseBase {
     // Auth
     signInWithOAuth(provider: OAuthProvider, redirectTo?: string): void {
@@ -13,7 +84,7 @@ export class SupabaseDBWrite extends SupabaseBase {
         }
 
         const providerSlug = provider.toLowerCase();
-        const redirectUrl = redirectTo ?? `${window.location.origin}${window.location.pathname}${window.location.search}`;
+        const redirectUrl = resolveOAuthRedirectTarget(redirectTo);
         const params = new URLSearchParams({
             provider: providerSlug,
             redirect_to: redirectUrl
