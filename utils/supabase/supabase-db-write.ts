@@ -3,8 +3,30 @@ import type { UserRoutine, UserRoutineExercise, UserRoutineExerciseSet, Profile,
 import { logger } from "../logging";
 import { performanceTimer } from "../performanceTimer";
 
+type OAuthProvider = "Apple" | "Google";
+
 export class SupabaseDBWrite extends SupabaseBase {
     // Auth
+    signInWithOAuth(provider: OAuthProvider, redirectTo?: string): void {
+        if (typeof window === "undefined") {
+            throw new Error("Social sign-in can only be initiated in a browser environment.");
+        }
+
+        const providerSlug = provider.toLowerCase();
+        const redirectUrl = redirectTo ?? `${window.location.origin}${window.location.pathname}${window.location.search}`;
+        const params = new URLSearchParams({
+            provider: providerSlug,
+            redirect_to: redirectUrl
+        });
+
+        if (providerSlug === "google") {
+            params.set("access_type", "offline");
+            params.set("prompt", "consent");
+        }
+
+        window.location.assign(`${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`);
+    }
+
     async signUp(email: string, password: string): Promise<{ token?: string; refresh_token?: string; needsSignIn?: boolean }> {
         return performanceTimer.timeAsync(
             `[SUPABASE] signUp(${email})`,

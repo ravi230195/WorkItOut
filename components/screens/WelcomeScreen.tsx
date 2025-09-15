@@ -1,15 +1,17 @@
-import type { ReactNode, SVGProps } from "react";
+import { useState, type ReactNode, type SVGProps } from "react";
 import { Dumbbell } from "lucide-react";
 import { toast } from "sonner";
 import { TactileButton } from "../TactileButton";
 import { AppScreen, Stack } from "../layouts";
 import { cn } from "../ui/utils";
+import { supabaseAPI } from "../../utils/supabase/supabase-api";
 
 type SocialProvider = "Apple" | "Google";
 
 interface SocialButtonProps {
   variant: SocialProvider;
   onClick: () => void;
+  disabled?: boolean;
 }
 
 function AppleIcon(props: SVGProps<SVGSVGElement>) {
@@ -52,7 +54,7 @@ function GoogleIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function SocialButton({ variant, onClick }: SocialButtonProps) {
+function SocialButton({ variant, onClick, disabled = false }: SocialButtonProps) {
   const config: Record<SocialProvider, { label: string; className: string; icon: ReactNode }> = {
     Apple: {
       label: "Sign in with Apple",
@@ -74,11 +76,13 @@ function SocialButton({ variant, onClick }: SocialButtonProps) {
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
+      aria-disabled={disabled}
       className={cn(
         "w-full h-12 sm:h-14 rounded-2xl font-semibold flex items-center justify-center gap-3 transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warm-peach focus-visible:ring-offset-2",
-        "active:translate-y-px",
+        "active:translate-y-px disabled:cursor-not-allowed disabled:opacity-70",
         className,
       )}
     >
@@ -111,8 +115,20 @@ export function WelcomeScreen({
   onNavigateToSignIn,
   bottomBar,
 }: WelcomeScreenProps) {
+  const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(null);
+
   const handleSocialSignIn = (provider: SocialProvider) => {
-    toast.info(`${provider} sign-in is coming soon.`);
+    if (pendingProvider) return;
+
+    try {
+      setPendingProvider(provider);
+      supabaseAPI.signInWithOAuth(provider);
+    } catch (error) {
+      setPendingProvider(null);
+      const message =
+        error instanceof Error ? error.message : "We couldn't start the sign-in flow. Please try again.";
+      toast.error(message);
+    }
   };
 
   return (
@@ -144,8 +160,16 @@ export function WelcomeScreen({
           </Stack>
 
           <div className="w-full flex flex-col gap-4">
-            <SocialButton variant="Apple" onClick={() => handleSocialSignIn("Apple")} />
-            <SocialButton variant="Google" onClick={() => handleSocialSignIn("Google")} />
+            <SocialButton
+              variant="Apple"
+              onClick={() => handleSocialSignIn("Apple")}
+              disabled={pendingProvider !== null}
+            />
+            <SocialButton
+              variant="Google"
+              onClick={() => handleSocialSignIn("Google")}
+              disabled={pendingProvider !== null}
+            />
             <Divider />
             <TactileButton
               type="button"

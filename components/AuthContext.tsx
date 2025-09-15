@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { supabaseAPI } from "../utils/supabase/supabase-api";
 import { logger } from "../utils/logging";
+import { toast } from "sonner";
 
 interface AuthContextType {
   userToken: string | null;
@@ -37,6 +38,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [refreshToken, setRefreshTokenState] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  const setUserToken = useCallback((token: string | null, refreshTokenValue?: string | null) => {
+    setUserTokenState(token);
+    if (refreshTokenValue) setRefreshTokenState(refreshTokenValue);
+
+    if (token) {
+      localStorage.setItem("USER_TOKEN", token);
+      if (refreshTokenValue) {
+        localStorage.setItem("REFRESH_TOKEN", refreshTokenValue);
+      }
+      supabaseAPI.setToken(token);
+    } else {
+      localStorage.removeItem("USER_TOKEN");
+      localStorage.removeItem("REFRESH_TOKEN");
+      setRefreshTokenState(null);
+      supabaseAPI.setToken(null);
+    }
+  }, []);
+
   // Helper function to check token age
   const getTokenAge = (token: string): number => {
     try {
@@ -49,19 +68,55 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   // Refresh token function
-  const refreshTokenOnAppStart = async (refreshToken: string) => {
+  const refreshTokenOnAppStart = useCallback(async (refreshTokenValue: string) => {
     try {
-      const newToken = await supabaseAPI.refreshToken(refreshToken);
-      setUserToken(newToken, refreshToken);
+      const newToken = await supabaseAPI.refreshToken(refreshTokenValue);
+      setUserToken(newToken, refreshTokenValue);
     } catch (error) {
       logger.error("Token refresh failed on app start:", error);
       setUserToken(null, null);
     }
-  };
+  }, [setUserToken]);
+
+  const handleOAuthRedirect = useCallback(() => {
+    if (typeof window === "undefined") return false;
+
+    const { hash } = window.location;
+    if (!hash || hash.length <= 1) return false;
+
+    const params = new URLSearchParams(hash.slice(1));
+    const accessToken = params.get("access_token");
+    const refreshTokenValue = params.get("refresh_token");
+    const error = params.get("error_description") || params.get("error");
+    const provider = params.get("provider");
+
+    if (!accessToken && !error) return false;
+
+    if (error) {
+      toast.error(error);
+      logger.error("OAuth sign-in failed:", error);
+    } else if (accessToken) {
+      setUserToken(accessToken, refreshTokenValue);
+      const providerName = provider ? provider.charAt(0).toUpperCase() + provider.slice(1) : "";
+      toast.success(providerName ? `Signed in with ${providerName}` : "Signed in successfully");
+    }
+
+    const cleanUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+    window.history.replaceState({}, document.title, cleanUrl);
+
+    return true;
+  }, [setUserToken]);
 
   // Initialize auth state from localStorage
   useEffect(() => {
     const initializeAuth = async () => {
+      const handledOAuth = handleOAuthRedirect();
+
+      if (handledOAuth) {
+        setIsInitialized(true);
+        return;
+      }
+
       const storedToken = localStorage.getItem("USER_TOKEN");
       const storedRefreshToken = localStorage.getItem("REFRESH_TOKEN");
 
@@ -79,25 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     initializeAuth();
-  }, []);
-
-  const setUserToken = (token: string | null, refreshToken?: string | null) => {
-    setUserTokenState(token);
-    if (refreshToken) setRefreshTokenState(refreshToken);
-    
-    // Update both localStorage and supabase API client
-    if (token) {
-      localStorage.setItem("USER_TOKEN", token);
-      if (refreshToken) localStorage.setItem("REFRESH_TOKEN", refreshToken);
-      supabaseAPI.setToken(token);
-    } else {
-      localStorage.removeItem("USER_TOKEN");
-      localStorage.removeItem("REFRESH_TOKEN");
-      setRefreshTokenState(null);
-      supabaseAPI.setToken(null);
-    }
-  };
-
+  }, [handleOAuthRedirect, refreshTokenOnAppStart, setUserToken]);
   const signOut = async () => {
     // Sign out from Supabase
     if (userToken) {
@@ -128,7 +165,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, 45 * 60 * 1000); // Every 45 minutes
     
     return () => clearInterval(refreshInterval);
-  }, [userToken, refreshToken]);
+  }, [userToken, refreshToken, setUserToken]);
 
   // App resume logic - refresh when app comes back from background
   useEffect(() => {
@@ -154,7 +191,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [userToken, refreshToken]);
+  }, [userToken, refreshToken, setUserToken]);
 
   const isAuthenticated = !!userToken;
 
