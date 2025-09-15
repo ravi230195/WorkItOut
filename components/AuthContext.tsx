@@ -24,6 +24,28 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const formatProviderName = (slug: string | null) => {
+  if (!slug) return null;
+  if (!slug.length) return null;
+  return slug.charAt(0).toUpperCase() + slug.slice(1);
+};
+
+const resolveOAuthErrorMessage = (rawError: string, providerSlug: string | null) => {
+  const normalized = rawError.toLowerCase();
+
+  if (normalized.includes("provider is not enabled")) {
+    const providerName = formatProviderName(providerSlug);
+
+    if (providerName) {
+      return `${providerName} sign-in isn't configured yet. Enable it for your Supabase project and try again.`;
+    }
+
+    return "This sign-in provider isn't configured yet. Enable it for your Supabase project and try again.";
+  }
+
+  return rawError;
+};
+
 /**
  * Manages Supabase authentication state and token lifecycle.
  *
@@ -89,15 +111,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const refreshTokenValue = params.get("refresh_token");
     const error = params.get("error_description") || params.get("error");
     const provider = params.get("provider");
+    const providerName = formatProviderName(provider);
 
     if (!accessToken && !error) return false;
 
     if (error) {
-      toast.error(error);
+      const friendlyMessage = resolveOAuthErrorMessage(error, provider);
+      toast.error(friendlyMessage);
       logger.error("OAuth sign-in failed:", error);
     } else if (accessToken) {
       setUserToken(accessToken, refreshTokenValue);
-      const providerName = provider ? provider.charAt(0).toUpperCase() + provider.slice(1) : "";
       toast.success(providerName ? `Signed in with ${providerName}` : "Signed in successfully");
     }
 
