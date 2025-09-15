@@ -92,13 +92,20 @@ const resolveOAuthRedirectTarget = (explicit?: string): string => {
 
 export class SupabaseDBWrite extends SupabaseBase {
     // Auth
-    signInWithOAuth(provider: OAuthProvider, redirectTo?: string): void {
+    async signInWithOAuth(provider: OAuthProvider, redirectTo?: string): Promise<void> {
         if (typeof window === "undefined") {
             throw new Error("Social sign-in can only be initiated in a browser environment.");
         }
 
         const providerSlug = provider.toLowerCase();
-        const redirectUrl = resolveOAuthRedirectTarget(redirectTo);
+        // Use our custom URL scheme for mobile OAuth
+        const isNativePlatform = (window as any).Capacitor && (window as any).Capacitor.isNativePlatform();
+        const isIOSSimulator = navigator.userAgent.includes('iPhone') && navigator.userAgent.includes('Safari');
+        const shouldUseMobileFlow = isNativePlatform || isIOSSimulator;
+        
+        const redirectUrl = shouldUseMobileFlow 
+            ? 'workouttracker://auth/callback'
+            : resolveOAuthRedirectTarget(redirectTo);
         const params = new URLSearchParams({
             provider: providerSlug,
             redirect_to: redirectUrl
@@ -109,7 +116,117 @@ export class SupabaseDBWrite extends SupabaseBase {
             params.set("prompt", "consent");
         }
 
-        window.location.assign(`${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`);
+        const authUrl = `${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`;
+
+        // Check if we're in a Capacitor environment (mobile app)
+        console.log('Platform check:', { 
+            hasCapacitor: !!(window as any).Capacitor, 
+            isNativePlatform,
+            isIOSSimulator,
+            shouldUseMobileFlow,
+            userAgent: navigator.userAgent 
+        });
+        
+        if (shouldUseMobileFlow) {
+            try {
+                const { Browser } = await import('@capacitor/browser');
+                const { App } = await import('@capacitor/app');
+                
+                // Listen for the deep link redirect
+                const urlListener = await App.addListener('appUrlOpen', async (event) => {
+                    console.log('Deep link received:', event.url);
+                    
+                    // Handle workouttracker://auth/callback URLs
+                    if (event.url.startsWith('workouttracker://auth/callback')) {
+                        try {
+                            const url = new URL(event.url);
+                            const hash = url.hash.substring(1); // Remove the # from the fragment
+                            const params = new URLSearchParams(hash);
+                            
+                            const accessToken = params.get('access_token');
+                            const refreshToken = params.get('refresh_token');
+                            const error = params.get('error');
+                            
+                            if (error) {
+                                console.error('OAuth error:', error);
+                                return;
+                            }
+                            
+                            if (accessToken) {
+                                console.log('OAuth success! Access token received');
+                                // Store the session directly
+                                this.setToken(accessToken);
+                                
+                                // Close the browser
+                                try {
+                                    await Browser.close();
+                                } catch (err) {
+                                    console.warn('Failed to close browser:', err);
+                                }
+                                
+                                // Trigger auth success callback
+                                window.dispatchEvent(new CustomEvent('auth-success', { 
+                                    detail: { 
+                                        token: accessToken, 
+                                        refreshToken: refreshToken 
+                                    } 
+                                }));
+                                
+                                urlListener.remove();
+                            }
+                        } catch (err) {
+                            console.error('Error parsing OAuth response:', err);
+                        }
+                    }
+                });
+
+                // Open OAuth URL in browser
+                await Browser.open({ url: authUrl });
+            } catch (importError) {
+                console.warn('Capacitor plugins not available, falling back to window.location:', importError);
+                // Fallback to window.location if Capacitor plugins aren't available
+                window.location.assign(authUrl);
+            }
+        } else {
+            // Fallback for web browsers
+            window.location.assign(authUrl);
+        }
+    }
+
+    async exchangeCodeForSession(code: string): Promise<void> {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=pkce`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    code,
+                    code_verifier: 'your-code-verifier', // You'll need to implement PKCE properly
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to exchange code for session');
+            }
+
+            const data = await response.json();
+            
+            // Store the session
+            if (data.access_token) {
+                this.setToken(data.access_token);
+                // Trigger auth success callback
+                window.dispatchEvent(new CustomEvent('auth-success', { 
+                    detail: { 
+                        token: data.access_token, 
+                        refreshToken: data.refresh_token 
+                    } 
+                }));
+            }
+        } catch (error) {
+            console.error('Error exchanging code for session:', error);
+            throw error;
+        }
     }
 
     async signUp(email: string, password: string): Promise<{ token?: string; refresh_token?: string; needsSignIn?: boolean }> {
@@ -179,8 +296,18 @@ export class SupabaseDBWrite extends SupabaseBase {
         return performanceTimer.timeAsync(
             `[SUPABASE] signOut`,
             async () => {
-                await this.fetchJson(`${SUPABASE_URL}/auth/v1/logout`, true, "POST");
-                this.setToken(null);
+                try {
+                    // Only attempt logout if we have a token
+                    if (this.userToken) {
+                        await this.fetchJson(`${SUPABASE_URL}/auth/v1/logout`, true, "POST");
+                    }
+                } catch (error) {
+                    // Log the error but don't throw - we still want to clear local state
+                    logger.warn("Supabase logout failed, but continuing with local sign out:", error);
+                } finally {
+                    // Always clear local token state
+                    this.setToken(null);
+                }
             }
         );
     }

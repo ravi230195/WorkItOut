@@ -26,6 +26,7 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'automatic',
+    scheme: 'workouttracker',
     infoPlist: {
       NSHealthShareUsageDescription: 'This app needs access to your step count data to track your daily activity and help you reach your fitness goals.',
       NSHealthUpdateUsageDescription: 'This app needs to write workout data to help track your fitness progress and maintain accurate health records.'

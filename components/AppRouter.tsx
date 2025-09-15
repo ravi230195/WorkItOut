@@ -126,6 +126,7 @@ export function AppRouter({
       <WelcomeScreen
         onNavigateToSignUp={onNavigateToSignUp}
         onNavigateToSignIn={onNavigateToSignIn}
+        onAuthSuccess={onAuthSuccess}
         bottomBar={bottomBar}
       />
     );

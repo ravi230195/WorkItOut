@@ -29,5 +29,8 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis'
+  },
+  optimizeDeps: {
+    exclude: ['@capacitor/browser', '@capacitor/app']
   }
 })

@@ -251,15 +251,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     void ensureProfileForSession();
   }, [ensureProfileForSession, userToken]);
   const signOut = async () => {
-    // Sign out from Supabase
-    if (userToken) {
-      try {
-        await supabaseAPI.signOut();
-      } catch (error) {
-        logger.error("Failed to sign out from Supabase:", error);
-      }
-    }
-    
+    // Sign out from Supabase (handles errors gracefully internally)
+    await supabaseAPI.signOut();
     setUserToken(null, null);
   };
 

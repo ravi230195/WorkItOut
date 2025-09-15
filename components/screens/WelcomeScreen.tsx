@@ -1,4 +1,4 @@
-import { useState, type ReactNode, type SVGProps } from "react";
+import { useState, useEffect, type ReactNode, type SVGProps } from "react";
 import { Dumbbell } from "lucide-react";
 import { toast } from "sonner";
 import { TactileButton } from "../TactileButton";
@@ -107,22 +107,24 @@ function Divider() {
 interface WelcomeScreenProps {
   onNavigateToSignUp: () => void;
   onNavigateToSignIn: () => void;
+  onAuthSuccess: (token: string, refreshToken: string) => void;
   bottomBar?: ReactNode;
 }
 
 export function WelcomeScreen({
   onNavigateToSignUp,
   onNavigateToSignIn,
+  onAuthSuccess,
   bottomBar,
 }: WelcomeScreenProps) {
   const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(null);
 
-  const handleSocialSignIn = (provider: SocialProvider) => {
+  const handleSocialSignIn = async (provider: SocialProvider) => {
     if (pendingProvider) return;
 
     try {
       setPendingProvider(provider);
-      supabaseAPI.signInWithOAuth(provider);
+      await supabaseAPI.signInWithOAuth(provider);
     } catch (error) {
       setPendingProvider(null);
       const message =
@@ -130,6 +132,22 @@ export function WelcomeScreen({
       toast.error(message);
     }
   };
+
+  // Listen for OAuth success events
+  useEffect(() => {
+    const handleAuthSuccess = (event: CustomEvent) => {
+      const { token, refreshToken } = event.detail;
+      setPendingProvider(null);
+      onAuthSuccess(token, refreshToken);
+      toast.success("Welcome back!");
+    };
+
+    window.addEventListener('auth-success', handleAuthSuccess as EventListener);
+    
+    return () => {
+      window.removeEventListener('auth-success', handleAuthSuccess as EventListener);
+    };
+  }, [onAuthSuccess]);
 
   return (
     <AppScreen
