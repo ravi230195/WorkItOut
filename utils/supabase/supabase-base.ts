@@ -161,7 +161,26 @@ export class SupabaseBase {
     });
     if (!response.ok) throw new Error(`Failed to get current user: ${response.statusText}`);
     const user = await response.json();
-    this.cachedUser = { id: user.id, email: user.email };
+
+    const metadataSource =
+      (user && typeof user === "object" && typeof user.user_metadata === "object" && user.user_metadata !== null
+        ? user.user_metadata
+        : undefined) ??
+      (Array.isArray(user?.identities)
+        ? user.identities.find((identity: any) => identity && typeof identity.identity_data === "object")?.identity_data
+        : undefined);
+
+    const normalizedMetadata =
+      metadataSource && typeof metadataSource === "object"
+        ? (metadataSource as Record<string, unknown>)
+        : undefined;
+
+    this.cachedUser = {
+      id: user.id,
+      email: typeof user.email === "string" ? user.email : null,
+      user_metadata: normalizedMetadata,
+    };
+
     return this.cachedUser;
   }
 
