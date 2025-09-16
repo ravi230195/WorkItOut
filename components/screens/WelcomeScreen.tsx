@@ -133,19 +133,49 @@ export function WelcomeScreen({
     }
   };
 
-  // Listen for OAuth success events
+  // Listen for OAuth events to reset button state across web/native flows
   useEffect(() => {
-    const handleAuthSuccess = (event: CustomEvent) => {
-      const { token, refreshToken } = event.detail;
+    const handleAuthSuccess = (event: Event) => {
+      const detail = (event as CustomEvent<{ token?: string; refreshToken?: string }>).detail;
+
       setPendingProvider(null);
-      onAuthSuccess(token, refreshToken);
+
+      if (!detail?.token || !detail.refreshToken) {
+        toast.error("We couldn't complete the sign-in. Please try again.");
+        return;
+      }
+
+      onAuthSuccess(detail.token, detail.refreshToken);
       toast.success("Welcome back!");
     };
 
+    const handleAuthError = (event: Event) => {
+      const detail = (event as CustomEvent<{ message?: string }>).detail;
+
+      setPendingProvider(null);
+      const message = detail?.message ?? "We couldn't complete the sign-in. Please try again.";
+      const normalizedMessage = message.toLowerCase();
+
+      if (normalizedMessage.includes("canceled") || normalizedMessage.includes("cancelled")) {
+        toast.info(message);
+      } else {
+        toast.error(message);
+      }
+    };
+
+    const handleAuthCancelled = () => {
+      setPendingProvider(null);
+      toast.info("Sign-in was canceled before completion.");
+    };
+
     window.addEventListener('auth-success', handleAuthSuccess as EventListener);
-    
+    window.addEventListener('auth-error', handleAuthError as EventListener);
+    window.addEventListener('auth-cancelled', handleAuthCancelled as EventListener);
+
     return () => {
       window.removeEventListener('auth-success', handleAuthSuccess as EventListener);
+      window.removeEventListener('auth-error', handleAuthError as EventListener);
+      window.removeEventListener('auth-cancelled', handleAuthCancelled as EventListener);
     };
   }, [onAuthSuccess]);
 
