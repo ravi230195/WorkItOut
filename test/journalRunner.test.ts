@@ -6,7 +6,10 @@ jest.mock('../utils/supabase/supabase-api', () => ({
     updateExerciseSetOrder: jest.fn().mockResolvedValue(undefined),
     addExerciseToRoutine: jest.fn().mockResolvedValue(undefined),
     addExerciseSetsToRoutine: jest.fn().mockResolvedValue(undefined),
-    recomputeAndSaveRoutineMuscleSummary: jest.fn().mockResolvedValue(undefined),
+    recomputeAndSaveRoutineMuscleSummary: jest.fn().mockResolvedValue({
+      muscle_group_summary: null,
+      exercise_count: 0,
+    }),
   },
 }));
 
