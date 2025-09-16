@@ -18,7 +18,8 @@ type ListenerHandle = { remove: () => Promise<void> | void };
 
 const SUPPORTED_OAUTH_PROVIDERS = new Set(["apple", "google"]);
 
-const NATIVE_PROTOCOLS = new Set(["capacitor:", "ionic:", "ms-appx:", "ms-appx-web:"]);
+const NATIVE_PROTOCOLS = new Set(["capacitor:", "ionic:", "ms-appx:", "ms-appx-web:"]); 
+const HTTP_PROTOCOLS = new Set(["http:", "https:"]); 
 const BLOCKED_REDIRECT_PROTOCOLS = new Set(["javascript:", "vbscript:", "data:"]);
 const CUSTOM_SCHEME_PATTERN = /^[a-z][a-z0-9+\-.]*:$/i;
 
@@ -120,6 +121,32 @@ const dispatchAuthCancelled = (provider: OAuthProvider) => {
     dispatchAuthEvent("auth-cancelled", { provider });
 };
 
+const ensureNativeRedirectScheme = (url: string): string => {
+    const parsed = new URL(url);
+    const protocol = parsed.protocol?.toLowerCase() ?? "";
+
+    if (HTTP_PROTOCOLS.has(protocol)) {
+        throw new Error(
+            "Native social sign-in requires a custom deep link redirect (for example workouttracker://auth/callback). Update VITE_SUPABASE_OAUTH_REDIRECT or pass a redirectTo that uses your app's scheme before trying again."
+        );
+    }
+
+    return parsed.toString();
+};
+
+const createRedirectMatcher = (redirectUrl: string) => {
+    const normalizedPrefix = redirectUrl.toLowerCase();
+    const prefixLength = redirectUrl.length;
+
+    return (candidate: string): boolean => {
+        if (typeof candidate !== "string" || candidate.length < prefixLength) {
+            return false;
+        }
+
+        return candidate.slice(0, prefixLength).toLowerCase() === normalizedPrefix;
+    };
+};
+
 const formatOAuthErrorMessage = (provider: OAuthProvider, rawMessage?: string | null): string => {
     const fallback = `We couldn't finish signing you in with ${provider}. Please try again.`;
     if (!rawMessage) return fallback;
@@ -156,9 +183,10 @@ export class SupabaseDBWrite extends SupabaseBase {
         const isIOSSimulator = /iphone/i.test(userAgent) && /safari/i.test(userAgent) && !isNativePlatform;
         const shouldUseMobileFlow = isNativePlatform || isIOSSimulator;
 
+        const resolvedRedirect = resolveOAuthRedirectTarget(redirectTo);
         const redirectUrl = shouldUseMobileFlow
-            ? "workouttracker://auth/callback"
-            : resolveOAuthRedirectTarget(redirectTo);
+            ? ensureNativeRedirectScheme(resolvedRedirect)
+            : resolvedRedirect;
 
         const params = new URLSearchParams({
             provider: providerSlug,
@@ -202,6 +230,8 @@ export class SupabaseDBWrite extends SupabaseBase {
                 const { Browser } = await import("@capacitor/browser");
                 const { App } = await import("@capacitor/app");
 
+                const matchesRedirect = createRedirectMatcher(redirectUrl);
+
                 const finalize = async (
                     status: "success" | "error" | "cancelled",
                     detail?: { token?: string; refreshToken?: string; message?: string },
@@ -243,7 +273,7 @@ export class SupabaseDBWrite extends SupabaseBase {
 
                 const appListener = await App.addListener("appUrlOpen", async (event) => {
                     const incomingUrl = event?.url;
-                    if (!incomingUrl || !incomingUrl.startsWith("workouttracker://auth/callback")) return;
+                    if (!incomingUrl || !matchesRedirect(incomingUrl)) return;
 
                     try {
                         const url = new URL(incomingUrl);
