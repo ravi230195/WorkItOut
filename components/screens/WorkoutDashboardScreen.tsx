@@ -9,7 +9,6 @@ import SegmentedToggle from "../segmented/SegmentedToggle";
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
-import { loadRoutineExercisesWithSets } from "../../utils/routineLoader";
 import FabSpeedDial from "../FabSpeedDial";
 import RoutinesList from "../workout-dashboard/RoutinesList";
 import RoutineActionSheet from "../workout-dashboard/RoutineActionSheet";
@@ -103,75 +102,103 @@ export default function WorkoutDashboardScreen({
     return null;
   };
 
+  const getStoredExerciseCount = (routine: UserRoutine): number | null => {
+    const rawCount = (routine as any).exercise_count ?? (routine as any).exersise_count;
+    const parsed = typeof rawCount === "string" ? Number(rawCount) : rawCount;
+    if (typeof parsed !== "number" || Number.isNaN(parsed) || parsed < 0) {
+      return null;
+    }
+    return parsed;
+  };
+
   // compute exercise counts for each routine (for time display)
   useEffect(() => {
-
     let cancelled = false;
+
     const fetchExerciseCounts = async () => {
-      const timer = performanceTimer.start('fetchExerciseCounts');
+      const timer = performanceTimer.start("fetchExerciseCounts");
 
       if (routines.length === 0) {
         logger.debug("🔍 DGB [WORKOUT_SCREEN] No routines, skipping");
-        setExerciseCounts({});
+        if (!cancelled) {
+          setExerciseCounts({});
+          setLoadingCounts(false);
+        }
         timer.endWithLog();
         return;
       }
-      setLoadingCounts(true);
+
+      if (!cancelled) setLoadingCounts(true);
+
       try {
-        const results = await Promise.all(
-          routines.map(async (r) => {
-            const routineTimer = performanceTimer.start(`fetchExerciseCounts - routine ${r.routine_template_id}`);
+        const countsById = new Map<number, number>();
+        const routinesRequiringUpdate: number[] = [];
 
-            logger.debug("🔍 DGB [WORKOUT_SCREEN] Processing routine:", r.routine_template_id, "name:", r.name);
-            const active = await loadRoutineExercisesWithSets(r.routine_template_id, { timer: performanceTimer });
-            //logger.debug("🔍 DGB [WORKOUT_SCREEN] Raw list from API:", active);
-            //logger.debug("🔍 DGB [WORKOUT_SCREEN] List length:", active?.length, "isArray:", Array.isArray(active));
+        routines.forEach((routine) => {
+          const routineId = routine.routine_template_id;
+          const storedCount = getStoredExerciseCount(routine);
+          if (storedCount != null) {
+            countsById.set(routineId, storedCount);
+          }
 
-            let needsRecomp = false;
-            if (canEdit) {
-              const summary = (r as any).muscle_group_summary as string | undefined;
-              // Only recompute if there are active exercises AND no summary
-              if (active.length > 0 && (!summary || summary.trim() === "")) {
-                logger.info("🔍 DGB [WORKOUT_SCREEN] Routine needs recompute:", r.routine_template_id, "summary:", summary, "active exercises:", active.length);
-                needsRecomp = true;
-              } else if (active.length === 0) {
-                logger.debug("🔍 DGB [WORKOUT_SCREEN] Routine has 0 active exercises, skipping recompute:", r.routine_template_id, "summary:", summary);
-              }
+          if (canEdit) {
+            const summary = ((routine as any).muscle_group_summary as string | undefined)?.trim();
+            const needsCount = storedCount == null;
+            const needsSummary =
+              !needsCount && storedCount > 0 && (!summary || summary.length === 0);
+
+            if (needsCount || needsSummary) {
+              routinesRequiringUpdate.push(routineId);
             }
+          }
+        });
 
-            routineTimer.endWithLog();
-            return { id: r.routine_template_id, count: active.length, needsRecompute: needsRecomp };
-          })
-        );
+        if (!cancelled) {
+          setExerciseCounts(Object.fromEntries(countsById));
+        }
 
-        const entries = results.map(({ id, count }) => [id, count] as [number, number]);
-        const needsRecompute = results.filter(r => r.needsRecompute).map(r => r.id);
+        if (canEdit && routinesRequiringUpdate.length > 0) {
+          const recomputeTimer = performanceTimer.start(
+            "fetchExerciseCounts - refresh stored routine stats"
+          );
 
-        if (!cancelled) setExerciseCounts(Object.fromEntries(entries));
-
-        // only recompute summaries for "my" data
-        if (canEdit && needsRecompute.length > 0) {
-          const recomputeTimer = performanceTimer.start('fetchExerciseCounts - muscle summary recompute');
-
-          logger.debug("🔍 DGB [WORKOUT_SCREEN] Triggering muscle summary recompute for routines:", needsRecompute);
-          logger.debug("🔍 DGB [WORKOUT_SCREEN] canEdit:", canEdit, "needsRecompute count:", needsRecompute.length);
+          logger.debug(
+            "🔍 DGB [WORKOUT_SCREEN] Triggering summary recompute for routines missing metadata:",
+            routinesRequiringUpdate
+          );
 
           const results = await Promise.allSettled(
-            needsRecompute.map((id) => {
-              logger.debug("🔍 DGB [WORKOUT_SCREEN] Calling recomputeAndSaveRoutineMuscleSummary for routine ID:", id);
-              return supabaseAPI.recomputeAndSaveRoutineMuscleSummary(id);
-            })
+            routinesRequiringUpdate.map((id) =>
+              supabaseAPI.recomputeAndSaveRoutineMuscleSummary(id)
+            )
           );
-          if (!cancelled) {
-            logger.debug("🔍 DGB [WORKOUT_SCREEN] Muscle summary recompute completed, results:", results);
-            // Since recomputeAndSaveRoutineMuscleSummary returns void, we just check if it succeeded
-            const successfulCount = results.filter(res => res.status === "fulfilled").length;
-            logger.debug("🔍 DGB [WORKOUT_SCREEN] Successful recomputes:", successfulCount, "out of", needsRecompute.length);
 
-            if (successfulCount > 0) {
-              logger.debug("🔍 DGB [WORKOUT_SCREEN] Muscle summary recompute completed successfully");
-              logger.debug("🔍 DGB [WORKOUT_SCREEN] No need to trigger routine state update - let cache handle it");
-              // Don't trigger setRoutines here - it causes infinite loop!
+          if (!cancelled) {
+            const updatedCounts = new Map(countsById);
+            let changed = false;
+
+            results.forEach((res, index) => {
+              if (res.status === "fulfilled") {
+                const recomputed = res.value?.exercise_count;
+                if (
+                  typeof recomputed === "number" &&
+                  Number.isFinite(recomputed) &&
+                  recomputed >= 0
+                ) {
+                  updatedCounts.set(routinesRequiringUpdate[index], recomputed);
+                  changed = true;
+                }
+              } else {
+                logger.warn(
+                  "Failed to recompute routine summary for",
+                  routinesRequiringUpdate[index],
+                  res.reason
+                );
+              }
+            });
+
+            if (changed) {
+              setExerciseCounts(Object.fromEntries(updatedCounts));
             }
           }
 
@@ -181,7 +208,7 @@ export default function WorkoutDashboardScreen({
         logger.error("Failed to load exercise counts / recompute summaries", e);
       } finally {
         if (!cancelled) setLoadingCounts(false);
-        timer.endWithLog(); // Main function timing at INFO level
+        timer.endWithLog();
       }
     };
 
