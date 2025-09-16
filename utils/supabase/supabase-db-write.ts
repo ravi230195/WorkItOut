@@ -526,6 +526,7 @@ export class SupabaseDBWrite extends SupabaseBase {
                     this.refreshRoutineExercises(userId, routineTemplateId),
                     this.refreshRoutineExercisesWithDetails(userId, routineTemplateId),
                 ]);
+                await this.recomputeAndSaveRoutineMuscleSummary(routineTemplateId);
                 return rows[0] ?? null;
             }
         );
@@ -612,6 +613,7 @@ export class SupabaseDBWrite extends SupabaseBase {
                     this.refreshRoutineExercises(userId, routineId),        // Routine ID
                     this.refreshRoutineExercisesWithDetails(userId, routineId), // Routine ID
                 ]);
+                await this.recomputeAndSaveRoutineMuscleSummary(routineId);
             }
         );
     }
@@ -649,6 +651,7 @@ export class SupabaseDBWrite extends SupabaseBase {
                     this.refreshRoutineExercises(userId, routineId),
                     this.refreshRoutineExercisesWithDetails(userId, routineId),
                 ]);
+                await this.recomputeAndSaveRoutineMuscleSummary(routineId);
             }
         );
     }
@@ -961,14 +964,10 @@ export class SupabaseDBWrite extends SupabaseBase {
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Fetching exercises from URL:", urlEx);
                 const rows = await this.fetchJson<Array<{ exercises?: { muscle_group?: string } }>>(urlEx, true);
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Found exercises:", rows.length);
-            
-                // Early exit if no active exercises - nothing to recompute
-                if (rows.length === 0) {
-                    logger.db("🔍 DGB [MUSCLE SUMMARY] No active exercises found, skipping recomputation");
-                    logger.db("🔍 DGB [MUSCLE SUMMARY] No database update or cache refresh needed");
-                    return;
-                }
-            
+
+                const exerciseCount = rows.length;
+                logger.db("🔍 DGB [MUSCLE SUMMARY] Exercise count:", exerciseCount);
+
                 // Count frequency of each muscle group
                 const muscleGroupCounts = new Map<string, number>();
                 rows.forEach(r => {
@@ -977,21 +976,21 @@ export class SupabaseDBWrite extends SupabaseBase {
                         muscleGroupCounts.set(muscleGroup, (muscleGroupCounts.get(muscleGroup) || 0) + 1);
                     }
                 });
-            
+
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Muscle group counts:", Object.fromEntries(muscleGroupCounts));
-            
+
                 // Sort by frequency (descending) and take top 3
                 const topMuscleGroups = Array.from(muscleGroupCounts.entries())
                     .sort(([, a], [, b]) => b - a) // Sort by count descending
                     .slice(0, 3) // Take top 3
                     .map(([group]) => group); // Extract just the group names
-            
+
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Top 3 muscle groups:", topMuscleGroups);
-            
+
                 // Use NULL when no groups (avoids DB pattern/CHECK failures on empty string)
-                const summary = topMuscleGroups.length ? topMuscleGroups.join(" • ") : null;
+                const summary = exerciseCount > 0 && topMuscleGroups.length ? topMuscleGroups.join(" • ") : null;
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Final summary:", summary);
-            
+
                 // Patch base table
                 const urlPatch = `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`;
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Patching routine with URL:", urlPatch);
@@ -999,7 +998,7 @@ export class SupabaseDBWrite extends SupabaseBase {
                     urlPatch,
                     true,
                     "PATCH",
-                    [{ muscle_group_summary: summary }],
+                    [{ muscle_group_summary: summary, exercise_count: exerciseCount }],
                     "return=representation"
                 );
             

@@ -80,12 +80,13 @@ export interface Exercise {
   
   export interface UserRoutine {
     routine_template_id: number;
-    user_id: number;
+    user_id: string;
     name: string;
     version: number;
     is_active: boolean;
     created_at: string;
     muscle_group_summary?: string | null;
+    exercise_count?: number | null;
   }
   
   export interface UserRoutineExercise {
