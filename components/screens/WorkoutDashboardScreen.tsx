@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dumbbell, Ruler } from "lucide-react";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { supabaseAPI, UserRoutine, Profile } from "../../utils/supabase/supabase-api";
@@ -9,7 +9,6 @@ import SegmentedToggle from "../segmented/SegmentedToggle";
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { logger } from "../../utils/logging";
 import { performanceTimer } from "../../utils/performanceTimer";
-import { loadRoutineExercisesWithSets } from "../../utils/routineLoader";
 import FabSpeedDial from "../FabSpeedDial";
 import RoutinesList from "../workout-dashboard/RoutinesList";
 import RoutineActionSheet from "../workout-dashboard/RoutineActionSheet";
@@ -37,10 +36,6 @@ export default function WorkoutDashboardScreen({
   const [isLoadingRoutines, setIsLoadingRoutines] = useState(true);
   const [routinesError, setRoutinesError] = useState<string | null>(null);
 
-  // only need exercise counts for time (10 min per exercise)
-  const [exerciseCounts, setExerciseCounts] = useState<Record<number, number>>({});
-  const [loadingCounts, setLoadingCounts] = useState(false);
-
   // bottom-sheet
   const [actionRoutine, setActionRoutine] = useState<UserRoutine | null>(null);
 
@@ -49,6 +44,7 @@ export default function WorkoutDashboardScreen({
   const { steps, goal, isLoading: isLoadingSteps } = useStepTracking();
 
   const canEdit = view === RoutinesView.My;
+  const recomputeInFlight = useRef(false);
 
   const reloadRoutines = async (which: RoutinesView = view) => {
     setIsLoadingRoutines(true);
@@ -103,89 +99,69 @@ export default function WorkoutDashboardScreen({
     return null;
   };
 
-  // compute exercise counts for each routine (for time display)
+  // Ensure server-side routine stats (exercise count + muscle summary) stay in sync
   useEffect(() => {
+    if (!canEdit) return;
+    if (recomputeInFlight.current) return;
 
+    const routinesNeedingUpdate = routines
+      .filter((routine) => {
+        const summary = (routine.muscle_group_summary ?? "").trim();
+        const rawCount = routine.exercise_count;
+        const hasCount = typeof rawCount === "number" && Number.isFinite(rawCount) && rawCount >= 0;
+        const count = hasCount ? rawCount : null;
+
+        const needsCount = count === null;
+        const needsSummaryFill = (count ?? 0) > 0 && summary === "";
+        const needsSummaryReset = count === 0 && summary !== "";
+
+        return needsCount || needsSummaryFill || needsSummaryReset;
+      })
+      .map((routine) => routine.routine_template_id);
+
+    if (routinesNeedingUpdate.length === 0) return;
+
+    recomputeInFlight.current = true;
     let cancelled = false;
-    const fetchExerciseCounts = async () => {
-      const timer = performanceTimer.start('fetchExerciseCounts');
+    const timer = performanceTimer.start("WorkoutDashboard - recompute routine stats");
 
-      if (routines.length === 0) {
-        logger.debug("🔍 DGB [WORKOUT_SCREEN] No routines, skipping");
-        setExerciseCounts({});
-        timer.endWithLog();
-        return;
-      }
-      setLoadingCounts(true);
+    const run = async () => {
       try {
-        const results = await Promise.all(
-          routines.map(async (r) => {
-            const routineTimer = performanceTimer.start(`fetchExerciseCounts - routine ${r.routine_template_id}`);
-
-            logger.debug("🔍 DGB [WORKOUT_SCREEN] Processing routine:", r.routine_template_id, "name:", r.name);
-            const active = await loadRoutineExercisesWithSets(r.routine_template_id, { timer: performanceTimer });
-            //logger.debug("🔍 DGB [WORKOUT_SCREEN] Raw list from API:", active);
-            //logger.debug("🔍 DGB [WORKOUT_SCREEN] List length:", active?.length, "isArray:", Array.isArray(active));
-
-            let needsRecomp = false;
-            if (canEdit) {
-              const summary = (r as any).muscle_group_summary as string | undefined;
-              // Only recompute if there are active exercises AND no summary
-              if (active.length > 0 && (!summary || summary.trim() === "")) {
-                logger.info("🔍 DGB [WORKOUT_SCREEN] Routine needs recompute:", r.routine_template_id, "summary:", summary, "active exercises:", active.length);
-                needsRecomp = true;
-              } else if (active.length === 0) {
-                logger.debug("🔍 DGB [WORKOUT_SCREEN] Routine has 0 active exercises, skipping recompute:", r.routine_template_id, "summary:", summary);
-              }
-            }
-
-            routineTimer.endWithLog();
-            return { id: r.routine_template_id, count: active.length, needsRecompute: needsRecomp };
-          })
+        logger.debug(
+          "🔍 DGB [WORKOUT_SCREEN] Recomputing routine stats for:",
+          routinesNeedingUpdate
+        );
+        const results = await Promise.allSettled(
+          routinesNeedingUpdate.map((id) => supabaseAPI.recomputeAndSaveRoutineMuscleSummary(id))
         );
 
-        const entries = results.map(({ id, count }) => [id, count] as [number, number]);
-        const needsRecompute = results.filter(r => r.needsRecompute).map(r => r.id);
-
-        if (!cancelled) setExerciseCounts(Object.fromEntries(entries));
-
-        // only recompute summaries for "my" data
-        if (canEdit && needsRecompute.length > 0) {
-          const recomputeTimer = performanceTimer.start('fetchExerciseCounts - muscle summary recompute');
-
-          logger.debug("🔍 DGB [WORKOUT_SCREEN] Triggering muscle summary recompute for routines:", needsRecompute);
-          logger.debug("🔍 DGB [WORKOUT_SCREEN] canEdit:", canEdit, "needsRecompute count:", needsRecompute.length);
-
-          const results = await Promise.allSettled(
-            needsRecompute.map((id) => {
-              logger.debug("🔍 DGB [WORKOUT_SCREEN] Calling recomputeAndSaveRoutineMuscleSummary for routine ID:", id);
-              return supabaseAPI.recomputeAndSaveRoutineMuscleSummary(id);
-            })
+        if (!cancelled) {
+          const failures = results.filter(
+            (result): result is PromiseRejectedResult => result.status === "rejected"
           );
-          if (!cancelled) {
-            logger.debug("🔍 DGB [WORKOUT_SCREEN] Muscle summary recompute completed, results:", results);
-            // Since recomputeAndSaveRoutineMuscleSummary returns void, we just check if it succeeded
-            const successfulCount = results.filter(res => res.status === "fulfilled").length;
-            logger.debug("🔍 DGB [WORKOUT_SCREEN] Successful recomputes:", successfulCount, "out of", needsRecompute.length);
-
-            if (successfulCount > 0) {
-              logger.debug("🔍 DGB [WORKOUT_SCREEN] Muscle summary recompute completed successfully");
-              logger.debug("🔍 DGB [WORKOUT_SCREEN] No need to trigger routine state update - let cache handle it");
-              // Don't trigger setRoutines here - it causes infinite loop!
-            }
+          if (failures.length > 0) {
+            logger.error(
+              "Failed to recompute routine stats",
+              failures.map((failure) => failure.reason)
+            );
           }
-
-          recomputeTimer.endWithLog();
         }
-      } catch (e) {
-        logger.error("Failed to load exercise counts / recompute summaries", e);
+      } catch (error) {
+        if (!cancelled) {
+          logger.error("Failed to recompute routine stats", error);
+        }
       } finally {
-        if (!cancelled) setLoadingCounts(false);
-        timer.endWithLog(); // Main function timing at INFO level
+        if (cancelled) {
+          timer.end();
+        } else {
+          timer.endWithLog();
+        }
+        recomputeInFlight.current = false;
       }
     };
 
-    fetchExerciseCounts();
+    run();
+
     return () => {
       cancelled = true;
     };
@@ -292,8 +268,6 @@ export default function WorkoutDashboardScreen({
           isLoading={isLoadingRoutines}
           reloadRoutines={() => reloadRoutines()}
           view={view}
-          exerciseCounts={exerciseCounts}
-          loadingCounts={loadingCounts}
           canEdit={canEdit}
           onSelectRoutine={onSelectRoutine}
           openActions={openActions}

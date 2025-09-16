@@ -20,8 +20,6 @@ interface RoutinesListProps {
   isLoading: boolean;
   reloadRoutines: () => void;
   view: RoutinesView;
-  exerciseCounts: Record<number, number>;
-  loadingCounts: boolean;
   canEdit: boolean;
   onSelectRoutine: (id: number, name: string, access?: RoutineAccess) => void;
   openActions: (routine: UserRoutine, e: React.MouseEvent) => void;
@@ -33,8 +31,6 @@ export default function RoutinesList({
   isLoading,
   reloadRoutines,
   view,
-  exerciseCounts,
-  loadingCounts,
   canEdit,
   onSelectRoutine,
   openActions,
@@ -76,9 +72,11 @@ export default function RoutinesList({
             <div className="space-y-3">
               {routines.map((routine, idx) => {
                 const palette = avatarPalette[idx % avatarPalette.length];
-                const muscleGroups = ((routine as any).muscle_group_summary as string | undefined)?.trim() || "—";
-                const exerciseCount = exerciseCounts[routine.routine_template_id] ?? 0;
-                const timeMin = exerciseCount > 0 ? exerciseCount * 10 : null;
+                const muscleGroups = routine.muscle_group_summary?.trim() || "—";
+                const rawExerciseCount = routine.exercise_count;
+                const hasValidCount = typeof rawExerciseCount === "number" && Number.isFinite(rawExerciseCount) && rawExerciseCount >= 0;
+                const exerciseCount = hasValidCount ? rawExerciseCount : null;
+                const timeMin = exerciseCount !== null && exerciseCount > 0 ? exerciseCount * 10 : null;
                 const access = view === RoutinesView.My ? RoutineAccess.Editable : RoutineAccess.ReadOnly;
                 return (
                   <button
@@ -102,11 +100,13 @@ export default function RoutinesList({
                         <div className="mt-2 flex items-center gap-4 text-black">
                           <span className="inline-flex items-center gap-1">
                             <Clock size={14} />
-                            {loadingCounts ? "—" : timeMin !== null ? `${timeMin} min` : "—"}
+                            {timeMin !== null ? `${timeMin} min` : "—"}
                           </span>
                           <span className="inline-flex items-center gap-1">
                             <TrendingUp size={14} />
-                            {loadingCounts ? "—" : `${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}`}
+                            {exerciseCount !== null
+                              ? `${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}`
+                              : "—"}
                           </span>
                         </div>
                       }
