@@ -23,6 +23,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@capacitor/browser": "^7.0.2",
     "@kiwi-health/capacitor-health-connect": "^0.0.30",
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",

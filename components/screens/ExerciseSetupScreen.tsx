@@ -1,5 +1,5 @@
 // components/screens/ExerciseSetupScreen.tsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
 import { BottomNavigation } from "../BottomNavigation";
@@ -18,6 +18,7 @@ import { performanceTimer } from "../../utils/performanceTimer";
 import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../utils/routineLoader";
 import ListItem from "../ui/ListItem";
 import ActionSheet from "../sheets/ActionSheet";
+import { useAppStateSaver } from "../../utils/appState";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -121,6 +122,43 @@ export function ExerciseSetupScreen({
   const workoutStartRef = useRef<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  type SaverState = {
+    exercises: UIExercise[];
+    screenMode: ScreenMode;
+    selectedExercisesForSetup: Exercise[];
+    elapsedSeconds: number;
+    journal: ReturnType<typeof makeJournal>;
+    savedSnapshot: any[];
+    preWorkoutExercises: UIExercise[];
+  };
+  const restoreState = useCallback(
+    (s: SaverState) => {
+      setExercises(s.exercises ?? []);
+      setScreenMode(s.screenMode ?? initialMode);
+      setSelectedExercisesForSetup(s.selectedExercisesForSetup ?? []);
+      setElapsedSeconds(s.elapsedSeconds ?? 0);
+      journalRef.current = s.journal ?? makeJournal();
+      savedSnapshotRef.current = s.savedSnapshot ?? [];
+      preWorkoutExercisesRef.current = s.preWorkoutExercises ?? [];
+    },
+    [initialMode, setSelectedExercisesForSetup]
+  );
+
+  // Persist this screen's working state across app background/foreground cycles
+  useAppStateSaver<SaverState>(
+    "exercise-setup",
+    {
+      exercises,
+      screenMode,
+      selectedExercisesForSetup,
+      elapsedSeconds,
+      journal: journalRef.current,
+      savedSnapshot: savedSnapshotRef.current,
+      preWorkoutExercises: preWorkoutExercisesRef.current,
+    },
+    restoreState
+  );
+
   const formatHHMMSS = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -202,6 +240,11 @@ export function ExerciseSetupScreen({
      ------------------------------------------------------------------------------------- */
   useEffect(() => {
     if (!userToken) return;
+    // If state was restored from app-state cache, skip fetching
+    if (exercises.length > 0) {
+      setLoadingSaved(false);
+      return;
+    }
     let cancelled = false;
 
     (async () => {
@@ -238,7 +281,7 @@ export function ExerciseSetupScreen({
     return () => {
       cancelled = true;
     };
-  }, [routineId, userToken]);
+  }, [routineId, userToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* -------------------------------------------------------------------------------------
      Add selected exercises AFTER initial load completes

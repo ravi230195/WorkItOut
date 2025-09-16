@@ -54,7 +54,7 @@ export default function RoutinesList({
               variant="card"
               title="Error Loading Routines"
               actions={
-                <TactileButton onClick={reloadRoutines} variant="secondary" className="px-4 py-2 text-sm">
+                <TactileButton onClick={reloadRoutines} variant="secondary" className="px-4 py-2 text-sm rounded-xl border-0 font-medium">
                   Try Again
                 </TactileButton>
               }

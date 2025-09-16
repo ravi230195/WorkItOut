@@ -3,8 +3,340 @@ import type { UserRoutine, UserRoutineExercise, UserRoutineExerciseSet, Profile,
 import { logger } from "../logging";
 import { performanceTimer } from "../performanceTimer";
 
+type OAuthProvider = "Apple" | "Google";
+type OAuthProviderSlug = Lowercase<OAuthProvider>;
+
+type ListenerHandle = { remove: () => Promise<void> | void };
+
+const SUPPORTED_OAUTH_PROVIDERS = new Set<OAuthProviderSlug>(["apple", "google"]);
+
+type ProviderConfig = {
+    queryParams?: Record<string, string>;
+};
+
+const OAUTH_PROVIDER_CONFIG: Record<OAuthProviderSlug, ProviderConfig> = {
+    google: {
+        queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+        },
+    },
+    apple: {
+        queryParams: {
+            // Apple only returns the user's full name and email on the very first
+            // authorization unless we request them explicitly. Send both scope keys
+            // because GoTrue historically accepted either "scope" or "scopes".
+            scope: "name email",
+            scopes: "name email",
+        },
+    },
+};
+
+const NATIVE_PROTOCOLS = new Set(["capacitor:", "ionic:", "ms-appx:", "ms-appx-web:"]); 
+const HTTP_PROTOCOLS = new Set(["http:", "https:"]); 
+const BLOCKED_REDIRECT_PROTOCOLS = new Set(["javascript:", "vbscript:", "data:"]);
+const CUSTOM_SCHEME_PATTERN = /^[a-z][a-z0-9+\-.]*:$/i;
+
+const coerceString = (value: unknown): string | null => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+};
+
+const readConfiguredOAuthRedirect = (): string | null => {
+    if (typeof import.meta !== "undefined") {
+        const candidate = coerceString((import.meta as any)?.env?.VITE_SUPABASE_OAUTH_REDIRECT);
+        if (candidate) return candidate;
+    }
+
+    if (typeof process !== "undefined" && typeof process.env === "object") {
+        const candidate = coerceString((process.env as Record<string, string | undefined>).VITE_SUPABASE_OAUTH_REDIRECT);
+        if (candidate) return candidate;
+    }
+
+    if (typeof globalThis !== "undefined") {
+        const candidate = coerceString((globalThis as any).VITE_SUPABASE_OAUTH_REDIRECT);
+        if (candidate) return candidate;
+    }
+
+    return null;
+};
+
+const normalizeRedirectUrl = (url: string, sourceLabel: string): string => {
+    try {
+        const parsed = new URL(url);
+        const protocol = parsed.protocol?.toLowerCase();
+
+        if (!protocol || !CUSTOM_SCHEME_PATTERN.test(protocol)) {
+            throw new Error();
+        }
+
+        if (BLOCKED_REDIRECT_PROTOCOLS.has(protocol)) {
+            throw new Error();
+        }
+
+        parsed.hash = "";
+        return parsed.toString();
+    } catch {
+        throw new Error(
+            `${sourceLabel} must be an absolute URL that uses http(s) or a custom app scheme like myapp://auth. Update it before retrying.`
+        );
+    }
+};
+
+const resolveOAuthRedirectTarget = (explicit?: string): string => {
+    const direct = coerceString(explicit);
+    if (direct) {
+        return direct;
+    }
+
+    const configured = readConfiguredOAuthRedirect();
+    if (configured) {
+        return normalizeRedirectUrl(configured, "VITE_SUPABASE_OAUTH_REDIRECT");
+    }
+
+    if (typeof window === "undefined") {
+        throw new Error(
+            "Supabase OAuth needs a browser context to determine redirect_to. Set VITE_SUPABASE_OAUTH_REDIRECT to a web URL that you've whitelisted under Authentication → URL Configuration in Supabase."
+        );
+    }
+
+    const { protocol, origin, pathname, search } = window.location;
+    const normalizedProtocol = protocol?.toLowerCase() ?? "";
+    const candidate = `${origin}${pathname}${search}`;
+
+    try {
+        return normalizeRedirectUrl(candidate, "window.location");
+    } catch (error) {
+        if (NATIVE_PROTOCOLS.has(normalizedProtocol)) {
+            throw new Error(
+                "Set VITE_SUPABASE_OAUTH_REDIRECT to your app's deep link (for example capacitor://localhost/auth/callback) and whitelist it under Supabase Authentication → URL Configuration so native builds can complete the OAuth hand-off."
+            );
+        }
+
+        throw error instanceof Error ? error : new Error(String(error));
+    }
+};
+
+const dispatchAuthEvent = <T>(eventName: string, detail: T) => {
+    if (typeof window === "undefined" || typeof window.dispatchEvent !== "function") return;
+    window.dispatchEvent(new CustomEvent(eventName, { detail }));
+};
+
+const dispatchAuthSuccess = (provider: OAuthProvider, token: string, refreshToken: string) => {
+    const providerSlug = provider.toLowerCase() as OAuthProviderSlug;
+    dispatchAuthEvent("auth-success", { provider, providerSlug, token, refreshToken });
+};
+
+const dispatchAuthError = (provider: OAuthProvider, message: string) => {
+    const providerSlug = provider.toLowerCase() as OAuthProviderSlug;
+    dispatchAuthEvent("auth-error", { provider, providerSlug, message });
+};
+
+const dispatchAuthCancelled = (provider: OAuthProvider) => {
+    const providerSlug = provider.toLowerCase() as OAuthProviderSlug;
+    dispatchAuthEvent("auth-cancelled", { provider, providerSlug });
+};
+
+const ensureNativeRedirectScheme = (url: string): string => {
+    const parsed = new URL(url);
+    const protocol = parsed.protocol?.toLowerCase() ?? "";
+
+    if (HTTP_PROTOCOLS.has(protocol)) {
+        throw new Error(
+            "Native social sign-in requires a custom deep link redirect (for example workouttracker://auth/callback). Update VITE_SUPABASE_OAUTH_REDIRECT or pass a redirectTo that uses your app's scheme before trying again."
+        );
+    }
+
+    return parsed.toString();
+};
+
+const createRedirectMatcher = (redirectUrl: string) => {
+    const normalizedPrefix = redirectUrl.toLowerCase();
+    const prefixLength = redirectUrl.length;
+
+    return (candidate: string): boolean => {
+        if (typeof candidate !== "string" || candidate.length < prefixLength) {
+            return false;
+        }
+
+        return candidate.slice(0, prefixLength).toLowerCase() === normalizedPrefix;
+    };
+};
+
+const formatOAuthErrorMessage = (provider: OAuthProvider, rawMessage?: string | null): string => {
+    const fallback = `We couldn't finish signing you in with ${provider}. Please try again.`;
+    if (!rawMessage) return fallback;
+
+    const normalized = rawMessage.toLowerCase();
+
+    if (provider === "Apple" && (normalized.includes("invalid_scope") || normalized.includes("missing scope"))) {
+        return "Apple sign-in requires the name and email scopes. Enable them in Supabase's Apple provider settings and try again.";
+    }
+
+    if (normalized.includes("provider is not enabled")) {
+        return `${provider} sign-in isn't configured yet. Enable it in Supabase and try again.`;
+    }
+
+    if (normalized === "access_denied" || normalized.includes("access denied")) {
+        return "The sign-in flow was canceled before completion.";
+    }
+
+    return rawMessage;
+};
+
 export class SupabaseDBWrite extends SupabaseBase {
     // Auth
+    async signInWithOAuth(provider: OAuthProvider, redirectTo?: string): Promise<void> {
+        if (typeof window === "undefined") {
+            throw new Error("Social sign-in can only be initiated in a browser environment.");
+        }
+
+        const providerSlug = provider.toLowerCase() as OAuthProviderSlug;
+        if (!SUPPORTED_OAUTH_PROVIDERS.has(providerSlug)) {
+            throw new Error(`Unsupported OAuth provider: ${provider}`);
+        }
+
+        const capacitor = (window as any).Capacitor;
+        const isNativePlatform =
+            !!capacitor && typeof capacitor.isNativePlatform === "function" && capacitor.isNativePlatform();
+        const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
+        const isIOSSimulator = /iphone/i.test(userAgent) && /safari/i.test(userAgent) && !isNativePlatform;
+        const shouldUseMobileFlow = isNativePlatform || isIOSSimulator;
+        
+        const redirectUrl = shouldUseMobileFlow 
+            ? 'workouttracker://auth/callback'
+            : resolveOAuthRedirectTarget(redirectTo);
+        const params = new URLSearchParams({
+            provider: providerSlug,
+            redirect_to: redirectUrl
+        });
+
+        const providerConfig = OAUTH_PROVIDER_CONFIG[providerSlug];
+        if (providerConfig?.queryParams) {
+            for (const [key, value] of Object.entries(providerConfig.queryParams)) {
+                if (typeof value === "string" && value.length > 0) {
+                    params.set(key, value);
+                }
+            }
+        }
+
+        const authUrl = `${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`;
+
+        // Check if we're in a Capacitor environment (mobile app)
+        console.log('Platform check:', { 
+            hasCapacitor: !!(window as any).Capacitor, 
+            isNativePlatform,
+            isIOSSimulator,
+            shouldUseMobileFlow,
+            redirectUrl,
+            queryParams: providerConfig?.queryParams ?? null,
+        });
+        
+        if (shouldUseMobileFlow) {
+            try {
+                const { Browser } = await import('@capacitor/browser');
+                const { App } = await import('@capacitor/app');
+                
+                // Listen for the deep link redirect
+                const urlListener = await App.addListener('appUrlOpen', async (event) => {
+                    console.log('Deep link received:', event.url);
+                    
+                    // Handle workouttracker://auth/callback URLs
+                    if (event.url.startsWith('workouttracker://auth/callback')) {
+                        try {
+                            const url = new URL(event.url);
+                            const hash = url.hash.substring(1); // Remove the # from the fragment
+                            const params = new URLSearchParams(hash);
+                            
+                            const accessToken = params.get('access_token');
+                            const refreshToken = params.get('refresh_token');
+                            const error = params.get('error');
+                            
+                            if (error) {
+                                console.error('OAuth error:', error);
+                                return;
+                            }
+                            
+                            if (accessToken) {
+                                console.log('OAuth success! Access token received');
+                                // Store the session directly
+                                this.setToken(accessToken);
+                                
+                                // Close the browser
+                                try {
+                                    await Browser.close();
+                                } catch (err) {
+                                    console.warn('Failed to close browser:', err);
+                                }
+                                
+                                // Trigger auth success callback
+                                window.dispatchEvent(new CustomEvent('auth-success', { 
+                                    detail: { 
+                                        token: accessToken, 
+                                        refreshToken: refreshToken 
+                                    } 
+                                }));
+                                
+                                urlListener.remove();
+                            }
+                        } catch (err) {
+                            console.error('Error parsing OAuth response:', err);
+                        }
+                    }
+                });
+
+                // Open OAuth URL in browser
+                await Browser.open({ url: authUrl });
+            } catch (importError) {
+                console.warn('Capacitor plugins not available, falling back to window.location:', importError);
+                // Fallback to window.location if Capacitor plugins aren't available
+                window.location.assign(authUrl);
+            }
+        } else {
+            // Fallback for web browsers
+            window.location.assign(authUrl);
+        }
+    }
+
+    async exchangeCodeForSession(code: string): Promise<void> {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=pkce`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    code,
+                    code_verifier: 'your-code-verifier', // You'll need to implement PKCE properly
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to exchange code for session');
+            }
+
+            const data = await response.json();
+            
+            // Store the session
+            if (data.access_token) {
+                this.setToken(data.access_token);
+                // Trigger auth success callback
+                window.dispatchEvent(new CustomEvent('auth-success', {
+                    detail: {
+                        provider: "Google" as OAuthProvider,
+                        providerSlug: "google" as OAuthProviderSlug,
+                        token: data.access_token,
+                        refreshToken: data.refresh_token
+                    }
+                }));
+            }
+        } catch (error) {
+            console.error('Error exchanging code for session:', error);
+            throw error;
+        }
+    }
+
     async signUp(email: string, password: string): Promise<{ token?: string; refresh_token?: string; needsSignIn?: boolean }> {
         return performanceTimer.timeAsync(
             `[SUPABASE] signUp(${email})`,
@@ -72,8 +404,18 @@ export class SupabaseDBWrite extends SupabaseBase {
         return performanceTimer.timeAsync(
             `[SUPABASE] signOut`,
             async () => {
-                await this.fetchJson(`${SUPABASE_URL}/auth/v1/logout`, true, "POST");
-                this.setToken(null);
+                try {
+                    // Only attempt logout if we have a token
+                    if (this.userToken) {
+                        await this.fetchJson(`${SUPABASE_URL}/auth/v1/logout`, true, "POST");
+                    }
+                } catch (error) {
+                    // Log the error but don't throw - we still want to clear local state
+                    logger.warn("Supabase logout failed, but continuing with local sign out:", error);
+                } finally {
+                    // Always clear local token state
+                    this.setToken(null);
+                }
             }
         );
     }

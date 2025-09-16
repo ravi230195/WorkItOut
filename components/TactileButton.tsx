@@ -3,7 +3,7 @@ import { ButtonHTMLAttributes, ReactNode } from "react";
 
 interface TactileButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
-  variant?: "primary" | "secondary" | "sage" | "peach" | "mint";
+  variant?: "primary" | "secondary" | "sage" | "peach" | "mint" | "ghost";
   size?: "sm" | "md" | "lg";
   className?: string;
 }
@@ -15,14 +15,13 @@ export function TactileButton({
   className,
   ...props 
 }: TactileButtonProps) {
-  const baseClasses = "btn-tactile rounded-xl border-0 font-medium";
-  
   const variantClasses = {
-    primary: "bg-primary hover:bg-primary-hover text-black",
-    secondary: "bg-warm-cream hover:bg-warm-cream/90 text-black",
-    sage: "bg-warm-sage hover:bg-warm-sage/90 text-black btn-tactile-sage",
-    peach: "bg-warm-peach hover:bg-warm-peach/90 text-black",
-    mint: "bg-warm-mint hover:bg-warm-mint/90 text-black"
+    primary: "btn-tactile bg-primary hover:bg-primary-hover text-black",
+    secondary: "btn-tactile bg-warm-cream hover:bg-warm-cream/90 text-black",
+    sage: "btn-tactile bg-warm-sage hover:bg-warm-sage/90 text-black btn-tactile-sage",
+    peach: "btn-tactile bg-warm-peach hover:bg-warm-peach/90 text-black",
+    mint: "btn-tactile bg-warm-mint hover:bg-warm-mint/90 text-black",
+    ghost: "bg-transparent hover:bg-transparent text-black shadow-none hover:shadow-none active:shadow-none rounded-none transition-none hover:translate-y-0 active:translate-y-0"
   };
 
   const sizeClasses = {
@@ -34,7 +33,6 @@ export function TactileButton({
   return (
     <button
       className={cn(
-        baseClasses,
         variantClasses[variant],
         sizeClasses[size],
         className

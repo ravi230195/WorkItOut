@@ -47,18 +47,27 @@ export class SupabaseBase {
   private cachedUser: AuthUser | null = null;
 
   setToken(token: string | null) {
-    if (token !== this.userToken) {
+    const prevToken = this.userToken;
+    const wasLoggedIn = prevToken !== null;
+    const isLoggedIn = token !== null;
+    const tokenChanged = token !== prevToken;
+
+    if (tokenChanged) {
       this.cachedUser = null;
     }
+
     this.userToken = token;
 
-    if (token) {
-      // 🔐 [DBG] Token set - Clear cache for fresh user session
-      logger.db("🔐 [DBG] Token set - Clearing cache for fresh user session");
-      localCache.clearPrefix();
-    } else {
-      // 🔐 [DBG] Token cleared - Clear cache on sign out
-      logger.db("🔐 [DBG] Token cleared - Clearing cache on sign out");
+    // Only clear cache when login state changes (sign in/out),
+    // not on token refreshes for the same user.
+    if (isLoggedIn !== wasLoggedIn) {
+      if (isLoggedIn) {
+        // 🔐 [DBG] Token set - Clear cache for fresh user session
+        logger.db("🔐 [DBG] Token set - Clearing cache for fresh user session");
+      } else {
+        // 🔐 [DBG] Token cleared - Clear cache on sign out
+        logger.db("🔐 [DBG] Token cleared - Clearing cache on sign out");
+      }
       localCache.clearPrefix();
     }
   }
@@ -152,7 +161,26 @@ export class SupabaseBase {
     });
     if (!response.ok) throw new Error(`Failed to get current user: ${response.statusText}`);
     const user = await response.json();
-    this.cachedUser = { id: user.id, email: user.email };
+
+    const metadataSource =
+      (user && typeof user === "object" && typeof user.user_metadata === "object" && user.user_metadata !== null
+        ? user.user_metadata
+        : undefined) ??
+      (Array.isArray(user?.identities)
+        ? user.identities.find((identity: any) => identity && typeof identity.identity_data === "object")?.identity_data
+        : undefined);
+
+    const normalizedMetadata =
+      metadataSource && typeof metadataSource === "object"
+        ? (metadataSource as Record<string, unknown>)
+        : undefined;
+
+    this.cachedUser = {
+      id: user.id,
+      email: typeof user.email === "string" ? user.email : null,
+      user_metadata: normalizedMetadata,
+    };
+
     return this.cachedUser;
   }
 

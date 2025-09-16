@@ -14,6 +14,7 @@ import { VIEWS_WITHOUT_BOTTOM_NAV } from "./utils/navigation";
 
 // ✅ add this (path to your boundary component)
 import ErrorBoundary from "./components/system/ErrorBoundary";
+import "./utils/appState";
 
 // App.tsx
 function AppContent() {
@@ -34,6 +35,7 @@ function AppContent() {
     handleAuthSuccess,
     navigateToSignUp,
     navigateToSignIn,
+    navigateToWelcome,
     handleTabChange,
     showCreateRoutine,
     showEditMeasurements,
@@ -88,6 +90,7 @@ function AppContent() {
           onAuthSuccess={(token, refreshToken) => handleAuthSuccess(token, refreshToken, setUserToken)}
           onNavigateToSignUp={navigateToSignUp}
           onNavigateToSignIn={navigateToSignIn}
+          onNavigateToWelcome={navigateToWelcome}
           onCreateRoutine={showCreateRoutine}
           onEditMeasurements={showEditMeasurements}
           onRoutineCreated={handleRoutineCreated}

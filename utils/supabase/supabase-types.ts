@@ -42,9 +42,23 @@ export interface Exercise {
     weight_kg?: number;
   }
   
+  export interface AuthUserMetadata {
+    full_name?: string;
+    name?: string;
+    given_name?: string;
+    family_name?: string;
+    first_name?: string;
+    last_name?: string;
+    preferred_username?: string;
+    nickname?: string;
+    email?: string;
+    [key: string]: unknown;
+  }
+
   export interface AuthUser {
     id: string;
-    email: string;
+    email: string | null;
+    user_metadata?: AuthUserMetadata;
   }
   
   export interface AuthResponse {
