@@ -13,10 +13,33 @@ import { logger } from "../logging";
 import { performanceTimer } from "../performanceTimer";
 
 type OAuthProvider = "Apple" | "Google";
+type OAuthProviderSlug = Lowercase<OAuthProvider>;
 
 type ListenerHandle = { remove: () => Promise<void> | void };
 
-const SUPPORTED_OAUTH_PROVIDERS = new Set(["apple", "google"]);
+const SUPPORTED_OAUTH_PROVIDERS = new Set<OAuthProviderSlug>(["apple", "google"]);
+
+type ProviderConfig = {
+    queryParams?: Record<string, string>;
+};
+
+const OAUTH_PROVIDER_CONFIG: Record<OAuthProviderSlug, ProviderConfig> = {
+    google: {
+        queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+        },
+    },
+    apple: {
+        queryParams: {
+            // Apple only returns the user's full name and email on the very first
+            // authorization unless we request them explicitly. Send both scope keys
+            // because GoTrue historically accepted either "scope" or "scopes".
+            scope: "name email",
+            scopes: "name email",
+        },
+    },
+};
 
 const NATIVE_PROTOCOLS = new Set(["capacitor:", "ionic:", "ms-appx:", "ms-appx-web:"]); 
 const HTTP_PROTOCOLS = new Set(["http:", "https:"]); 
@@ -110,15 +133,18 @@ const dispatchAuthEvent = <T>(eventName: string, detail: T) => {
 };
 
 const dispatchAuthSuccess = (provider: OAuthProvider, token: string, refreshToken: string) => {
-    dispatchAuthEvent("auth-success", { provider, token, refreshToken });
+    const providerSlug = provider.toLowerCase() as OAuthProviderSlug;
+    dispatchAuthEvent("auth-success", { provider, providerSlug, token, refreshToken });
 };
 
 const dispatchAuthError = (provider: OAuthProvider, message: string) => {
-    dispatchAuthEvent("auth-error", { provider, message });
+    const providerSlug = provider.toLowerCase() as OAuthProviderSlug;
+    dispatchAuthEvent("auth-error", { provider, providerSlug, message });
 };
 
 const dispatchAuthCancelled = (provider: OAuthProvider) => {
-    dispatchAuthEvent("auth-cancelled", { provider });
+    const providerSlug = provider.toLowerCase() as OAuthProviderSlug;
+    dispatchAuthEvent("auth-cancelled", { provider, providerSlug });
 };
 
 const ensureNativeRedirectScheme = (url: string): string => {
@@ -153,6 +179,10 @@ const formatOAuthErrorMessage = (provider: OAuthProvider, rawMessage?: string | 
 
     const normalized = rawMessage.toLowerCase();
 
+    if (provider === "Apple" && (normalized.includes("invalid_scope") || normalized.includes("missing scope"))) {
+        return "Apple sign-in requires the name and email scopes. Enable them in Supabase's Apple provider settings and try again.";
+    }
+
     if (normalized.includes("provider is not enabled")) {
         return `${provider} sign-in isn't configured yet. Enable it in Supabase and try again.`;
     }
@@ -171,7 +201,7 @@ export class SupabaseDBWrite extends SupabaseBase {
             throw new Error("Social sign-in can only be initiated in a browser environment.");
         }
 
-        const providerSlug = provider.toLowerCase();
+        const providerSlug = provider.toLowerCase() as OAuthProviderSlug;
         if (!SUPPORTED_OAUTH_PROVIDERS.has(providerSlug)) {
             throw new Error(`Unsupported OAuth provider: ${provider}`);
         }
@@ -193,9 +223,13 @@ export class SupabaseDBWrite extends SupabaseBase {
             redirect_to: redirectUrl,
         });
 
-        if (providerSlug === "google") {
-            params.set("access_type", "offline");
-            params.set("prompt", "consent");
+        const providerConfig = OAUTH_PROVIDER_CONFIG[providerSlug];
+        if (providerConfig?.queryParams) {
+            for (const [key, value] of Object.entries(providerConfig.queryParams)) {
+                if (typeof value === "string" && value.length > 0) {
+                    params.set(key, value);
+                }
+            }
         }
 
         const authUrl = `${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`;
@@ -204,6 +238,7 @@ export class SupabaseDBWrite extends SupabaseBase {
             provider: providerSlug,
             shouldUseMobileFlow,
             redirectUrl,
+            queryParams: providerConfig?.queryParams ?? null,
         });
 
         if (shouldUseMobileFlow) {
@@ -371,11 +406,13 @@ export class SupabaseDBWrite extends SupabaseBase {
             if (data.access_token) {
                 this.setToken(data.access_token);
                 // Trigger auth success callback
-                window.dispatchEvent(new CustomEvent('auth-success', { 
-                    detail: { 
-                        token: data.access_token, 
-                        refreshToken: data.refresh_token 
-                    } 
+                window.dispatchEvent(new CustomEvent('auth-success', {
+                    detail: {
+                        provider: "Google" as OAuthProvider,
+                        providerSlug: "google" as OAuthProviderSlug,
+                        token: data.access_token,
+                        refreshToken: data.refresh_token
+                    }
                 }));
             }
         } catch (error) {

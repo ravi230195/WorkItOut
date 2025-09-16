@@ -136,7 +136,14 @@ export function WelcomeScreen({
   // Listen for OAuth events to reset button state across web/native flows
   useEffect(() => {
     const handleAuthSuccess = (event: Event) => {
-      const detail = (event as CustomEvent<{ token?: string; refreshToken?: string }>).detail;
+      const detail = (
+        event as CustomEvent<{
+          provider?: SocialProvider;
+          providerSlug?: string;
+          token?: string;
+          refreshToken?: string;
+        }>
+      ).detail;
 
       setPendingProvider(null);
 
@@ -146,26 +153,47 @@ export function WelcomeScreen({
       }
 
       onAuthSuccess(detail.token, detail.refreshToken);
-      toast.success("Welcome back!");
+      if (detail.provider) {
+        toast.success(`Signed in with ${detail.provider}`);
+      } else {
+        toast.success("Welcome back!");
+      }
     };
 
     const handleAuthError = (event: Event) => {
-      const detail = (event as CustomEvent<{ message?: string }>).detail;
+      const detail = (
+        event as CustomEvent<{
+          provider?: SocialProvider;
+          providerSlug?: string;
+          message?: string;
+        }>
+      ).detail;
 
       setPendingProvider(null);
-      const message = detail?.message ?? "We couldn't complete the sign-in. Please try again.";
+      const defaultMessage = detail?.provider
+        ? `We couldn't complete the ${detail.provider} sign-in. Please try again.`
+        : "We couldn't complete the sign-in. Please try again.";
+      const message = detail?.message ?? defaultMessage;
       const normalizedMessage = message.toLowerCase();
+      const providerPrefix = detail?.provider ? `${detail.provider} ` : "";
 
       if (normalizedMessage.includes("canceled") || normalizedMessage.includes("cancelled")) {
-        toast.info(message);
+        toast.info(detail?.provider ? `${providerPrefix}sign-in was canceled.` : message);
       } else {
         toast.error(message);
       }
     };
 
-    const handleAuthCancelled = () => {
+    const handleAuthCancelled = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{
+          provider?: SocialProvider;
+          providerSlug?: string;
+        }>
+      ).detail;
       setPendingProvider(null);
-      toast.info("Sign-in was canceled before completion.");
+      const providerPrefix = detail?.provider ? `${detail.provider} ` : "";
+      toast.info(`${providerPrefix}sign-in was canceled before completion.`.trim());
     };
 
     window.addEventListener('auth-success', handleAuthSuccess as EventListener);
