@@ -48,20 +48,47 @@ export async function loadRoutineExercisesWithSets(
 
     const metaTimer = timer.start("routineLoader - fetch exercise meta");
     const metaById = new Map<number, Exercise>();
-    await Promise.all(
-      rows.map(async (r) => {
-        const hasName = !!normalizeField(r.exercise_name);
-        const hasMG = !!normalizeField(r.muscle_group);
-        if (hasName && hasMG) return;
+    try {
+      const missingMetaIds = Array.from(
+        new Set(
+          rows
+            .filter((r) => {
+              const hasName = !!normalizeField(r.exercise_name);
+              const hasMG = !!normalizeField(r.muscle_group);
+              return !(hasName && hasMG);
+            })
+            .map((r) => r.exercise_id)
+            .filter((id): id is number => typeof id === "number" && Number.isFinite(id))
+        )
+      );
+
+      if (missingMetaIds.length > 0) {
         try {
-          const meta = await supabaseAPI.getExercise(r.exercise_id);
-          if (meta) metaById.set(r.exercise_id, meta as Exercise);
+          const bulkMeta = await supabaseAPI.getExercisesByIds(missingMetaIds);
+          bulkMeta.forEach((meta, id) => {
+            if (meta) metaById.set(id, meta as Exercise);
+          });
         } catch (err) {
-          logger.warn("Failed to fetch exercise meta", r.exercise_id, err);
+          logger.warn("Failed to fetch exercise meta in bulk", missingMetaIds, err);
         }
-      })
-    );
-    metaTimer.endWithLog();
+
+        const fallbackIds = missingMetaIds.filter((id) => !metaById.has(id));
+        if (fallbackIds.length > 0) {
+          await Promise.all(
+            fallbackIds.map(async (exerciseId) => {
+              try {
+                const meta = await supabaseAPI.getExercise(exerciseId);
+                if (meta) metaById.set(exerciseId, meta as Exercise);
+              } catch (err) {
+                logger.warn("Failed to fetch exercise meta", exerciseId, err);
+              }
+            })
+          );
+        }
+      }
+    } finally {
+      metaTimer.endWithLog();
+    }
 
     const toLoadedSets = (setRows?: UserRoutineExerciseSet[]): LoadedSet[] =>
       (setRows ?? [])

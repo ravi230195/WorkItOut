@@ -90,6 +90,54 @@ export class SupabaseDBRead extends SupabaseBase {
     return (Array.isArray(result) ? result[0] : result) ?? null;
   }
 
+  async getExercisesByIds(exerciseIds: number[]): Promise<Map<number, Exercise>> {
+    const uniqueIds = Array.from(
+      new Set(
+        exerciseIds.filter(
+          (id): id is number => typeof id === "number" && Number.isFinite(id)
+        )
+      )
+    );
+
+    const metaById = new Map<number, Exercise>();
+    if (uniqueIds.length === 0) {
+      return metaById;
+    }
+
+    const missing: number[] = [];
+    for (const id of uniqueIds) {
+      const cached = localCache.get<Exercise>(this.keyExercise(id), CACHE_TTL.exercises);
+      if (cached) {
+        metaById.set(id, cached);
+      } else {
+        missing.push(id);
+      }
+    }
+
+    if (missing.length === 0) {
+      return metaById;
+    }
+
+    const filter = missing.join(",");
+    const url =
+      `${SUPABASE_URL}/rest/v1/exercises?select=exercise_id,name,muscle_group` +
+      `&exercise_id=in.(${filter})`;
+    const rows = (await this.fetchJson<Exercise[]>(url, true)) ?? [];
+
+    for (const row of rows) {
+      if (!row || typeof row.exercise_id !== "number") continue;
+      const normalized: Exercise = {
+        exercise_id: row.exercise_id,
+        name: row.name ?? "",
+        muscle_group: row.muscle_group ?? "",
+      };
+      metaById.set(normalized.exercise_id, normalized);
+      localCache.set(this.keyExercise(normalized.exercise_id), normalized, CACHE_TTL.exercises);
+    }
+
+    return metaById;
+  }
+
   // Routines (per user)
   async getUserRoutines(): Promise<UserRoutine[]> {
     const userId = await this.getUserId();

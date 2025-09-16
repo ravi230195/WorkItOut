@@ -5,6 +5,7 @@ import { performanceTimer } from "../utils/performanceTimer";
 jest.mock("../utils/supabase/supabase-api", () => ({
   supabaseAPI: {
     getUserRoutineExercisesWithDetails: jest.fn(),
+    getExercisesByIds: jest.fn(),
     getExercise: jest.fn(),
     getExerciseSetsForRoutine: jest.fn(),
     getExerciseSetsForRoutineBulk: jest.fn(),
@@ -17,6 +18,7 @@ describe("loadRoutineExercisesWithSets", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     api.getExerciseSetsForRoutineBulk.mockResolvedValue(new Map());
+    api.getExercisesByIds.mockResolvedValue(new Map());
   });
 
   test("fetches sets for all exercises in a single bulk call", async () => {
@@ -57,6 +59,7 @@ describe("loadRoutineExercisesWithSets", () => {
     expect(api.getExerciseSetsForRoutineBulk).toHaveBeenCalledWith(
       rows.map((r) => r.routine_template_exercise_id)
     );
+    expect(api.getExercisesByIds).not.toHaveBeenCalled();
     expect(api.getExerciseSetsForRoutine).not.toHaveBeenCalled();
     expect(res).toHaveLength(5);
     expect(res.every((r) => r.sets.length === 1)).toBe(true);
@@ -84,11 +87,11 @@ describe("loadRoutineExercisesWithSets", () => {
       },
     ];
     api.getUserRoutineExercisesWithDetails.mockResolvedValue(rows as any);
-    api.getExercise.mockResolvedValue({
-      exercise_id: 10,
-      name: "MetaName",
-      muscle_group: "MetaGroup",
-    } as any);
+    api.getExercisesByIds.mockResolvedValue(
+      new Map([
+        [10, { exercise_id: 10, name: "MetaName", muscle_group: "MetaGroup" } as any],
+      ])
+    );
 
     const bulkMap = new Map<number, any>([
       [
@@ -136,6 +139,8 @@ describe("loadRoutineExercisesWithSets", () => {
       timer: performanceTimer,
     });
 
+    expect(api.getExercisesByIds).toHaveBeenCalledWith([10]);
+    expect(api.getExercise).not.toHaveBeenCalled();
     expect(res[0].name).toBe("MetaName");
     expect(res[0].muscle_group).toBe("MetaGroup");
     expect(res[0].sets.map((s) => s.set_order)).toEqual([1, 2]);
@@ -164,6 +169,7 @@ describe("loadRoutineExercisesWithSets", () => {
       },
     ];
     api.getUserRoutineExercisesWithDetails.mockResolvedValue(rows as any);
+    api.getExercisesByIds.mockRejectedValue(new Error("bulk meta fail"));
     api.getExercise.mockRejectedValue(new Error("meta fail"));
     api.getExerciseSetsForRoutineBulk.mockRejectedValue(new Error("bulk fail"));
     api.getExerciseSetsForRoutine.mockImplementation(async (id: number) => {
@@ -177,6 +183,7 @@ describe("loadRoutineExercisesWithSets", () => {
     });
 
     expect(api.getExerciseSetsForRoutineBulk).toHaveBeenCalled();
+    expect(api.getExercisesByIds).toHaveBeenCalled();
     expect(api.getExerciseSetsForRoutine).toHaveBeenCalledTimes(2);
     expect(res).toHaveLength(2);
     expect(res[0].name).toBe("");
