@@ -86,6 +86,9 @@ export interface Exercise {
     is_active: boolean;
     created_at: string;
     muscle_group_summary?: string | null;
+    exercise_count?: number | null;
+    // Temporary backwards compatibility with legacy typo column name
+    exersise_count?: number | null;
   }
   
   export interface UserRoutineExercise {

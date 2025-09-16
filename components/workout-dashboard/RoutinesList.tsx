@@ -77,7 +77,13 @@ export default function RoutinesList({
               {routines.map((routine, idx) => {
                 const palette = avatarPalette[idx % avatarPalette.length];
                 const muscleGroups = ((routine as any).muscle_group_summary as string | undefined)?.trim() || "—";
-                const exerciseCount = exerciseCounts[routine.routine_template_id] ?? 0;
+                const storedCount = (routine as any).exercise_count ?? (routine as any).exersise_count;
+                const parsedStored = typeof storedCount === "string" ? Number(storedCount) : storedCount;
+                const exerciseCount =
+                  exerciseCounts[routine.routine_template_id] ??
+                  (typeof parsedStored === "number" && !Number.isNaN(parsedStored) && parsedStored >= 0
+                    ? parsedStored
+                    : 0);
                 const timeMin = exerciseCount > 0 ? exerciseCount * 10 : null;
                 const access = view === RoutinesView.My ? RoutineAccess.Editable : RoutineAccess.ReadOnly;
                 return (
