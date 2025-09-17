@@ -21,6 +21,7 @@ import { supabaseAPI, Profile } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { AppScreen, Section, ScreenHeader, Stack } from "../layouts";
 import { logger } from "../../utils/logging";
+import ListItem from "../ui/ListItem";
 import type { LucideIcon } from "lucide-react";
 
 interface ProfileScreenProps {
@@ -185,22 +186,22 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
     >
       <Stack gap="fluid">
         <Section variant="plain" padding="none">
-          <Card className="border-white/20 bg-gradient-to-b from-warm-peach/15 via-warm-cream/30 to-warm-sage/20">
-            <CardContent className="p-6 text-center">
-              <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-black shadow-lg shadow-primary/30">
+          <Card className="border border-border bg-card shadow-sm">
+            <CardContent className="p-6 text-center space-y-3">
+              <Avatar className="w-20 h-20 mx-auto bg-primary/10 text-primary">
                 <AvatarFallback className="bg-primary text-black text-lg">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
 
               {isLoading ? (
-                <div className="text-black/70">Loading profile...</div>
+                <div className="text-sm text-black/60">Loading profile...</div>
               ) : (
                 <>
-                  <h1 className="text-xl font-semibold text-black mb-1">
+                  <h1 className="text-[clamp(20px,4.8vw,24px)] font-semibold text-black">
                     {getDisplayName()}
                   </h1>
-                  <p className="text-sm text-black/70">
+                  <p className="text-sm text-black/60 max-w-md mx-auto">
                     Keep your profile up to date to personalize your plan.
                   </p>
                 </>
@@ -211,33 +212,30 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
 
         {navigationSections.map((section) => (
           <Section key={section.title} variant="plain" padding="none">
-            <div className="rounded-3xl border border-white/20 bg-gradient-to-b from-white/40 via-transparent to-warm-cream/20 backdrop-blur-sm p-5">
-              <p className="text-[11px] uppercase tracking-[0.3em] text-black/50 mb-4">
-                {section.title}
-              </p>
-              <div className="space-y-3">
+            <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-border/60">
+                <h2 className="text-sm font-semibold text-black">{section.title}</h2>
+              </div>
+              <div className="divide-y divide-border/60">
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <Card
+                    <ListItem
                       key={item.label}
-                      className="border-white/30 bg-card/80 transition-transform duration-200 hover:-translate-y-0.5"
-                    >
-                      <CardContent className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`flex h-11 w-11 items-center justify-center rounded-full ${item.iconClassName}`}>
-                            <Icon size={18} className="text-black" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-black">{item.label}</p>
-                            {item.description ? (
-                              <p className="text-xs text-black/60">{item.description}</p>
-                            ) : null}
-                          </div>
-                          <ChevronRight size={18} className="text-black/40" />
+                      as="button"
+                      className="w-full px-5 text-left transition-colors hover:bg-soft-gray/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      leading={
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${item.iconClassName}`}>
+                          <Icon size={18} className="text-black" />
                         </div>
-                      </CardContent>
-                    </Card>
+                      }
+                      leadingClassName=""
+                      primary={item.label}
+                      primaryClassName="text-sm font-medium text-black"
+                      secondary={item.description}
+                      secondaryClassName="text-xs text-black/60"
+                      trailing={<ChevronRight size={18} className="text-black/40" />}
+                    />
                   );
                 })}
               </div>
@@ -261,7 +259,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
               {isSigningOut ? "Signing Out..." : "Logout"}
             </TactileButton>
 
-            <div className="text-center text-xs text-black/60">
+            <div className="text-center text-xs text-black/50">
               App Version: 1.0.0 (Build 1234)
             </div>
           </div>
