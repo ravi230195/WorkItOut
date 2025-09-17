@@ -26,9 +26,10 @@ import type { LucideIcon } from "lucide-react";
 interface ProfileScreenProps {
   bottomBar?: React.ReactNode;
   onNavigateToMyAccount?: () => void;
+  onNavigateToAppSettings?: () => void;
 }
 
-export function ProfileScreen({ bottomBar, onNavigateToMyAccount }: ProfileScreenProps) {
+export function ProfileScreen({ bottomBar, onNavigateToMyAccount, onNavigateToAppSettings }: ProfileScreenProps) {
 
   const { userToken, signOut: authSignOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -57,6 +58,7 @@ export function ProfileScreen({ bottomBar, onNavigateToMyAccount }: ProfileScree
           label: "App Settings",
           description: "Customize notifications and themes",
           icon: Settings,
+          onPress: onNavigateToAppSettings,
         },
         {
           label: "Device Settings",
