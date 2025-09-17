@@ -202,27 +202,29 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         {navigationSections.map((section) => (
           <Section key={section.title} variant="plain" padding="none">
             <div className="rounded-3xl border border-border bg-card/80 backdrop-blur-sm p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-black/60 mb-4">
+              <p className="text-md font-bold uppercase tracking-[0.12em] text-black mb-4">
                 {section.title}
               </p>
               <div className="space-y-3">
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <button
-                      key={item.label}
-                      type="button"
-                      className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card/80 px-4 py-3 text-left transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                    >
-                      <Icon size={18} className="text-black" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-black">{item.label}</p>
-                        {item.description ? (
-                          <p className="text-xs text-black/60">{item.description}</p>
-                        ) : null}
+                    <CardContent key={item.label} className="px-4 pt-3 pb-2">
+                      <div className="flex items-start gap-3">
+                        <Icon size={18} className="mt-1 text-black" />
+                        <div className="flex-1 leading-none">
+                          <p className="text-sm uppercase font-medium text-black leading-tight">
+                            {item.label}
+                          </p>
+                          {item.description && (
+                            <p className="text-xs text-black/60 leading-tight m-0">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+                        <ChevronRight size={18} className="text-black/30 self-center" />
                       </div>
-                      <ChevronRight size={18} className="text-black/30" />
-                    </button>
+                    </CardContent>
                   );
                 })}
               </div>
