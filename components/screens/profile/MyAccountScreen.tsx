@@ -185,7 +185,7 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
         </BottomNavigation>
       }
       bottomBarSticky
-      headerInScrollArea
+      headerInScrollArea={false}
     >
       <form id={formId} onSubmit={handleSubmit} className="h-full">
         <Stack gap="fluid">
@@ -300,13 +300,6 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
             </div>
           </Section>
 
-          <Section variant="plain" padding="none">
-            <div className="rounded-3xl border border-border bg-card/80 backdrop-blur-sm p-6 shadow-sm text-center">
-              <p className="text-xs text-black/50">
-                Your personal information helps us provide a better workout experience. All data is stored securely.
-              </p>
-            </div>
-          </Section>
         </Stack>
       </form>
     </AppScreen>

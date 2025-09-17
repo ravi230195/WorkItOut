@@ -40,6 +40,7 @@ export function AppSettingsScreen({ onBack }: AppSettingsScreenProps) {
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}
+      headerInScrollArea={false}
     >
       <Stack gap="fluid">
         <Section variant="plain" padding="none">
@@ -62,50 +63,40 @@ export function AppSettingsScreen({ onBack }: AppSettingsScreenProps) {
 
         <Section variant="plain" padding="none">
           <div className="rounded-3xl border border-border bg-card/80 backdrop-blur-sm p-6 shadow-sm space-y-6">
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.14em] text-black/60">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-black">
                 Length Units
               </p>
-              <div className="flex items-center justify-between gap-4">
-                <div className="text-sm text-black/80">
-                  Choose how height is displayed
-                </div>
-                <SegmentedToggle<LengthUnit>
-                  value={lengthUnit}
-                  onChange={handleLengthUnitChange}
-                  options={[
-                    { value: "cm", label: "CM" },
-                    { value: "m", label: "M" },
-                  ]}
-                  size="md"
-                  variant="filled"
-                  tone="accent"
-                />
-              </div>
+              <SegmentedToggle<LengthUnit>
+                value={lengthUnit}
+                onChange={handleLengthUnitChange}
+                options={[
+                  { value: "cm", label: "CM" },
+                  { value: "m", label: "M" },
+                ]}
+                size="md"
+                variant="filled"
+                tone="accent"
+              />
             </div>
 
             <div className="h-px bg-border/80" />
 
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.14em] text-black/60">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-black">
                 Weight Units
               </p>
-              <div className="flex items-center justify-between gap-4">
-                <div className="text-sm text-black/80">
-                  Choose how weight is displayed
-                </div>
-                <SegmentedToggle<WeightUnit>
-                  value={weightUnit}
-                  onChange={handleWeightUnitChange}
-                  options={[
-                    { value: "kg", label: "KG" },
-                    { value: "lbs", label: "LBS" },
-                  ]}
-                  size="md"
-                  variant="filled"
-                  tone="accent"
-                />
-              </div>
+              <SegmentedToggle<WeightUnit>
+                value={weightUnit}
+                onChange={handleWeightUnitChange}
+                options={[
+                  { value: "kg", label: "KG" },
+                  { value: "lbs", label: "LBS" },
+                ]}
+                size="md"
+                variant="filled"
+                tone="accent"
+              />
             </div>
           </div>
         </Section>
