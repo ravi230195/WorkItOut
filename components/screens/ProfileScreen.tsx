@@ -1,48 +1,109 @@
-// components/screens/ProfileScreen.tsx
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "../ui/card";
+import { useState, useEffect, type ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { TactileButton } from "../TactileButton";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { Badge } from "../ui/badge";
 import {
-  Trophy,
-  Target,
-  Zap,
-  Calendar,
+  User,
   Settings,
   LogOut,
-  Dumbbell,
-  TrendingUp,
+  Smartphone,
+  Bell,
+  Eye,
+  HelpCircle,
+  BookOpen,
+  Info,
+  GraduationCap,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../AuthContext";
-import { supabaseAPI, Profile } from "../../utils/supabase/supabase-api";
+import { supabaseAPI, type Profile } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
-import { AppScreen, Section, ScreenHeader, Stack } from "../layouts";
-import { logger, getLogLevel, setLogLevel, getAvailableLogLevels } from "../../utils/logging";
+import { AppScreen, ScreenHeader, Section, Stack, Spacer } from "../layouts";
+import ListItem from "../ui/ListItem";
 
-interface PersonalBest {
-  exercise: string;
-  weight: number;
-  reps: number;
-  date: string;
+type ItemTone = "coral" | "sage";
+
+interface MenuItem {
+  icon: LucideIcon;
+  label: string;
+  subtitle?: string;
+  onClick?: () => void;
 }
 
 interface ProfileScreenProps {
-  bottomBar?: React.ReactNode;
+  bottomBar?: ReactNode;
+  onNavigateToMyAccount?: () => void;
+  onNavigateToAppSettings?: () => void;
 }
 
-export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
+const toneStyles: Record<
+  ItemTone,
+  {
+    leadingBg: string;
+    leadingColor: string;
+    border: string;
+    hoverBg: string;
+    focusRing: string;
+    chevron: string;
+    shadow: string;
+  }
+> = {
+  coral: {
+    leadingBg: "bg-[hsl(var(--warm-coral-hsl)/0.16)]",
+    leadingColor: "text-[hsl(var(--warm-coral-hsl))]",
+    border: "border-[color:hsl(var(--warm-coral-hsl)/0.32)]",
+    hoverBg: "hover:bg-[hsl(var(--warm-coral-hsl)/0.08)]",
+    focusRing: "focus-visible:ring-[hsl(var(--warm-coral-hsl)/0.32)]",
+    chevron: "text-[hsl(var(--warm-coral-hsl)/0.55)]",
+    shadow: "shadow-[0_18px_40px_rgba(214,118,107,0.18)]",
+  },
+  sage: {
+    leadingBg: "bg-[hsl(var(--warm-sage-hsl)/0.18)]",
+    leadingColor: "text-[hsl(var(--warm-sage-hsl))]",
+    border: "border-[color:hsl(var(--warm-sage-hsl)/0.28)]",
+    hoverBg: "hover:bg-[hsl(var(--warm-sage-hsl)/0.08)]",
+    focusRing: "focus-visible:ring-[hsl(var(--warm-sage-hsl)/0.3)]",
+    chevron: "text-[hsl(var(--warm-sage-hsl)/0.55)]",
+    shadow: "shadow-[0_18px_40px_rgba(130,170,141,0.18)]",
+  },
+};
 
+function ProfileMenuRow({
+  item,
+  tone,
+}: {
+  item: MenuItem;
+  tone: ItemTone;
+}) {
+  const Icon = item.icon;
+  const palette = toneStyles[tone];
+
+  return (
+    <ListItem
+      as="button"
+      type="button"
+      onClick={item.onClick}
+      leading={<Icon size={18} />}
+      leadingClassName={`w-12 h-12 rounded-xl border border-white/40 bg-white/60 backdrop-blur-sm grid place-items-center ${palette.leadingBg} ${palette.leadingColor}`}
+      primary={item.label}
+      primaryClassName="text-[color:var(--warm-brown)] font-semibold tracking-[0.14em] text-[13px] uppercase"
+      secondary={item.subtitle}
+      secondaryClassName="text-sm text-[color:var(--warm-brown)]/70"
+      trailing={<ChevronRight className={`size-4 ${palette.chevron}`} />}
+      className={`w-full rounded-2xl border-2 px-4 py-0 text-left transition-all duration-200 card-modern bg-[color:var(--background)]/85 backdrop-blur-sm hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 ${palette.border} ${palette.hoverBg} ${palette.focusRing} ${palette.shadow}`}
+    />
+  );
+}
+
+export function ProfileScreen({
+  bottomBar,
+  onNavigateToMyAccount,
+  onNavigateToAppSettings,
+}: ProfileScreenProps) {
   const { userToken, signOut: authSignOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-
-  const personalBests: PersonalBest[] = [
-    { exercise: "Bench Press", weight: 225, reps: 5, date: "2 weeks ago" },
-    { exercise: "Squat", weight: 315, reps: 3, date: "1 week ago" },
-    { exercise: "Deadlift", weight: 405, reps: 1, date: "3 days ago" },
-  ];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -53,7 +114,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         const profileData = await supabaseAPI.getMyProfile();
         setProfile(profileData);
       } catch (error) {
-        logger.error("Failed to fetch profile:", error);
+        console.error("Failed to fetch profile:", error);
         if (error instanceof Error && error.message === "UNAUTHORIZED") {
           toast.error("Session expired. Please sign in.");
         } else {
@@ -76,7 +137,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
       authSignOut();
       toast.success("Signed out successfully");
     } catch (error) {
-      logger.error("Sign out failed:", error);
+      console.error("Sign out failed:", error);
       authSignOut();
       toast.success("Signed out successfully");
     } finally {
@@ -85,10 +146,15 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
   };
 
   const getDisplayName = () => {
-    if (profile?.display_name) return profile.display_name;
-    if (profile?.first_name && profile?.last_name)
+    if (profile?.display_name) {
+      return profile.display_name;
+    }
+    if (profile?.first_name && profile?.last_name) {
       return `${profile.first_name} ${profile.last_name}`;
-    if (profile?.first_name) return profile.first_name;
+    }
+    if (profile?.first_name) {
+      return profile.first_name;
+    }
     return "User";
   };
 
@@ -101,207 +167,145 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
     return displayName.slice(0, 2).toUpperCase();
   };
 
+  const accountItems: MenuItem[] = [
+    {
+      icon: User,
+      label: "MY ACCOUNT",
+      onClick: onNavigateToMyAccount,
+    },
+    {
+      icon: Settings,
+      label: "APP SETTINGS",
+      onClick: onNavigateToAppSettings,
+    },
+    {
+      icon: Smartphone,
+      label: "DEVICE SETTINGS",
+      onClick: () => toast.info("Device settings coming soon"),
+    },
+    {
+      icon: Bell,
+      label: "NOTIFICATIONS",
+      onClick: () => toast.info("Notification settings coming soon"),
+    },
+    {
+      icon: Eye,
+      label: "PRIVACY SETTINGS",
+      onClick: () => toast.info("Privacy settings coming soon"),
+    },
+  ];
+
+  const supportItems: MenuItem[] = [
+    {
+      icon: HelpCircle,
+      label: "HELP & SUPPORT",
+      subtitle: "Get help or ask a question",
+      onClick: () => toast.info("Support coming soon"),
+    },
+    {
+      icon: BookOpen,
+      label: "TUTORIALS",
+      onClick: () => toast.info("Tutorials coming soon"),
+    },
+    {
+      icon: Info,
+      label: "ABOUT",
+      onClick: () => toast.info("About page coming soon"),
+    },
+    {
+      icon: GraduationCap,
+      label: "GETTING STARTED",
+      onClick: () => toast.info("Getting started guide coming soon"),
+    },
+  ];
+
+  const renderMenuGroup = (
+    title: string,
+    items: MenuItem[],
+    tone: ItemTone,
+  ) => (
+    <Section key={title} variant="plain" padding="none" className="space-y-4">
+      <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-black/55">
+        {title}
+      </p>
+      <div className="space-y-3">
+        {items.map((item) => (
+          <ProfileMenuRow key={item.label} item={item} tone={tone} />
+        ))}
+      </div>
+    </Section>
+  );
+
   return (
     <AppScreen
-      header={<ScreenHeader title="Profile" 
-      showBorder={false}
-      denseSmall
-      titleClassName="text-[17px] font-bold"/>}
+      header={
+        <ScreenHeader
+          title="Profile"
+          denseSmall
+          showBorder={false}
+          titleClassName="text-[17px] font-bold"
+        />
+      }
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}
       bottomBar={bottomBar}
       bottomBarSticky
-      contentClassName=""
-      headerInScrollArea={true}
+      scrollAreaClassName="bg-gradient-to-b from-[hsl(var(--soft-gray-hsl)/0.8)] via-[color:var(--background)] to-[hsl(var(--warm-cream-hsl)/0.85)]"
+      contentBottomPaddingClassName="pb-12"
+      headerInScrollArea
     >
-      <Stack gap="fluid">
-        {/* Profile Header */}
+      <Stack gap="xl">
         <Section variant="plain" padding="none">
-          <Card className="bg-gradient-to-r from-warm-coral/10 to-warm-peach/10 border-warm-coral/20">
-            <CardContent className="p-6 text-center">
-              <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-black">
-                <AvatarFallback className="bg-primary text-black text-lg">
+          <div className="relative overflow-hidden rounded-[32px] border border-[color:hsl(var(--warm-coral-hsl)/0.22)] bg-[hsl(var(--warm-coral-hsl)/0.12)] px-8 py-10 text-center shadow-sm">
+            <div className="absolute inset-x-8 top-0 h-24 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.55),_transparent)]" />
+            <div className="relative flex flex-col items-center gap-4">
+              <Avatar className="h-20 w-20 shadow-lg">
+                <AvatarFallback className="h-full w-full rounded-full bg-[color:var(--primary)] text-lg font-semibold text-white">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
 
               {isLoading ? (
-                <div className="text-black">Loading profile...</div>
+                <div className="text-sm text-black/60">Loading profile...</div>
               ) : (
-                <>
-                  <h1 className="text-xl font-medium text-black mb-2">
+                <div className="space-y-1">
+                  <h1 className="text-xl font-semibold text-black">
                     {getDisplayName()}
                   </h1>
-                  {profile?.height_cm && profile?.weight_kg && (
-                    <div className="flex justify-center gap-4 text-sm text-black">
-                      <span>{profile.height_cm} cm</span>
-                      <span>•</span>
-                      <span>{profile.weight_kg} kg</span>
-                    </div>
-                  )}
-                </>
+                  {profile?.email ? (
+                    <p className="text-sm text-black/60">{profile.email}</p>
+                  ) : null}
+                </div>
               )}
-
-              <div className="flex justify-center gap-2 mt-4">
-                <Badge
-                  variant="secondary"
-                  className="bg-warm-sage/20 text-black border-warm-sage/30"
-                >
-                  <Zap size={12} className="mr-1" />
-                  Intermediate
-                </Badge>
-                <Badge
-                  variant="secondary"
-                  className="bg-warm-peach/20 text-black border-warm-peach/30"
-                >
-                  <Target size={12} className="mr-1" />
-                  5 Week Streak
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </Section>
-
-        {/* Stats Overview */}
-        <Section variant="plain" padding="none">
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-coral/20 flex items-center justify-center mx-auto mb-2">
-                  <Dumbbell size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">124</div>
-                <div className="text-xs text-black">Workouts</div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-sage/20 flex items-center justify-center mx-auto mb-2">
-                  <Calendar size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">186</div>
-                <div className="text-xs text-black">Days Active</div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-peach/20 flex items-center justify-center mx-auto mb-2">
-                  <TrendingUp size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">+12%</div>
-                <div className="text-xs text-black">Strength</div>
-              </CardContent>
-            </Card>
-          </div>
-        </Section>
-
-        {/* Personal Bests */}
-        <Section variant="plain" padding="none">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Trophy size={20} className="text-black" />
-              <h2 className="text-lg text-black">Personal Bests</h2>
-            </div>
-
-            <div className="space-y-2">
-              {personalBests.map((pb, index) => (
-                <Card key={index} className="bg-card/80 backdrop-blur-sm">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium text-black">
-                          {pb.exercise}
-                        </h3>
-                        <p className="text-sm text-black">{pb.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium text-black">
-                          {pb.weight} lbs
-                        </div>
-                        <div className="text-sm text-black">
-                          {pb.reps} reps
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
             </div>
           </div>
         </Section>
 
-        {/* Logging Control */}
+        {renderMenuGroup("Account & Settings", accountItems, "coral")}
+        {renderMenuGroup("Support", supportItems, "sage")}
+
         <Section variant="plain" padding="none">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Settings size={20} className="text-black" />
-              <h2 className="text-lg text-black">Logging Level</h2>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2">
-              {getAvailableLogLevels().map((level) => (
-                <TactileButton
-                  key={level}
-                  variant={getLogLevel() === level ? "primary" : "secondary"}
-                  className="text-sm rounded-xl border-0 font-medium"
-                  onClick={() => {
-                    setLogLevel(level);
-                    toast.success(`Log level set to: ${level}`);
-                  }}
-                >
-                  {level.toUpperCase()}
-                </TactileButton>
-              ))}
-            </div>
-            
-            <div className="text-xs text-black text-center">
-              Current: {getLogLevel().toUpperCase()}
-            </div>
-          </div>
+          <TactileButton
+            variant="sage"
+            className="w-full justify-center gap-2 rounded-3xl border-2 border-[color:hsl(var(--warm-coral-hsl)/0.25)] bg-transparent py-4 text-[color:var(--primary)] transition-colors duration-200 hover:bg-[hsl(var(--warm-coral-hsl)/0.08)]"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+          >
+            {isSigningOut ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <LogOut size={16} />
+            )}
+            {isSigningOut ? "Signing out..." : "Logout"}
+          </TactileButton>
         </Section>
 
-        {/* Action Buttons */}
-        <Section variant="plain" padding="none">
-          <div className="space-y-3">
-            <TactileButton
-              variant="secondary"
-              className="w-full flex items-center justify-center gap-2 rounded-xl border-0 font-medium"
-            >
-              <Settings size={16} />
-              Settings
-            </TactileButton>
-
-            <TactileButton
-              variant="sage"
-              className="w-full flex items-center justify-center gap-2 rounded-xl border-0 font-medium"
-              onClick={handleSignOut}
-              disabled={isSigningOut}
-            >
-              {isSigningOut ? (
-                <div className="w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
-              ) : (
-                <LogOut size={16} />
-              )}
-              {isSigningOut ? "Signing Out..." : "Sign Out"}
-            </TactileButton>
-          </div>
-        </Section>
-
-        {/* App Info */}
-        <Section variant="plain" padding="none">
-          <Card className="bg-gradient-to-r from-warm-sage/10 to-warm-mint/10 border-warm-sage/20">
-            <CardContent className="p-4 text-center">
-              <div className="text-sm text-black">
-                Workout Tracker v1.0
-              </div>
-              <div className="text-xs text-black mt-1">
-                Powered by Supabase
-              </div>
-            </CardContent>
-          </Card>
+        <Section variant="plain" padding="none" className="pb-10">
+          <Spacer y="xs" />
+          <p className="text-center text-xs font-medium tracking-[0.2em] text-black/45">
+            App version: 1.0.0 (build 1234)
+          </p>
         </Section>
       </Stack>
     </AppScreen>
