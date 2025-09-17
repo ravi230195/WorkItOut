@@ -6,6 +6,8 @@ import EditMeasurementsScreen from "./screens/EditMeasurementsScreen";
 
 import { ProgressScreen } from "./screens/ProgressScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
+import { MyAccountScreen } from "./screens/profile/MyAccountScreen";
+import { AppSettingsScreen } from "./screens/profile/AppSettingsScreen";
 import { SignInScreen } from "./screens/SignInScreen";
 import { SignUpScreen } from "./screens/SignUpScreen";
 import { WelcomeScreen } from "./screens/WelcomeScreen";
@@ -55,6 +57,11 @@ interface AppRouterProps {
   bottomBar?: React.ReactNode;
   /** notify App when a modal/sheet is open so it can hide BottomNavigation */
   onOverlayChange?: (open: boolean) => void;
+
+  onNavigateToMyAccount: () => void;
+  onCloseMyAccount: () => void;
+  onNavigateToAppSettings: () => void;
+  onCloseAppSettings: () => void;
 }
 
 export function AppRouter({
@@ -93,6 +100,10 @@ export function AppRouter({
   onCloseExerciseSetupToRoutines,
   bottomBar,
   onOverlayChange,
+  onNavigateToMyAccount,
+  onCloseMyAccount,
+  onNavigateToAppSettings,
+  onCloseAppSettings,
 }: AppRouterProps) {
   logger.debug(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
 
@@ -206,7 +217,29 @@ export function AppRouter({
       </SlideTransition>
 
       {currentView === "progress" && <ProgressScreen bottomBar={bottomBar} />}
-      {currentView === "profile" && <ProfileScreen bottomBar={bottomBar} />}
+      {currentView === "profile" && (
+        <ProfileScreen
+          bottomBar={bottomBar}
+          onNavigateToMyAccount={onNavigateToMyAccount}
+          onNavigateToAppSettings={onNavigateToAppSettings}
+        />
+      )}
+
+      <SlideTransition
+        show={currentView === "profile-my-account"}
+        enterFrom="right"
+        exitTo="right"
+      >
+        <MyAccountScreen onBack={onCloseMyAccount} />
+      </SlideTransition>
+
+      <SlideTransition
+        show={currentView === "profile-app-settings"}
+        enterFrom="right"
+        exitTo="right"
+      >
+        <AppSettingsScreen onBack={onCloseAppSettings} />
+      </SlideTransition>
     </div>
   );
 }

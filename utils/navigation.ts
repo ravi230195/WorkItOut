@@ -9,7 +9,9 @@ export type AppView =
   | "edit-measurements"
 
   | "progress"
-  | "profile";
+  | "profile"
+  | "profile-my-account"
+  | "profile-app-settings";
 
 export const VIEWS_WITHOUT_BOTTOM_NAV: AppView[] = [
   "welcome",
@@ -20,6 +22,8 @@ export const VIEWS_WITHOUT_BOTTOM_NAV: AppView[] = [
   "exercise-setup",
   "edit-measurements",
 
+  "profile-my-account",
+  "profile-app-settings",
 ];
 
 export type ViewType = AppView;

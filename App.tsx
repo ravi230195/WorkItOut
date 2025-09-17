@@ -49,6 +49,10 @@ function AppContent() {
     handleExerciseSetupComplete,
     onRoutineSelection,
     closeExerciseSetupToRoutines,
+    showProfileAccount,
+    closeProfileAccount,
+    showProfileAppSettings,
+    closeProfileAppSettings,
   } = useAppNavigation();
 
   // ⬅️ now includes authReady
@@ -107,6 +111,10 @@ function AppContent() {
           onCloseExerciseSetupToRoutines={closeExerciseSetupToRoutines}
           bottomBar={bottomBarEl}
           onOverlayChange={setOverlayOpen}
+          onNavigateToMyAccount={showProfileAccount}
+          onCloseMyAccount={closeProfileAccount}
+          onNavigateToAppSettings={showProfileAppSettings}
+          onCloseAppSettings={closeProfileAppSettings}
         />
       </main>
     </div>
