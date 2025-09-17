@@ -1,48 +1,233 @@
-// components/screens/ProfileScreen.tsx
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "../ui/card";
-import { TactileButton } from "../TactileButton";
-import { Avatar, AvatarFallback } from "../ui/avatar";
-import { Badge } from "../ui/badge";
+import { useState, useEffect, type CSSProperties, type ReactNode } from "react";
+import clsx from "clsx";
+import type { LucideIcon } from "lucide-react";
 import {
-  Trophy,
-  Target,
-  Zap,
-  Calendar,
-  Settings,
+  Bell,
+  ChevronRight,
+  GraduationCap,
+  Info,
+  LifeBuoy,
   LogOut,
-  Dumbbell,
-  TrendingUp,
+  Settings2,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+  UserRound,
 } from "lucide-react";
-import { useAuth } from "../AuthContext";
-import { supabaseAPI, Profile } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
-import { AppScreen, Section, ScreenHeader, Stack } from "../layouts";
-import { logger, getLogLevel, setLogLevel, getAvailableLogLevels } from "../../utils/logging";
 
-interface PersonalBest {
-  exercise: string;
-  weight: number;
-  reps: number;
-  date: string;
+import { useAuth } from "../AuthContext";
+import { AppScreen, ScreenHeader } from "../layouts";
+import { supabaseAPI, type Profile } from "../../utils/supabase/supabase-api";
+import { logger } from "../../utils/logging";
+
+interface SettingItemData {
+  label: string;
+  description?: string;
+  icon: LucideIcon;
+  accentStyle: CSSProperties;
 }
 
 interface ProfileScreenProps {
-  bottomBar?: React.ReactNode;
+  bottomBar?: ReactNode;
+}
+
+interface SettingItemProps extends SettingItemData {
+  onClick?: () => void;
+  disabled?: boolean;
+  rightSlot?: ReactNode;
+}
+
+const ACCOUNT_AND_SETTINGS_ITEMS: SettingItemData[] = [
+  {
+    label: "My Account",
+    description: "Profile, email & membership",
+    icon: UserRound,
+    accentStyle: {
+      background: "linear-gradient(135deg, rgba(224,122,95,0.28) 0%, rgba(242,204,143,0.22) 100%)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+    },
+  },
+  {
+    label: "App Settings",
+    description: "Appearance & preferences",
+    icon: Settings2,
+    accentStyle: {
+      background: "linear-gradient(135deg, rgba(242,204,143,0.28) 0%, rgba(167,196,160,0.18) 100%)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+    },
+  },
+  {
+    label: "Device Settings",
+    description: "Health data & permissions",
+    icon: Smartphone,
+    accentStyle: {
+      background: "linear-gradient(135deg, rgba(167,196,160,0.28) 0%, rgba(129,178,154,0.22) 100%)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+    },
+  },
+  {
+    label: "Notifications",
+    description: "Reminders & push alerts",
+    icon: Bell,
+    accentStyle: {
+      background: "linear-gradient(135deg, rgba(224,122,95,0.24) 0%, rgba(244,232,193,0.18) 100%)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+    },
+  },
+  {
+    label: "Privacy Settings",
+    description: "Security & data controls",
+    icon: ShieldCheck,
+    accentStyle: {
+      background: "linear-gradient(135deg, rgba(129,178,154,0.26) 0%, rgba(224,122,95,0.18) 100%)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+    },
+  },
+];
+
+const SUPPORT_ITEMS: SettingItemData[] = [
+  {
+    label: "Help & Support",
+    description: "Get help or ask a question",
+    icon: LifeBuoy,
+    accentStyle: {
+      background: "linear-gradient(135deg, rgba(167,196,160,0.28) 0%, rgba(242,204,143,0.22) 100%)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+    },
+  },
+  {
+    label: "Tutorials",
+    description: "Guided walkthroughs",
+    icon: GraduationCap,
+    accentStyle: {
+      background: "linear-gradient(135deg, rgba(242,204,143,0.28) 0%, rgba(224,122,95,0.18) 100%)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+    },
+  },
+  {
+    label: "About",
+    description: "Learn about WorkItOut",
+    icon: Info,
+    accentStyle: {
+      background: "linear-gradient(135deg, rgba(224,122,95,0.26) 0%, rgba(212,164,235,0.18) 100%)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+    },
+  },
+  {
+    label: "Getting Started",
+    description: "First steps & quick tips",
+    icon: Sparkles,
+    accentStyle: {
+      background: "linear-gradient(135deg, rgba(224,122,95,0.22) 0%, rgba(167,196,160,0.22) 100%)",
+      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+    },
+  },
+];
+
+const APP_VERSION = typeof import.meta !== "undefined" && import.meta.env?.VITE_APP_VERSION
+  ? String(import.meta.env.VITE_APP_VERSION)
+  : "1.0.0";
+
+const APP_BUILD_LABEL = typeof import.meta !== "undefined" && import.meta.env?.VITE_APP_BUILD
+  ? String(import.meta.env.VITE_APP_BUILD)
+  : "Build 1234";
+
+function SettingItem({
+  label,
+  description,
+  icon: Icon,
+  accentStyle,
+  onClick,
+  disabled,
+  rightSlot,
+}: SettingItemProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={clsx(
+        "relative flex w-full items-center gap-3 rounded-2xl border border-white/60 bg-white/70 px-4 py-3 text-left",
+        "shadow-[0_16px_36px_rgba(224,122,95,0.08)] transition-all duration-200 backdrop-blur-xl",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40",
+        disabled ? "cursor-default opacity-60" : "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_20px_42px_rgba(224,122,95,0.12)]"
+      )}
+    >
+      <div
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/60 text-black shadow-inner"
+        style={accentStyle}
+      >
+        <Icon className="h-5 w-5" strokeWidth={1.8} />
+      </div>
+      <div className="flex-1">
+        <div className="text-sm font-medium text-black">{label}</div>
+        {description ? (
+          <div className="text-xs text-black/60">{description}</div>
+        ) : null}
+      </div>
+      <div className="flex h-5 w-5 items-center justify-center text-black/40">
+        {rightSlot ?? <ChevronRight className="h-4 w-4" strokeWidth={2.5} />}
+      </div>
+    </button>
+  );
+}
+
+function SectionTitle({ children }: { children: ReactNode }) {
+  return (
+    <div className="px-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-black/45">
+      {children}
+    </div>
+  );
+}
+
+function ProfileHero({
+  isLoading,
+  displayName,
+  initials,
+  heightCm,
+  weightKg,
+}: {
+  isLoading: boolean;
+  displayName: string;
+  initials: string;
+  heightCm?: number | null;
+  weightKg?: number | null;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/70 px-6 py-8 text-center shadow-[0_28px_48px_rgba(224,122,95,0.12)] backdrop-blur-xl">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[rgba(224,122,95,0.16)] via-transparent to-[rgba(129,178,154,0.16)]" />
+      <div className="relative z-10 flex flex-col items-center gap-5">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--primary)] text-2xl font-semibold text-white shadow-[0_16px_36px_rgba(224,122,95,0.35)]">
+          {initials}
+        </div>
+
+        {isLoading ? (
+          <div className="text-sm text-black/70">Loading profile…</div>
+        ) : (
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold text-black">{displayName}</h1>
+            <p className="text-sm text-black/60">Manage how WorkItOut knows you.</p>
+          </div>
+        )}
+
+        {(heightCm ?? null) !== null && (weightKg ?? null) !== null ? (
+          <div className="mt-1 flex items-center gap-3 text-[11px] uppercase tracking-[0.28em] text-black/45">
+            <span>{heightCm} cm</span>
+            <span className="h-1 w-1 rounded-full bg-black/30" />
+            <span>{weightKg} kg</span>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
-
   const { userToken, signOut: authSignOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-
-  const personalBests: PersonalBest[] = [
-    { exercise: "Bench Press", weight: 225, reps: 5, date: "2 weeks ago" },
-    { exercise: "Squat", weight: 315, reps: 3, date: "1 week ago" },
-    { exercise: "Deadlift", weight: 405, reps: 1, date: "3 days ago" },
-  ];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -89,7 +274,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
     if (profile?.first_name && profile?.last_name)
       return `${profile.first_name} ${profile.last_name}`;
     if (profile?.first_name) return profile.first_name;
-    return "User";
+    return "Your profile";
   };
 
   const getInitials = () => {
@@ -103,207 +288,74 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
 
   return (
     <AppScreen
-      header={<ScreenHeader title="Profile" 
-      showBorder={false}
-      denseSmall
-      titleClassName="text-[17px] font-bold"/>}
+      header={
+        <ScreenHeader
+          title="Profile"
+          showBorder={false}
+          denseSmall
+          titleClassName="text-[17px] font-semibold tracking-[0.18em] uppercase text-black/70"
+        />
+      }
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}
       bottomBar={bottomBar}
       bottomBarSticky
-      contentClassName=""
-      headerInScrollArea={true}
+      scrollAreaClassName="bg-gradient-to-b from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/60"
+      contentClassName="space-y-8 pb-24 safe-area-bottom"
+      headerInScrollArea
     >
-      <Stack gap="fluid">
-        {/* Profile Header */}
-        <Section variant="plain" padding="none">
-          <Card className="bg-gradient-to-r from-warm-coral/10 to-warm-peach/10 border-warm-coral/20">
-            <CardContent className="p-6 text-center">
-              <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-black">
-                <AvatarFallback className="bg-primary text-black text-lg">
-                  {getInitials()}
-                </AvatarFallback>
-              </Avatar>
+      <ProfileHero
+        isLoading={isLoading}
+        displayName={getDisplayName()}
+        initials={getInitials()}
+        heightCm={profile?.height_cm}
+        weightKg={profile?.weight_kg}
+      />
 
-              {isLoading ? (
-                <div className="text-black">Loading profile...</div>
-              ) : (
-                <>
-                  <h1 className="text-xl font-medium text-black mb-2">
-                    {getDisplayName()}
-                  </h1>
-                  {profile?.height_cm && profile?.weight_kg && (
-                    <div className="flex justify-center gap-4 text-sm text-black">
-                      <span>{profile.height_cm} cm</span>
-                      <span>•</span>
-                      <span>{profile.weight_kg} kg</span>
-                    </div>
-                  )}
-                </>
-              )}
+      <section className="space-y-3">
+        <SectionTitle>Account & Settings</SectionTitle>
+        <div className="space-y-2">
+          {ACCOUNT_AND_SETTINGS_ITEMS.map((item) => (
+            <SettingItem key={item.label} {...item} />
+          ))}
+        </div>
+      </section>
 
-              <div className="flex justify-center gap-2 mt-4">
-                <Badge
-                  variant="secondary"
-                  className="bg-warm-sage/20 text-black border-warm-sage/30"
-                >
-                  <Zap size={12} className="mr-1" />
-                  Intermediate
-                </Badge>
-                <Badge
-                  variant="secondary"
-                  className="bg-warm-peach/20 text-black border-warm-peach/30"
-                >
-                  <Target size={12} className="mr-1" />
-                  5 Week Streak
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </Section>
+      <section className="space-y-3">
+        <SectionTitle>Support</SectionTitle>
+        <div className="space-y-2">
+          {SUPPORT_ITEMS.map((item) => (
+            <SettingItem key={item.label} {...item} />
+          ))}
+        </div>
+      </section>
 
-        {/* Stats Overview */}
-        <Section variant="plain" padding="none">
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-coral/20 flex items-center justify-center mx-auto mb-2">
-                  <Dumbbell size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">124</div>
-                <div className="text-xs text-black">Workouts</div>
-              </CardContent>
-            </Card>
+      <section className="space-y-2">
+        <SettingItem
+          label={isSigningOut ? "Signing out…" : "Logout"}
+          description="Switch accounts or exit"
+          icon={LogOut}
+          accentStyle={{
+            background: "linear-gradient(135deg, rgba(224,122,95,0.32) 0%, rgba(242,204,143,0.24) 100%)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+          }}
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          rightSlot={
+            isSigningOut ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-[var(--primary)]" strokeWidth={2.5} />
+            )
+          }
+        />
+      </section>
 
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-sage/20 flex items-center justify-center mx-auto mb-2">
-                  <Calendar size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">186</div>
-                <div className="text-xs text-black">Days Active</div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-peach/20 flex items-center justify-center mx-auto mb-2">
-                  <TrendingUp size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">+12%</div>
-                <div className="text-xs text-black">Strength</div>
-              </CardContent>
-            </Card>
-          </div>
-        </Section>
-
-        {/* Personal Bests */}
-        <Section variant="plain" padding="none">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Trophy size={20} className="text-black" />
-              <h2 className="text-lg text-black">Personal Bests</h2>
-            </div>
-
-            <div className="space-y-2">
-              {personalBests.map((pb, index) => (
-                <Card key={index} className="bg-card/80 backdrop-blur-sm">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium text-black">
-                          {pb.exercise}
-                        </h3>
-                        <p className="text-sm text-black">{pb.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium text-black">
-                          {pb.weight} lbs
-                        </div>
-                        <div className="text-sm text-black">
-                          {pb.reps} reps
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </Section>
-
-        {/* Logging Control */}
-        <Section variant="plain" padding="none">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Settings size={20} className="text-black" />
-              <h2 className="text-lg text-black">Logging Level</h2>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2">
-              {getAvailableLogLevels().map((level) => (
-                <TactileButton
-                  key={level}
-                  variant={getLogLevel() === level ? "primary" : "secondary"}
-                  className="text-sm rounded-xl border-0 font-medium"
-                  onClick={() => {
-                    setLogLevel(level);
-                    toast.success(`Log level set to: ${level}`);
-                  }}
-                >
-                  {level.toUpperCase()}
-                </TactileButton>
-              ))}
-            </div>
-            
-            <div className="text-xs text-black text-center">
-              Current: {getLogLevel().toUpperCase()}
-            </div>
-          </div>
-        </Section>
-
-        {/* Action Buttons */}
-        <Section variant="plain" padding="none">
-          <div className="space-y-3">
-            <TactileButton
-              variant="secondary"
-              className="w-full flex items-center justify-center gap-2 rounded-xl border-0 font-medium"
-            >
-              <Settings size={16} />
-              Settings
-            </TactileButton>
-
-            <TactileButton
-              variant="sage"
-              className="w-full flex items-center justify-center gap-2 rounded-xl border-0 font-medium"
-              onClick={handleSignOut}
-              disabled={isSigningOut}
-            >
-              {isSigningOut ? (
-                <div className="w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
-              ) : (
-                <LogOut size={16} />
-              )}
-              {isSigningOut ? "Signing Out..." : "Sign Out"}
-            </TactileButton>
-          </div>
-        </Section>
-
-        {/* App Info */}
-        <Section variant="plain" padding="none">
-          <Card className="bg-gradient-to-r from-warm-sage/10 to-warm-mint/10 border-warm-sage/20">
-            <CardContent className="p-4 text-center">
-              <div className="text-sm text-black">
-                Workout Tracker v1.0
-              </div>
-              <div className="text-xs text-black mt-1">
-                Powered by Supabase
-              </div>
-            </CardContent>
-          </Card>
-        </Section>
-      </Stack>
+      <footer className="pt-2 text-center text-[11px] font-semibold uppercase tracking-[0.32em] text-black/35">
+        APP VERSION: {APP_VERSION} ({APP_BUILD_LABEL.toUpperCase()})
+      </footer>
     </AppScreen>
   );
 }
+
