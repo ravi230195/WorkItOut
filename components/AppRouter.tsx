@@ -6,6 +6,7 @@ import EditMeasurementsScreen from "./screens/EditMeasurementsScreen";
 
 import { ProgressScreen } from "./screens/ProgressScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
+import { MyAccountScreen } from "./screens/profile/MyAccountScreen";
 import { SignInScreen } from "./screens/SignInScreen";
 import { SignUpScreen } from "./screens/SignUpScreen";
 import { WelcomeScreen } from "./screens/WelcomeScreen";
@@ -55,6 +56,9 @@ interface AppRouterProps {
   bottomBar?: React.ReactNode;
   /** notify App when a modal/sheet is open so it can hide BottomNavigation */
   onOverlayChange?: (open: boolean) => void;
+
+  onNavigateToMyAccount: () => void;
+  onCloseMyAccount: () => void;
 }
 
 export function AppRouter({
@@ -93,6 +97,8 @@ export function AppRouter({
   onCloseExerciseSetupToRoutines,
   bottomBar,
   onOverlayChange,
+  onNavigateToMyAccount,
+  onCloseMyAccount,
 }: AppRouterProps) {
   logger.debug(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
 
@@ -206,7 +212,20 @@ export function AppRouter({
       </SlideTransition>
 
       {currentView === "progress" && <ProgressScreen bottomBar={bottomBar} />}
-      {currentView === "profile" && <ProfileScreen bottomBar={bottomBar} />}
+      {currentView === "profile" && (
+        <ProfileScreen
+          bottomBar={bottomBar}
+          onNavigateToMyAccount={onNavigateToMyAccount}
+        />
+      )}
+
+      <SlideTransition
+        show={currentView === "profile-my-account"}
+        enterFrom="right"
+        exitTo="right"
+      >
+        <MyAccountScreen onBack={onCloseMyAccount} />
+      </SlideTransition>
     </div>
   );
 }
