@@ -86,11 +86,25 @@
   --transition-normal: 250ms ease-out;
   --transition-slow: 350ms ease-out;
 
+  /* Brand palette (motivational warm spectrum) */
+  --brand-orange-strong: #d65a43;
+  --brand-orange: #e07a5f;
+  --brand-orange-soft: #f4a48a;
+  --brand-orange-subtle: #fbe1d6;
+
+  --brand-green-strong: #2f7d52;
+  --brand-green: #4f9d69;
+  --brand-green-soft: #a7cbb2;
+
+  --brand-yellow-strong: #f0b429;
+  --brand-yellow: #f7c948;
+  --brand-yellow-soft: #ffedc2;
+
   /* Legacy Support (keeping for existing components) */
-  --warm-coral: #e07a5f;
-  --warm-sage: #a7c4a0;
+  --warm-coral: var(--brand-orange);
+  --warm-sage: var(--brand-green-soft);
   --warm-cream: #f4e8c1;
-  --warm-peach: #f2cc8f;
+  --warm-peach: var(--brand-yellow-soft);
   --warm-mint: #81b29a;
   --warm-rose: #e8b4b8;
   --warm-lavender: #d4a4eb;
@@ -98,7 +112,7 @@
   /* Additional tokens for progress components */
   --accent-blue: #4aa3df;
   --ring-track-gray: #d1d5db;
-  --recovery-yellow: #f2c94c;
+  --recovery-yellow: var(--brand-yellow);
 
   --app-header-h: 56px;
   --app-bottom-h: 64px;
@@ -109,19 +123,25 @@
   --shadow-hsl: 0 0% 0%;
 
   /* HSL triplets for Tailwind /opacity support (adds warm palette + soft gray) */
-  --warm-coral-hsl: 12.56 67.54% 62.55%;
-  --warm-sage-hsl: 108.33 23.38% 69.8%;
+  --warm-coral-hsl: 13.24 70.83% 62.35%;
+  --warm-sage-hsl: 138.62 32.4% 64.9%;
   --warm-cream-hsl: 45.88 69.86% 85.69%;
-  --warm-peach-hsl: 36.97 79.2% 75.49%;
+  --warm-peach-hsl: 25.0 88.0% 88.24%;
   --warm-mint-hsl: 150.61 24.14% 60.2%;
   --warm-rose-hsl: 355.38 53.06% 80.78%;
   --warm-lavender-hsl: 280.56 63.96% 78.24%;
   --soft-gray-hsl: 25.71 30.43% 95.49%;
 
+  --brand-orange-hsl: 12.56 67.54% 62.55%;
+  --brand-orange-soft-hsl: 18.3 79.38% 75.1%;
+  --brand-green-hsl: 139.37 31.81% 60.2%;
+  --brand-yellow-hsl: 44.23 91.62% 62.55%;
+  --brand-yellow-soft-hsl: 44.0 100% 88.24%;
+
   /* Progress component HSL tokens */
   --accent-blue-hsl: 204.16 69.95% 58.24%;
   --ring-track-gray-hsl: 216 12.2% 83.92%;
-  --recovery-yellow-hsl: 45.18 86.46% 62.35%;
+  --recovery-yellow-hsl: 44.68 90.4% 57.45%;
 }
 
 @layer base {

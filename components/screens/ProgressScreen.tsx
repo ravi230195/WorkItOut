@@ -1,16 +1,47 @@
 // components/screens/ProgressScreen.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Progress } from "../ui/progress";
-import { TrendingUp, Calendar, Award, Zap, Medal, Trophy, Footprints, Activity, Target, BarChart3, Star, Flame, Rocket, ChevronRight, Check, Dumbbell } from "lucide-react";
+import {
+  Activity,
+  Award,
+  BarChart3,
+  Bike,
+  Calendar,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  CircleDot,
+  Dumbbell,
+  Flame,
+  Footprints,
+  HandFist,
+  HeartPulse,
+  Medal,
+  MoveVertical,
+  Orbit,
+  Rocket,
+  Sailboat,
+  Sparkles,
+  StretchHorizontal,
+  TrendingUp,
+  Trophy,
+  Waves,
+  Zap,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Badge } from "../ui/badge";
 import MetricCard from "../progress/MetricCard";
 import { supabaseAPI, Workout, Profile } from "../../utils/supabase/supabase-api";
-import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
+import { AppScreen, Section, Stack } from "../layouts";
 import { logger } from "../../utils/logging";
 import { useAuth } from "../AuthContext";
 import { useStepTracking } from "../../hooks/useStepTracking";
 import { useWorkoutTracking } from "../../hooks/useWorkoutTracking";
+import type { ActivityCategory, TimeRange, MuscleGroup } from "../../src/types/progress";
+import ProgressDetailSection from "../../src/components/progress/ProgressDetailSection";
+
+type MetricCategory = 'strength' | 'cardio' | 'measurements';
 
 interface ProgressScreenProps {
   bottomBar?: React.ReactNode;
@@ -87,6 +118,33 @@ const todaysRoutines = [
   { name: "Morning Cardio", duration: 30, type: "Cardio" },
   { name: "Strength Training", duration: 45, type: "Strength" },
   { name: "Yoga Session", duration: 20, type: "Flexibility" }
+];
+
+const METRIC_OPTIONS: Array<{ value: MetricCategory; label: string }> = [
+  { value: 'strength', label: 'Strength' },
+  { value: 'cardio', label: 'Cardio' },
+  { value: 'measurements', label: 'Measurements' },
+];
+
+const MUSCLE_GROUP_FOCUS_OPTIONS: Array<{ value: string; label: string; icon: LucideIcon }> = [
+  { value: 'all', label: 'All', icon: Sparkles },
+  { value: 'chest', label: 'Chest', icon: HeartPulse },
+  { value: 'back', label: 'Back', icon: StretchHorizontal },
+  { value: 'legs', label: 'Legs', icon: Footprints },
+  { value: 'arms', label: 'Arms', icon: HandFist },
+  { value: 'shoulders', label: 'Shoulders', icon: MoveVertical },
+  { value: 'core', label: 'Core', icon: CircleDot },
+];
+
+const CARDIO_FOCUS_OPTIONS: Array<{ value: string; label: string; icon: LucideIcon }> = [
+  { value: 'all', label: 'All', icon: Sparkles },
+  { value: 'running', label: 'Running', icon: Activity },
+  { value: 'cycling', label: 'Cycling', icon: Bike },
+  { value: 'swimming', label: 'Swimming', icon: Waves },
+  { value: 'rowing', label: 'Rowing', icon: Sailboat },
+  { value: 'elliptical', label: 'Elliptical', icon: Orbit },
+  { value: 'hiit', label: 'HIIT', icon: Flame },
+  { value: 'walking', label: 'Walking', icon: Footprints },
 ];
 
 // Fallback/static data used until live aggregates load
@@ -252,11 +310,15 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
   // New top controls
   const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
   const [selectedRange, setSelectedRange] = useState<'week' | '3m' | '6m'>('week');
-  const [selectedMetric, setSelectedMetric] = useState<'strength' | 'cardio' | 'measurements'>('cardio');
+  const [selectedMetric, setSelectedMetric] = useState<MetricCategory>('cardio');
+  const [selectedStrengthFocus, setSelectedStrengthFocus] = useState<MuscleGroup>('all');
+  const [selectedCardioFocus, setSelectedCardioFocus] = useState<string>('all');
+  const [isMetricMenuOpen, setIsMetricMenuOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { userToken } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const metricDropdownRef = useRef<HTMLDivElement | null>(null);
   // Live health data
   const { steps, goal: stepGoal, isLoading: stepsLoading, forceRefreshStepData } = useStepTracking(true);
   const { count: workoutCount, totalMinutes: workoutMinutes, isLoading: workoutsLoading, refresh: refreshWorkouts } = useWorkoutTracking();
@@ -1016,12 +1078,82 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
     return null;
   };
 
+  const resolvedCategory: ActivityCategory =
+    selectedMetric === 'measurements' ? 'body' : selectedMetric;
+  const resolvedTimeRange: TimeRange =
+    selectedRange === 'week' ? 'week' : selectedRange === '3m' ? 'threeMonths' : 'sixMonths';
+
+  const handleMetricSelect = (value: MetricCategory) => {
+    setSelectedMetric(value);
+    if (value === 'strength') {
+      setSelectedStrengthFocus('all');
+    } else if (value === 'cardio') {
+      setSelectedCardioFocus('all');
+    }
+    setIsMetricMenuOpen(false);
+  };
+
+  useEffect(() => {
+    if (!isMetricMenuOpen) return;
+
+    const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
+      if (metricDropdownRef.current && !metricDropdownRef.current.contains(event.target as Node)) {
+        setIsMetricMenuOpen(false);
+      }
+    };
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMetricMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+    document.addEventListener('keydown', handleEsc);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isMetricMenuOpen]);
+
+  const renderFocusChipRow = (
+    options: Array<{ value: string; label: string; icon: LucideIcon }>,
+    activeValue: string,
+    onSelect: (value: string) => void,
+  ) => (
+    <Section variant="plain" padding="none">
+      <div className="px-1">
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {options.map(({ value, label, icon: Icon }) => {
+            const isActive = activeValue === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => onSelect(value)}
+                className={`flex items-center gap-2 flex-shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 ${
+                  isActive
+                    ? 'bg-[var(--brand-orange)] text-white shadow-sm'
+                    : 'bg-white/80 text-[var(--brand-orange-strong)] border border-white/50 hover:bg-[var(--brand-orange-subtle)]/80'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </Section>
+  );
+
   return (
     <AppScreen
-      header={<ScreenHeader title={"Progress"}
-        showBorder={false}
-        denseSmall
-        titleClassName="text-[17px] font-bold"/>}
+      header={null}
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}
@@ -1042,20 +1174,63 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
 
         {/* Metric Dropdown (orange) */}
         <Section variant="plain" padding="none">
-          <div className="flex items-center">
-            <label htmlFor="metric-type" className="sr-only">Workout Type</label>
-            <div className="relative inline-flex">
-              <select
-                id="metric-type"
-                value={selectedMetric}
-                onChange={(e) => setSelectedMetric(e.target.value as any)}
-                className="appearance-none px-4 pr-10 py-2 rounded-xl font-semibold shadow-sm bg-warm-coral text-white border border-warm-coral focus:outline-none"
+          <div className="px-1">
+            <span className="sr-only" id="metric-focus-label">Metric Focus</span>
+            <div ref={metricDropdownRef} className="relative w-full">
+              <button
+                type="button"
+                aria-labelledby="metric-focus-label"
+                aria-haspopup="listbox"
+                aria-expanded={isMetricMenuOpen}
+                onClick={() => setIsMetricMenuOpen((open) => !open)}
+                className="group flex w-full items-center justify-between gap-4 rounded-3xl bg-[var(--brand-orange-soft)] px-5 py-4 text-left text-black transition"
+                style={{
+                  boxShadow: "0 12px 24px -12px rgba(224, 122, 95, 0.5)",
+                  border: "1px solid var(--brand-orange)",
+                  borderRadius: "1.5rem",
+                }}
               >
-                <option value="strength">Strength</option>
-                <option value="cardio">Cardio</option>
-                <option value="measurements">Measurements</option>
-              </select>
-              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/90">▾</div>
+                <span className="text-lg font-semibold tracking-wide text-black">
+                  {METRIC_OPTIONS.find((option) => option.value === selectedMetric)?.label ?? 'Select'}
+                </span>
+                <ChevronDown
+                  className={`h-5 w-5 transition-transform duration-200 ${isMetricMenuOpen ? 'rotate-180' : ''}`}
+                  style={{ color: "#1f1f1f", opacity: 0.6 }}
+                />
+              </button>
+              {isMetricMenuOpen && (
+                <div
+                  className="absolute inset-x-0 top-full z-20 mt-3 overflow-hidden rounded-3xl border bg-white/95 shadow-2xl backdrop-blur"
+                  style={{ borderColor: "var(--brand-orange-subtle)", boxShadow: "0 18px 30px -18px rgba(224, 122, 95, 0.3)" }}
+                >
+                  <ul
+                    role="listbox"
+                    aria-labelledby="metric-focus-label"
+                    className="divide-y divide-white/40"
+                  >
+                    {METRIC_OPTIONS.map((option) => (
+                      <li key={option.value}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={selectedMetric === option.value}
+                          onClick={() => handleMetricSelect(option.value)}
+                          className={`flex w-full items-center justify-between px-5 py-3 text-sm font-medium transition-colors duration-150 ${
+                            selectedMetric === option.value
+                              ? 'bg-[var(--brand-orange-subtle)] text-black'
+                              : 'text-black/70 hover:bg-[var(--brand-orange-subtle)] hover:text-black'
+                          }`}
+                        >
+                          <span>{option.label}</span>
+                          {selectedMetric === option.value && (
+                            <Check className="h-4 w-4" style={{ color: "var(--brand-orange-strong)" }} />
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </Section>
@@ -1083,26 +1258,18 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           </div>
         </Section>
 
-        {/* Month View - Weekly Targets at Top */}
-        {selectedPeriod === 'month' && (
-          <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-warm-peach/20 rounded-full flex items-center justify-center">
-                    <BarChart3 size={24} className="text-black" />
-                  </div>
-                  <h2 className="font-bold text-black text-xl">Weekly Targets</h2>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {renderWeeklyTargets()}
-              </CardContent>
-            </Card>
-          </Section>
-        )}
+        {selectedMetric === 'strength' &&
+          renderFocusChipRow(MUSCLE_GROUP_FOCUS_OPTIONS, selectedStrengthFocus, setSelectedStrengthFocus)}
+        {selectedMetric === 'cardio' &&
+          renderFocusChipRow(CARDIO_FOCUS_OPTIONS, selectedCardioFocus, setSelectedCardioFocus)}
 
-        {/* Removed old Metric Selector */}
+        <ProgressDetailSection
+          category={resolvedCategory}
+          timeRange={resolvedTimeRange}
+          defaultCompare={selectedMetric !== 'measurements'}
+          strengthFocus={selectedMetric === 'strength' ? (selectedStrengthFocus as MuscleGroup) : undefined}
+          cardioFocus={selectedMetric === 'cardio' ? selectedCardioFocus : undefined}
+        />
 
         {/* Steps Overview Card - only when selected */}
         {(selectedMetric === 'cardio') && selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
