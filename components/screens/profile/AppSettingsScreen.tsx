@@ -78,6 +78,8 @@ export function AppSettingsScreen({ onBack }: AppSettingsScreenProps) {
                     { value: "m", label: "M" },
                   ]}
                   size="md"
+                  variant="filled"
+                  tone="accent"
                 />
               </div>
             </div>
@@ -100,34 +102,14 @@ export function AppSettingsScreen({ onBack }: AppSettingsScreenProps) {
                     { value: "lbs", label: "LBS" },
                   ]}
                   size="md"
+                  variant="filled"
+                  tone="accent"
                 />
               </div>
             </div>
           </div>
         </Section>
 
-        <Section variant="plain" padding="none">
-          <Card className="border border-border bg-card/80 backdrop-blur-sm shadow-sm">
-            <CardContent className="p-5 space-y-3">
-              <p className="text-xs uppercase tracking-[0.14em] text-black/60">
-                Current Settings
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm text-black">
-                  <span className="text-black/70">Length</span>
-                  <span className="font-semibold">{lengthUnit.toUpperCase()}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm text-black">
-                  <span className="text-black/70">Weight</span>
-                  <span className="font-semibold">{weightUnit.toUpperCase()}</span>
-                </div>
-              </div>
-              <p className="text-xs text-black/50">
-                These preferences are applied throughout the app, including your profile and workout tracking.
-              </p>
-            </CardContent>
-          </Card>
-        </Section>
       </Stack>
     </AppScreen>
   );

@@ -6,11 +6,12 @@ import {
   type FormEvent,
   type InputHTMLAttributes,
 } from "react";
-import { AppScreen, ScreenHeader, Section, Spacer, Stack } from "../../layouts";
+import { AppScreen, ScreenHeader, Section, Stack } from "../../layouts";
+import { BottomNavigation } from "../../BottomNavigation";
+import { BottomNavigationButton } from "../../BottomNavigationButton";
 import { Avatar, AvatarFallback } from "../../ui/avatar";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
-import { TactileButton } from "../../TactileButton";
 import { supabaseAPI, Profile } from "../../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { logger } from "../../../utils/logging";
@@ -36,6 +37,7 @@ const emptyState: FormState = {
 };
 
 export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
+  const formId = "my-account-form";
   const [formState, setFormState] = useState<FormState>(emptyState);
   const [initialState, setInitialState] = useState<FormState>(emptyState);
   const [isLoading, setIsLoading] = useState(false);
@@ -163,9 +165,29 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}
+      bottomBar={
+        <BottomNavigation>
+          <BottomNavigationButton
+            type="submit"
+            form={formId}
+            disabled={!isDirty || isSaving || isLoading}
+            className="min-w-[160px]"
+          >
+            {isSaving ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
+                Saving...
+              </div>
+            ) : (
+              "Save Changes"
+            )}
+          </BottomNavigationButton>
+        </BottomNavigation>
+      }
+      bottomBarSticky
       headerInScrollArea
     >
-      <form onSubmit={handleSubmit} className="h-full">
+      <form id={formId} onSubmit={handleSubmit} className="h-full">
         <Stack gap="fluid">
           <Section variant="plain" padding="none">
             <div className="rounded-3xl border border-border bg-card/80 backdrop-blur-sm px-6 py-8 text-center shadow-sm">
@@ -279,24 +301,7 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
           </Section>
 
           <Section variant="plain" padding="none">
-            <div className="rounded-3xl border border-border bg-card/80 backdrop-blur-sm p-6 shadow-sm text-center space-y-4">
-              <TactileButton
-                type="submit"
-                className="w-full flex items-center justify-center gap-2 rounded-2xl border-0 font-medium text-black"
-                disabled={!isDirty || isSaving || isLoading}
-              >
-                {isSaving ? (
-                  <>
-                    <div className="w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
-              </TactileButton>
-
-              <Spacer y="xs" />
-
+            <div className="rounded-3xl border border-border bg-card/80 backdrop-blur-sm p-6 shadow-sm text-center">
               <p className="text-xs text-black/50">
                 Your personal information helps us provide a better workout experience. All data is stored securely.
               </p>
