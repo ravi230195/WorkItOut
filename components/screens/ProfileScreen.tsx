@@ -173,7 +173,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
           title="Profile"
           showBorder={false}
           denseSmall
-          titleClassName="text-[17px] font-bold"
+          titleClassName="text-[17px] font-bold text-black"
         />
       }
       maxContent="responsive"
@@ -185,22 +185,22 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
     >
       <Stack gap="fluid">
         <Section variant="plain" padding="none">
-          <Card className="border-white/20 bg-gradient-to-b from-warm-peach/15 via-warm-cream/30 to-warm-sage/20">
+          <Card className="border border-border bg-card/80 backdrop-blur-sm shadow-sm">
             <CardContent className="p-6 text-center">
               <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-black shadow-lg shadow-primary/30">
-                <AvatarFallback className="bg-primary text-black text-lg">
+                <AvatarFallback className="bg-primary text-black text-lg font-semibold">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
 
               {isLoading ? (
-                <div className="text-black/70">Loading profile...</div>
+                <div className="text-sm text-black/60">Loading profile...</div>
               ) : (
                 <>
-                  <h1 className="text-xl font-semibold text-black mb-1">
+                  <h1 className="text-[clamp(20px,5vw,26px)] font-semibold text-black mb-1">
                     {getDisplayName()}
                   </h1>
-                  <p className="text-sm text-black/70">
+                  <p className="text-sm text-black/60">
                     Keep your profile up to date to personalize your plan.
                   </p>
                 </>
@@ -211,8 +211,8 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
 
         {navigationSections.map((section) => (
           <Section key={section.title} variant="plain" padding="none">
-            <div className="rounded-3xl border border-white/20 bg-gradient-to-b from-white/40 via-transparent to-warm-cream/20 backdrop-blur-sm p-5">
-              <p className="text-[11px] uppercase tracking-[0.3em] text-black/50 mb-4">
+            <div className="rounded-3xl border border-border bg-card/80 backdrop-blur-sm p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-black/60 mb-4">
                 {section.title}
               </p>
               <div className="space-y-3">
@@ -221,7 +221,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
                   return (
                     <Card
                       key={item.label}
-                      className="border-white/30 bg-card/80 transition-transform duration-200 hover:-translate-y-0.5"
+                      className="border border-border bg-card/80 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md"
                     >
                       <CardContent className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -234,7 +234,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
                               <p className="text-xs text-black/60">{item.description}</p>
                             ) : null}
                           </div>
-                          <ChevronRight size={18} className="text-black/40" />
+                          <ChevronRight size={18} className="text-black/30" />
                         </div>
                       </CardContent>
                     </Card>
@@ -249,7 +249,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
           <div className="space-y-4">
             <TactileButton
               variant="secondary"
-              className="w-full flex items-center justify-center gap-2 rounded-2xl border-0 font-medium"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border-0 font-medium text-black"
               onClick={handleSignOut}
               disabled={isSigningOut}
             >
@@ -261,7 +261,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
               {isSigningOut ? "Signing Out..." : "Logout"}
             </TactileButton>
 
-            <div className="text-center text-xs text-black/60">
+            <div className="text-center text-xs text-black/50">
               App Version: 1.0.0 (Build 1234)
             </div>
           </div>
