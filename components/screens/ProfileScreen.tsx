@@ -50,31 +50,31 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
           label: "My Account",
           description: "Profile details and connected services",
           icon: User,
-          iconClassName: "bg-warm-peach/20 border border-warm-peach/30 text-black",
+          iconClassName: "border-warm-peach/40 bg-warm-peach/20 text-warm-coral",
         },
         {
           label: "App Settings",
           description: "Customize notifications and themes",
           icon: Settings,
-          iconClassName: "bg-warm-sage/20 border border-warm-sage/30 text-black",
+          iconClassName: "border-warm-sage/40 bg-warm-sage/20 text-warm-sage",
         },
         {
           label: "Device Settings",
           description: "Manage Health Connect and devices",
           icon: Smartphone,
-          iconClassName: "bg-warm-mint/20 border border-warm-mint/30 text-black",
+          iconClassName: "border-warm-mint/40 bg-warm-mint/20 text-warm-mint",
         },
         {
           label: "Notifications",
           description: "Choose reminders that keep you on track",
           icon: Bell,
-          iconClassName: "bg-warm-coral/20 border border-warm-coral/30 text-black",
+          iconClassName: "border-warm-coral/40 bg-warm-coral/20 text-warm-coral",
         },
         {
           label: "Privacy Settings",
           description: "Control data sharing and visibility",
           icon: Shield,
-          iconClassName: "bg-warm-cream/40 border border-warm-cream/60 text-black",
+          iconClassName: "border-warm-cream/60 bg-warm-cream/50 text-black/80",
         },
       ],
     },
@@ -85,25 +85,25 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
           label: "Help & Support",
           description: "Get help or ask a question",
           icon: LifeBuoy,
-          iconClassName: "bg-warm-sage/20 border border-warm-sage/30 text-black",
+          iconClassName: "border-warm-sage/40 bg-warm-sage/20 text-warm-sage",
         },
         {
           label: "Tutorials",
           description: "Quick tips to learn the app",
           icon: BookOpen,
-          iconClassName: "bg-warm-mint/20 border border-warm-mint/30 text-black",
+          iconClassName: "border-warm-mint/40 bg-warm-mint/20 text-warm-mint",
         },
         {
           label: "About",
           description: "Our mission and release notes",
           icon: Info,
-          iconClassName: "bg-warm-peach/20 border border-warm-peach/30 text-black",
+          iconClassName: "border-warm-peach/40 bg-warm-peach/20 text-warm-coral",
         },
         {
           label: "Getting Started",
           description: "Guided setup for new members",
           icon: PlayCircle,
-          iconClassName: "bg-warm-cream/40 border border-warm-cream/60 text-black",
+          iconClassName: "border-warm-cream/60 bg-warm-cream/50 text-black/80",
         },
       ],
     },
@@ -185,22 +185,22 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
     >
       <Stack gap="fluid">
         <Section variant="plain" padding="none">
-          <Card className="border-white/20 bg-gradient-to-b from-warm-peach/15 via-warm-cream/30 to-warm-sage/20">
-            <CardContent className="p-6 text-center">
-              <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-black shadow-lg shadow-primary/30">
-                <AvatarFallback className="bg-primary text-black text-lg">
+          <Card className="border border-border bg-card shadow-sm">
+            <CardContent className="px-6 py-5 text-center sm:px-8">
+              <Avatar className="mx-auto mb-4 h-16 w-16 border border-primary/20 bg-primary/10 text-primary shadow-sm">
+                <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
 
               {isLoading ? (
-                <div className="text-black/70">Loading profile...</div>
+                <div className="text-sm text-black/60">Loading profile...</div>
               ) : (
                 <>
-                  <h1 className="text-xl font-semibold text-black mb-1">
+                  <h1 className="text-lg font-semibold text-black sm:text-xl">
                     {getDisplayName()}
                   </h1>
-                  <p className="text-sm text-black/70">
+                  <p className="text-sm text-black/60">
                     Keep your profile up to date to personalize your plan.
                   </p>
                 </>
@@ -211,22 +211,22 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
 
         {navigationSections.map((section) => (
           <Section key={section.title} variant="plain" padding="none">
-            <div className="rounded-3xl border border-white/20 bg-gradient-to-b from-white/40 via-transparent to-warm-cream/20 backdrop-blur-sm p-5">
-              <p className="text-[11px] uppercase tracking-[0.3em] text-black/50 mb-4">
+            <div className="rounded-2xl border border-border bg-card/90 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-black/60">
                 {section.title}
               </p>
-              <div className="space-y-3">
+              <div className="mt-4 space-y-2">
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   return (
                     <Card
                       key={item.label}
-                      className="border-white/30 bg-card/80 transition-transform duration-200 hover:-translate-y-0.5"
+                      className="border border-border/50 bg-card transition-colors duration-200 hover:bg-card/90"
                     >
-                      <CardContent className="px-4 py-3">
+                      <CardContent className="px-4 py-3 sm:px-5">
                         <div className="flex items-center gap-3">
-                          <div className={`flex h-11 w-11 items-center justify-center rounded-full ${item.iconClassName}`}>
-                            <Icon size={18} className="text-black" />
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${item.iconClassName}`}>
+                            <Icon size={18} className="text-current" />
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium text-black">{item.label}</p>
@@ -234,7 +234,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
                               <p className="text-xs text-black/60">{item.description}</p>
                             ) : null}
                           </div>
-                          <ChevronRight size={18} className="text-black/40" />
+                          <ChevronRight size={18} className="text-black/30" />
                         </div>
                       </CardContent>
                     </Card>
@@ -249,7 +249,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
           <div className="space-y-4">
             <TactileButton
               variant="secondary"
-              className="w-full flex items-center justify-center gap-2 rounded-2xl border-0 font-medium"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border/60 font-medium"
               onClick={handleSignOut}
               disabled={isSigningOut}
             >
@@ -261,7 +261,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
               {isSigningOut ? "Signing Out..." : "Logout"}
             </TactileButton>
 
-            <div className="text-center text-xs text-black/60">
+            <div className="text-center text-xs text-black/50">
               App Version: 1.0.0 (Build 1234)
             </div>
           </div>
