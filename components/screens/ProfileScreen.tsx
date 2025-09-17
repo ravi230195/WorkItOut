@@ -39,30 +39,61 @@ interface ProfileScreenProps {
 const toneStyles: Record<
   ItemTone,
   {
-    iconBg: string;
-    iconColor: string;
+    leadingBg: string;
+    leadingColor: string;
+    border: string;
+    hoverBg: string;
+    focusRing: string;
     chevron: string;
-    hover: string;
-    divider: string;
+    shadow: string;
   }
 > = {
   coral: {
-    iconBg: "bg-[hsl(var(--warm-coral-hsl)/0.16)]",
-    iconColor: "text-[hsl(var(--warm-coral-hsl))]",
+    leadingBg: "bg-[hsl(var(--warm-coral-hsl)/0.16)]",
+    leadingColor: "text-[hsl(var(--warm-coral-hsl))]",
+    border: "border-[color:hsl(var(--warm-coral-hsl)/0.32)]",
+    hoverBg: "hover:bg-[hsl(var(--warm-coral-hsl)/0.08)]",
+    focusRing: "focus-visible:ring-[hsl(var(--warm-coral-hsl)/0.32)]",
     chevron: "text-[hsl(var(--warm-coral-hsl)/0.55)]",
-    hover:
-      "hover:bg-[hsl(var(--warm-coral-hsl)/0.08)] focus-visible:ring-[hsl(var(--warm-coral-hsl)/0.35)]",
-    divider: "border-[color:hsl(var(--warm-coral-hsl)/0.14)]",
+    shadow: "shadow-[0_18px_40px_rgba(214,118,107,0.18)]",
   },
   sage: {
-    iconBg: "bg-[hsl(var(--warm-sage-hsl)/0.18)]",
-    iconColor: "text-[hsl(var(--warm-sage-hsl))]",
+    leadingBg: "bg-[hsl(var(--warm-sage-hsl)/0.18)]",
+    leadingColor: "text-[hsl(var(--warm-sage-hsl))]",
+    border: "border-[color:hsl(var(--warm-sage-hsl)/0.28)]",
+    hoverBg: "hover:bg-[hsl(var(--warm-sage-hsl)/0.08)]",
+    focusRing: "focus-visible:ring-[hsl(var(--warm-sage-hsl)/0.3)]",
     chevron: "text-[hsl(var(--warm-sage-hsl)/0.55)]",
-    hover:
-      "hover:bg-[hsl(var(--warm-sage-hsl)/0.08)] focus-visible:ring-[hsl(var(--warm-sage-hsl)/0.35)]",
-    divider: "border-[color:hsl(var(--warm-sage-hsl)/0.16)]",
+    shadow: "shadow-[0_18px_40px_rgba(130,170,141,0.18)]",
   },
 };
+
+function ProfileMenuRow({
+  item,
+  tone,
+}: {
+  item: MenuItem;
+  tone: ItemTone;
+}) {
+  const Icon = item.icon;
+  const palette = toneStyles[tone];
+
+  return (
+    <ListItem
+      as="button"
+      type="button"
+      onClick={item.onClick}
+      leading={<Icon size={18} />}
+      leadingClassName={`w-12 h-12 rounded-xl border border-white/40 bg-white/60 backdrop-blur-sm grid place-items-center ${palette.leadingBg} ${palette.leadingColor}`}
+      primary={item.label}
+      primaryClassName="text-[color:var(--warm-brown)] font-semibold tracking-[0.14em] text-[13px] uppercase"
+      secondary={item.subtitle}
+      secondaryClassName="text-sm text-[color:var(--warm-brown)]/70"
+      trailing={<ChevronRight className={`size-4 ${palette.chevron}`} />}
+      className={`w-full rounded-2xl border-2 px-4 py-0 text-left transition-all duration-200 card-modern bg-[color:var(--background)]/85 backdrop-blur-sm hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 ${palette.border} ${palette.hoverBg} ${palette.focusRing} ${palette.shadow}`}
+    />
+  );
+}
 
 export function ProfileScreen({
   bottomBar,
@@ -188,52 +219,19 @@ export function ProfileScreen({
     },
   ];
 
-  const renderMenuItem = (
-    item: MenuItem,
-    tone: ItemTone,
-    index: number,
-    total: number,
-  ) => {
-    const Icon = item.icon;
-    return (
-      <ListItem
-        key={item.label}
-        as="button"
-        type="button"
-        onClick={item.onClick}
-        leading={<Icon size={20} />}
-        leadingClassName={`w-12 h-12 rounded-2xl grid place-items-center ${toneStyles[tone].iconBg} ${toneStyles[tone].iconColor}`}
-        primary={item.label}
-        primaryClassName="text-[13px] font-semibold uppercase tracking-[0.22em] text-black"
-        secondary={item.subtitle}
-        secondaryClassName="text-sm text-black/60"
-        trailing={
-          <ChevronRight className={`size-4 ${toneStyles[tone].chevron}`} />
-        }
-        className={`w-full px-4 text-left transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 ${toneStyles[tone].hover} ${
-          index < total - 1 ? `border-b ${toneStyles[tone].divider}` : ""
-        }`}
-      />
-    );
-  };
-
   const renderMenuGroup = (
     title: string,
     items: MenuItem[],
     tone: ItemTone,
   ) => (
-    <Section key={title} variant="plain" padding="none" className="space-y-3">
-      <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.38em] text-black/55">
+    <Section key={title} variant="plain" padding="none" className="space-y-4">
+      <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-black/55">
         {title}
       </p>
-      <div
-        className={`overflow-hidden rounded-[28px] border bg-card/80 shadow-sm ${
-          tone === "coral"
-            ? "border-[color:hsl(var(--warm-coral-hsl)/0.18)]"
-            : "border-[color:hsl(var(--warm-sage-hsl)/0.2)]"
-        }`}
-      >
-        {items.map((item, index) => renderMenuItem(item, tone, index, items.length))}
+      <div className="space-y-3">
+        {items.map((item) => (
+          <ProfileMenuRow key={item.label} item={item} tone={tone} />
+        ))}
       </div>
     </Section>
   );
