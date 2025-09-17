@@ -1,48 +1,157 @@
 // components/screens/ProfileScreen.tsx
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "../ui/card";
-import { TactileButton } from "../TactileButton";
-import { Avatar, AvatarFallback } from "../ui/avatar";
-import { Badge } from "../ui/badge";
+import { useEffect, useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
-  Trophy,
-  Target,
-  Zap,
-  Calendar,
-  Settings,
+  Bell,
+  BookOpen,
+  ChevronRight,
+  Info,
+  LifeBuoy,
   LogOut,
-  Dumbbell,
-  TrendingUp,
+  Settings,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+  UserRound,
 } from "lucide-react";
+import { Avatar, AvatarFallback } from "../ui/avatar";
+import { AppScreen, ScreenHeader, Stack } from "../layouts";
 import { useAuth } from "../AuthContext";
-import { supabaseAPI, Profile } from "../../utils/supabase/supabase-api";
+import { supabaseAPI, type Profile } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
-import { AppScreen, Section, ScreenHeader, Stack } from "../layouts";
-import { logger, getLogLevel, setLogLevel, getAvailableLogLevels } from "../../utils/logging";
-
-interface PersonalBest {
-  exercise: string;
-  weight: number;
-  reps: number;
-  date: string;
-}
+import packageJson from "../../package.json";
 
 interface ProfileScreenProps {
   bottomBar?: React.ReactNode;
 }
 
-export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
+type ProfileMenuAccent =
+  | "coral"
+  | "peach"
+  | "sage"
+  | "mint"
+  | "lavender"
+  | "neutral";
 
+interface ProfileMenuItem {
+  label: string;
+  description?: string;
+  icon: LucideIcon;
+  accent: ProfileMenuAccent;
+}
+
+interface ProfileMenuSection {
+  title: string;
+  items: ProfileMenuItem[];
+}
+
+const ACCENT_STYLES: Record<ProfileMenuAccent, { container: string; icon: string; badge: string }> = {
+  coral: {
+    container: "border-warm-coral/30 bg-warm-coral/10 hover:bg-warm-coral/15",
+    icon: "text-warm-coral",
+    badge: "bg-warm-coral/20",
+  },
+  peach: {
+    container: "border-warm-peach/40 bg-warm-peach/10 hover:bg-warm-peach/15",
+    icon: "text-warm-peach",
+    badge: "bg-warm-peach/20",
+  },
+  sage: {
+    container: "border-warm-sage/30 bg-warm-sage/10 hover:bg-warm-sage/15",
+    icon: "text-warm-sage",
+    badge: "bg-warm-sage/20",
+  },
+  mint: {
+    container: "border-warm-mint/30 bg-warm-mint/10 hover:bg-warm-mint/15",
+    icon: "text-warm-mint",
+    badge: "bg-warm-mint/20",
+  },
+  lavender: {
+    container: "border-warm-lavender/30 bg-warm-lavender/10 hover:bg-warm-lavender/15",
+    icon: "text-warm-lavender",
+    badge: "bg-warm-lavender/20",
+  },
+  neutral: {
+    container: "border-border/40 bg-card/80 hover:bg-card",
+    icon: "text-black",
+    badge: "bg-black/10",
+  },
+};
+
+const PROFILE_MENU_SECTIONS: ProfileMenuSection[] = [
+  {
+    title: "Account & Settings",
+    items: [
+      {
+        label: "My Account",
+        description: "Profile, email & password",
+        icon: UserRound,
+        accent: "coral",
+      },
+      {
+        label: "App Settings",
+        description: "Theme, preferences & privacy",
+        icon: Settings,
+        accent: "peach",
+      },
+      {
+        label: "Device Settings",
+        description: "Sync & connected services",
+        icon: Smartphone,
+        accent: "sage",
+      },
+      {
+        label: "Notifications",
+        description: "Reminders & progress alerts",
+        icon: Bell,
+        accent: "lavender",
+      },
+      {
+        label: "Privacy Settings",
+        description: "Security & data controls",
+        icon: ShieldCheck,
+        accent: "mint",
+      },
+    ],
+  },
+  {
+    title: "Support",
+    items: [
+      {
+        label: "Help & Support",
+        description: "Get help or ask a question",
+        icon: LifeBuoy,
+        accent: "mint",
+      },
+      {
+        label: "Tutorials",
+        description: "Tips and walkthroughs",
+        icon: BookOpen,
+        accent: "sage",
+      },
+      {
+        label: "About",
+        description: "Learn more about the app",
+        icon: Info,
+        accent: "peach",
+      },
+      {
+        label: "Getting Started",
+        description: "Set goals and start tracking",
+        icon: Sparkles,
+        accent: "lavender",
+      },
+    ],
+  },
+];
+
+const APP_VERSION = packageJson.version;
+
+export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
   const { userToken, signOut: authSignOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-
-  const personalBests: PersonalBest[] = [
-    { exercise: "Bench Press", weight: 225, reps: 5, date: "2 weeks ago" },
-    { exercise: "Squat", weight: 315, reps: 3, date: "1 week ago" },
-    { exercise: "Deadlift", weight: 405, reps: 1, date: "3 days ago" },
-  ];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -53,7 +162,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
         const profileData = await supabaseAPI.getMyProfile();
         setProfile(profileData);
       } catch (error) {
-        logger.error("Failed to fetch profile:", error);
+        console.error("Failed to fetch profile:", error);
         if (error instanceof Error && error.message === "UNAUTHORIZED") {
           toast.error("Session expired. Please sign in.");
         } else {
@@ -76,7 +185,7 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
       authSignOut();
       toast.success("Signed out successfully");
     } catch (error) {
-      logger.error("Sign out failed:", error);
+      console.error("Sign out failed:", error);
       authSignOut();
       toast.success("Signed out successfully");
     } finally {
@@ -101,208 +210,124 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
     return displayName.slice(0, 2).toUpperCase();
   };
 
+  const buildNumber = useMemo(() => import.meta.env.VITE_APP_BUILD ?? "1234", []);
+
   return (
     <AppScreen
-      header={<ScreenHeader title="Profile" 
-      showBorder={false}
-      denseSmall
-      titleClassName="text-[17px] font-bold"/>}
-      maxContent="responsive"
+      header={
+        <ScreenHeader
+          title="Profile"
+          showBorder={false}
+          denseSmall
+          titleClassName="text-[17px] font-bold"
+        />
+      }
+      maxContent="sm"
       showHeaderBorder={false}
       showBottomBarBorder={false}
       bottomBar={bottomBar}
       bottomBarSticky
-      contentClassName=""
-      headerInScrollArea={true}
+      contentClassName="relative pb-8"
+      headerInScrollArea
     >
-      <Stack gap="fluid">
-        {/* Profile Header */}
-        <Section variant="plain" padding="none">
-          <Card className="bg-gradient-to-r from-warm-coral/10 to-warm-peach/10 border-warm-coral/20">
-            <CardContent className="p-6 text-center">
-              <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-black">
-                <AvatarFallback className="bg-primary text-black text-lg">
-                  {getInitials()}
-                </AvatarFallback>
-              </Avatar>
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-warm-cream/60 via-background to-background" />
 
-              {isLoading ? (
-                <div className="text-black">Loading profile...</div>
-              ) : (
-                <>
-                  <h1 className="text-xl font-medium text-black mb-2">
-                    {getDisplayName()}
-                  </h1>
-                  {profile?.height_cm && profile?.weight_kg && (
-                    <div className="flex justify-center gap-4 text-sm text-black">
-                      <span>{profile.height_cm} cm</span>
-                      <span>•</span>
-                      <span>{profile.weight_kg} kg</span>
-                    </div>
-                  )}
-                </>
-              )}
+      <Stack gap="fluid" className="w-full">
+        <section className="rounded-3xl border border-white/30 bg-gradient-to-br from-warm-coral/40 via-warm-peach/30 to-warm-cream/30 p-6 shadow-md shadow-warm-coral/20">
+          <div className="flex flex-col items-center text-center gap-4">
+            <Avatar className="w-20 h-20 bg-white/70 text-black">
+              <AvatarFallback className="text-lg font-semibold text-black">
+                {getInitials()}
+              </AvatarFallback>
+            </Avatar>
 
-              <div className="flex justify-center gap-2 mt-4">
-                <Badge
-                  variant="secondary"
-                  className="bg-warm-sage/20 text-black border-warm-sage/30"
-                >
-                  <Zap size={12} className="mr-1" />
-                  Intermediate
-                </Badge>
-                <Badge
-                  variant="secondary"
-                  className="bg-warm-peach/20 text-black border-warm-peach/30"
-                >
-                  <Target size={12} className="mr-1" />
-                  5 Week Streak
-                </Badge>
+            {isLoading ? (
+              <p className="text-sm text-black/70">Loading profile…</p>
+            ) : (
+              <div className="space-y-2">
+                <h1 className="text-xl font-semibold text-black">{getDisplayName()}</h1>
+                {(profile?.height_cm || profile?.weight_kg) && (
+                  <p className="text-sm text-black/70">
+                    {[profile?.height_cm ? `${profile.height_cm} cm` : null, profile?.weight_kg ? `${profile.weight_kg} kg` : null]
+                      .filter(Boolean)
+                      .join(" • ")}
+                  </p>
+                )}
               </div>
-            </CardContent>
-          </Card>
-        </Section>
-
-        {/* Stats Overview */}
-        <Section variant="plain" padding="none">
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-coral/20 flex items-center justify-center mx-auto mb-2">
-                  <Dumbbell size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">124</div>
-                <div className="text-xs text-black">Workouts</div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-sage/20 flex items-center justify-center mx-auto mb-2">
-                  <Calendar size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">186</div>
-                <div className="text-xs text-black">Days Active</div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-peach/20 flex items-center justify-center mx-auto mb-2">
-                  <TrendingUp size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">+12%</div>
-                <div className="text-xs text-black">Strength</div>
-              </CardContent>
-            </Card>
+            )}
           </div>
-        </Section>
+        </section>
 
-        {/* Personal Bests */}
-        <Section variant="plain" padding="none">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Trophy size={20} className="text-black" />
-              <h2 className="text-lg text-black">Personal Bests</h2>
-            </div>
+        {PROFILE_MENU_SECTIONS.map((section) => (
+          <section key={section.title} className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-black/40">
+              {section.title}
+            </p>
 
             <div className="space-y-2">
-              {personalBests.map((pb, index) => (
-                <Card key={index} className="bg-card/80 backdrop-blur-sm">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium text-black">
-                          {pb.exercise}
-                        </h3>
-                        <p className="text-sm text-black">{pb.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium text-black">
-                          {pb.weight} lbs
-                        </div>
-                        <div className="text-sm text-black">
-                          {pb.reps} reps
-                        </div>
-                      </div>
+              {section.items.map((item) => {
+                const accent = ACCENT_STYLES[item.accent];
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    className={`group flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors ${accent.container}`}
+                  >
+                    <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent.badge}`}>
+                      <Icon className={`h-5 w-5 ${accent.icon}`} />
+                    </span>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-black">{item.label}</div>
+                      {item.description && (
+                        <div className="text-xs text-black/60">{item.description}</div>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </Section>
 
-        {/* Logging Control */}
-        <Section variant="plain" padding="none">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Settings size={20} className="text-black" />
-              <h2 className="text-lg text-black">Logging Level</h2>
+                    <ChevronRight className="h-4 w-4 text-black/40 transition-transform group-hover:translate-x-0.5" />
+                  </button>
+                );
+              })}
             </div>
-            
-            <div className="grid grid-cols-2 gap-2">
-              {getAvailableLogLevels().map((level) => (
-                <TactileButton
-                  key={level}
-                  variant={getLogLevel() === level ? "primary" : "secondary"}
-                  className="text-sm rounded-xl border-0 font-medium"
-                  onClick={() => {
-                    setLogLevel(level);
-                    toast.success(`Log level set to: ${level}`);
-                  }}
-                >
-                  {level.toUpperCase()}
-                </TactileButton>
-              ))}
-            </div>
-            
-            <div className="text-xs text-black text-center">
-              Current: {getLogLevel().toUpperCase()}
-            </div>
-          </div>
-        </Section>
+          </section>
+        ))}
 
-        {/* Action Buttons */}
-        <Section variant="plain" padding="none">
-          <div className="space-y-3">
-            <TactileButton
-              variant="secondary"
-              className="w-full flex items-center justify-center gap-2 rounded-xl border-0 font-medium"
-            >
-              <Settings size={16} />
-              Settings
-            </TactileButton>
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-black/40">
+            Account
+          </p>
 
-            <TactileButton
-              variant="sage"
-              className="w-full flex items-center justify-center gap-2 rounded-xl border-0 font-medium"
-              onClick={handleSignOut}
-              disabled={isSigningOut}
-            >
-              {isSigningOut ? (
-                <div className="w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
-              ) : (
-                <LogOut size={16} />
-              )}
-              {isSigningOut ? "Signing Out..." : "Sign Out"}
-            </TactileButton>
-          </div>
-        </Section>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className={`group flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors ${ACCENT_STYLES.coral.container} disabled:opacity-70`}
+          >
+            <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${ACCENT_STYLES.coral.badge}`}>
+              <LogOut className={`h-5 w-5 ${ACCENT_STYLES.coral.icon}`} />
+            </span>
 
-        {/* App Info */}
-        <Section variant="plain" padding="none">
-          <Card className="bg-gradient-to-r from-warm-sage/10 to-warm-mint/10 border-warm-sage/20">
-            <CardContent className="p-4 text-center">
-              <div className="text-sm text-black">
-                Workout Tracker v1.0
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-black">
+                {isSigningOut ? "Signing out…" : "Logout"}
               </div>
-              <div className="text-xs text-black mt-1">
-                Powered by Supabase
-              </div>
-            </CardContent>
-          </Card>
-        </Section>
+              <div className="text-xs text-black/60">Sign out of your account</div>
+            </div>
+
+            {isSigningOut ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent text-warm-coral" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-black/40 transition-transform group-hover:translate-x-0.5" />
+            )}
+          </button>
+        </div>
+
+        <div className="pt-2 text-center text-xs font-semibold uppercase tracking-[0.28em] text-black/40">
+          App Version: {APP_VERSION}
+          {buildNumber ? ` (Build ${buildNumber})` : ""}
+        </div>
       </Stack>
     </AppScreen>
   );
