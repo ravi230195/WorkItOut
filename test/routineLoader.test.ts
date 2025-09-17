@@ -65,14 +65,14 @@ describe("loadRoutineExercisesWithSets", () => {
     expect(res.every((r) => r.sets.length === 1)).toBe(true);
   });
 
-  test("hydrates metadata and sorts sets", async () => {
+  test("uses Supabase exercise details and sorts sets", async () => {
     const rows = [
       {
         routine_template_exercise_id: 1,
         routine_template_id: 1,
         exercise_id: 10,
-        exercise_name: null,
-        muscle_group: null,
+        exercise_name: "MetaName",
+        muscle_group: "MetaGroup",
         exercise_order: 1,
         is_active: true,
       },
@@ -87,11 +87,6 @@ describe("loadRoutineExercisesWithSets", () => {
       },
     ];
     api.getUserRoutineExercisesWithDetails.mockResolvedValue(rows as any);
-    api.getExercisesByIds.mockResolvedValue(
-      new Map([
-        [10, { exercise_id: 10, name: "MetaName", muscle_group: "MetaGroup" } as any],
-      ])
-    );
 
     const bulkMap = new Map<number, any>([
       [
@@ -139,8 +134,6 @@ describe("loadRoutineExercisesWithSets", () => {
       timer: performanceTimer,
     });
 
-    expect(api.getExercisesByIds).toHaveBeenCalledWith([10]);
-    expect(api.getExercise).not.toHaveBeenCalled();
     expect(res[0].name).toBe("MetaName");
     expect(res[0].muscle_group).toBe("MetaGroup");
     expect(res[0].sets.map((s) => s.set_order)).toEqual([1, 2]);
@@ -169,8 +162,6 @@ describe("loadRoutineExercisesWithSets", () => {
       },
     ];
     api.getUserRoutineExercisesWithDetails.mockResolvedValue(rows as any);
-    api.getExercisesByIds.mockRejectedValue(new Error("bulk meta fail"));
-    api.getExercise.mockRejectedValue(new Error("meta fail"));
     api.getExerciseSetsForRoutineBulk.mockRejectedValue(new Error("bulk fail"));
     api.getExerciseSetsForRoutine.mockImplementation(async (id: number) => {
       if (id === 1) return [];
@@ -183,7 +174,6 @@ describe("loadRoutineExercisesWithSets", () => {
     });
 
     expect(api.getExerciseSetsForRoutineBulk).toHaveBeenCalled();
-    expect(api.getExercisesByIds).toHaveBeenCalled();
     expect(api.getExerciseSetsForRoutine).toHaveBeenCalledTimes(2);
     expect(res).toHaveLength(2);
     expect(res[0].name).toBe("");

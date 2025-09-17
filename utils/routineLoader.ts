@@ -1,4 +1,4 @@
-import { supabaseAPI, type UserRoutineExercise, type UserRoutineExerciseSet, type Exercise } from "./supabase/supabase-api";
+import { supabaseAPI, type UserRoutineExercise, type UserRoutineExerciseSet } from "./supabase/supabase-api";
 import { performanceTimer } from "./performanceTimer";
 import { logger } from "./logging";
 
@@ -45,50 +45,6 @@ export async function loadRoutineExercisesWithSets(
       routineId
     )) as SavedExerciseWithDetails[];
     exerciseTimer.endWithLog();
-
-    const metaTimer = timer.start("routineLoader - fetch exercise meta");
-    const metaById = new Map<number, Exercise>();
-    try {
-      const missingMetaIds = Array.from(
-        new Set(
-          rows
-            .filter((r) => {
-              const hasName = !!normalizeField(r.exercise_name);
-              const hasMG = !!normalizeField(r.muscle_group);
-              return !(hasName && hasMG);
-            })
-            .map((r) => r.exercise_id)
-            .filter((id): id is number => typeof id === "number" && Number.isFinite(id))
-        )
-      );
-
-      if (missingMetaIds.length > 0) {
-        try {
-          const bulkMeta = await supabaseAPI.getExercisesByIds(missingMetaIds);
-          bulkMeta.forEach((meta, id) => {
-            if (meta) metaById.set(id, meta as Exercise);
-          });
-        } catch (err) {
-          logger.warn("Failed to fetch exercise meta in bulk", missingMetaIds, err);
-        }
-
-        const fallbackIds = missingMetaIds.filter((id) => !metaById.has(id));
-        if (fallbackIds.length > 0) {
-          await Promise.all(
-            fallbackIds.map(async (exerciseId) => {
-              try {
-                const meta = await supabaseAPI.getExercise(exerciseId);
-                if (meta) metaById.set(exerciseId, meta as Exercise);
-              } catch (err) {
-                logger.warn("Failed to fetch exercise meta", exerciseId, err);
-              }
-            })
-          );
-        }
-      }
-    } finally {
-      metaTimer.endWithLog();
-    }
 
     const toLoadedSets = (setRows?: UserRoutineExerciseSet[]): LoadedSet[] =>
       (setRows ?? [])
@@ -161,11 +117,8 @@ export async function loadRoutineExercisesWithSets(
     }
 
     return rows.map((r) => {
-      const nameDb = normalizeField(r.exercise_name);
-      const mgDb = normalizeField(r.muscle_group);
-      const meta = !nameDb || !mgDb ? metaById.get(r.exercise_id) : undefined;
-      const name = nameDb || normalizeField(meta?.name);
-      const mg = mgDb || normalizeField(meta?.muscle_group);
+      const name = normalizeField(r.exercise_name) || "";
+      const mg = normalizeField(r.muscle_group);
 
       return {
         templateId: r.routine_template_exercise_id,

@@ -183,7 +183,7 @@ export class SupabaseDBRead extends SupabaseBase {
     routineTemplateId: number
   ): Promise<Array<UserRoutineExercise & { exercise_name?: string; category?: string }>> {
     const userId = await this.getUserId();
-    const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&select=*,exercises(name,category)`;
+    const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&select=*,exercises(name,category,muscle_group)`;
     const key = this.keyRoutineExercisesWithDetails(userId, routineTemplateId);
 
     // Use standardized getOrFetchAndCache like other functions with post-filter for active exercises
