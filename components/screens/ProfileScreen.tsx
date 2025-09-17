@@ -1,4 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { TactileButton } from "../TactileButton";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import {
@@ -17,20 +18,57 @@ import {
 import { useAuth } from "../AuthContext";
 import { supabaseAPI, type Profile } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
+import { AppScreen, ScreenHeader, Section, Stack, Spacer } from "../layouts";
+import ListItem from "../ui/ListItem";
+
+type ItemTone = "coral" | "sage";
 
 interface MenuItem {
-  icon: ReactNode;
+  icon: LucideIcon;
   label: string;
   subtitle?: string;
   onClick?: () => void;
 }
 
 interface ProfileScreenProps {
-  onNavigateToMyAccount: () => void;
-  onNavigateToAppSettings: () => void;
+  bottomBar?: ReactNode;
+  onNavigateToMyAccount?: () => void;
+  onNavigateToAppSettings?: () => void;
 }
 
-export function ProfileScreen({ onNavigateToMyAccount, onNavigateToAppSettings }: ProfileScreenProps) {
+const toneStyles: Record<
+  ItemTone,
+  {
+    iconBg: string;
+    iconColor: string;
+    chevron: string;
+    hover: string;
+    divider: string;
+  }
+> = {
+  coral: {
+    iconBg: "bg-[hsl(var(--warm-coral-hsl)/0.16)]",
+    iconColor: "text-[hsl(var(--warm-coral-hsl))]",
+    chevron: "text-[hsl(var(--warm-coral-hsl)/0.55)]",
+    hover:
+      "hover:bg-[hsl(var(--warm-coral-hsl)/0.08)] focus-visible:ring-[hsl(var(--warm-coral-hsl)/0.35)]",
+    divider: "border-[color:hsl(var(--warm-coral-hsl)/0.14)]",
+  },
+  sage: {
+    iconBg: "bg-[hsl(var(--warm-sage-hsl)/0.18)]",
+    iconColor: "text-[hsl(var(--warm-sage-hsl))]",
+    chevron: "text-[hsl(var(--warm-sage-hsl)/0.55)]",
+    hover:
+      "hover:bg-[hsl(var(--warm-sage-hsl)/0.08)] focus-visible:ring-[hsl(var(--warm-sage-hsl)/0.35)]",
+    divider: "border-[color:hsl(var(--warm-sage-hsl)/0.16)]",
+  },
+};
+
+export function ProfileScreen({
+  bottomBar,
+  onNavigateToMyAccount,
+  onNavigateToAppSettings,
+}: ProfileScreenProps) {
   const { userToken, signOut: authSignOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -100,27 +138,27 @@ export function ProfileScreen({ onNavigateToMyAccount, onNavigateToAppSettings }
 
   const accountItems: MenuItem[] = [
     {
-      icon: <User size={20} className="text-[var(--warm-coral)]" />,
+      icon: User,
       label: "MY ACCOUNT",
       onClick: onNavigateToMyAccount,
     },
     {
-      icon: <Settings size={20} className="text-[var(--warm-coral)]" />,
+      icon: Settings,
       label: "APP SETTINGS",
       onClick: onNavigateToAppSettings,
     },
     {
-      icon: <Smartphone size={20} className="text-[var(--warm-coral)]" />,
+      icon: Smartphone,
       label: "DEVICE SETTINGS",
       onClick: () => toast.info("Device settings coming soon"),
     },
     {
-      icon: <Bell size={20} className="text-[var(--warm-coral)]" />,
+      icon: Bell,
       label: "NOTIFICATIONS",
       onClick: () => toast.info("Notification settings coming soon"),
     },
     {
-      icon: <Eye size={20} className="text-[var(--warm-coral)]" />,
+      icon: Eye,
       label: "PRIVACY SETTINGS",
       onClick: () => toast.info("Privacy settings coming soon"),
     },
@@ -128,122 +166,150 @@ export function ProfileScreen({ onNavigateToMyAccount, onNavigateToAppSettings }
 
   const supportItems: MenuItem[] = [
     {
-      icon: <HelpCircle size={20} className="text-[var(--warm-sage)]" />,
+      icon: HelpCircle,
       label: "HELP & SUPPORT",
       subtitle: "Get help or ask a question",
       onClick: () => toast.info("Support coming soon"),
     },
     {
-      icon: <BookOpen size={20} className="text-[var(--warm-sage)]" />,
+      icon: BookOpen,
       label: "TUTORIALS",
       onClick: () => toast.info("Tutorials coming soon"),
     },
     {
-      icon: <Info size={20} className="text-[var(--warm-sage)]" />,
+      icon: Info,
       label: "ABOUT",
       onClick: () => toast.info("About page coming soon"),
     },
     {
-      icon: <GraduationCap size={20} className="text-[var(--warm-sage)]" />,
+      icon: GraduationCap,
       label: "GETTING STARTED",
       onClick: () => toast.info("Getting started guide coming soon"),
     },
   ];
 
-  const renderMenuItem = (item: MenuItem) => (
-    <button
-      key={item.label}
-      onClick={item.onClick}
-      className="w-full p-4 rounded-xl bg-[var(--warm-brown)]/5 hover:bg-[var(--warm-brown)]/10 transition-all duration-200 flex items-center justify-between group"
-    >
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-white/60 flex items-center justify-center">
-          {item.icon}
-        </div>
-        <div className="text-left">
-          <div className="text-[var(--warm-brown)] font-medium tracking-wide">
-            {item.label}
-          </div>
-          {item.subtitle && (
-            <div className="text-[var(--warm-brown)]/60 text-sm mt-0.5">
-              {item.subtitle}
-            </div>
-          )}
-        </div>
-      </div>
-      <ChevronRight
-        size={16}
-        className="text-[var(--warm-brown)]/40 group-hover:text-[var(--warm-brown)]/60 transition-colors"
+  const renderMenuItem = (
+    item: MenuItem,
+    tone: ItemTone,
+    index: number,
+    total: number,
+  ) => {
+    const Icon = item.icon;
+    return (
+      <ListItem
+        key={item.label}
+        as="button"
+        type="button"
+        onClick={item.onClick}
+        leading={<Icon size={20} />}
+        leadingClassName={`w-12 h-12 rounded-2xl grid place-items-center ${toneStyles[tone].iconBg} ${toneStyles[tone].iconColor}`}
+        primary={item.label}
+        primaryClassName="text-[13px] font-semibold uppercase tracking-[0.22em] text-black"
+        secondary={item.subtitle}
+        secondaryClassName="text-sm text-black/60"
+        trailing={
+          <ChevronRight className={`size-4 ${toneStyles[tone].chevron}`} />
+        }
+        className={`w-full px-4 text-left transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 ${toneStyles[tone].hover} ${
+          index < total - 1 ? `border-b ${toneStyles[tone].divider}` : ""
+        }`}
       />
-    </button>
+    );
+  };
+
+  const renderMenuGroup = (
+    title: string,
+    items: MenuItem[],
+    tone: ItemTone,
+  ) => (
+    <Section key={title} variant="plain" padding="none" className="space-y-3">
+      <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.38em] text-black/55">
+        {title}
+      </p>
+      <div
+        className={`overflow-hidden rounded-[28px] border bg-card/80 shadow-sm ${
+          tone === "coral"
+            ? "border-[color:hsl(var(--warm-coral-hsl)/0.18)]"
+            : "border-[color:hsl(var(--warm-sage-hsl)/0.2)]"
+        }`}
+      >
+        {items.map((item, index) => renderMenuItem(item, tone, index, items.length))}
+      </div>
+    </Section>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--soft-gray)] via-[var(--background)] to-[var(--warm-cream)]/30">
-      <div className="p-6 space-y-8 max-w-md mx-auto pb-24">
-        <div className="text-center pt-4">
-          <Avatar className="w-20 h-20 mx-auto mb-4 bg-[var(--warm-coral)] text-white shadow-lg">
-            <AvatarFallback className="bg-[var(--warm-coral)] text-white text-lg">
-              {getInitials()}
-            </AvatarFallback>
-          </Avatar>
+    <AppScreen
+      header={
+        <ScreenHeader
+          title="Profile"
+          denseSmall
+          showBorder={false}
+          titleClassName="text-[17px] font-bold"
+        />
+      }
+      maxContent="responsive"
+      showHeaderBorder={false}
+      showBottomBarBorder={false}
+      bottomBar={bottomBar}
+      bottomBarSticky
+      scrollAreaClassName="bg-gradient-to-b from-[hsl(var(--soft-gray-hsl)/0.8)] via-[color:var(--background)] to-[hsl(var(--warm-cream-hsl)/0.85)]"
+      contentBottomPaddingClassName="pb-12"
+      headerInScrollArea
+    >
+      <Stack gap="xl">
+        <Section variant="plain" padding="none">
+          <div className="relative overflow-hidden rounded-[32px] border border-[color:hsl(var(--warm-coral-hsl)/0.22)] bg-[hsl(var(--warm-coral-hsl)/0.12)] px-8 py-10 text-center shadow-sm">
+            <div className="absolute inset-x-8 top-0 h-24 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.55),_transparent)]" />
+            <div className="relative flex flex-col items-center gap-4">
+              <Avatar className="h-20 w-20 shadow-lg">
+                <AvatarFallback className="h-full w-full rounded-full bg-[color:var(--primary)] text-lg font-semibold text-white">
+                  {getInitials()}
+                </AvatarFallback>
+              </Avatar>
 
-          {isLoading ? (
-            <div className="text-[var(--warm-brown)]/60">Loading profile...</div>
-          ) : (
-            <>
-              <h1 className="text-xl font-medium text-[var(--warm-brown)] mb-1">
-                {getDisplayName()}
-              </h1>
-              {profile?.email && (
-                <div className="text-sm text-[var(--warm-brown)]/60">
-                  {profile.email}
+              {isLoading ? (
+                <div className="text-sm text-black/60">Loading profile...</div>
+              ) : (
+                <div className="space-y-1">
+                  <h1 className="text-xl font-semibold text-black">
+                    {getDisplayName()}
+                  </h1>
+                  {profile?.email ? (
+                    <p className="text-sm text-black/60">{profile.email}</p>
+                  ) : null}
                 </div>
               )}
-            </>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          <h2 className="text-sm tracking-[0.1em] text-[var(--warm-brown)]/70 font-medium mb-4">
-            ACCOUNT & SETTINGS
-          </h2>
-          <div className="space-y-3">
-            {accountItems.map(renderMenuItem)}
+            </div>
           </div>
-        </div>
+        </Section>
 
-        <div className="space-y-4">
-          <h2 className="text-sm tracking-[0.1em] text-[var(--warm-brown)]/70 font-medium mb-4">
-            SUPPORT
-          </h2>
-          <div className="space-y-3">
-            {supportItems.map(renderMenuItem)}
-          </div>
-        </div>
+        {renderMenuGroup("Account & Settings", accountItems, "coral")}
+        {renderMenuGroup("Support", supportItems, "sage")}
 
-        <div className="pt-4">
+        <Section variant="plain" padding="none">
           <TactileButton
             variant="sage"
-            className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-[var(--warm-brown)]/20 bg-transparent text-[var(--warm-brown)] hover:bg-[var(--warm-brown)]/5"
+            className="w-full justify-center gap-2 rounded-3xl border-2 border-[color:hsl(var(--warm-coral-hsl)/0.25)] bg-transparent py-4 text-[color:var(--primary)] transition-colors duration-200 hover:bg-[hsl(var(--warm-coral-hsl)/0.08)]"
             onClick={handleSignOut}
             disabled={isSigningOut}
           >
             {isSigningOut ? (
-              <div className="w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
             ) : (
               <LogOut size={16} />
             )}
-            {isSigningOut ? "SIGNING OUT..." : "LOGOUT"}
+            {isSigningOut ? "Signing out..." : "Logout"}
           </TactileButton>
-        </div>
+        </Section>
 
-        <div className="text-center pt-4">
-          <div className="text-sm text-[var(--warm-brown)]/50 tracking-wide">
-            APP VERSION: 1.0.0 (BUILD 1234)
-          </div>
-        </div>
-      </div>
-    </div>
+        <Section variant="plain" padding="none" className="pb-10">
+          <Spacer y="xs" />
+          <p className="text-center text-xs font-medium tracking-[0.2em] text-black/45">
+            App version: 1.0.0 (build 1234)
+          </p>
+        </Section>
+      </Stack>
+    </AppScreen>
   );
 }
