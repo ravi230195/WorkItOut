@@ -3,29 +3,25 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "../ui/card";
 import { TactileButton } from "../TactileButton";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { Badge } from "../ui/badge";
 import {
-  Trophy,
-  Target,
-  Zap,
-  Calendar,
-  Settings,
+  Bell,
+  BookOpen,
+  ChevronRight,
+  Info,
+  LifeBuoy,
   LogOut,
-  Dumbbell,
-  TrendingUp,
+  PlayCircle,
+  Settings,
+  Shield,
+  Smartphone,
+  User,
 } from "lucide-react";
 import { useAuth } from "../AuthContext";
 import { supabaseAPI, Profile } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { AppScreen, Section, ScreenHeader, Stack } from "../layouts";
-import { logger, getLogLevel, setLogLevel, getAvailableLogLevels } from "../../utils/logging";
-
-interface PersonalBest {
-  exercise: string;
-  weight: number;
-  reps: number;
-  date: string;
-}
+import { logger } from "../../utils/logging";
+import type { LucideIcon } from "lucide-react";
 
 interface ProfileScreenProps {
   bottomBar?: React.ReactNode;
@@ -38,10 +34,79 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const personalBests: PersonalBest[] = [
-    { exercise: "Bench Press", weight: 225, reps: 5, date: "2 weeks ago" },
-    { exercise: "Squat", weight: 315, reps: 3, date: "1 week ago" },
-    { exercise: "Deadlift", weight: 405, reps: 1, date: "3 days ago" },
+  const navigationSections: Array<{
+    title: string;
+    items: Array<{
+      label: string;
+      description?: string;
+      icon: LucideIcon;
+      iconClassName: string;
+    }>;
+  }> = [
+    {
+      title: "Account & Settings",
+      items: [
+        {
+          label: "My Account",
+          description: "Profile details and connected services",
+          icon: User,
+          iconClassName: "bg-warm-peach/20 border border-warm-peach/30 text-black",
+        },
+        {
+          label: "App Settings",
+          description: "Customize notifications and themes",
+          icon: Settings,
+          iconClassName: "bg-warm-sage/20 border border-warm-sage/30 text-black",
+        },
+        {
+          label: "Device Settings",
+          description: "Manage Health Connect and devices",
+          icon: Smartphone,
+          iconClassName: "bg-warm-mint/20 border border-warm-mint/30 text-black",
+        },
+        {
+          label: "Notifications",
+          description: "Choose reminders that keep you on track",
+          icon: Bell,
+          iconClassName: "bg-warm-coral/20 border border-warm-coral/30 text-black",
+        },
+        {
+          label: "Privacy Settings",
+          description: "Control data sharing and visibility",
+          icon: Shield,
+          iconClassName: "bg-warm-cream/40 border border-warm-cream/60 text-black",
+        },
+      ],
+    },
+    {
+      title: "Support",
+      items: [
+        {
+          label: "Help & Support",
+          description: "Get help or ask a question",
+          icon: LifeBuoy,
+          iconClassName: "bg-warm-sage/20 border border-warm-sage/30 text-black",
+        },
+        {
+          label: "Tutorials",
+          description: "Quick tips to learn the app",
+          icon: BookOpen,
+          iconClassName: "bg-warm-mint/20 border border-warm-mint/30 text-black",
+        },
+        {
+          label: "About",
+          description: "Our mission and release notes",
+          icon: Info,
+          iconClassName: "bg-warm-peach/20 border border-warm-peach/30 text-black",
+        },
+        {
+          label: "Getting Started",
+          description: "Guided setup for new members",
+          icon: PlayCircle,
+          iconClassName: "bg-warm-cream/40 border border-warm-cream/60 text-black",
+        },
+      ],
+    },
   ];
 
   useEffect(() => {
@@ -103,180 +168,88 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
 
   return (
     <AppScreen
-      header={<ScreenHeader title="Profile" 
-      showBorder={false}
-      denseSmall
-      titleClassName="text-[17px] font-bold"/>}
+      header={
+        <ScreenHeader
+          title="Profile"
+          showBorder={false}
+          denseSmall
+          titleClassName="text-[17px] font-bold"
+        />
+      }
       maxContent="responsive"
       showHeaderBorder={false}
       showBottomBarBorder={false}
       bottomBar={bottomBar}
       bottomBarSticky
-      contentClassName=""
-      headerInScrollArea={true}
+      headerInScrollArea
     >
       <Stack gap="fluid">
-        {/* Profile Header */}
         <Section variant="plain" padding="none">
-          <Card className="bg-gradient-to-r from-warm-coral/10 to-warm-peach/10 border-warm-coral/20">
+          <Card className="border-white/20 bg-gradient-to-b from-warm-peach/15 via-warm-cream/30 to-warm-sage/20">
             <CardContent className="p-6 text-center">
-              <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-black">
+              <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-black shadow-lg shadow-primary/30">
                 <AvatarFallback className="bg-primary text-black text-lg">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
 
               {isLoading ? (
-                <div className="text-black">Loading profile...</div>
+                <div className="text-black/70">Loading profile...</div>
               ) : (
                 <>
-                  <h1 className="text-xl font-medium text-black mb-2">
+                  <h1 className="text-xl font-semibold text-black mb-1">
                     {getDisplayName()}
                   </h1>
-                  {profile?.height_cm && profile?.weight_kg && (
-                    <div className="flex justify-center gap-4 text-sm text-black">
-                      <span>{profile.height_cm} cm</span>
-                      <span>•</span>
-                      <span>{profile.weight_kg} kg</span>
-                    </div>
-                  )}
+                  <p className="text-sm text-black/70">
+                    Keep your profile up to date to personalize your plan.
+                  </p>
                 </>
               )}
-
-              <div className="flex justify-center gap-2 mt-4">
-                <Badge
-                  variant="secondary"
-                  className="bg-warm-sage/20 text-black border-warm-sage/30"
-                >
-                  <Zap size={12} className="mr-1" />
-                  Intermediate
-                </Badge>
-                <Badge
-                  variant="secondary"
-                  className="bg-warm-peach/20 text-black border-warm-peach/30"
-                >
-                  <Target size={12} className="mr-1" />
-                  5 Week Streak
-                </Badge>
-              </div>
             </CardContent>
           </Card>
         </Section>
 
-        {/* Stats Overview */}
-        <Section variant="plain" padding="none">
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-coral/20 flex items-center justify-center mx-auto mb-2">
-                  <Dumbbell size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">124</div>
-                <div className="text-xs text-black">Workouts</div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-sage/20 flex items-center justify-center mx-auto mb-2">
-                  <Calendar size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">186</div>
-                <div className="text-xs text-black">Days Active</div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-warm-peach/20 flex items-center justify-center mx-auto mb-2">
-                  <TrendingUp size={16} className="text-black" />
-                </div>
-                <div className="text-lg font-medium text-black">+12%</div>
-                <div className="text-xs text-black">Strength</div>
-              </CardContent>
-            </Card>
-          </div>
-        </Section>
-
-        {/* Personal Bests */}
-        <Section variant="plain" padding="none">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Trophy size={20} className="text-black" />
-              <h2 className="text-lg text-black">Personal Bests</h2>
-            </div>
-
-            <div className="space-y-2">
-              {personalBests.map((pb, index) => (
-                <Card key={index} className="bg-card/80 backdrop-blur-sm">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium text-black">
-                          {pb.exercise}
-                        </h3>
-                        <p className="text-sm text-black">{pb.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium text-black">
-                          {pb.weight} lbs
+        {navigationSections.map((section) => (
+          <Section key={section.title} variant="plain" padding="none">
+            <div className="rounded-3xl border border-white/20 bg-gradient-to-b from-white/40 via-transparent to-warm-cream/20 backdrop-blur-sm p-5">
+              <p className="text-[11px] uppercase tracking-[0.3em] text-black/50 mb-4">
+                {section.title}
+              </p>
+              <div className="space-y-3">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Card
+                      key={item.label}
+                      className="border-white/30 bg-card/80 transition-transform duration-200 hover:-translate-y-0.5"
+                    >
+                      <CardContent className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-11 w-11 items-center justify-center rounded-full ${item.iconClassName}`}>
+                            <Icon size={18} className="text-black" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-black">{item.label}</p>
+                            {item.description ? (
+                              <p className="text-xs text-black/60">{item.description}</p>
+                            ) : null}
+                          </div>
+                          <ChevronRight size={18} className="text-black/40" />
                         </div>
-                        <div className="text-sm text-black">
-                          {pb.reps} reps
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </Section>
+          </Section>
+        ))}
 
-        {/* Logging Control */}
         <Section variant="plain" padding="none">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Settings size={20} className="text-black" />
-              <h2 className="text-lg text-black">Logging Level</h2>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2">
-              {getAvailableLogLevels().map((level) => (
-                <TactileButton
-                  key={level}
-                  variant={getLogLevel() === level ? "primary" : "secondary"}
-                  className="text-sm rounded-xl border-0 font-medium"
-                  onClick={() => {
-                    setLogLevel(level);
-                    toast.success(`Log level set to: ${level}`);
-                  }}
-                >
-                  {level.toUpperCase()}
-                </TactileButton>
-              ))}
-            </div>
-            
-            <div className="text-xs text-black text-center">
-              Current: {getLogLevel().toUpperCase()}
-            </div>
-          </div>
-        </Section>
-
-        {/* Action Buttons */}
-        <Section variant="plain" padding="none">
-          <div className="space-y-3">
+          <div className="space-y-4">
             <TactileButton
               variant="secondary"
-              className="w-full flex items-center justify-center gap-2 rounded-xl border-0 font-medium"
-            >
-              <Settings size={16} />
-              Settings
-            </TactileButton>
-
-            <TactileButton
-              variant="sage"
-              className="w-full flex items-center justify-center gap-2 rounded-xl border-0 font-medium"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border-0 font-medium"
               onClick={handleSignOut}
               disabled={isSigningOut}
             >
@@ -285,23 +258,13 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
               ) : (
                 <LogOut size={16} />
               )}
-              {isSigningOut ? "Signing Out..." : "Sign Out"}
+              {isSigningOut ? "Signing Out..." : "Logout"}
             </TactileButton>
-          </div>
-        </Section>
 
-        {/* App Info */}
-        <Section variant="plain" padding="none">
-          <Card className="bg-gradient-to-r from-warm-sage/10 to-warm-mint/10 border-warm-sage/20">
-            <CardContent className="p-4 text-center">
-              <div className="text-sm text-black">
-                Workout Tracker v1.0
-              </div>
-              <div className="text-xs text-black mt-1">
-                Powered by Supabase
-              </div>
-            </CardContent>
-          </Card>
+            <div className="text-center text-xs text-black/60">
+              App Version: 1.0.0 (Build 1234)
+            </div>
+          </div>
         </Section>
       </Stack>
     </AppScreen>
