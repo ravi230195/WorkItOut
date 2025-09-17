@@ -40,7 +40,6 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
       label: string;
       description?: string;
       icon: LucideIcon;
-      iconClassName: string;
     }>;
   }> = [
     {
@@ -50,31 +49,26 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
           label: "My Account",
           description: "Profile details and connected services",
           icon: User,
-          iconClassName: "bg-warm-peach/20 border border-warm-peach/30 text-black",
         },
         {
           label: "App Settings",
           description: "Customize notifications and themes",
           icon: Settings,
-          iconClassName: "bg-warm-sage/20 border border-warm-sage/30 text-black",
         },
         {
           label: "Device Settings",
           description: "Manage Health Connect and devices",
           icon: Smartphone,
-          iconClassName: "bg-warm-mint/20 border border-warm-mint/30 text-black",
         },
         {
           label: "Notifications",
           description: "Choose reminders that keep you on track",
           icon: Bell,
-          iconClassName: "bg-warm-coral/20 border border-warm-coral/30 text-black",
         },
         {
           label: "Privacy Settings",
           description: "Control data sharing and visibility",
           icon: Shield,
-          iconClassName: "bg-warm-cream/40 border border-warm-cream/60 text-black",
         },
       ],
     },
@@ -85,25 +79,21 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
           label: "Help & Support",
           description: "Get help or ask a question",
           icon: LifeBuoy,
-          iconClassName: "bg-warm-sage/20 border border-warm-sage/30 text-black",
         },
         {
           label: "Tutorials",
           description: "Quick tips to learn the app",
           icon: BookOpen,
-          iconClassName: "bg-warm-mint/20 border border-warm-mint/30 text-black",
         },
         {
           label: "About",
           description: "Our mission and release notes",
           icon: Info,
-          iconClassName: "bg-warm-peach/20 border border-warm-peach/30 text-black",
         },
         {
           label: "Getting Started",
           description: "Guided setup for new members",
           icon: PlayCircle,
-          iconClassName: "bg-warm-cream/40 border border-warm-cream/60 text-black",
         },
       ],
     },
@@ -219,25 +209,20 @@ export function ProfileScreen({ bottomBar }: ProfileScreenProps) {
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <Card
+                    <button
                       key={item.label}
-                      className="border border-border bg-card/80 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                      type="button"
+                      className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card/80 px-4 py-3 text-left transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md"
                     >
-                      <CardContent className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`flex h-11 w-11 items-center justify-center rounded-full ${item.iconClassName}`}>
-                            <Icon size={18} className="text-black" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-black">{item.label}</p>
-                            {item.description ? (
-                              <p className="text-xs text-black/60">{item.description}</p>
-                            ) : null}
-                          </div>
-                          <ChevronRight size={18} className="text-black/30" />
-                        </div>
-                      </CardContent>
-                    </Card>
+                      <Icon size={18} className="text-black" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-black">{item.label}</p>
+                        {item.description ? (
+                          <p className="text-xs text-black/60">{item.description}</p>
+                        ) : null}
+                      </div>
+                      <ChevronRight size={18} className="text-black/30" />
+                    </button>
                   );
                 })}
               </div>
