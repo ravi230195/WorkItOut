@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { toast } from "sonner";
 import { AppScreen, ScreenHeader, Section, Stack } from "../../layouts";
@@ -18,13 +18,18 @@ import {
   Droplets,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { HealthPermission } from "capacitor-health";
+import type {
+  HealthPermission,
+  HealthPlugin as CapacitorHealthPlugin,
+} from "capacitor-health";
 import type { RecordType as HealthConnectRecordType } from "@kiwi-health/capacitor-health-connect";
+import type { HealthConnectPlugin } from "@kiwi-health/capacitor-health-connect";
 import { logger } from "../../../utils/logging";
 
-const STORAGE_KEY = "device-permissions-state";
+const STORAGE_KEY_PREFIX = "device-permissions-state";
 
-type Platform = "ios" | "android" | "web" | string;
+type Platform = "ios" | "android" | "web" | "unknown";
+type StoragePlatform = "ios" | "android" | "web";
 
 type PermissionStates = Record<string, boolean>;
 
@@ -174,10 +179,20 @@ const defaultPermissionState: PermissionStates = READ_PERMISSION_CONFIG.reduce(
   {} as PermissionStates,
 );
 
-const loadStoredPermissions = (): PermissionStates => {
+const toStoragePlatform = (platform: Platform): StoragePlatform => {
+  if (platform === "ios" || platform === "android") {
+    return platform;
+  }
+  return "web";
+};
+
+const storageKeyForPlatform = (platform: StoragePlatform) =>
+  `${STORAGE_KEY_PREFIX}:${platform}`;
+
+const loadStoredPermissions = (platform: StoragePlatform): PermissionStates => {
   if (typeof window === "undefined") return { ...defaultPermissionState };
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKeyForPlatform(platform));
     if (!raw) return { ...defaultPermissionState };
     const parsed = JSON.parse(raw) as PermissionStates;
     return { ...defaultPermissionState, ...parsed };
@@ -192,10 +207,20 @@ interface DeviceSettingsScreenProps {
 }
 
 export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
-  const [platform, setPlatform] = useState<Platform>("web");
-  const [permissionStates, setPermissionStates] = useState<PermissionStates>(() => loadStoredPermissions());
+  const [platform, setPlatform] = useState<Platform>("unknown");
+  const [permissionStates, setPermissionStates] = useState<PermissionStates>({
+    ...defaultPermissionState,
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const hasLoadedStoredStateRef = useRef(false);
+
+  const effectivePlatform: StoragePlatform = useMemo(
+    () => toStoragePlatform(platform),
+    [platform],
+  );
+
+  const canManageOnDevice = platform === "ios" || platform === "android";
 
   const platformLabel = useMemo(() => {
     if (platform === "ios") return "Apple Health";
@@ -209,7 +234,12 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       try {
         const { Capacitor } = await import("@capacitor/core");
         if (!isMounted) return;
-        setPlatform(Capacitor.getPlatform());
+        const resolved = Capacitor.getPlatform();
+        if (resolved === "ios" || resolved === "android" || resolved === "web") {
+          setPlatform(resolved);
+        } else {
+          setPlatform("web");
+        }
       } catch {
         setPlatform("web");
       }
@@ -222,57 +252,134 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(permissionStates));
-  }, [permissionStates]);
+    if (!canManageOnDevice || hasLoadedStoredStateRef.current) return;
+    hasLoadedStoredStateRef.current = true;
+    setPermissionStates(loadStoredPermissions(effectivePlatform));
+  }, [canManageOnDevice, effectivePlatform]);
 
-  const refreshFromDevice = useCallback(async () => {
-    if (platform === "android") {
+  useEffect(() => {
+    if (platform === "unknown" || typeof window === "undefined") return;
+    window.localStorage.setItem(
+      storageKeyForPlatform(effectivePlatform),
+      JSON.stringify(permissionStates),
+    );
+  }, [effectivePlatform, permissionStates, platform]);
+
+  const ensureAppleHealth = useCallback(async (): Promise<CapacitorHealthPlugin | null> => {
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      if (!Capacitor.isPluginAvailable("HealthPlugin")) {
+        logger.warn("Apple Health plugin is not available on this platform.");
+        return null;
+      }
+      const { Health } = await import("capacitor-health");
+      return Health;
+    } catch (error) {
+      logger.error("Failed to load Apple Health plugin", error);
+      return null;
+    }
+  }, []);
+
+  const ensureHealthConnect = useCallback(async (): Promise<HealthConnectPlugin | null> => {
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      if (!Capacitor.isPluginAvailable("HealthConnect")) {
+        logger.warn("Health Connect plugin is not available on this platform.");
+        return null;
+      }
+      const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
+      return HealthConnect;
+    } catch (error) {
+      logger.error("Failed to load Health Connect plugin", error);
+      return null;
+    }
+  }, []);
+
+  interface RefreshOptions {
+    silent?: boolean;
+  }
+
+  const refreshFromDevice = useCallback(
+    async ({ silent }: RefreshOptions = {}) => {
+      if (!canManageOnDevice) return;
+
       try {
         setIsRefreshing(true);
-        const [{ HealthConnect }] = await Promise.all([
-          import("@kiwi-health/capacitor-health-connect"),
-        ]);
-        const availability = await HealthConnect.checkAvailability();
-        if (availability.availability !== "Available") {
-          toast.info("Health Connect isn't available on this device.");
-          return;
-        }
-
-        const readTypes = READ_PERMISSION_CONFIG
-          .map((item) => item.androidRead)
-          .filter(Boolean) as HealthConnectRecordType[];
-
-        if (readTypes.length === 0) {
-          return;
-        }
-
-        const response = await HealthConnect.checkHealthPermissions({
-          read: readTypes,
-          write: [],
-        });
-        const granted = new Set(response.grantedPermissions ?? []);
-        setPermissionStates((prev) => {
-          const next = { ...prev };
-          for (const item of READ_PERMISSION_CONFIG) {
-            if (!item.androidRead) continue;
-            next[item.id] = granted.has(item.androidRead);
+        if (platform === "android") {
+          const healthConnect = await ensureHealthConnect();
+          if (!healthConnect) {
+            if (!silent) {
+              toast.error("Health Connect integration isn't available on this device.");
+            }
+            return;
           }
-          return next;
-        });
+
+          const availability = await healthConnect.checkAvailability();
+          if (availability.availability !== "Available") {
+            if (!silent) {
+              toast.info("Health Connect isn't available on this device.");
+            }
+            return;
+          }
+
+          const readTypes = READ_PERMISSION_CONFIG
+            .map((item) => item.androidRead)
+            .filter(Boolean) as HealthConnectRecordType[];
+
+          if (readTypes.length === 0) {
+            return;
+          }
+
+          const response = await healthConnect.checkHealthPermissions({
+            read: readTypes,
+            write: [],
+          });
+          const granted = new Set(response.grantedPermissions ?? []);
+          setPermissionStates((prev) => {
+            const next = { ...prev };
+            for (const item of READ_PERMISSION_CONFIG) {
+              if (!item.androidRead) continue;
+              next[item.id] = granted.has(item.androidRead);
+            }
+            return next;
+          });
+        } else if (platform === "ios") {
+          const health = await ensureAppleHealth();
+          if (!health) {
+            if (!silent) {
+              toast.error("Apple Health integration isn't available on this device.");
+            }
+            return;
+          }
+
+          const availability = await health.isHealthAvailable();
+          if (!availability?.available) {
+            if (!silent) {
+              toast.info("Apple Health isn't available on this device.");
+            }
+            return;
+          }
+
+          if (!silent) {
+            toast.info(
+              "Apple Health manages permissions in the Health app. Adjust them there to update WorkItOut.",
+            );
+          }
+        }
       } catch (error) {
-        logger.warn("Failed to refresh Health Connect permissions", error);
-        toast.error("Couldn't refresh Health Connect permissions.");
+        logger.warn("Failed to refresh device permissions", error);
+        if (!silent) {
+          toast.error("Couldn't refresh device permissions.");
+        }
       } finally {
         setIsRefreshing(false);
       }
-      return;
-    }
-
-  }, [platform]);
+    },
+    [canManageOnDevice, ensureAppleHealth, ensureHealthConnect, platform],
+  );
 
   useEffect(() => {
-    void refreshFromDevice();
+    void refreshFromDevice({ silent: true });
   }, [refreshFromDevice]);
 
   const handleToggle = useCallback(
@@ -285,7 +392,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             ? Boolean(item.androidRead)
             : false;
 
-      if (!supportsCurrentPlatform || item.comingSoon || platform === "web") {
+      if (!supportsCurrentPlatform || item.comingSoon || !canManageOnDevice) {
         return;
       }
 
@@ -294,8 +401,19 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       try {
         if (nextValue) {
           if (platform === "ios" && item.iosPermission) {
-            const { Health } = await import("capacitor-health");
-            const response = await Health.requestHealthPermissions({
+            const health = await ensureAppleHealth();
+            if (!health) {
+              toast.error("Apple Health integration isn't available on this device.");
+              return;
+            }
+
+            const availability = await health.isHealthAvailable();
+            if (!availability?.available) {
+              toast.info("Apple Health isn't available on this device.");
+              return;
+            }
+
+            const response = await health.requestHealthPermissions({
               permissions: [item.iosPermission],
             });
             const granted =
@@ -309,13 +427,18 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             setPermissionStates((prev) => ({ ...prev, [item.id]: true }));
             toast.success(`${item.label} enabled`);
           } else if (platform === "android" && item.androidRead) {
-            const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
-            const availability = await HealthConnect.checkAvailability();
+            const healthConnect = await ensureHealthConnect();
+            if (!healthConnect) {
+              toast.error("Health Connect integration isn't available on this device.");
+              return;
+            }
+
+            const availability = await healthConnect.checkAvailability();
             if (availability.availability !== "Available") {
               toast.error("Health Connect is unavailable.");
               return;
             }
-            const response = await HealthConnect.requestHealthPermissions({
+            const response = await healthConnect.requestHealthPermissions({
               read: [item.androidRead],
               write: [],
             });
@@ -331,16 +454,24 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
           }
         } else {
           if (platform === "ios") {
-            const { Health } = await import("capacitor-health");
-            await Health.openAppleHealthSettings();
+            const health = await ensureAppleHealth();
+            if (!health) {
+              toast.error("Apple Health integration isn't available on this device.");
+              return;
+            }
+            await health.openAppleHealthSettings();
             toast.info("Turn off access from Apple Health > Sources > WorkItOut.");
           } else if (platform === "android") {
-            const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
-            await HealthConnect.openHealthConnectSetting();
+            const healthConnect = await ensureHealthConnect();
+            if (!healthConnect) {
+              toast.error("Health Connect integration isn't available on this device.");
+              return;
+            }
+            await healthConnect.openHealthConnectSetting();
             toast.info("Use Health Connect to revoke this permission.");
             // Give the user time to adjust the toggle before refreshing state
             setTimeout(() => {
-              void refreshFromDevice();
+              void refreshFromDevice({ silent: true });
             }, 1500);
           }
           setPermissionStates((prev) => ({ ...prev, [item.id]: false }));
@@ -352,34 +483,56 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
         setPendingId(null);
       }
     },
-    [pendingId, platform, refreshFromDevice],
+    [
+      canManageOnDevice,
+      ensureAppleHealth,
+      ensureHealthConnect,
+      pendingId,
+      platform,
+      refreshFromDevice,
+    ],
   );
 
   const handleOpenSettings = useCallback(async () => {
     try {
-      if (platform === "ios") {
-        const { Health } = await import("capacitor-health");
-        await Health.openAppleHealthSettings();
-      } else if (platform === "android") {
-        const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
-        await HealthConnect.openHealthConnectSetting();
-      } else {
+      if (!canManageOnDevice) {
         toast.info("Open this screen on your phone to manage permissions.");
         return;
+      }
+
+      if (platform === "ios") {
+        const health = await ensureAppleHealth();
+        if (!health) {
+          toast.error("Apple Health integration isn't available on this device.");
+          return;
+        }
+        await health.openAppleHealthSettings();
+      } else if (platform === "android") {
+        const healthConnect = await ensureHealthConnect();
+        if (!healthConnect) {
+          toast.error("Health Connect integration isn't available on this device.");
+          return;
+        }
+        await healthConnect.openHealthConnectSetting();
       }
       toast.success("Opening device health settings…");
     } catch (error) {
       logger.error("Failed to open health settings", error);
       toast.error("Unable to open health settings on this device.");
     }
-  }, [platform]);
+  }, [canManageOnDevice, ensureAppleHealth, ensureHealthConnect, platform]);
 
   const handleRefresh = useCallback(async () => {
-    await refreshFromDevice();
-    if (platform !== "web") {
+    if (!canManageOnDevice) {
+      toast.info("Open this screen on your phone to manage permissions.");
+      return;
+    }
+
+    await refreshFromDevice({ silent: false });
+    if (platform === "android") {
       toast.success("Permissions updated");
     }
-  }, [platform, refreshFromDevice]);
+  }, [canManageOnDevice, platform, refreshFromDevice]);
 
   const renderPermissionRow = (item: PermissionItem) => {
     const supported =
@@ -412,19 +565,19 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
         } else {
           badges.push({ key: "unavailable", label: "Not Yet Available", variant: "outline" });
         }
-      } else if (platform === "web") {
+      } else if (!canManageOnDevice) {
         badges.push({ key: "mobile", label: "Mobile Only", variant: "outline" });
       }
     }
 
     const description = supported
       ? item.description
-      : item.platformNotes?.[platform as "ios" | "android" | "web"] ||
-        (platform === "web"
+      : item.platformNotes?.[effectivePlatform] ||
+        (!canManageOnDevice
           ? "Open WorkItOut on your phone to manage device permissions."
           : item.description);
 
-    const isDisabled = !supported || pendingId === item.id || platform === "web";
+    const isDisabled = !supported || pendingId === item.id || !canManageOnDevice;
     const checked = Boolean(permissionStates[item.id]);
 
     return (
@@ -490,7 +643,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
                 size="sm"
                 variant="secondary"
                 onClick={handleRefresh}
-                disabled={isRefreshing || platform === "web"}
+                disabled={isRefreshing || !canManageOnDevice}
               >
                 {isRefreshing ? "Refreshing…" : "Refresh status"}
               </TactileButton>
