@@ -12,7 +12,13 @@ import { BottomNavigationButton } from "../../BottomNavigationButton";
 import { Avatar, AvatarFallback } from "../../ui/avatar";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
-import { supabaseAPI, Profile } from "../../../utils/supabase/supabase-api";
+import {
+  supabaseAPI,
+  Profile,
+  type GenderType,
+  type UnitLength,
+  type UnitWeight,
+} from "../../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { logger } from "../../../utils/logging";
 import SegmentedToggle from "../../segmented/SegmentedToggle";
@@ -21,25 +27,37 @@ interface MyAccountScreenProps {
   onBack: () => void;
 }
 
+type LengthUnit = UnitLength;
+type WeightUnit = UnitWeight;
+type GenderOption = GenderType;
+
 interface FormState {
   displayName: string;
   firstName: string;
   lastName: string;
   heightCm: string;
   weightKg: string;
+  lengthUnit: LengthUnit;
+  weightUnit: WeightUnit;
+  gender: GenderOption;
 }
 
-const emptyState: FormState = {
+type TextFieldKey = "displayName" | "firstName" | "lastName" | "heightCm" | "weightKg";
+
+const DEFAULT_LENGTH_UNIT: LengthUnit = "cm";
+const DEFAULT_WEIGHT_UNIT: WeightUnit = "kg";
+const DEFAULT_GENDER: GenderOption = "prefer_not_to_say";
+
+const createEmptyState = (): FormState => ({
   displayName: "",
   firstName: "",
   lastName: "",
   heightCm: "",
   weightKg: "",
-};
-
-type LengthUnit = "cm" | "m";
-type WeightUnit = "kg" | "lbs";
-type GenderOption = "male" | "female" | "non_binary" | "prefer_not_to_say";
+  lengthUnit: DEFAULT_LENGTH_UNIT,
+  weightUnit: DEFAULT_WEIGHT_UNIT,
+  gender: DEFAULT_GENDER,
+});
 
 const genderOptions: Array<{ value: GenderOption; label: string }> = [
   { value: "male", label: "Male" },
@@ -50,16 +68,10 @@ const genderOptions: Array<{ value: GenderOption; label: string }> = [
 
 export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
   const formId = "my-account-form";
-  const [formState, setFormState] = useState<FormState>(emptyState);
-  const [initialState, setInitialState] = useState<FormState>(emptyState);
+  const [formState, setFormState] = useState<FormState>(() => createEmptyState());
+  const [initialState, setInitialState] = useState<FormState>(() => createEmptyState());
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [lengthUnit, setLengthUnit] = useState<LengthUnit>("cm");
-  const [initialLengthUnit, setInitialLengthUnit] = useState<LengthUnit>("cm");
-  const [weightUnit, setWeightUnit] = useState<WeightUnit>("kg");
-  const [initialWeightUnit, setInitialWeightUnit] = useState<WeightUnit>("kg");
-  const [gender, setGender] = useState<GenderOption>("prefer_not_to_say");
-  const [initialGender, setInitialGender] = useState<GenderOption>("prefer_not_to_say");
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -69,10 +81,11 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
         if (profile) {
           const normalized = normalizeProfile(profile);
           setFormState(normalized);
-          setInitialState(normalized);
+          setInitialState({ ...normalized });
         } else {
-          setFormState(emptyState);
-          setInitialState(emptyState);
+          const fallback = createEmptyState();
+          setFormState(fallback);
+          setInitialState({ ...fallback });
         }
       } catch (error) {
         logger.error("Failed to load account profile:", error);
@@ -104,21 +117,11 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
     return name.slice(0, 2).toUpperCase();
   }, [displayName]);
 
-  const hasFormChanges = useMemo(() => {
+  const isDirty = useMemo(() => {
     return JSON.stringify(formState) !== JSON.stringify(initialState);
   }, [formState, initialState]);
 
-  const hasPreferenceChanges = useMemo(() => {
-    return (
-      lengthUnit !== initialLengthUnit ||
-      weightUnit !== initialWeightUnit ||
-      gender !== initialGender
-    );
-  }, [gender, initialGender, initialLengthUnit, initialWeightUnit, lengthUnit, weightUnit]);
-
-  const isDirty = hasFormChanges || hasPreferenceChanges;
-
-  const handleChange = (field: keyof FormState) =>
+  const handleChange = (field: TextFieldKey) =>
     (event: ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
       setFormState((prev) => ({ ...prev, [field]: value }));
@@ -152,13 +155,16 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
 
     setIsSaving(true);
     try {
-      const updated = await supabaseAPI.upsertProfile(
-        trimmedFirstName,
-        trimmedLastName,
-        trimmedDisplayName,
-        heightValue,
-        weightValue,
-      );
+      const updated = await supabaseAPI.upsertProfile({
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        displayName: trimmedDisplayName,
+        heightCm: heightValue,
+        weightKg: weightValue,
+        lengthUnit: formState.lengthUnit,
+        weightUnit: formState.weightUnit,
+        gender: formState.gender,
+      });
 
       const nextState = updated ? normalizeProfile(updated) : {
         displayName: trimmedDisplayName,
@@ -166,17 +172,17 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
         lastName: trimmedLastName,
         heightCm: formState.heightCm,
         weightKg: formState.weightKg,
+        lengthUnit: formState.lengthUnit,
+        weightUnit: formState.weightUnit,
+        gender: formState.gender,
       };
 
       setFormState(nextState);
-      setInitialState(nextState);
-      setInitialLengthUnit(lengthUnit);
-      setInitialWeightUnit(weightUnit);
-      setInitialGender(gender);
+      setInitialState({ ...nextState });
       logger.info("[MyAccount] Saved profile preferences", {
-        lengthUnit,
-        weightUnit,
-        gender,
+        lengthUnit: nextState.lengthUnit,
+        weightUnit: nextState.weightUnit,
+        gender: nextState.gender,
       });
       toast.success("Profile updated successfully.");
     } catch (error) {
@@ -188,17 +194,29 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
   };
 
   const handleLengthUnitChange = (value: LengthUnit) => {
-    setLengthUnit(value);
-    logger.info(`[MyAccount] Length unit set to ${value.toUpperCase()}`);
+    if (isLoading || isSaving) return;
+    setFormState((prev) => {
+      if (prev.lengthUnit === value) return prev;
+      logger.info(`[MyAccount] Length unit set to ${value.toUpperCase()}`);
+      return { ...prev, lengthUnit: value };
+    });
   };
 
   const handleWeightUnitChange = (value: WeightUnit) => {
-    setWeightUnit(value);
-    logger.info(`[MyAccount] Weight unit set to ${value.toUpperCase()}`);
+    if (isLoading || isSaving) return;
+    setFormState((prev) => {
+      if (prev.weightUnit === value) return prev;
+      logger.info(`[MyAccount] Weight unit set to ${value.toUpperCase()}`);
+      return { ...prev, weightUnit: value };
+    });
   };
 
   const handleGenderChange = (value: GenderOption) => {
-    setGender(value);
+    if (isLoading || isSaving) return;
+    setFormState((prev) => {
+      if (prev.gender === value) return prev;
+      return { ...prev, gender: value };
+    });
   };
 
   return (
@@ -307,7 +325,7 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
                 </div>
 
                 <GenderSelect
-                  value={gender}
+                  value={formState.gender}
                   onChange={handleGenderChange}
                   disabled={isLoading || isSaving}
                 />
@@ -376,7 +394,7 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
                     Length Units
                   </p>
                   <SegmentedToggle<LengthUnit>
-                    value={lengthUnit}
+                    value={formState.lengthUnit}
                     onChange={handleLengthUnitChange}
                     options={[
                       { value: "cm", label: "CM" },
@@ -395,7 +413,7 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
                     Weight Units
                   </p>
                   <SegmentedToggle<WeightUnit>
-                    value={weightUnit}
+                    value={formState.weightUnit}
                     onChange={handleWeightUnitChange}
                     options={[
                       { value: "kg", label: "KG" },
@@ -487,7 +505,30 @@ function normalizeProfile(profile: Profile): FormState {
       profile.weight_kg !== undefined && profile.weight_kg !== null
         ? String(profile.weight_kg)
         : "",
+    lengthUnit: coerceLengthUnit(profile.length_unit),
+    weightUnit: coerceWeightUnit(profile.weight_unit),
+    gender: coerceGender(profile.gender),
   };
+}
+
+function coerceLengthUnit(value: Profile["length_unit"]): LengthUnit {
+  return value === "cm" || value === "m" ? value : DEFAULT_LENGTH_UNIT;
+}
+
+function coerceWeightUnit(value: Profile["weight_unit"]): WeightUnit {
+  return value === "kg" || value === "lbs" ? value : DEFAULT_WEIGHT_UNIT;
+}
+
+function coerceGender(value: Profile["gender"]): GenderOption {
+  switch (value) {
+    case "male":
+    case "female":
+    case "non_binary":
+    case "prefer_not_to_say":
+      return value;
+    default:
+      return DEFAULT_GENDER;
+  }
 }
 
 function parseOptionalNumber(value: string): number | undefined {

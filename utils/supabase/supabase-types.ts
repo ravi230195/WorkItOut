@@ -32,6 +32,10 @@ export interface Exercise {
     completed_at: string;
   }
   
+  export type UnitLength = "cm" | "m";
+  export type UnitWeight = "kg" | "lbs";
+  export type GenderType = "male" | "female" | "non_binary" | "prefer_not_to_say";
+
   export interface Profile {
     id?: string;
     user_id?: string;
@@ -40,6 +44,9 @@ export interface Exercise {
     display_name: string;
     height_cm?: number;
     weight_kg?: number;
+    length_unit?: UnitLength;
+    weight_unit?: UnitWeight;
+    gender?: GenderType;
   }
   
   export interface AuthUserMetadata {

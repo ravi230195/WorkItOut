@@ -68,7 +68,13 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, onNavigateToWe
       supabaseAPI.setToken(token);
       const heightCm = height ? Number(height) : undefined;
       const weightKg = weight ? Number(weight) : undefined;
-      await supabaseAPI.upsertProfile(firstName, lastName, displayName, heightCm, weightKg);
+      await supabaseAPI.upsertProfile({
+        firstName,
+        lastName,
+        displayName,
+        heightCm,
+        weightKg,
+      });
 
       // 4) Navigate to home
       onAuthSuccess(token, refreshToken);

@@ -31,7 +31,11 @@ describe('Supabase API Routine CRUD Integration', () => {
     }
 
     supabaseAPI.setToken(token!);    
-    await supabaseAPI.upsertProfile('Test ' + testUser.email, 'User ' + testUser.email, 'Integration Tester ' + testUser.email);
+    await supabaseAPI.upsertProfile({
+      firstName: 'Test ' + testUser.email,
+      lastName: 'User ' + testUser.email,
+      displayName: 'Integration Tester ' + testUser.email,
+    });
 
     localCache.clearPrefix();
     const exercises = await supabaseAPI.getExercises();
