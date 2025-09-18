@@ -7,6 +7,7 @@ import EditMeasurementsScreen from "./screens/EditMeasurementsScreen";
 import { ProgressScreen } from "./screens/ProgressScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { MyAccountScreen } from "./screens/profile/MyAccountScreen";
+import DeviceSettingsScreen from "./screens/profile/DeviceSettingsScreen";
 import { SignInScreen } from "./screens/SignInScreen";
 import { SignUpScreen } from "./screens/SignUpScreen";
 import { WelcomeScreen } from "./screens/WelcomeScreen";
@@ -59,6 +60,8 @@ interface AppRouterProps {
 
   onNavigateToMyAccount: () => void;
   onCloseMyAccount: () => void;
+  onNavigateToDeviceSettings: () => void;
+  onCloseDeviceSettings: () => void;
 }
 
 export function AppRouter({
@@ -99,6 +102,8 @@ export function AppRouter({
   onOverlayChange,
   onNavigateToMyAccount,
   onCloseMyAccount,
+  onNavigateToDeviceSettings,
+  onCloseDeviceSettings,
 }: AppRouterProps) {
   logger.debug(`🔍 [DBG] CURRENT SCREEN: ${currentView.toUpperCase()}`);
 
@@ -216,6 +221,7 @@ export function AppRouter({
         <ProfileScreen
           bottomBar={bottomBar}
           onNavigateToMyAccount={onNavigateToMyAccount}
+          onNavigateToDeviceSettings={onNavigateToDeviceSettings}
         />
       )}
 
@@ -225,6 +231,14 @@ export function AppRouter({
         exitTo="right"
       >
         <MyAccountScreen onBack={onCloseMyAccount} />
+      </SlideTransition>
+
+      <SlideTransition
+        show={currentView === "profile-device-settings"}
+        enterFrom="right"
+        exitTo="right"
+      >
+        <DeviceSettingsScreen onBack={onCloseDeviceSettings} />
       </SlideTransition>
     </div>
   );
