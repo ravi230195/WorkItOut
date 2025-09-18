@@ -33,7 +33,7 @@ export interface Exercise {
   }
   
   export type UnitLength = "cm" | "m";
-  export type UnitWeight = "kg" | "lbs";
+  export type UnitWeight = "kg" | "lb";
   export type GenderType = "male" | "female" | "non_binary" | "prefer_not_to_say";
 
   export interface Profile {

@@ -55,7 +55,7 @@ const LENGTH_UNIT_LABELS: Record<LengthUnit, string> = {
 
 const WEIGHT_UNIT_LABELS: Record<WeightUnit, string> = {
   kg: "KG",
-  lbs: "LBS",
+  lb: "LBS",
 };
 
 const createSegmentedOptions = <Value extends string>(
@@ -531,7 +531,9 @@ function coerceLengthUnit(value: Profile["length_unit"]): LengthUnit {
 }
 
 function coerceWeightUnit(value: Profile["weight_unit"]): WeightUnit {
-  return value === "kg" || value === "lbs" ? value : DEFAULT_WEIGHT_UNIT;
+  if (value === "kg" || value === "lb") return value;
+  if (value === "lbs") return "lb";
+  return DEFAULT_WEIGHT_UNIT;
 }
 
 function coerceGender(value: Profile["gender"]): GenderOption {
