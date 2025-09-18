@@ -28,6 +28,13 @@ import { logger } from "../../../utils/logging";
 
 const STORAGE_KEY_PREFIX = "device-permissions-state";
 
+class PermissionToggleAbortedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PermissionToggleAbortedError";
+  }
+}
+
 type Platform = "ios" | "android" | "web" | "unknown";
 type StoragePlatform = "ios" | "android" | "web";
 
@@ -316,33 +323,41 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
 
   const ensureAppleHealth = useCallback(async (): Promise<CapacitorHealthPlugin | null> => {
     try {
-      const { Capacitor } = await import("@capacitor/core");
-      if (!Capacitor.isPluginAvailable("HealthPlugin")) {
-        logger.warn("Apple Health plugin is not available on this platform.");
+      if (platform !== "ios") {
         return null;
       }
+
       const { Health } = await import("capacitor-health");
-      return Health;
+      if (Health) {
+        return Health;
+      }
+
+      logger.warn("Apple Health plugin failed to load even though this device reports iOS.");
+      return null;
     } catch (error) {
       logger.error("Failed to load Apple Health plugin", error);
       return null;
     }
-  }, []);
+  }, [platform]);
 
   const ensureHealthConnect = useCallback(async (): Promise<HealthConnectPlugin | null> => {
     try {
-      const { Capacitor } = await import("@capacitor/core");
-      if (!Capacitor.isPluginAvailable("HealthConnect")) {
-        logger.warn("Health Connect plugin is not available on this platform.");
+      if (platform !== "android") {
         return null;
       }
+
       const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
-      return HealthConnect;
+      if (HealthConnect) {
+        return HealthConnect;
+      }
+
+      logger.warn("Health Connect plugin failed to load even though this device reports Android.");
+      return null;
     } catch (error) {
       logger.error("Failed to load Health Connect plugin", error);
       return null;
     }
-  }, []);
+  }, [platform]);
 
   interface RefreshOptions {
     silent?: boolean;
@@ -445,26 +460,31 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
         return;
       }
 
+      const previousValue = Boolean(permissionStates[item.id]);
+      setPermissionStates((prev) => ({ ...prev, [item.id]: nextValue }));
       setPendingId(item.id);
 
       let shouldRefreshAfter = false;
+      let succeeded = false;
+
       try {
         if (nextValue) {
           if (platform === "ios" && item.iosPermission) {
             if (!isIosPermissionSupported(item.iosPermission)) {
               toast.info(`${item.label} isn't available to import from Apple Health yet.`);
-              return;
+              throw new PermissionToggleAbortedError("unsupported-ios-permission");
             }
+
             const health = await ensureAppleHealth();
             if (!health) {
               toast.error("Apple Health integration isn't available on this device.");
-              return;
+              throw new PermissionToggleAbortedError("missing-apple-health");
             }
 
             const availability = await health.isHealthAvailable();
             if (!availability?.available) {
               toast.info("Apple Health isn't available on this device.");
-              return;
+              throw new PermissionToggleAbortedError("apple-health-unavailable");
             }
 
             const response = await health.requestHealthPermissions({
@@ -473,22 +493,23 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             const granted = didGrantIosPermission(response, item.iosPermission);
             if (!granted) {
               toast.info(`Enable ${item.label} inside Apple Health.`);
-              return;
+              throw new PermissionToggleAbortedError("apple-health-denied");
             }
-            setPermissionStates((prev) => ({ ...prev, [item.id]: true }));
+
             toast.success(`${item.label} enabled`);
           } else if (platform === "android" && item.androidRead) {
             const healthConnect = await ensureHealthConnect();
             if (!healthConnect) {
               toast.error("Health Connect integration isn't available on this device.");
-              return;
+              throw new PermissionToggleAbortedError("missing-health-connect");
             }
 
             const availability = await healthConnect.checkAvailability();
             if (availability.availability !== "Available") {
               toast.error("Health Connect is unavailable.");
-              return;
+              throw new PermissionToggleAbortedError("health-connect-unavailable");
             }
+
             const response = await healthConnect.requestHealthPermissions({
               read: [item.androidRead],
               write: [],
@@ -498,9 +519,9 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
               : Boolean(response.hasAllPermissions);
             if (!granted) {
               toast.info(`Enable ${item.label} inside Health Connect.`);
-              return;
+              throw new PermissionToggleAbortedError("health-connect-denied");
             }
-            setPermissionStates((prev) => ({ ...prev, [item.id]: true }));
+
             toast.success(`${item.label} enabled`);
             shouldRefreshAfter = true;
           }
@@ -509,7 +530,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             const health = await ensureAppleHealth();
             if (!health) {
               toast.error("Apple Health integration isn't available on this device.");
-              return;
+              throw new PermissionToggleAbortedError("missing-apple-health");
             }
             await health.openAppleHealthSettings();
             toast.info("Turn off access from Apple Health > Sources > WorkItOut.");
@@ -517,7 +538,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             const healthConnect = await ensureHealthConnect();
             if (!healthConnect) {
               toast.error("Health Connect integration isn't available on this device.");
-              return;
+              throw new PermissionToggleAbortedError("missing-health-connect");
             }
             await healthConnect.openHealthConnectSetting();
             toast.info("Use Health Connect to revoke this permission.");
@@ -526,12 +547,20 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
               void refreshFromDevice({ silent: true });
             }, 1500);
           }
-          setPermissionStates((prev) => ({ ...prev, [item.id]: false }));
         }
+
+        succeeded = true;
       } catch (error) {
-        logger.error(`Failed to toggle permission ${item.id}`, error);
-        toast.error("Something went wrong while updating permissions.");
+        if (error instanceof PermissionToggleAbortedError) {
+          logger.debug(`Permission toggle for ${item.id} aborted: ${error.message}`);
+        } else {
+          logger.error(`Failed to toggle permission ${item.id}`, error);
+          toast.error("Something went wrong while updating permissions.");
+        }
       } finally {
+        if (!succeeded) {
+          setPermissionStates((prev) => ({ ...prev, [item.id]: previousValue }));
+        }
         setPendingId(null);
         if (shouldRefreshAfter) {
           void refreshFromDevice({ silent: true });
@@ -544,6 +573,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       ensureHealthConnect,
       isIosPermissionSupported,
       pendingId,
+      permissionStates,
       platform,
       refreshFromDevice,
     ],
