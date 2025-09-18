@@ -1,5 +1,14 @@
 import { SupabaseBase, SUPABASE_URL, CACHE_TTL } from "./supabase-base";
-import type { UserRoutine, UserRoutineExercise, UserRoutineExerciseSet, Profile, Workout, WorkoutExercise, Set, BodyMeasurement } from "./supabase-types";
+import type {
+    UserRoutine,
+    UserRoutineExercise,
+    UserRoutineExerciseSet,
+    Profile,
+    Workout,
+    WorkoutExercise,
+    Set,
+    BodyMeasurement,
+} from "./supabase-types";
 import { logger } from "../logging";
 import { performanceTimer } from "../performanceTimer";
 
@@ -203,13 +212,15 @@ export class SupabaseDBWrite extends SupabaseBase {
         const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "";
         const isIOSSimulator = /iphone/i.test(userAgent) && /safari/i.test(userAgent) && !isNativePlatform;
         const shouldUseMobileFlow = isNativePlatform || isIOSSimulator;
-        
-        const redirectUrl = shouldUseMobileFlow 
-            ? 'workouttracker://auth/callback'
-            : resolveOAuthRedirectTarget(redirectTo);
+
+        const resolvedRedirect = resolveOAuthRedirectTarget(redirectTo);
+        const redirectUrl = shouldUseMobileFlow
+            ? ensureNativeRedirectScheme(resolvedRedirect)
+            : resolvedRedirect;
+
         const params = new URLSearchParams({
             provider: providerSlug,
-            redirect_to: redirectUrl
+            redirect_to: redirectUrl,
         });
 
         const providerConfig = OAUTH_PROVIDER_CONFIG[providerSlug];
@@ -223,80 +234,153 @@ export class SupabaseDBWrite extends SupabaseBase {
 
         const authUrl = `${SUPABASE_URL}/auth/v1/authorize?${params.toString()}`;
 
-        // Check if we're in a Capacitor environment (mobile app)
-        console.log('Platform check:', { 
-            hasCapacitor: !!(window as any).Capacitor, 
-            isNativePlatform,
-            isIOSSimulator,
+        logger.info("[SUPABASE] Starting OAuth sign-in", {
+            provider: providerSlug,
             shouldUseMobileFlow,
             redirectUrl,
             queryParams: providerConfig?.queryParams ?? null,
         });
-        
+
         if (shouldUseMobileFlow) {
-            try {
-                const { Browser } = await import('@capacitor/browser');
-                const { App } = await import('@capacitor/app');
-                
-                // Listen for the deep link redirect
-                const urlListener = await App.addListener('appUrlOpen', async (event) => {
-                    console.log('Deep link received:', event.url);
-                    
-                    // Handle workouttracker://auth/callback URLs
-                    if (event.url.startsWith('workouttracker://auth/callback')) {
+            const listenerHandles: ListenerHandle[] = [];
+            const removeAllListeners = async () => {
+                const handles = listenerHandles.splice(0, listenerHandles.length);
+                await Promise.all(
+                    handles.map(async (handle) => {
                         try {
-                            const url = new URL(event.url);
-                            const hash = url.hash.substring(1); // Remove the # from the fragment
-                            const params = new URLSearchParams(hash);
-                            
-                            const accessToken = params.get('access_token');
-                            const refreshToken = params.get('refresh_token');
-                            const error = params.get('error');
-                            
-                            if (error) {
-                                console.error('OAuth error:', error);
-                                return;
+                            const removal = handle.remove();
+                            if (removal && typeof (removal as Promise<void>).then === "function") {
+                                await removal;
                             }
-                            
-                            if (accessToken) {
-                                console.log('OAuth success! Access token received');
-                                // Store the session directly
-                                this.setToken(accessToken);
-                                
-                                // Close the browser
-                                try {
-                                    await Browser.close();
-                                } catch (err) {
-                                    console.warn('Failed to close browser:', err);
-                                }
-                                
-                                // Trigger auth success callback
-                                window.dispatchEvent(new CustomEvent('auth-success', { 
-                                    detail: { 
-                                        token: accessToken, 
-                                        refreshToken: refreshToken 
-                                    } 
-                                }));
-                                
-                                urlListener.remove();
-                            }
-                        } catch (err) {
-                            console.error('Error parsing OAuth response:', err);
+                        } catch (removalError) {
+                            logger.warn("Failed to remove OAuth listener:", removalError);
+                        }
+                    })
+                );
+            };
+
+            let flowSettled = false;
+
+            try {
+                const { Browser } = await import("@capacitor/browser");
+                const { App } = await import("@capacitor/app");
+
+                const matchesRedirect = createRedirectMatcher(redirectUrl);
+
+                const finalize = async (
+                    status: "success" | "error" | "cancelled",
+                    detail?: { token?: string; refreshToken?: string; message?: string },
+                    options?: { closeBrowser?: boolean }
+                ) => {
+                    if (flowSettled) return;
+                    flowSettled = true;
+
+                    if (status === "success" && detail?.token) {
+                        this.setToken(detail.token);
+                    }
+
+                    if (options?.closeBrowser) {
+                        try {
+                            await Browser.close();
+                        } catch (closeError) {
+                            logger.warn("Failed to close OAuth browser window:", closeError);
                         }
                     }
-                });
 
-                // Open OAuth URL in browser
+                    await removeAllListeners();
+
+                    if (status === "success" && detail?.token && detail?.refreshToken) {
+                        dispatchAuthSuccess(provider, detail.token, detail.refreshToken);
+                        logger.info("[SUPABASE] OAuth sign-in succeeded", { provider: providerSlug });
+                        return;
+                    }
+
+                    if (status === "error") {
+                        const message = formatOAuthErrorMessage(provider, detail?.message);
+                        logger.error("[SUPABASE] OAuth sign-in failed", { provider: providerSlug, message });
+                        dispatchAuthError(provider, message);
+                        return;
+                    }
+
+                    logger.info("[SUPABASE] OAuth sign-in cancelled", { provider: providerSlug });
+                    dispatchAuthCancelled(provider);
+                };
+
+                const appListener = await App.addListener("appUrlOpen", async (event) => {
+                    const incomingUrl = event?.url;
+                    if (!incomingUrl || !matchesRedirect(incomingUrl)) return;
+
+                    try {
+                        const url = new URL(incomingUrl);
+                        const fragment = url.hash?.startsWith("#") ? url.hash.slice(1) : "";
+                        const query = fragment || (url.search?.startsWith("?") ? url.search.slice(1) : "");
+                        const responseParams = new URLSearchParams(query);
+
+                        const errorDescription = responseParams.get("error_description");
+                        const error = responseParams.get("error");
+
+                        if (error || errorDescription) {
+                            await finalize(
+                                "error",
+                                { message: errorDescription ?? error ?? undefined },
+                                { closeBrowser: true }
+                            );
+                            return;
+                        }
+
+                        const accessToken = responseParams.get("access_token");
+                        const refreshToken = responseParams.get("refresh_token");
+
+                        if (!accessToken) {
+                            await finalize(
+                                "error",
+                                { message: "No access token received from the OAuth redirect." },
+                                { closeBrowser: true }
+                            );
+                            return;
+                        }
+
+                        if (!refreshToken) {
+                            await finalize(
+                                "error",
+                                {
+                                    message:
+                                        "No refresh token received from the OAuth redirect. Ensure offline access is enabled for this provider.",
+                                },
+                                { closeBrowser: true }
+                            );
+                            return;
+                        }
+
+                        await finalize("success", { token: accessToken, refreshToken }, { closeBrowser: true });
+                    } catch (parseError) {
+                        logger.error("[SUPABASE] Error parsing OAuth response", parseError);
+                        await finalize(
+                            "error",
+                            { message: "We couldn't process the sign-in response. Please try again." },
+                            { closeBrowser: true }
+                        );
+                    }
+                });
+                listenerHandles.push(appListener);
+
+                const browserFinishedListener = await Browser.addListener("browserFinished", () => {
+                    if (flowSettled) return;
+                    void finalize("cancelled");
+                });
+                listenerHandles.push(browserFinishedListener);
+
                 await Browser.open({ url: authUrl });
-            } catch (importError) {
-                console.warn('Capacitor plugins not available, falling back to window.location:', importError);
-                // Fallback to window.location if Capacitor plugins aren't available
+            } catch (nativeError) {
+                await removeAllListeners();
+                logger.warn("Capacitor plugins not available, falling back to window.location:", nativeError);
                 window.location.assign(authUrl);
             }
-        } else {
-            // Fallback for web browsers
-            window.location.assign(authUrl);
+
+            return;
         }
+
+        window.location.assign(authUrl);
     }
 
     async exchangeCodeForSession(code: string): Promise<void> {

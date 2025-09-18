@@ -133,7 +133,7 @@ export function WelcomeScreen({
     }
   };
 
-  // Listen for OAuth success events
+  // Listen for OAuth events to reset button state across web/native flows
   useEffect(() => {
     const handleAuthSuccess = (event: Event) => {
       const detail = (
@@ -197,9 +197,13 @@ export function WelcomeScreen({
     };
 
     window.addEventListener('auth-success', handleAuthSuccess as EventListener);
-    
+    window.addEventListener('auth-error', handleAuthError as EventListener);
+    window.addEventListener('auth-cancelled', handleAuthCancelled as EventListener);
+
     return () => {
       window.removeEventListener('auth-success', handleAuthSuccess as EventListener);
+      window.removeEventListener('auth-error', handleAuthError as EventListener);
+      window.removeEventListener('auth-cancelled', handleAuthCancelled as EventListener);
     };
   }, [onAuthSuccess]);
 
