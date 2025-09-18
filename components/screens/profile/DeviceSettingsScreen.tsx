@@ -579,34 +579,72 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
     ],
   );
 
-  const handleOpenSettings = useCallback(async () => {
+  const openAppleHealthSettings = useCallback(async (): Promise<boolean> => {
     try {
-      if (!canManageOnDevice) {
-        toast.info("Open this screen on your phone to manage permissions.");
-        return;
+      const health = await ensureAppleHealth();
+      if (!health) {
+        toast.error("Apple Health integration isn't available on this device.");
+        return false;
       }
-
-      if (platform === "ios") {
-        const health = await ensureAppleHealth();
-        if (!health) {
-          toast.error("Apple Health integration isn't available on this device.");
-          return;
-        }
-        await health.openAppleHealthSettings();
-      } else if (platform === "android") {
-        const healthConnect = await ensureHealthConnect();
-        if (!healthConnect) {
-          toast.error("Health Connect integration isn't available on this device.");
-          return;
-        }
-        await healthConnect.openHealthConnectSetting();
-      }
-      toast.success("Opening device health settings…");
+      await health.openAppleHealthSettings();
+      return true;
     } catch (error) {
-      logger.error("Failed to open health settings", error);
-      toast.error("Unable to open health settings on this device.");
+      logger.error("Failed to open Apple Health settings", error);
+      toast.error("Unable to open Apple Health settings on this device.");
+      return false;
     }
-  }, [canManageOnDevice, ensureAppleHealth, ensureHealthConnect, platform]);
+  }, [ensureAppleHealth]);
+
+  const openHealthConnectSettings = useCallback(async (): Promise<boolean> => {
+    try {
+      const healthConnect = await ensureHealthConnect();
+      if (!healthConnect) {
+        toast.error("Health Connect integration isn't available on this device.");
+        return false;
+      }
+      await healthConnect.openHealthConnectSetting();
+      return true;
+    } catch (error) {
+      logger.error("Failed to open Health Connect settings", error);
+      toast.error("Unable to open Health Connect settings on this device.");
+      return false;
+    }
+  }, [ensureHealthConnect]);
+
+  const handleOpenSettings = useCallback(async () => {
+    if (!canManageOnDevice) {
+      toast.info("Open this screen on your phone to manage permissions.");
+      return;
+    }
+
+    let opened = false;
+    if (platform === "ios") {
+      opened = await openAppleHealthSettings();
+    } else if (platform === "android") {
+      opened = await openHealthConnectSettings();
+    }
+
+    if (opened) {
+      toast.success("Opening device health settings…");
+    }
+  }, [canManageOnDevice, openAppleHealthSettings, openHealthConnectSettings, platform]);
+
+  const handleManageInAppleHealth = useCallback(async () => {
+    if (!canManageOnDevice) {
+      toast.info("Open this screen on your phone to manage permissions.");
+      return;
+    }
+
+    if (platform !== "ios") {
+      await handleOpenSettings();
+      return;
+    }
+
+    const opened = await openAppleHealthSettings();
+    if (opened) {
+      toast.success("Opening Apple Health settings…");
+    }
+  }, [canManageOnDevice, handleOpenSettings, openAppleHealthSettings, platform]);
 
   const handleRefresh = useCallback(async () => {
     if (!canManageOnDevice) {
@@ -656,8 +694,13 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       }
     }
 
+    const hasRequestedOnIos =
+      platform === "ios" && Boolean(permissionStates[item.id]) && supported;
+
     const description = supported
-      ? item.description
+      ? hasRequestedOnIos
+        ? "Manage this permission from Apple Health > Sources > WorkItOut."
+        : item.description
       : item.platformNotes?.[effectivePlatform] ||
         (!canManageOnDevice
           ? "Open WorkItOut on your phone to manage device permissions."
@@ -665,6 +708,13 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
 
     const isDisabled = !supported || pendingId === item.id || !canManageOnDevice;
     const checked = Boolean(permissionStates[item.id]);
+
+    const showSwitch =
+      supported && canManageOnDevice &&
+      ((platform === "android" && item.androidRead) ||
+        (platform === "ios" && item.iosPermission && !hasRequestedOnIos));
+    const showManageInAppleHealth =
+      platform === "ios" && hasRequestedOnIos && canManageOnDevice;
 
     return (
       <div key={item.id} className="flex items-center gap-3 px-4 py-3">
@@ -687,12 +737,24 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             {description}
           </p>
         </div>
-        <PermissionSwitch
-          checked={checked}
-          disabled={isDisabled}
-          pending={pendingId === item.id}
-          onCheckedChange={(next) => handleToggle(item, next)}
-        />
+        {showSwitch ? (
+          <PermissionSwitch
+            checked={checked}
+            disabled={isDisabled}
+            pending={pendingId === item.id}
+            onCheckedChange={(next) => handleToggle(item, next)}
+          />
+        ) : showManageInAppleHealth ? (
+          <TactileButton
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={handleManageInAppleHealth}
+            disabled={pendingId === item.id}
+          >
+            Manage in Apple Health
+          </TactileButton>
+        ) : null}
       </div>
     );
   };
@@ -722,6 +784,12 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
               WorkItOut uses {platformLabel} to read workout metrics and sync your body measurements.
               Choose the data sources that feel right for you.
             </p>
+            {platform === "ios" ? (
+              <p className="text-xs leading-5 text-black/60">
+                After you respond to the first permission request, continue managing access from the
+                Health app.
+              </p>
+            ) : null}
             <div className="flex flex-wrap gap-3 pt-1">
               <TactileButton
                 type="button"
