@@ -48,6 +48,27 @@ const DEFAULT_LENGTH_UNIT: LengthUnit = "cm";
 const DEFAULT_WEIGHT_UNIT: WeightUnit = "kg";
 const DEFAULT_GENDER: GenderOption = "prefer_not_to_say";
 
+const LENGTH_UNIT_LABELS: Record<LengthUnit, string> = {
+  cm: "CM",
+  m: "M",
+};
+
+const WEIGHT_UNIT_LABELS: Record<WeightUnit, string> = {
+  kg: "KG",
+  lbs: "LBS",
+};
+
+const createSegmentedOptions = <Value extends string>(
+  labels: Record<Value, string>,
+): ReadonlyArray<{ value: Value; label: string }> =>
+  Object.entries(labels).map(([value, label]) => ({
+    value: value as Value,
+    label,
+  }));
+
+const LENGTH_UNIT_OPTIONS = createSegmentedOptions<LengthUnit>(LENGTH_UNIT_LABELS);
+const WEIGHT_UNIT_OPTIONS = createSegmentedOptions<WeightUnit>(WEIGHT_UNIT_LABELS);
+
 const createEmptyState = (): FormState => ({
   displayName: "",
   firstName: "",
@@ -396,10 +417,7 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
                   <SegmentedToggle<LengthUnit>
                     value={formState.lengthUnit}
                     onChange={handleLengthUnitChange}
-                    options={[
-                      { value: "cm", label: "CM" },
-                      { value: "m", label: "M" },
-                    ]}
+                    options={LENGTH_UNIT_OPTIONS}
                     size="md"
                     variant="filled"
                     tone="accent"
@@ -415,10 +433,7 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
                   <SegmentedToggle<WeightUnit>
                     value={formState.weightUnit}
                     onChange={handleWeightUnitChange}
-                    options={[
-                      { value: "kg", label: "KG" },
-                      { value: "lbs", label: "LBS" },
-                    ]}
+                    options={WEIGHT_UNIT_OPTIONS}
                     size="md"
                     variant="filled"
                     tone="accent"
