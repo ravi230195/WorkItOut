@@ -11,7 +11,6 @@ import {
   LifeBuoy,
   LogOut,
   PlayCircle,
-  Settings,
   Shield,
   Smartphone,
   User,
@@ -26,10 +25,9 @@ import type { LucideIcon } from "lucide-react";
 interface ProfileScreenProps {
   bottomBar?: React.ReactNode;
   onNavigateToMyAccount?: () => void;
-  onNavigateToAppSettings?: () => void;
 }
 
-export function ProfileScreen({ bottomBar, onNavigateToMyAccount, onNavigateToAppSettings }: ProfileScreenProps) {
+export function ProfileScreen({ bottomBar, onNavigateToMyAccount }: ProfileScreenProps) {
 
   const { userToken, signOut: authSignOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -53,12 +51,6 @@ export function ProfileScreen({ bottomBar, onNavigateToMyAccount, onNavigateToAp
           description: "Profile details and connected services",
           icon: User,
           onPress: onNavigateToMyAccount,
-        },
-        {
-          label: "App Settings",
-          description: "Customize notifications and themes",
-          icon: Settings,
-          onPress: onNavigateToAppSettings,
         },
         {
           label: "Device Settings",

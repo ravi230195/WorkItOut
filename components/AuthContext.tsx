@@ -176,7 +176,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         user.user_metadata,
         user.email
       );
-      await supabaseAPI.upsertProfile(firstName, lastName, displayName);
+      await supabaseAPI.upsertProfile({
+        firstName,
+        lastName,
+        displayName,
+      });
       return true;
     } catch (error) {
       logger.error("Failed to finish profile setup after OAuth sign-in:", error);

@@ -1,5 +1,17 @@
 import { SupabaseBase, SUPABASE_URL, CACHE_TTL } from "./supabase-base";
-import type { UserRoutine, UserRoutineExercise, UserRoutineExerciseSet, Profile, Workout, WorkoutExercise, Set, BodyMeasurement } from "./supabase-types";
+import type {
+    UserRoutine,
+    UserRoutineExercise,
+    UserRoutineExerciseSet,
+    Profile,
+    Workout,
+    WorkoutExercise,
+    Set,
+    BodyMeasurement,
+    UnitLength,
+    UnitWeight,
+    GenderType,
+} from "./supabase-types";
 import { logger } from "../logging";
 import { performanceTimer } from "../performanceTimer";
 
@@ -857,14 +869,27 @@ export class SupabaseDBWrite extends SupabaseBase {
     }
 
     // Profile write
-    async upsertProfile(
-        firstName: string,
-        lastName: string,
-        displayName: string,
-        heightCm?: number,
-        weightKg?: number,
-        userId?: string
-    ): Promise<Profile | null> {
+    async upsertProfile({
+        firstName,
+        lastName,
+        displayName,
+        heightCm,
+        weightKg,
+        lengthUnit = "cm",
+        weightUnit = "kg",
+        gender = "prefer_not_to_say",
+        userId,
+    }: {
+        firstName: string;
+        lastName: string;
+        displayName: string;
+        heightCm?: number;
+        weightKg?: number;
+        lengthUnit?: UnitLength;
+        weightUnit?: UnitWeight;
+        gender?: GenderType;
+        userId?: string;
+    }): Promise<Profile | null> {
         return performanceTimer.timeAsync(
             `[SUPABASE] upsertProfile(${displayName})`,
             async () => {
@@ -880,6 +905,9 @@ export class SupabaseDBWrite extends SupabaseBase {
                         display_name: displayName,
                         height_cm: heightCm,
                         weight_kg: weightKg,
+                        length_unit: lengthUnit,
+                        weight_unit: weightUnit,
+                        gender,
                     },
                     "resolution=merge-duplicates, return=representation"
                 );
