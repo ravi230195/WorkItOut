@@ -270,6 +270,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
     [],
   );
   const hasLoadedStoredStateRef = useRef(false);
+  const hasAutoRequestedPermissionsRef = useRef(false);
 
   const effectivePlatform: StoragePlatform = useMemo(
     () => toStoragePlatform(platform),
@@ -441,6 +442,128 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
     },
     [canManageOnDevice, ensureAppleHealth, ensureHealthConnect, platform],
   );
+
+  const requestAllPermissions = useCallback(
+    async ({ silent }: RefreshOptions = {}) => {
+      if (!canManageOnDevice) {
+        if (!silent) {
+          toast.info("Open this screen on your phone to manage permissions.");
+        }
+        return;
+      }
+
+      try {
+        if (platform === "ios") {
+          const health = await ensureAppleHealth();
+          if (!health) {
+            toast.error("Apple Health integration isn't available on this device.");
+            return;
+          }
+
+          const availability = await health.isHealthAvailable();
+          if (!availability?.available) {
+            toast.info("Apple Health isn't available on this device.");
+            return;
+          }
+
+          const readPermissions = READ_PERMISSION_CONFIG
+            .map((item) => item.iosPermission)
+            .filter((permission): permission is HealthPermission =>
+              Boolean(permission && isIosPermissionSupported(permission)),
+            );
+
+          if (readPermissions.length === 0) {
+            if (!silent) {
+              toast.info("No Apple Health permissions are available right now.");
+            }
+            return;
+          }
+
+          if (!silent) {
+            toast.success("Review Apple Health access");
+          }
+
+          const response = await health.requestHealthPermissions({
+            read: readPermissions,
+          });
+
+          setPermissionStates((prev) => {
+            const next = { ...prev };
+            for (const item of READ_PERMISSION_CONFIG) {
+              const permission = item.iosPermission;
+              if (!permission || !isIosPermissionSupported(permission)) continue;
+              next[item.id] = didGrantIosPermission(response, permission);
+            }
+            return next;
+          });
+        } else if (platform === "android") {
+          const healthConnect = await ensureHealthConnect();
+          if (!healthConnect) {
+            toast.error("Health Connect integration isn't available on this device.");
+            return;
+          }
+
+          const availability = await healthConnect.checkAvailability();
+          if (availability.availability !== "Available") {
+            toast.info("Health Connect isn't available on this device.");
+            return;
+          }
+
+          const readTypes = READ_PERMISSION_CONFIG
+            .map((item) => item.androidRead)
+            .filter((type): type is HealthConnectRecordType => Boolean(type));
+
+          if (readTypes.length === 0) {
+            if (!silent) {
+              toast.info("No Health Connect permissions are available right now.");
+            }
+            return;
+          }
+
+          if (!silent) {
+            toast.success("Review Health Connect access");
+          }
+
+          const response = await healthConnect.requestHealthPermissions({
+            read: readTypes,
+            write: [],
+          });
+
+          const granted = new Set(response.grantedPermissions ?? []);
+          setPermissionStates((prev) => {
+            const next = { ...prev };
+            for (const item of READ_PERMISSION_CONFIG) {
+              if (!item.androidRead) continue;
+              next[item.id] = granted.has(item.androidRead);
+            }
+            return next;
+          });
+        }
+      } catch (error) {
+        logger.error("Failed to request device permissions", error);
+        toast.error("Couldn't open the device permission request.");
+      } finally {
+        await refreshFromDevice({ silent: true });
+      }
+    },
+    [
+      canManageOnDevice,
+      ensureAppleHealth,
+      ensureHealthConnect,
+      isIosPermissionSupported,
+      platform,
+      refreshFromDevice,
+    ],
+  );
+
+  useEffect(() => {
+    if (!canManageOnDevice || hasAutoRequestedPermissionsRef.current) {
+      return;
+    }
+
+    hasAutoRequestedPermissionsRef.current = true;
+    void requestAllPermissions({ silent: true });
+  }, [canManageOnDevice, requestAllPermissions]);
 
   useEffect(() => {
     void refreshFromDevice({ silent: true });
@@ -629,6 +752,10 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
     }
   }, [canManageOnDevice, openAppleHealthSettings, openHealthConnectSettings, platform]);
 
+  const handleRequestPermissions = useCallback(async () => {
+    await requestAllPermissions({ silent: false });
+  }, [requestAllPermissions]);
+
   const handleManageInAppleHealth = useCallback(async () => {
     if (!canManageOnDevice) {
       toast.info("Open this screen on your phone to manage permissions.");
@@ -794,13 +921,27 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
               <TactileButton
                 type="button"
                 size="sm"
+                variant="primary"
+                onClick={handleRequestPermissions}
+                disabled={!canManageOnDevice}
+              >
+                Request permissions
+              </TactileButton>
+              <TactileButton
+                type="button"
+                size="sm"
                 variant="secondary"
                 onClick={handleRefresh}
                 disabled={isRefreshing || !canManageOnDevice}
               >
                 {isRefreshing ? "Refreshing…" : "Refresh status"}
               </TactileButton>
-              <TactileButton type="button" size="sm" variant="primary" onClick={handleOpenSettings}>
+              <TactileButton
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={handleOpenSettings}
+              >
                 Open health settings
               </TactileButton>
             </div>
