@@ -31,6 +31,16 @@ const STORAGE_KEY_PREFIX = "device-permissions-state";
 type Platform = "ios" | "android" | "web" | "unknown";
 type StoragePlatform = "ios" | "android" | "web";
 
+const SUPPORTED_IOS_PERMISSIONS: readonly HealthPermission[] = [
+  "READ_STEPS",
+  "READ_WORKOUTS",
+  "READ_ACTIVE_CALORIES",
+  "READ_HEART_RATE",
+  "READ_ROUTE",
+  "READ_DISTANCE",
+  "READ_MINDFULNESS",
+];
+
 type PermissionStates = Record<string, boolean>;
 
 interface PermissionItem {
@@ -90,8 +100,8 @@ const READ_PERMISSION_CONFIG: PermissionItem[] = [
     icon: Utensils,
     iconBgClass: "bg-[#F8E8E8]",
     iconColorClass: "text-[#D26A5A]",
-    iosPermission: "READ_TOTAL_CALORIES",
     platformNotes: {
+      ios: "Apple Health access for dietary energy isn't supported yet.",
       android: "We will surface dietary energy when Health Connect provides nutrition APIs.",
     },
   },
@@ -213,6 +223,11 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const isIosPermissionSupported = useCallback(
+    (permission?: HealthPermission | null) =>
+      Boolean(permission && SUPPORTED_IOS_PERMISSIONS.includes(permission)),
+    [],
+  );
   const hasLoadedStoredStateRef = useRef(false);
 
   const effectivePlatform: StoragePlatform = useMemo(
@@ -387,7 +402,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       if (pendingId) return;
       const supportsCurrentPlatform =
         platform === "ios"
-          ? Boolean(item.iosPermission)
+          ? isIosPermissionSupported(item.iosPermission)
           : platform === "android"
             ? Boolean(item.androidRead)
             : false;
@@ -398,9 +413,14 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
 
       setPendingId(item.id);
 
+      let shouldRefreshAfter = false;
       try {
         if (nextValue) {
           if (platform === "ios" && item.iosPermission) {
+            if (!isIosPermissionSupported(item.iosPermission)) {
+              toast.info(`${item.label} isn't available to import from Apple Health yet.`);
+              return;
+            }
             const health = await ensureAppleHealth();
             if (!health) {
               toast.error("Apple Health integration isn't available on this device.");
@@ -451,6 +471,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             }
             setPermissionStates((prev) => ({ ...prev, [item.id]: true }));
             toast.success(`${item.label} enabled`);
+            shouldRefreshAfter = true;
           }
         } else {
           if (platform === "ios") {
@@ -481,12 +502,16 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
         toast.error("Something went wrong while updating permissions.");
       } finally {
         setPendingId(null);
+        if (shouldRefreshAfter) {
+          void refreshFromDevice({ silent: true });
+        }
       }
     },
     [
       canManageOnDevice,
       ensureAppleHealth,
       ensureHealthConnect,
+      isIosPermissionSupported,
       pendingId,
       platform,
       refreshFromDevice,
@@ -537,7 +562,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
   const renderPermissionRow = (item: PermissionItem) => {
     const supported =
       platform === "ios"
-        ? Boolean(item.iosPermission) && !item.comingSoon
+        ? isIosPermissionSupported(item.iosPermission) && !item.comingSoon
         : platform === "android"
           ? Boolean(item.androidRead) && !item.comingSoon
           : false;
