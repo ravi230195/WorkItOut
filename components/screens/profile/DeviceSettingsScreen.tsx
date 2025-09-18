@@ -244,18 +244,34 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       try {
         const { Health } = await import("capacitor-health");
 
+        if (platform === "ios") {
+          const label = permissionLabel(permission);
+          if (enable) {
+            try {
+              const response = await Health.requestHealthPermissions({ permissions: [permission] });
+              applyPermissionResponse(response);
+            } catch (error) {
+              logger.error("[device-settings] Failed to request Apple Health permission", error);
+              toast.error(`Unable to request ${label} from Apple Health.`);
+              return;
+            }
+          } else {
+            setPermissionStates((prev) => ({ ...prev, [permission]: false }));
+          }
+
+          const action = enable ? "Enable" : "Disable";
+          toast.info(`${action} ${label} from Apple Health. We'll open it now.`);
+          await Health.openAppleHealthSettings();
+          return;
+        }
+
         if (enable) {
           const response = await Health.requestHealthPermissions({ permissions: [permission] });
           applyPermissionResponse(response);
           toast.success(`${permissionLabel(permission)} enabled`);
         } else {
-          if (platform === "ios") {
-            await Health.openAppleHealthSettings();
-            toast.info("Disable this permission from Apple Health > Access & Devices.");
-          } else {
-            await Health.openHealthConnectSettings();
-            toast.info("Disable this permission directly from Health Connect.");
-          }
+          await Health.openHealthConnectSettings();
+          toast.info("Disable this permission directly from Health Connect.");
           setPermissionStates((prev) => ({ ...prev, [permission]: false }));
         }
       } catch (error) {
@@ -284,6 +300,13 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
         permissions: [...TRACKED_PERMISSIONS],
       });
       applyPermissionResponse(response);
+
+      if (platform === "ios") {
+        toast.info("Review these permissions in Apple Health. We'll open it now.");
+        await Health.openAppleHealthSettings();
+        return;
+      }
+
       toast.success("Requested all available Health permissions.");
     } catch (error) {
       logger.error("[device-settings] Failed to request all permissions", error);
