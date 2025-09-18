@@ -15,6 +15,7 @@ import { Label } from "../../ui/label";
 import { supabaseAPI, Profile } from "../../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { logger } from "../../../utils/logging";
+import SegmentedToggle from "../../segmented/SegmentedToggle";
 
 interface MyAccountScreenProps {
   onBack: () => void;
@@ -36,12 +37,29 @@ const emptyState: FormState = {
   weightKg: "",
 };
 
+type LengthUnit = "cm" | "m";
+type WeightUnit = "kg" | "lbs";
+type GenderOption = "male" | "female" | "non_binary" | "prefer_not_to_say";
+
+const genderOptions: Array<{ value: GenderOption; label: string }> = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "non_binary", label: "Non-binary" },
+  { value: "prefer_not_to_say", label: "Prefer not to say" },
+];
+
 export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
   const formId = "my-account-form";
   const [formState, setFormState] = useState<FormState>(emptyState);
   const [initialState, setInitialState] = useState<FormState>(emptyState);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [lengthUnit, setLengthUnit] = useState<LengthUnit>("cm");
+  const [initialLengthUnit, setInitialLengthUnit] = useState<LengthUnit>("cm");
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>("kg");
+  const [initialWeightUnit, setInitialWeightUnit] = useState<WeightUnit>("kg");
+  const [gender, setGender] = useState<GenderOption>("prefer_not_to_say");
+  const [initialGender, setInitialGender] = useState<GenderOption>("prefer_not_to_say");
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -86,9 +104,19 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
     return name.slice(0, 2).toUpperCase();
   }, [displayName]);
 
-  const isDirty = useMemo(() => {
+  const hasFormChanges = useMemo(() => {
     return JSON.stringify(formState) !== JSON.stringify(initialState);
   }, [formState, initialState]);
+
+  const hasPreferenceChanges = useMemo(() => {
+    return (
+      lengthUnit !== initialLengthUnit ||
+      weightUnit !== initialWeightUnit ||
+      gender !== initialGender
+    );
+  }, [gender, initialGender, initialLengthUnit, initialWeightUnit, lengthUnit, weightUnit]);
+
+  const isDirty = hasFormChanges || hasPreferenceChanges;
 
   const handleChange = (field: keyof FormState) =>
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -142,6 +170,14 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
 
       setFormState(nextState);
       setInitialState(nextState);
+      setInitialLengthUnit(lengthUnit);
+      setInitialWeightUnit(weightUnit);
+      setInitialGender(gender);
+      logger.info("[MyAccount] Saved profile preferences", {
+        lengthUnit,
+        weightUnit,
+        gender,
+      });
       toast.success("Profile updated successfully.");
     } catch (error) {
       logger.error("Failed to update profile:", error);
@@ -149,6 +185,20 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleLengthUnitChange = (value: LengthUnit) => {
+    setLengthUnit(value);
+    logger.info(`[MyAccount] Length unit set to ${value.toUpperCase()}`);
+  };
+
+  const handleWeightUnitChange = (value: WeightUnit) => {
+    setWeightUnit(value);
+    logger.info(`[MyAccount] Weight unit set to ${value.toUpperCase()}`);
+  };
+
+  const handleGenderChange = (value: GenderOption) => {
+    setGender(value);
   };
 
   return (
@@ -255,6 +305,12 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
                     disabled={isLoading || isSaving}
                   />
                 </div>
+
+                <GenderSelect
+                  value={gender}
+                  onChange={handleGenderChange}
+                  disabled={isLoading || isSaving}
+                />
               </div>
             </div>
           </Section>
@@ -300,6 +356,60 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
             </div>
           </Section>
 
+          <Section variant="plain" padding="none">
+            <div className="rounded-3xl border border-border bg-card/80 backdrop-blur-sm p-6 shadow-sm space-y-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-black/60">
+                  Unit Preferences
+                </p>
+                <h2 className="mt-2 text-lg font-semibold text-black">
+                  Choose how measurements are displayed
+                </h2>
+                <p className="text-sm text-black/60 mt-1">
+                  Select your preferred units for length and weight.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm font-semibold uppercase tracking-[0.14em] text-black">
+                    Length Units
+                  </p>
+                  <SegmentedToggle<LengthUnit>
+                    value={lengthUnit}
+                    onChange={handleLengthUnitChange}
+                    options={[
+                      { value: "cm", label: "CM" },
+                      { value: "m", label: "M" },
+                    ]}
+                    size="md"
+                    variant="filled"
+                    tone="accent"
+                  />
+                </div>
+
+                <div className="h-px bg-border/80" />
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm font-semibold uppercase tracking-[0.14em] text-black">
+                    Weight Units
+                  </p>
+                  <SegmentedToggle<WeightUnit>
+                    value={weightUnit}
+                    onChange={handleWeightUnitChange}
+                    options={[
+                      { value: "kg", label: "KG" },
+                      { value: "lbs", label: "LBS" },
+                    ]}
+                    size="md"
+                    variant="filled"
+                    tone="accent"
+                  />
+                </div>
+              </div>
+            </div>
+          </Section>
+
         </Stack>
       </form>
     </AppScreen>
@@ -308,6 +418,46 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
 
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
+}
+
+interface GenderSelectProps {
+  value: GenderOption;
+  onChange: (value: GenderOption) => void;
+  disabled?: boolean;
+}
+
+function GenderSelect({ value, onChange, disabled }: GenderSelectProps) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs font-semibold uppercase tracking-[0.18em] text-black/60">
+        Gender
+      </Label>
+      <div className="relative">
+        <select
+          className="bg-input-background border border-border text-sm h-11 rounded-xl w-full px-4 pr-10 text-black transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
+          value={value}
+          onChange={(event) => onChange(event.target.value as GenderOption)}
+          disabled={disabled}
+        >
+          {genderOptions.map((option) => (
+            <option key={option.value} value={option.value} className="text-black">
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 20 20"
+          className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/60"
+        >
+          <path
+            fill="currentColor"
+            d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.204l3.71-3.973a.75.75 0 1 1 1.08 1.04l-4.24 4.54a.75.75 0 0 1-1.08 0l-4.25-4.54a.75.75 0 0 1 .02-1.06Z"
+          />
+        </svg>
+      </div>
+    </div>
+  );
 }
 
 function Field({ label, className, ...inputProps }: FieldProps) {
