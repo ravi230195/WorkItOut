@@ -199,6 +199,40 @@ const toStoragePlatform = (platform: Platform): StoragePlatform => {
 const storageKeyForPlatform = (platform: StoragePlatform) =>
   `${STORAGE_KEY_PREFIX}:${platform}`;
 
+type IosPermissionResponse = Awaited<
+  ReturnType<CapacitorHealthPlugin["requestHealthPermissions"]>
+>;
+
+const didGrantIosPermission = (
+  response: IosPermissionResponse | null | undefined,
+  permission: HealthPermission,
+) => {
+  if (!response) {
+    return true;
+  }
+
+  const { permissions } = response;
+  if (!permissions) {
+    return true;
+  }
+
+  if (Array.isArray(permissions)) {
+    if (permissions.length === 0) {
+      return true;
+    }
+    return permissions.some((entry) => Boolean(entry?.[permission]));
+  }
+
+  if (typeof permissions === "object") {
+    const record = permissions as Record<string, boolean>;
+    if (permission in record) {
+      return Boolean(record[permission]);
+    }
+  }
+
+  return true;
+};
+
 const loadStoredPermissions = (platform: StoragePlatform): PermissionStates => {
   if (typeof window === "undefined") return { ...defaultPermissionState };
   try {
@@ -436,10 +470,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             const response = await health.requestHealthPermissions({
               permissions: [item.iosPermission],
             });
-            const granted =
-              typeof response?.permissions === "object"
-                ? Boolean((response.permissions as Record<string, boolean>)[item.iosPermission])
-                : true;
+            const granted = didGrantIosPermission(response, item.iosPermission);
             if (!granted) {
               toast.info(`Enable ${item.label} inside Apple Health.`);
               return;
@@ -641,7 +672,6 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       header={
         <ScreenHeader
           title="Device Settings"
-          subtitle={`Manage ${platformLabel} permissions`}
           onBack={onBack}
           denseSmall
           showBorder
