@@ -132,20 +132,37 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
 
   const applyPermissionResponse = useCallback(
     (response?: PermissionResponse) => {
-      if (!response?.permissions) return;
-      setPermissionStates((prev) => {
-        const next = { ...prev };
-        for (const entry of response.permissions) {
+      const { permissions } = response ?? {};
+      if (!permissions) return;
+
+      const updates: Partial<PermissionStateMap> = {};
+
+      const assignIfTracked = (permission: string, value: unknown) => {
+        const typedPermission = permission as HealthPermission;
+        if (isTrackedPermission(typedPermission)) {
+          updates[typedPermission] = Boolean(value);
+        }
+      };
+
+      if (Array.isArray(permissions)) {
+        for (const entry of permissions) {
           if (!entry) continue;
-          for (const [key, value] of Object.entries(entry)) {
-            const permission = key as HealthPermission;
-            if (isTrackedPermission(permission)) {
-              next[permission] = Boolean(value);
-            }
+          for (const [permission, value] of Object.entries(entry)) {
+            assignIfTracked(permission, value);
           }
         }
-        return next;
-      });
+      } else if (typeof permissions === "object") {
+        for (const [permission, value] of Object.entries(permissions)) {
+          assignIfTracked(permission, value);
+        }
+      }
+
+      if (Object.keys(updates).length === 0) return;
+
+      setPermissionStates((prev) => ({
+        ...prev,
+        ...updates,
+      }));
     },
     [],
   );
