@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { toast } from "sonner";
 import { AppScreen, ScreenHeader, Section, Stack } from "../../layouts";
@@ -26,8 +26,6 @@ import type { RecordType as HealthConnectRecordType } from "@kiwi-health/capacit
 import type { HealthConnectPlugin } from "@kiwi-health/capacitor-health-connect";
 import { logger } from "../../../utils/logging";
 
-const STORAGE_KEY_PREFIX = "device-permissions-state";
-
 class PermissionToggleAbortedError extends Error {
   constructor(message: string) {
     super(message);
@@ -36,8 +34,6 @@ class PermissionToggleAbortedError extends Error {
 }
 
 type Platform = "ios" | "android" | "web" | "unknown";
-type StoragePlatform = "ios" | "android" | "web";
-
 const SUPPORTED_IOS_PERMISSIONS: readonly HealthPermission[] = [
   "READ_STEPS",
   "READ_WORKOUTS",
@@ -196,19 +192,13 @@ const defaultPermissionState: PermissionStates = READ_PERMISSION_CONFIG.reduce(
   {} as PermissionStates,
 );
 
-const toStoragePlatform = (platform: Platform): StoragePlatform => {
-  if (platform === "ios" || platform === "android") {
-    return platform;
-  }
-  return "web";
-};
-
-const storageKeyForPlatform = (platform: StoragePlatform) =>
-  `${STORAGE_KEY_PREFIX}:${platform}`;
-
 type IosPermissionResponse = Awaited<
   ReturnType<CapacitorHealthPlugin["requestHealthPermissions"]>
 >;
+
+type IosCheckPermissionsFn = (request: {
+  permissions: HealthPermission[];
+}) => Promise<IosPermissionResponse>;
 
 const didGrantIosPermission = (
   response: IosPermissionResponse | null | undefined,
@@ -240,19 +230,6 @@ const didGrantIosPermission = (
   return true;
 };
 
-const loadStoredPermissions = (platform: StoragePlatform): PermissionStates => {
-  if (typeof window === "undefined") return { ...defaultPermissionState };
-  try {
-    const raw = window.localStorage.getItem(storageKeyForPlatform(platform));
-    if (!raw) return { ...defaultPermissionState };
-    const parsed = JSON.parse(raw) as PermissionStates;
-    return { ...defaultPermissionState, ...parsed };
-  } catch (error) {
-    logger.warn("Failed to parse stored permission state", error);
-    return { ...defaultPermissionState };
-  }
-};
-
 interface DeviceSettingsScreenProps {
   onBack: () => void;
 }
@@ -269,21 +246,68 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       Boolean(permission && SUPPORTED_IOS_PERMISSIONS.includes(permission)),
     [],
   );
-  const hasLoadedStoredStateRef = useRef(false);
-  const hasAutoRequestedPermissionsRef = useRef(false);
-
-  const effectivePlatform: StoragePlatform = useMemo(
-    () => toStoragePlatform(platform),
-    [platform],
-  );
-
   const canManageOnDevice = platform === "ios" || platform === "android";
+  const normalizedPlatform: "ios" | "android" | "web" = useMemo(() => {
+    if (platform === "ios" || platform === "android") {
+      return platform;
+    }
+    return "web";
+  }, [platform]);
 
   const platformLabel = useMemo(() => {
     if (platform === "ios") return "Apple Health";
     if (platform === "android") return "Health Connect";
     return "mobile";
   }, [platform]);
+
+  const iosPermissionItems = useMemo(
+    () =>
+      READ_PERMISSION_CONFIG.filter(
+        (item) => item.iosPermission && isIosPermissionSupported(item.iosPermission),
+      ),
+    [isIosPermissionSupported],
+  );
+
+  const iosPermissions = useMemo(
+    () =>
+      iosPermissionItems
+        .map((item) => item.iosPermission)
+        .filter((permission): permission is HealthPermission => Boolean(permission)),
+    [iosPermissionItems],
+  );
+
+  const mergeIosPermissionResponse = useCallback(
+    (response: IosPermissionResponse | null | undefined) => {
+      if (iosPermissionItems.length === 0) {
+        return {} as Partial<PermissionStates>;
+      }
+
+      const updates: Partial<PermissionStates> = {};
+      for (const item of iosPermissionItems) {
+        const permission = item.iosPermission;
+        if (!permission) continue;
+        updates[item.id] = didGrantIosPermission(response, permission);
+      }
+
+      const entries = Object.entries(updates) as Array<[string, boolean]>;
+      if (entries.length > 0) {
+        setPermissionStates((prev) => {
+          let changed = false;
+          const next = { ...prev };
+          for (const [id, value] of entries) {
+            if (next[id] !== value) {
+              next[id] = value;
+              changed = true;
+            }
+          }
+          return changed ? next : prev;
+        });
+      }
+
+      return updates;
+    },
+    [iosPermissionItems, setPermissionStates],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -307,20 +331,6 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       isMounted = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!canManageOnDevice || hasLoadedStoredStateRef.current) return;
-    hasLoadedStoredStateRef.current = true;
-    setPermissionStates(loadStoredPermissions(effectivePlatform));
-  }, [canManageOnDevice, effectivePlatform]);
-
-  useEffect(() => {
-    if (platform === "unknown" || typeof window === "undefined") return;
-    window.localStorage.setItem(
-      storageKeyForPlatform(effectivePlatform),
-      JSON.stringify(permissionStates),
-    );
-  }, [effectivePlatform, permissionStates, platform]);
 
   const ensureAppleHealth = useCallback(async (): Promise<CapacitorHealthPlugin | null> => {
     try {
@@ -425,10 +435,36 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             return;
           }
 
+          if (iosPermissions.length === 0) {
+            if (!silent) {
+              toast.info("No Apple Health permissions are available to manage right now.");
+            }
+            return;
+          }
+
+          const healthWithCheck = health as CapacitorHealthPlugin & {
+            checkHealthPermissions?: IosCheckPermissionsFn;
+          };
+
+          let response: IosPermissionResponse | null = null;
+          const maybeCheck = healthWithCheck.checkHealthPermissions;
+
+          if (typeof maybeCheck === "function") {
+            try {
+              response = await maybeCheck.call(healthWithCheck, { permissions: iosPermissions });
+            } catch (error) {
+              logger.debug("Apple Health checkHealthPermissions failed", error);
+            }
+          }
+
+          if (!response) {
+            response = await health.requestHealthPermissions({ permissions: iosPermissions });
+          }
+
+          mergeIosPermissionResponse(response);
+
           if (!silent) {
-            toast.info(
-              "Apple Health manages permissions in the Health app. Adjust them there to update WorkItOut.",
-            );
+            toast.success("Apple Health permissions refreshed");
           }
         }
       } catch (error) {
@@ -440,8 +476,15 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
         setIsRefreshing(false);
       }
     },
-    [canManageOnDevice, ensureAppleHealth, ensureHealthConnect, platform],
-  );
+      [
+        canManageOnDevice,
+        ensureAppleHealth,
+        ensureHealthConnect,
+        iosPermissions,
+        mergeIosPermissionResponse,
+        platform,
+      ],
+    );
 
   const requestAllPermissions = useCallback(
     async ({ silent }: RefreshOptions = {}) => {
@@ -466,13 +509,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             return;
           }
 
-          const readPermissions = READ_PERMISSION_CONFIG
-            .map((item) => item.iosPermission)
-            .filter((permission): permission is HealthPermission =>
-              Boolean(permission && isIosPermissionSupported(permission)),
-            );
-
-          if (readPermissions.length === 0) {
+          if (iosPermissions.length === 0) {
             if (!silent) {
               toast.info("No Apple Health permissions are available right now.");
             }
@@ -484,18 +521,10 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
           }
 
           const response = await health.requestHealthPermissions({
-            read: readPermissions,
+            permissions: iosPermissions,
           });
 
-          setPermissionStates((prev) => {
-            const next = { ...prev };
-            for (const item of READ_PERMISSION_CONFIG) {
-              const permission = item.iosPermission;
-              if (!permission || !isIosPermissionSupported(permission)) continue;
-              next[item.id] = didGrantIosPermission(response, permission);
-            }
-            return next;
-          });
+          mergeIosPermissionResponse(response);
         } else if (platform === "android") {
           const healthConnect = await ensureHealthConnect();
           if (!healthConnect) {
@@ -550,20 +579,12 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       canManageOnDevice,
       ensureAppleHealth,
       ensureHealthConnect,
-      isIosPermissionSupported,
+      iosPermissions,
+      mergeIosPermissionResponse,
       platform,
       refreshFromDevice,
     ],
   );
-
-  useEffect(() => {
-    if (!canManageOnDevice || hasAutoRequestedPermissionsRef.current) {
-      return;
-    }
-
-    hasAutoRequestedPermissionsRef.current = true;
-    void requestAllPermissions({ silent: true });
-  }, [canManageOnDevice, requestAllPermissions]);
 
   useEffect(() => {
     void refreshFromDevice({ silent: true });
@@ -583,6 +604,65 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
         return;
       }
 
+      if (platform === "ios" && item.iosPermission) {
+        const previousValue = Boolean(permissionStates[item.id]);
+        setPendingId(item.id);
+
+        try {
+          if (!isIosPermissionSupported(item.iosPermission)) {
+            toast.info(`${item.label} isn't available to import from Apple Health yet.`);
+            throw new PermissionToggleAbortedError("unsupported-ios-permission");
+          }
+
+          const health = await ensureAppleHealth();
+          if (!health) {
+            toast.error("Apple Health integration isn't available on this device.");
+            throw new PermissionToggleAbortedError("missing-apple-health");
+          }
+
+          const availability = await health.isHealthAvailable();
+          if (!availability?.available) {
+            toast.info("Apple Health isn't available on this device.");
+            throw new PermissionToggleAbortedError("apple-health-unavailable");
+          }
+
+          if (iosPermissions.length === 0) {
+            toast.info("No Apple Health permissions are available right now.");
+            throw new PermissionToggleAbortedError("no-ios-permissions");
+          }
+
+          const response = await health.requestHealthPermissions({
+            permissions: iosPermissions,
+          });
+
+          const updates = mergeIosPermissionResponse(response);
+          const resultingValue = updates[item.id] ?? previousValue;
+
+          if (resultingValue === nextValue) {
+            toast.success(
+              nextValue ? `${item.label} enabled` : `${item.label} disabled`,
+            );
+          } else if (nextValue) {
+            toast.info(`Enable ${item.label} inside Apple Health.`);
+            throw new PermissionToggleAbortedError("apple-health-denied");
+          } else {
+            toast.info(`Turn off ${item.label} inside Apple Health.`);
+            throw new PermissionToggleAbortedError("apple-health-still-enabled");
+          }
+        } catch (error) {
+          if (error instanceof PermissionToggleAbortedError) {
+            logger.debug(`Permission toggle for ${item.id} aborted: ${error.message}`);
+          } else {
+            logger.error(`Failed to toggle permission ${item.id}`, error);
+            toast.error("Something went wrong while updating permissions.");
+          }
+        } finally {
+          setPendingId(null);
+        }
+
+        return;
+      }
+
       const previousValue = Boolean(permissionStates[item.id]);
       setPermissionStates((prev) => ({ ...prev, [item.id]: nextValue }));
       setPendingId(item.id);
@@ -592,35 +672,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
 
       try {
         if (nextValue) {
-          if (platform === "ios" && item.iosPermission) {
-            if (!isIosPermissionSupported(item.iosPermission)) {
-              toast.info(`${item.label} isn't available to import from Apple Health yet.`);
-              throw new PermissionToggleAbortedError("unsupported-ios-permission");
-            }
-
-            const health = await ensureAppleHealth();
-            if (!health) {
-              toast.error("Apple Health integration isn't available on this device.");
-              throw new PermissionToggleAbortedError("missing-apple-health");
-            }
-
-            const availability = await health.isHealthAvailable();
-            if (!availability?.available) {
-              toast.info("Apple Health isn't available on this device.");
-              throw new PermissionToggleAbortedError("apple-health-unavailable");
-            }
-
-            const response = await health.requestHealthPermissions({
-              permissions: [item.iosPermission],
-            });
-            const granted = didGrantIosPermission(response, item.iosPermission);
-            if (!granted) {
-              toast.info(`Enable ${item.label} inside Apple Health.`);
-              throw new PermissionToggleAbortedError("apple-health-denied");
-            }
-
-            toast.success(`${item.label} enabled`);
-          } else if (platform === "android" && item.androidRead) {
+          if (platform === "android" && item.androidRead) {
             const healthConnect = await ensureHealthConnect();
             if (!healthConnect) {
               toast.error("Health Connect integration isn't available on this device.");
@@ -648,28 +700,17 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             toast.success(`${item.label} enabled`);
             shouldRefreshAfter = true;
           }
-        } else {
-          if (platform === "ios") {
-            const health = await ensureAppleHealth();
-            if (!health) {
-              toast.error("Apple Health integration isn't available on this device.");
-              throw new PermissionToggleAbortedError("missing-apple-health");
-            }
-            await health.openAppleHealthSettings();
-            toast.info("Turn off access from Apple Health > Sources > WorkItOut.");
-          } else if (platform === "android") {
-            const healthConnect = await ensureHealthConnect();
-            if (!healthConnect) {
-              toast.error("Health Connect integration isn't available on this device.");
-              throw new PermissionToggleAbortedError("missing-health-connect");
-            }
-            await healthConnect.openHealthConnectSetting();
-            toast.info("Use Health Connect to revoke this permission.");
-            // Give the user time to adjust the toggle before refreshing state
-            setTimeout(() => {
-              void refreshFromDevice({ silent: true });
-            }, 1500);
+        } else if (platform === "android") {
+          const healthConnect = await ensureHealthConnect();
+          if (!healthConnect) {
+            toast.error("Health Connect integration isn't available on this device.");
+            throw new PermissionToggleAbortedError("missing-health-connect");
           }
+          await healthConnect.openHealthConnectSetting();
+          toast.info("Use Health Connect to revoke this permission.");
+          setTimeout(() => {
+            void refreshFromDevice({ silent: true });
+          }, 1500);
         }
 
         succeeded = true;
@@ -694,6 +735,8 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       canManageOnDevice,
       ensureAppleHealth,
       ensureHealthConnect,
+      iosPermissions,
+      mergeIosPermissionResponse,
       isIosPermissionSupported,
       pendingId,
       permissionStates,
@@ -756,23 +799,6 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
     await requestAllPermissions({ silent: false });
   }, [requestAllPermissions]);
 
-  const handleManageInAppleHealth = useCallback(async () => {
-    if (!canManageOnDevice) {
-      toast.info("Open this screen on your phone to manage permissions.");
-      return;
-    }
-
-    if (platform !== "ios") {
-      await handleOpenSettings();
-      return;
-    }
-
-    const opened = await openAppleHealthSettings();
-    if (opened) {
-      toast.success("Opening Apple Health settings…");
-    }
-  }, [canManageOnDevice, handleOpenSettings, openAppleHealthSettings, platform]);
-
   const handleRefresh = useCallback(async () => {
     if (!canManageOnDevice) {
       toast.info("Open this screen on your phone to manage permissions.");
@@ -821,14 +847,9 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       }
     }
 
-    const hasRequestedOnIos =
-      platform === "ios" && Boolean(permissionStates[item.id]) && supported;
-
     const description = supported
-      ? hasRequestedOnIos
-        ? "Manage this permission from Apple Health > Sources > WorkItOut."
-        : item.description
-      : item.platformNotes?.[effectivePlatform] ||
+      ? item.description
+      : item.platformNotes?.[normalizedPlatform] ||
         (!canManageOnDevice
           ? "Open WorkItOut on your phone to manage device permissions."
           : item.description);
@@ -839,9 +860,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
     const showSwitch =
       supported && canManageOnDevice &&
       ((platform === "android" && item.androidRead) ||
-        (platform === "ios" && item.iosPermission && !hasRequestedOnIos));
-    const showManageInAppleHealth =
-      platform === "ios" && hasRequestedOnIos && canManageOnDevice;
+        (platform === "ios" && item.iosPermission));
 
     return (
       <div key={item.id} className="flex items-center gap-3 px-4 py-3">
@@ -871,16 +890,6 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             pending={pendingId === item.id}
             onCheckedChange={(next) => handleToggle(item, next)}
           />
-        ) : showManageInAppleHealth ? (
-          <TactileButton
-            type="button"
-            size="sm"
-            variant="secondary"
-            onClick={handleManageInAppleHealth}
-            disabled={pendingId === item.id}
-          >
-            Manage in Apple Health
-          </TactileButton>
         ) : null}
       </div>
     );
@@ -913,8 +922,8 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             </p>
             {platform === "ios" ? (
               <p className="text-xs leading-5 text-black/60">
-                After you respond to the first permission request, continue managing access from the
-                Health app.
+                Tapping a switch opens the Apple Health access sheet so you can update permissions
+                directly in Health.
               </p>
             ) : null}
             <div className="flex flex-wrap gap-3 pt-1">
