@@ -1,0 +1,582 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import clsx from "clsx";
+import { toast } from "sonner";
+import { AppScreen, ScreenHeader, Section, Stack } from "../../layouts";
+import { TactileButton } from "../../TactileButton";
+import { Badge } from "../../ui/badge";
+import {
+  Apple,
+  Dumbbell,
+  Egg,
+  Flame,
+  Footprints,
+  Heart,
+  Percent,
+  Ruler,
+  Utensils,
+  Weight as WeightIcon,
+  Droplets,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { HealthPermission } from "capacitor-health";
+import type { RecordType as HealthConnectRecordType } from "@kiwi-health/capacitor-health-connect";
+import { logger } from "../../../utils/logging";
+
+const STORAGE_KEY = "device-permissions-state";
+
+type Platform = "ios" | "android" | "web" | string;
+
+type PermissionStates = Record<string, boolean>;
+
+interface PermissionItem {
+  id: string;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  iconBgClass: string;
+  iconColorClass: string;
+  iosPermission?: HealthPermission;
+  androidRead?: HealthConnectRecordType;
+  comingSoon?: boolean;
+  highlight?: boolean;
+  platformNotes?: Partial<Record<"ios" | "android" | "web", string>>;
+}
+
+const READ_PERMISSION_CONFIG: PermissionItem[] = [
+  {
+    id: "active-energy",
+    label: "Active Energy",
+    description: "Calories burned while you move.",
+    icon: Flame,
+    iconBgClass: "bg-[#FDE9E2]",
+    iconColorClass: "text-[#E45826]",
+    iosPermission: "READ_ACTIVE_CALORIES",
+    androidRead: "ActiveCaloriesBurned",
+    highlight: true,
+  },
+  {
+    id: "steps",
+    label: "Steps",
+    description: "Powers your daily activity progress.",
+    icon: Footprints,
+    iconBgClass: "bg-[#EEF0FF]",
+    iconColorClass: "text-[#5C63FF]",
+    iosPermission: "READ_STEPS",
+    androidRead: "Steps",
+    highlight: true,
+  },
+  {
+    id: "workouts",
+    label: "Workouts",
+    description: "Keeps your workout history in sync.",
+    icon: Dumbbell,
+    iconBgClass: "bg-[#E6F6FF]",
+    iconColorClass: "text-[#0F7AE5]",
+    iosPermission: "READ_WORKOUTS",
+    platformNotes: {
+      android: "Health Connect does not yet expose workout sessions for third-party apps.",
+    },
+    highlight: true,
+  },
+  {
+    id: "active-dietary-energy",
+    label: "Dietary Energy",
+    description: "Calories you log from meals.",
+    icon: Utensils,
+    iconBgClass: "bg-[#F8E8E8]",
+    iconColorClass: "text-[#D26A5A]",
+    iosPermission: "READ_TOTAL_CALORIES",
+    platformNotes: {
+      android: "We will surface dietary energy when Health Connect provides nutrition APIs.",
+    },
+  },
+  {
+    id: "heart-rate",
+    label: "Heart Rate",
+    description: "Measures workout intensity from BPM readings.",
+    icon: Heart,
+    iconBgClass: "bg-[#FFE5E8]",
+    iconColorClass: "text-[#E9637B]",
+    iosPermission: "READ_HEART_RATE",
+    androidRead: "HeartRateSeries",
+  },
+  {
+    id: "body-fat-percentage",
+    label: "Body Fat Percentage",
+    description: "Track body composition trends from smart scales.",
+    icon: Percent,
+    iconBgClass: "bg-[#EAF4F0]",
+    iconColorClass: "text-[#3A7D44]",
+    androidRead: "BodyFat",
+    platformNotes: {
+      ios: "Apple Health permissions for body fat are coming soon to WorkItOut.",
+    },
+  },
+  {
+    id: "weight",
+    label: "Weight",
+    description: "Sync weigh-ins from connected scales.",
+    icon: WeightIcon,
+    iconBgClass: "bg-[#FFF0E0]",
+    iconColorClass: "text-[#E07A5F]",
+    androidRead: "Weight",
+    platformNotes: {
+      ios: "Manage weight access from Apple Health > Sources > WorkItOut.",
+    },
+  },
+  {
+    id: "waist-circumference",
+    label: "Waist Circumference",
+    description: "Keep tape-measure trends alongside your workouts.",
+    icon: Ruler,
+    iconBgClass: "bg-[#EAF4FF]",
+    iconColorClass: "text-[#3A80D9]",
+    comingSoon: true,
+    platformNotes: {
+      ios: "Apple Health permissions for waist measurements are on our roadmap.",
+      android: "Health Connect support for waist circumference is not yet available.",
+    },
+  },
+  {
+    id: "carbohydrates",
+    label: "Carbohydrates",
+    description: "Nutrition syncing is coming soon.",
+    icon: Apple,
+    iconBgClass: "bg-[#FFF3D6]",
+    iconColorClass: "text-[#C57B57]",
+    comingSoon: true,
+  },
+  {
+    id: "protein",
+    label: "Protein",
+    description: "Nutrition syncing is coming soon.",
+    icon: Egg,
+    iconBgClass: "bg-[#FFF2E1]",
+    iconColorClass: "text-[#D98555]",
+    comingSoon: true,
+  },
+  {
+    id: "total-fat",
+    label: "Total Fat",
+    description: "Nutrition syncing is coming soon.",
+    icon: Droplets,
+    iconBgClass: "bg-[#EAF0FF]",
+    iconColorClass: "text-[#6174D6]",
+    comingSoon: true,
+  },
+];
+
+const defaultPermissionState: PermissionStates = READ_PERMISSION_CONFIG.reduce(
+  (acc, item) => {
+    acc[item.id] = false;
+    return acc;
+  },
+  {} as PermissionStates,
+);
+
+const loadStoredPermissions = (): PermissionStates => {
+  if (typeof window === "undefined") return { ...defaultPermissionState };
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { ...defaultPermissionState };
+    const parsed = JSON.parse(raw) as PermissionStates;
+    return { ...defaultPermissionState, ...parsed };
+  } catch (error) {
+    logger.warn("Failed to parse stored permission state", error);
+    return { ...defaultPermissionState };
+  }
+};
+
+interface DeviceSettingsScreenProps {
+  onBack: () => void;
+}
+
+export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
+  const [platform, setPlatform] = useState<Platform>("web");
+  const [permissionStates, setPermissionStates] = useState<PermissionStates>(() => loadStoredPermissions());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  const platformLabel = useMemo(() => {
+    if (platform === "ios") return "Apple Health";
+    if (platform === "android") return "Health Connect";
+    return "mobile";
+  }, [platform]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const resolvePlatform = async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (!isMounted) return;
+        setPlatform(Capacitor.getPlatform());
+      } catch {
+        setPlatform("web");
+      }
+    };
+
+    resolvePlatform();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(permissionStates));
+  }, [permissionStates]);
+
+  const refreshFromDevice = useCallback(async () => {
+    if (platform === "android") {
+      try {
+        setIsRefreshing(true);
+        const [{ HealthConnect }] = await Promise.all([
+          import("@kiwi-health/capacitor-health-connect"),
+        ]);
+        const availability = await HealthConnect.checkAvailability();
+        if (availability.availability !== "Available") {
+          toast.info("Health Connect isn't available on this device.");
+          return;
+        }
+
+        const readTypes = READ_PERMISSION_CONFIG
+          .map((item) => item.androidRead)
+          .filter(Boolean) as HealthConnectRecordType[];
+
+        if (readTypes.length === 0) {
+          return;
+        }
+
+        const response = await HealthConnect.checkHealthPermissions({
+          read: readTypes,
+          write: [],
+        });
+        const granted = new Set(response.grantedPermissions ?? []);
+        setPermissionStates((prev) => {
+          const next = { ...prev };
+          for (const item of READ_PERMISSION_CONFIG) {
+            if (!item.androidRead) continue;
+            next[item.id] = granted.has(item.androidRead);
+          }
+          return next;
+        });
+      } catch (error) {
+        logger.warn("Failed to refresh Health Connect permissions", error);
+        toast.error("Couldn't refresh Health Connect permissions.");
+      } finally {
+        setIsRefreshing(false);
+      }
+      return;
+    }
+
+  }, [platform]);
+
+  useEffect(() => {
+    void refreshFromDevice();
+  }, [refreshFromDevice]);
+
+  const handleToggle = useCallback(
+    async (item: PermissionItem, nextValue: boolean) => {
+      if (pendingId) return;
+      const supportsCurrentPlatform =
+        platform === "ios"
+          ? Boolean(item.iosPermission)
+          : platform === "android"
+            ? Boolean(item.androidRead)
+            : false;
+
+      if (!supportsCurrentPlatform || item.comingSoon || platform === "web") {
+        return;
+      }
+
+      setPendingId(item.id);
+
+      try {
+        if (nextValue) {
+          if (platform === "ios" && item.iosPermission) {
+            const { Health } = await import("capacitor-health");
+            const response = await Health.requestHealthPermissions({
+              permissions: [item.iosPermission],
+            });
+            const granted =
+              typeof response?.permissions === "object"
+                ? Boolean((response.permissions as Record<string, boolean>)[item.iosPermission])
+                : true;
+            if (!granted) {
+              toast.info(`Enable ${item.label} inside Apple Health.`);
+              return;
+            }
+            setPermissionStates((prev) => ({ ...prev, [item.id]: true }));
+            toast.success(`${item.label} enabled`);
+          } else if (platform === "android" && item.androidRead) {
+            const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
+            const availability = await HealthConnect.checkAvailability();
+            if (availability.availability !== "Available") {
+              toast.error("Health Connect is unavailable.");
+              return;
+            }
+            const response = await HealthConnect.requestHealthPermissions({
+              read: [item.androidRead],
+              write: [],
+            });
+            const granted = Array.isArray(response.grantedPermissions)
+              ? response.grantedPermissions.includes(item.androidRead)
+              : Boolean(response.hasAllPermissions);
+            if (!granted) {
+              toast.info(`Enable ${item.label} inside Health Connect.`);
+              return;
+            }
+            setPermissionStates((prev) => ({ ...prev, [item.id]: true }));
+            toast.success(`${item.label} enabled`);
+          }
+        } else {
+          if (platform === "ios") {
+            const { Health } = await import("capacitor-health");
+            await Health.openAppleHealthSettings();
+            toast.info("Turn off access from Apple Health > Sources > WorkItOut.");
+          } else if (platform === "android") {
+            const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
+            await HealthConnect.openHealthConnectSetting();
+            toast.info("Use Health Connect to revoke this permission.");
+            // Give the user time to adjust the toggle before refreshing state
+            setTimeout(() => {
+              void refreshFromDevice();
+            }, 1500);
+          }
+          setPermissionStates((prev) => ({ ...prev, [item.id]: false }));
+        }
+      } catch (error) {
+        logger.error(`Failed to toggle permission ${item.id}`, error);
+        toast.error("Something went wrong while updating permissions.");
+      } finally {
+        setPendingId(null);
+      }
+    },
+    [pendingId, platform, refreshFromDevice],
+  );
+
+  const handleOpenSettings = useCallback(async () => {
+    try {
+      if (platform === "ios") {
+        const { Health } = await import("capacitor-health");
+        await Health.openAppleHealthSettings();
+      } else if (platform === "android") {
+        const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
+        await HealthConnect.openHealthConnectSetting();
+      } else {
+        toast.info("Open this screen on your phone to manage permissions.");
+        return;
+      }
+      toast.success("Opening device health settings…");
+    } catch (error) {
+      logger.error("Failed to open health settings", error);
+      toast.error("Unable to open health settings on this device.");
+    }
+  }, [platform]);
+
+  const handleRefresh = useCallback(async () => {
+    await refreshFromDevice();
+    if (platform !== "web") {
+      toast.success("Permissions updated");
+    }
+  }, [platform, refreshFromDevice]);
+
+  const renderPermissionRow = (item: PermissionItem) => {
+    const supported =
+      platform === "ios"
+        ? Boolean(item.iosPermission) && !item.comingSoon
+        : platform === "android"
+          ? Boolean(item.androidRead) && !item.comingSoon
+          : false;
+
+    const badges: Array<{ key: string; label: string; variant?: "default" | "secondary" | "outline" }> = [];
+
+    if (item.highlight) {
+      badges.push({ key: "highlight", label: "In Use", variant: "secondary" });
+    }
+
+    if (item.comingSoon) {
+      badges.push({ key: "coming", label: "Coming Soon", variant: "outline" });
+    }
+
+    if (!item.comingSoon) {
+      if (platform === "ios" && !item.iosPermission) {
+        if (item.androidRead) {
+          badges.push({ key: "android-only", label: "Android Only", variant: "outline" });
+        } else {
+          badges.push({ key: "unavailable", label: "Not Yet Available", variant: "outline" });
+        }
+      } else if (platform === "android" && !item.androidRead) {
+        if (item.iosPermission) {
+          badges.push({ key: "ios-only", label: "Apple Health Only", variant: "outline" });
+        } else {
+          badges.push({ key: "unavailable", label: "Not Yet Available", variant: "outline" });
+        }
+      } else if (platform === "web") {
+        badges.push({ key: "mobile", label: "Mobile Only", variant: "outline" });
+      }
+    }
+
+    const description = supported
+      ? item.description
+      : item.platformNotes?.[platform as "ios" | "android" | "web"] ||
+        (platform === "web"
+          ? "Open WorkItOut on your phone to manage device permissions."
+          : item.description);
+
+    const isDisabled = !supported || pendingId === item.id || platform === "web";
+    const checked = Boolean(permissionStates[item.id]);
+
+    return (
+      <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+        <div
+          className={clsx(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+            item.iconBgClass,
+          )}
+        >
+          <item.icon className={clsx("h-5 w-5", item.iconColorClass)} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-[15px] font-medium text-black">{item.label}</p>
+            {badges.map((badge) => (
+              <Badge key={badge.key} variant={badge.variant}>{badge.label}</Badge>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-black/60">
+            {description}
+          </p>
+        </div>
+        <PermissionSwitch
+          checked={checked}
+          disabled={isDisabled}
+          pending={pendingId === item.id}
+          onCheckedChange={(next) => handleToggle(item, next)}
+        />
+      </div>
+    );
+  };
+
+  return (
+    <AppScreen
+      header={
+        <ScreenHeader
+          title="Device Settings"
+          subtitle={`Manage ${platformLabel} permissions`}
+          onBack={onBack}
+          denseSmall
+          showBorder
+        />
+      }
+      maxContent="md"
+      showHeaderBorder
+      padHeader
+      padContent
+    >
+      <div className="pb-safe space-y-6">
+        <Section variant="card" className="border border-border/70" padding="lg">
+          <Stack gap="sm">
+            <p className="text-[15px] font-semibold uppercase tracking-[0.14em] text-black/60">
+              Health Access
+            </p>
+            <p className="text-sm leading-6 text-black/70">
+              WorkItOut uses {platformLabel} to read workout metrics and sync your body measurements.
+              Choose the data sources that feel right for you.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-1">
+              <TactileButton
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={handleRefresh}
+                disabled={isRefreshing || platform === "web"}
+              >
+                {isRefreshing ? "Refreshing…" : "Refresh status"}
+              </TactileButton>
+              <TactileButton type="button" size="sm" variant="primary" onClick={handleOpenSettings}>
+                Open health settings
+              </TactileButton>
+            </div>
+          </Stack>
+        </Section>
+
+        <Section variant="card" padding="none" className="overflow-hidden border border-border/70">
+          <div className="border-b border-border/60 bg-soft-gray/60 px-4 py-3">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-black/60">
+              Allow WorkItOut to Read
+            </p>
+            <p className="mt-1 text-xs text-black/60">
+              These permissions keep your workouts and measurements in sync.
+            </p>
+          </div>
+          <div className="divide-y divide-border/60">
+            {READ_PERMISSION_CONFIG.map(renderPermissionRow)}
+          </div>
+        </Section>
+
+        <Section variant="card" padding="lg" className="border border-border/70">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-black/60">
+            Allow WorkItOut to Write
+          </p>
+          <p className="mt-3 text-sm leading-6 text-black/60">
+            We don’t write any data to {platformLabel} yet. When we add features like workout logging or
+            nutrition tracking, you’ll be able to opt in here.
+          </p>
+        </Section>
+
+        <Section variant="plain" padding="none">
+          <Stack gap="xs" className="text-xs leading-5 text-black/50">
+            <p>
+              Data you allow can be accessed by the app in the background. You can turn off background
+              access in Settings &gt; General &gt; Background App Refresh.
+            </p>
+            <p>
+              Need to reset permissions? Remove WorkItOut from {platformLabel} and come back to reconnect.
+            </p>
+          </Stack>
+        </Section>
+      </div>
+    </AppScreen>
+  );
+}
+
+interface PermissionSwitchProps {
+  checked: boolean;
+  onCheckedChange: (next: boolean) => void;
+  disabled?: boolean;
+  pending?: boolean;
+}
+
+function PermissionSwitch({ checked, onCheckedChange, disabled, pending }: PermissionSwitchProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-busy={pending}
+      disabled={disabled}
+      onClick={() => onCheckedChange(!checked)}
+      className={clsx(
+        "relative h-7 w-12 rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+        checked ? "bg-[var(--primary)]" : "bg-black/10",
+        disabled && "opacity-60 cursor-not-allowed",
+      )}
+    >
+      <span
+        className={clsx(
+          "absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200",
+          checked ? "translate-x-5" : "translate-x-0",
+        )}
+      />
+      {pending ? (
+        <span className="absolute inset-0 grid place-items-center">
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/50 border-t-transparent" />
+        </span>
+      ) : null}
+      <span className="sr-only">Toggle permission</span>
+    </button>
+  );
+}
+
+export default DeviceSettingsScreen;
