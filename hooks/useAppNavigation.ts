@@ -71,6 +71,16 @@ export function useAppNavigation() {
     setCurrentView("profile");
   };
 
+  const showDeviceSettings = () => {
+    setActiveTab("profile");
+    setCurrentView("profile-device-settings");
+  };
+
+  const closeDeviceSettings = () => {
+    setActiveTab("profile");
+    setCurrentView("profile");
+  };
+
   const showCreateRoutine = () => setCurrentView("create-routine");
   const showEditMeasurements = () => setCurrentView("edit-measurements");
 
@@ -187,5 +197,7 @@ export function useAppNavigation() {
     safeNavigate,
     showProfileAccount,
     closeProfileAccount,
+    showDeviceSettings,
+    closeDeviceSettings,
   };
 }
