@@ -70,44 +70,6 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
             </Stack>
           </div>
         </Section>
-
-        <Section
-          variant="translucent"
-          padding="lg"
-          className="border border-border/70 shadow-lg shadow-[rgba(224,122,95,0.12)]"
-        >
-          <Stack gap="sm">
-            <h2 className="text-lg font-semibold text-black">Manage device permissions</h2>
-            <p className="text-sm leading-relaxed text-black/70">
-              You can manage your Health Connect or wearable permissions anytime
-              in your device settings. When everything is enabled, WorkItOut can
-              tailor recovery insights, celebrate milestones, and keep your daily
-              plan feeling just right.
-            </p>
-
-            <div className="rounded-2xl border border-border bg-muted/70 px-4 py-3 text-sm leading-relaxed text-black/75">
-              <ol className="list-decimal space-y-2 pl-4">
-                <li>
-                  Open your device <span className="font-medium">Settings</span>.
-                </li>
-                <li>
-                  Navigate to <span className="font-medium">Apps &amp; notifications</span>
-                  , then choose <span className="font-medium">WorkItOut</span>.
-                </li>
-                <li>
-                  Tap <span className="font-medium">Data &amp; Devices</span> and enable
-                  every permission toggle for sleep, activity, heart rate, and
-                  steps.
-                </li>
-              </ol>
-            </div>
-
-            <p className="text-sm leading-relaxed text-black/70">
-              Tip: if something looks off, toggle permissions off and back on to
-              refresh the connection.
-            </p>
-          </Stack>
-        </Section>
       </Stack>
     </AppScreen>
   );

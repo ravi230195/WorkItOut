@@ -279,32 +279,6 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
       <form id={formId} onSubmit={handleSubmit} className="h-full">
         <Stack gap="fluid">
           <Section variant="plain" padding="none">
-            <div className="rounded-3xl border border-border bg-card/80 backdrop-blur-sm px-6 py-8 text-center shadow-sm">
-              <Avatar className="w-20 h-20 mx-auto mb-4 bg-primary text-black shadow-lg shadow-primary/30">
-                <AvatarFallback className="bg-primary text-black text-lg font-semibold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2 text-sm text-black/60">
-                  <div className="w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
-                  Loading profile...
-                </div>
-              ) : (
-                <>
-                  <h1 className="text-[clamp(20px,5vw,26px)] font-semibold text-black mb-1">
-                    {displayName}
-                  </h1>
-                  <p className="text-sm text-black/60">
-                    Keep your details current to personalize your plan.
-                  </p>
-                </>
-              )}
-            </div>
-          </Section>
-
-          <Section variant="plain" padding="none">
             <div className="rounded-3xl border border-border bg-card/80 backdrop-blur-sm p-6 shadow-sm space-y-6">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-black/60">
@@ -409,7 +383,7 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
                 </p>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-1">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-semibold uppercase tracking-[0.14em] text-black">
                     Length Units
