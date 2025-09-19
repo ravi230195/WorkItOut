@@ -10,9 +10,12 @@ class SupabaseAPI extends SupabaseDBWrite {
     return super.deleteRoutine(routineTemplateId);
   }
 
-  async deleteRoutineExercise(routineTemplateExerciseId: number): Promise<void> {
-    if (isHardDeleteEnabled()) return this.hardDeleteRoutineExercise(routineTemplateExerciseId);
-    return super.deleteRoutineExercise(routineTemplateExerciseId);
+  async deleteRoutineExercise(
+    routineTemplateExerciseId: number,
+    opts: { skipSummaryUpdate?: boolean } = {}
+  ): Promise<void> {
+    if (isHardDeleteEnabled()) return this.hardDeleteRoutineExercise(routineTemplateExerciseId, opts);
+    return super.deleteRoutineExercise(routineTemplateExerciseId, opts);
   }
 
   async deleteExerciseSet(routineTemplateExerciseSetId: number): Promise<void> {

@@ -442,7 +442,7 @@ export class SupabaseDBWrite extends SupabaseBase {
                     `${SUPABASE_URL}/rest/v1/user_routines`,
                     true,
                     "POST",
-                    { user_id: userId, name: name.trim(), version: 1, is_active: true },
+                    { user_id: userId, name: name.trim(), version: 1, is_active: true, exercise_count: 0 },
                     "return=representation"
                 );
                 await this.refreshRoutines(userId);
@@ -497,7 +497,7 @@ export class SupabaseDBWrite extends SupabaseBase {
                 >(exercisesUrl, exercisesKey, CACHE_TTL.routineExercises, true);
                 // Delegate deletion of each exercise (and its sets)
                 for (const { routine_template_exercise_id: exId } of exercises) {
-                    await this.hardDeleteRoutineExercise(exId);
+                    await this.hardDeleteRoutineExercise(exId, { skipSummaryUpdate: true });
                 }
 
                 // Delete the routine itself
@@ -521,11 +521,13 @@ export class SupabaseDBWrite extends SupabaseBase {
     async addExerciseToRoutine(
         routineTemplateId: number,
         exerciseId: number,
-        exerciseOrder: number
+        exerciseOrder: number,
+        opts: { skipSummaryUpdate?: boolean } = {}
     ): Promise<UserRoutineExercise | null> {
         return performanceTimer.timeAsync(
             `[SUPABASE] addExerciseToRoutine(${routineTemplateId}, ${exerciseId}, ${exerciseOrder})`,
             async () => {
+                const { skipSummaryUpdate = false } = opts;
                 const userId = await this.getUserId();
                 const rows = await this.fetchJson<UserRoutineExercise[]>(
                     `${SUPABASE_URL}/rest/v1/user_routine_exercises_data`,
@@ -538,6 +540,18 @@ export class SupabaseDBWrite extends SupabaseBase {
                     this.refreshRoutineExercises(userId, routineTemplateId),
                     this.refreshRoutineExercisesWithDetails(userId, routineTemplateId),
                 ]);
+
+                if (!skipSummaryUpdate) {
+                    try {
+                        await this.recomputeAndSaveRoutineMuscleSummary(routineTemplateId);
+                    } catch (err) {
+                        logger.warn(
+                            "Failed to recompute routine summary after adding exercise",
+                            routineTemplateId,
+                            err
+                        );
+                    }
+                }
                 return rows[0] ?? null;
             }
         );
@@ -593,12 +607,16 @@ export class SupabaseDBWrite extends SupabaseBase {
     }
 
     // Soft delete routine exercise (sets is_active = false)
-    async deleteRoutineExercise(routineTemplateExerciseId: number): Promise<void> {
+    async deleteRoutineExercise(
+        routineTemplateExerciseId: number,
+        opts: { skipSummaryUpdate?: boolean } = {}
+    ): Promise<void> {
         return performanceTimer.timeAsync(
             `[SUPABASE] deleteRoutineExercise(${routineTemplateExerciseId})`,
             async () => {
                 const userId = await this.getUserId();
-                
+                const { skipSummaryUpdate = false } = opts;
+
                 // Soft delete the exercise row
                 await this.fetchJson(
                     `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}`,
@@ -624,15 +642,31 @@ export class SupabaseDBWrite extends SupabaseBase {
                     this.refreshRoutineExercises(userId, routineId),        // Routine ID
                     this.refreshRoutineExercisesWithDetails(userId, routineId), // Routine ID
                 ]);
+
+                if (!skipSummaryUpdate) {
+                    try {
+                        await this.recomputeAndSaveRoutineMuscleSummary(routineId);
+                    } catch (err) {
+                        logger.warn(
+                            "Failed to recompute routine summary after deleting exercise",
+                            routineId,
+                            err
+                        );
+                    }
+                }
             }
         );
     }
 
-    async hardDeleteRoutineExercise(routineTemplateExerciseId: number): Promise<void> {
+    async hardDeleteRoutineExercise(
+        routineTemplateExerciseId: number,
+        opts: { skipSummaryUpdate?: boolean } = {}
+    ): Promise<void> {
         return performanceTimer.timeAsync(
             `[SUPABASE] hardDeleteRoutineExercise(${routineTemplateExerciseId})`,
             async () => {
                 const userId = await this.getUserId();
+                const { skipSummaryUpdate = false } = opts;
 
                 // Determine parent routine before deleting rows
                 const routineId = await this.findRoutineIdForExercise(
@@ -661,6 +695,18 @@ export class SupabaseDBWrite extends SupabaseBase {
                     this.refreshRoutineExercises(userId, routineId),
                     this.refreshRoutineExercisesWithDetails(userId, routineId),
                 ]);
+
+                if (!skipSummaryUpdate) {
+                    try {
+                        await this.recomputeAndSaveRoutineMuscleSummary(routineId);
+                    } catch (err) {
+                        logger.warn(
+                            "Failed to recompute routine summary after hard deleting exercise",
+                            routineId,
+                            err
+                        );
+                    }
+                }
             }
         );
     }
@@ -974,29 +1020,32 @@ export class SupabaseDBWrite extends SupabaseBase {
         );
     }
 
-    async recomputeAndSaveRoutineMuscleSummary(routineTemplateId: number) {
+    async recomputeAndSaveRoutineMuscleSummary(routineTemplateId: number): Promise<{
+        muscle_group_summary: string | null;
+        exercise_count: number;
+    }> {
         return performanceTimer.timeAsync(
             `[SUPABASE] recomputeAndSaveRoutineMuscleSummary(${routineTemplateId})`,
             async () => {
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Starting recompute for routine:", routineTemplateId);
-                
+
                 // Load active exercises → muscle groups
                 const urlEx =
                     `${SUPABASE_URL}/rest/v1/user_routine_exercises_data` +
                     `?routine_template_id=eq.${routineTemplateId}&is_active=eq.true` +
                     `&select=exercises(muscle_group)`;
-            
+
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Fetching exercises from URL:", urlEx);
                 const rows = await this.fetchJson<Array<{ exercises?: { muscle_group?: string } }>>(urlEx, true);
-                logger.db("🔍 DGB [MUSCLE SUMMARY] Found exercises:", rows.length);
-            
-                // Early exit if no active exercises - nothing to recompute
-                if (rows.length === 0) {
-                    logger.db("🔍 DGB [MUSCLE SUMMARY] No active exercises found, skipping recomputation");
-                    logger.db("🔍 DGB [MUSCLE SUMMARY] No database update or cache refresh needed");
-                    return;
+                const exerciseCount = rows.length;
+                logger.db("🔍 DGB [MUSCLE SUMMARY] Found exercises:", exerciseCount);
+                if (exerciseCount === 0) {
+                    logger.db(
+                        "🔍 DGB [MUSCLE SUMMARY] No active exercises found, clearing summary and count",
+                        routineTemplateId
+                    );
                 }
-            
+
                 // Count frequency of each muscle group
                 const muscleGroupCounts = new Map<string, number>();
                 rows.forEach(r => {
@@ -1005,38 +1054,73 @@ export class SupabaseDBWrite extends SupabaseBase {
                         muscleGroupCounts.set(muscleGroup, (muscleGroupCounts.get(muscleGroup) || 0) + 1);
                     }
                 });
-            
+
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Muscle group counts:", Object.fromEntries(muscleGroupCounts));
-            
+
                 // Sort by frequency (descending) and take top 3
                 const topMuscleGroups = Array.from(muscleGroupCounts.entries())
-                    .sort(([, a], [, b]) => b - a) // Sort by count descending
-                    .slice(0, 3) // Take top 3
-                    .map(([group]) => group); // Extract just the group names
-            
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 3)
+                    .map(([group]) => group);
+
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Top 3 muscle groups:", topMuscleGroups);
-            
+
                 // Use NULL when no groups (avoids DB pattern/CHECK failures on empty string)
                 const summary = topMuscleGroups.length ? topMuscleGroups.join(" • ") : null;
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Final summary:", summary);
-            
-                // Patch base table
+
+                // Patch base table (retrying with legacy column name if needed)
                 const urlPatch = `${SUPABASE_URL}/rest/v1/user_routines?routine_template_id=eq.${routineTemplateId}`;
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Patching routine with URL:", urlPatch);
-                await this.fetchJson<any[]>(
-                    urlPatch,
-                    true,
-                    "PATCH",
-                    [{ muscle_group_summary: summary }],
-                    "return=representation"
-                );
-            
+
+                let patched = false;
+                let lastError: unknown = null;
+                try {
+                    await this.fetchJson<any[]>(
+                        urlPatch,
+                        true,
+                        "PATCH",
+                        [{ muscle_group_summary: summary, exercise_count: exerciseCount }],
+                        "return=representation"
+                    );
+                    patched = true;
+                } catch (err) {
+                    lastError = err;
+                    logger.warn(
+                        "Failed to patch routine summary with exercise_count column, attempting legacy fallback",
+                        routineTemplateId,
+                        err
+                    );
+                }
+
+                if (!patched) {
+                    try {
+                        await this.fetchJson<any[]>(
+                            urlPatch,
+                            true,
+                            "PATCH",
+                            [{ muscle_group_summary: summary, exersise_count: exerciseCount }],
+                            "return=representation"
+                        );
+                        patched = true;
+                        lastError = null;
+                    } catch (legacyErr) {
+                        lastError = legacyErr;
+                    }
+                }
+
+                if (!patched) {
+                    throw lastError instanceof Error ? lastError : new Error(String(lastError));
+                }
+
                 // Refresh routines cache so UI reflects changes
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Refreshing routines cache...");
                 const userId = await this.getUserId();
                 logger.db("🔍 DGB [MUSCLE SUMMARY] User ID for cache refresh:", userId);
                 await this.refreshRoutines(userId);
                 logger.db("🔍 DGB [MUSCLE SUMMARY] Cache refresh completed");
+
+                return { muscle_group_summary: summary, exercise_count: exerciseCount };
             }
         );
     }
