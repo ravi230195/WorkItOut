@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import type { HealthPermission, PermissionResponse } from "capacitor-health";
 import { logger } from "../../../utils/logging";
+import { openAppleHealthDataAccess } from "../../../utils/appleHealthNavigation";
 
 interface DeviceSettingsScreenProps {
   onBack: () => void;
@@ -261,7 +262,10 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
 
           const action = enable ? "Enable" : "Disable";
           toast.info(`${action} ${label} from Apple Health. We'll open it now.`);
-          await Health.openAppleHealthSettings();
+          const opened = await openAppleHealthDataAccess();
+          if (!opened) {
+            await Health.openAppleHealthSettings();
+          }
           return;
         }
 
@@ -303,7 +307,10 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
 
       if (platform === "ios") {
         toast.info("Review these permissions in Apple Health. We'll open it now.");
-        await Health.openAppleHealthSettings();
+        const opened = await openAppleHealthDataAccess();
+        if (!opened) {
+          await Health.openAppleHealthSettings();
+        }
         return;
       }
 

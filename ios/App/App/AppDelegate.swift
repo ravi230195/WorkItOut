@@ -20,9 +20,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // The embedded Capacitor web view uses a WKScrollView which defaults to
         // a dynamic system background. Force both the web view and its scroll
         // view to white so that any exposed safe area is consistently white.
-        if let bridge = window?.rootViewController as? CAPBridgeViewController {
-            bridge.webView?.backgroundColor = appBackground
-            bridge.webView?.scrollView.backgroundColor = appBackground
+        if let bridgeController = window?.rootViewController as? CAPBridgeViewController {
+            bridgeController.bridge?.registerPluginType(AppleHealthNavigatorPlugin.self)
+            bridgeController.webView?.backgroundColor = appBackground
+            bridgeController.webView?.scrollView.backgroundColor = appBackground
         }
         return true
     }
