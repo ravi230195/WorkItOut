@@ -25,9 +25,14 @@ import type { LucideIcon } from "lucide-react";
 interface ProfileScreenProps {
   bottomBar?: React.ReactNode;
   onNavigateToMyAccount?: () => void;
+  onNavigateToDeviceSettings?: () => void;
 }
 
-export function ProfileScreen({ bottomBar, onNavigateToMyAccount }: ProfileScreenProps) {
+export function ProfileScreen({
+  bottomBar,
+  onNavigateToMyAccount,
+  onNavigateToDeviceSettings,
+}: ProfileScreenProps) {
 
   const { userToken, signOut: authSignOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -56,6 +61,7 @@ export function ProfileScreen({ bottomBar, onNavigateToMyAccount }: ProfileScree
           label: "Device Settings",
           description: "Manage Health Connect and devices",
           icon: Smartphone,
+          onPress: onNavigateToDeviceSettings,
         },
         {
           label: "Notifications",
