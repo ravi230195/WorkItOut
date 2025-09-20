@@ -23,6 +23,7 @@ export const formatNumber = (value: number, precision: number): string => {
 };
 
 export const WEIGHT_DECIMAL_PLACES = 2;
+export const LENGTH_DECIMAL_PLACES = 2;
 
 export const isWithinDecimalPrecision = (value: string, maxDecimals: number): boolean => {
   if (maxDecimals < 0) return true;
@@ -40,6 +41,9 @@ export const isWithinDecimalPrecision = (value: string, maxDecimals: number): bo
 
 export const isWeightInputWithinPrecision = (value: string): boolean =>
   isWithinDecimalPrecision(value, WEIGHT_DECIMAL_PLACES);
+
+export const isLengthInputWithinPrecision = (value: string): boolean =>
+  isWithinDecimalPrecision(value, LENGTH_DECIMAL_PLACES);
 
 export const normalizeLengthUnit = (value: UnitLength | string | null | undefined): UnitLength => {
   return value === "m" || value === "cm" ? (value as UnitLength) : DEFAULT_LENGTH_UNIT;

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import ExpandingCard from "../ui/ExpandingCard";
 import { NumberInput } from "../ui/number-input";
 import { Minus, Plus } from "lucide-react";
-import { formatNumber } from "../../utils/unitConversion";
+import { formatNumber, isLengthInputWithinPrecision } from "../../utils/unitConversion";
 
 interface MeasurementEntry {
   date: string;
@@ -48,7 +48,11 @@ export default function MeasurementCard({
   };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
-    onEntryChange(0, e.target.value);
+    const { value } = e.target;
+    if (!isLengthInputWithinPrecision(value)) {
+      return;
+    }
+    onEntryChange(0, value);
   };
 
   const diff =
@@ -123,7 +127,13 @@ export default function MeasurementCard({
                   min={0}
                   mode="decimal"
                   value={p.value}
-                  onChange={(e) => onEntryChange(i, e.target.value)}
+                  onChange={(e) => {
+                    const { value } = e.target;
+                    if (!isLengthInputWithinPrecision(value)) {
+                      return;
+                    }
+                    onEntryChange(i, value);
+                  }}
                   className="h-7 text-center px-1 w-[6.5rem] sm:w-[7.5rem]"
                 />
                 <span className="text-sm text-black">{unit}</span>
