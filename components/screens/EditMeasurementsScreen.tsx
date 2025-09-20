@@ -15,7 +15,6 @@ import {
   DEFAULT_LENGTH_UNIT,
   formatLength,
   getLengthUnitLabel,
-  normalizeLengthUnit,
   parseLengthInput,
 } from "../../utils/unitConversion";
 
@@ -40,13 +39,14 @@ type PartKey = typeof measurementParts[number]["key"];
 
 type MeasurementEntry = { measured_on: string } & Record<PartKey, string>;
 
+const MEASUREMENTS_LENGTH_UNIT: UnitLength = DEFAULT_LENGTH_UNIT;
+
 export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScreenProps) {
   const [entries, setEntries] = useState<MeasurementEntry[]>([]);
   const [hasTodayEntry, setHasTodayEntry] = useState(true);
-  const [lengthUnit, setLengthUnit] = useState<UnitLength>(DEFAULT_LENGTH_UNIT);
   const journalRef = useRef(makeMeasurementJournal());
   const savedSnapshotRef = useRef<MeasurementEntry[]>([]);
-  const loadEntries = useCallback(async (unit: UnitLength) => {
+  const loadEntries = useCallback(async () => {
     const rows = await supabaseAPI.getBodyMeasurements(4);
     const today = new Date().toISOString().split("T")[0];
     const existingToday = rows.some((r) => r.measured_on === today);
@@ -57,7 +57,7 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       measurementParts.forEach((part) => {
         newRow[part.key] =
           last && last[part.key] != null
-            ? formatLength(Number(last[part.key]), unit)
+            ? formatLength(Number(last[part.key]), MEASUREMENTS_LENGTH_UNIT)
             : "";
       });
       data = [newRow, ...rows];
@@ -72,7 +72,9 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       const obj: any = { measured_on: r.measured_on };
       measurementParts.forEach((part) => {
         obj[part.key] =
-          r[part.key] != null ? formatLength(Number(r[part.key]), unit) : "";
+          r[part.key] != null
+            ? formatLength(Number(r[part.key]), MEASUREMENTS_LENGTH_UNIT)
+            : "";
       });
       return obj as MeasurementEntry;
     });
@@ -84,25 +86,16 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
 
   useEffect(() => {
     let cancelled = false;
-    const fetchUnitsAndEntries = async () => {
+    const fetchEntries = async () => {
       try {
-        const profile = await supabaseAPI.getMyProfile();
         if (cancelled) return;
-        const preferredUnit = normalizeLengthUnit(profile?.length_unit);
-        setLengthUnit(preferredUnit);
-        await loadEntries(preferredUnit);
+        await loadEntries();
       } catch (error) {
-        logger.error("Failed to load measurement preferences", error);
-        if (!cancelled) {
-          setLengthUnit(DEFAULT_LENGTH_UNIT);
-          await loadEntries(DEFAULT_LENGTH_UNIT);
-        }
-      } finally {
-        // no-op
+        logger.error("Failed to load measurements", error);
       }
     };
 
-    fetchUnitsAndEntries();
+    void fetchEntries();
 
     return () => {
       cancelled = true;
@@ -125,7 +118,7 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
     for (const [date, parts] of Object.entries(collapsed)) {
       const payload: Record<string, any> = { measured_on: date };
       for (const [key, value] of Object.entries(parts)) {
-        const parsed = parseLengthInput(value, lengthUnit);
+        const parsed = parseLengthInput(value, MEASUREMENTS_LENGTH_UNIT);
         if (parsed !== undefined && !isNaN(parsed)) payload[key] = parsed;
       }
       if (Object.keys(payload).length > 1) {
@@ -133,7 +126,7 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       }
     }
     journalRef.current = makeMeasurementJournal();
-    await loadEntries(lengthUnit);
+    await loadEntries();
     toast.success("Measurements saved");
     onBack();
   };
@@ -181,7 +174,7 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
             <MeasurementCard
               label={m.label}
               icon={m.icon}
-              unit={getLengthUnitLabel(lengthUnit)}
+              unit={getLengthUnitLabel(MEASUREMENTS_LENGTH_UNIT)}
               entries={entries.map((e) => ({ date: e.measured_on, value: e[m.key] || "" }))}
               onEntryChange={(index, value) =>
                 setEntries((prev) => {
