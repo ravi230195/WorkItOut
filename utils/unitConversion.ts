@@ -66,7 +66,7 @@ export const formatLength = (
 export const formatWeight = (
   weightKg: number | null | undefined,
   unit: UnitWeight,
-  precision = 1,
+  precision = 2,
 ): string => {
   if (weightKg == null || !Number.isFinite(weightKg)) {
     return "";
