@@ -7,12 +7,38 @@ export interface FabAction {
   icon?: ReactNode;
 }
 
+type CssLength = number | string;
+
 interface FabSpeedDialProps {
   actions: FabAction[];
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Width of the glowing backdrop. Accepts any valid CSS length (defaults to 224px).
+   */
+  backdropWidth?: CssLength;
+  /**
+   * Height of the glowing backdrop. Accepts any valid CSS length (defaults to 224px).
+   */
+  backdropHeight?: CssLength;
+  /**
+   * Milliseconds for the backdrop fade animation (defaults to 400ms).
+   */
+  backdropFadeDuration?: number;
 }
 
-export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProps) {
+const DEFAULT_BACKDROP_SIZE = 224;
+const DEFAULT_FADE_DURATION = 400;
+
+const toCssLength = (value: CssLength) =>
+  typeof value === "number" ? `${value}px` : value;
+
+export default function FabSpeedDial({
+  actions,
+  onOpenChange,
+  backdropWidth = DEFAULT_BACKDROP_SIZE,
+  backdropHeight = DEFAULT_BACKDROP_SIZE,
+  backdropFadeDuration = DEFAULT_FADE_DURATION,
+}: FabSpeedDialProps) {
   const [open, setOpen] = useState(false);
   const [showBackdrop, setShowBackdrop] = useState(false);
 
@@ -22,13 +48,13 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
     if (open) {
       setShowBackdrop(true);
     } else if (showBackdrop) {
-      timeout = setTimeout(() => setShowBackdrop(false), 400);
+      timeout = setTimeout(() => setShowBackdrop(false), backdropFadeDuration);
     }
 
     return () => {
       if (timeout) clearTimeout(timeout);
     };
-  }, [open, showBackdrop]);
+  }, [open, showBackdrop, backdropFadeDuration]);
 
   const toggle = () => {
     setOpen((o) => {
@@ -48,9 +74,14 @@ export default function FabSpeedDial({ actions, onOpenChange }: FabSpeedDialProp
       <div className="relative flex flex-col items-end gap-4">
         {showBackdrop && (
           <div
-            className={`pointer-events-none absolute right-0 bottom-0 w-56 h-56 translate-x-6 translate-y-6 rounded-[36px] bg-white/90 shadow-xl blur-lg transition-all duration-500 ease-out -z-10 transform ${
+            className={`pointer-events-none absolute right-0 bottom-0 translate-x-6 translate-y-6 rounded-[36px] bg-white/90 shadow-xl blur-lg transition-all ease-out -z-10 transform ${
               open ? "opacity-100 scale-100" : "opacity-0 scale-95"
             }`}
+            style={{
+              width: toCssLength(backdropWidth),
+              height: toCssLength(backdropHeight),
+              transitionDuration: `${backdropFadeDuration}ms`,
+            }}
           />
         )}
 
