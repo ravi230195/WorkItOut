@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ExpandingCard from "../ui/ExpandingCard";
 import { NumberInput } from "../ui/number-input";
 import { Minus, Plus } from "lucide-react";
+import { formatNumber, isLengthInputWithinPrecision } from "../../utils/unitConversion";
 
 interface MeasurementEntry {
   date: string;
@@ -25,14 +26,16 @@ export default function MeasurementCard({
 }: MeasurementCardProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const step = 0.5;
+  const step = useMemo(() => (unit === "m" ? 0.01 : 0.5), [unit]);
+  const valuePrecision = unit === "m" ? 2 : 1;
+  const diffPrecision = valuePrecision;
   const parse = (v: string) => {
     const n = parseFloat(v);
     return isNaN(n) ? 0 : n;
   };
   const update = (delta: number) => {
     const current = entries[0]?.value ?? "0";
-    onEntryChange(0, (parse(current) + delta).toFixed(1));
+    onEntryChange(0, (parse(current) + delta).toFixed(valuePrecision));
   };
 
   const handleDec = (e: React.MouseEvent) => {
@@ -45,7 +48,11 @@ export default function MeasurementCard({
   };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
-    onEntryChange(0, e.target.value);
+    const { value } = e.target;
+    if (!isLengthInputWithinPrecision(value)) {
+      return;
+    }
+    onEntryChange(0, value);
   };
 
   const diff =
@@ -53,7 +60,9 @@ export default function MeasurementCard({
       ? parse(entries[0]?.value ?? "0") - parse(entries[1].value)
       : null;
   const diffText =
-    diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}${unit}` : undefined;
+    diff != null
+      ? `${diff >= 0 ? "+" : ""}${formatNumber(diff, diffPrecision)}${unit}`
+      : undefined;
 
   return (
     <ExpandingCard
@@ -118,7 +127,13 @@ export default function MeasurementCard({
                   min={0}
                   mode="decimal"
                   value={p.value}
-                  onChange={(e) => onEntryChange(i, e.target.value)}
+                  onChange={(e) => {
+                    const { value } = e.target;
+                    if (!isLengthInputWithinPrecision(value)) {
+                      return;
+                    }
+                    onEntryChange(i, value);
+                  }}
                   className="h-7 text-center px-1 w-[6.5rem] sm:w-[7.5rem]"
                 />
                 <span className="text-sm text-black">{unit}</span>

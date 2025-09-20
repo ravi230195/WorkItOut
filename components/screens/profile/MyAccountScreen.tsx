@@ -22,6 +22,19 @@ import {
 import { toast } from "sonner";
 import { logger } from "../../../utils/logging";
 import SegmentedToggle from "../../segmented/SegmentedToggle";
+import {
+  DEFAULT_LENGTH_UNIT,
+  DEFAULT_WEIGHT_UNIT,
+  formatLength,
+  formatWeight,
+  getLengthUnitLabel,
+  getWeightUnitLabel,
+  lengthUnitToCm,
+  isWeightInputWithinPrecision,
+  normalizeLengthUnit,
+  normalizeWeightUnit,
+  weightUnitToKg,
+} from "../../../utils/unitConversion";
 
 interface MyAccountScreenProps {
   onBack: () => void;
@@ -35,27 +48,24 @@ interface FormState {
   displayName: string;
   firstName: string;
   lastName: string;
-  heightCm: string;
-  weightKg: string;
+  height: string;
+  weight: string;
   lengthUnit: LengthUnit;
   weightUnit: WeightUnit;
   gender: GenderOption;
 }
 
-type TextFieldKey = "displayName" | "firstName" | "lastName" | "heightCm" | "weightKg";
-
-const DEFAULT_LENGTH_UNIT: LengthUnit = "cm";
-const DEFAULT_WEIGHT_UNIT: WeightUnit = "kg";
+type TextFieldKey = "displayName" | "firstName" | "lastName" | "height" | "weight";
 const DEFAULT_GENDER: GenderOption = "prefer_not_to_say";
 
 const LENGTH_UNIT_LABELS: Record<LengthUnit, string> = {
-  cm: "CM",
-  m: "M",
+  cm: getLengthUnitLabel("cm").toUpperCase(),
+  m: getLengthUnitLabel("m").toUpperCase(),
 };
 
 const WEIGHT_UNIT_LABELS: Record<WeightUnit, string> = {
-  kg: "KG",
-  lb: "LBS",
+  kg: getWeightUnitLabel("kg").toUpperCase(),
+  lb: getWeightUnitLabel("lb").toUpperCase(),
 };
 
 const createSegmentedOptions = <Value extends string>(
@@ -73,8 +83,8 @@ const createEmptyState = (): FormState => ({
   displayName: "",
   firstName: "",
   lastName: "",
-  heightCm: "",
-  weightKg: "",
+  height: "",
+  weight: "",
   lengthUnit: DEFAULT_LENGTH_UNIT,
   weightUnit: DEFAULT_WEIGHT_UNIT,
   gender: DEFAULT_GENDER,
@@ -144,8 +154,13 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
 
   const handleChange = (field: TextFieldKey) =>
     (event: ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      setFormState((prev) => ({ ...prev, [field]: value }));
+      const { value } = event.target;
+      setFormState((prev) => {
+        if (field === "weight" && !isWeightInputWithinPrecision(value)) {
+          return prev;
+        }
+        return { ...prev, [field]: value };
+      });
     };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -161,8 +176,8 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
       return;
     }
 
-    const heightValue = parseOptionalNumber(formState.heightCm);
-    const weightValue = parseOptionalNumber(formState.weightKg);
+    const heightValue = parseOptionalNumber(formState.height);
+    const weightValue = parseOptionalNumber(formState.weight);
 
     if (heightValue !== undefined && heightValue <= 0) {
       toast.error("Height must be a positive number.");
@@ -174,14 +189,23 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
       return;
     }
 
+    const heightCm =
+      heightValue !== undefined
+        ? lengthUnitToCm(heightValue, formState.lengthUnit)
+        : undefined;
+    const weightKg =
+      weightValue !== undefined
+        ? weightUnitToKg(weightValue, formState.weightUnit)
+        : undefined;
+
     setIsSaving(true);
     try {
       const updated = await supabaseAPI.upsertProfile({
         firstName: trimmedFirstName,
         lastName: trimmedLastName,
         displayName: trimmedDisplayName,
-        heightCm: heightValue,
-        weightKg: weightValue,
+        heightCm,
+        weightKg,
         lengthUnit: formState.lengthUnit,
         weightUnit: formState.weightUnit,
         gender: formState.gender,
@@ -191,8 +215,8 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
         displayName: trimmedDisplayName,
         firstName: trimmedFirstName,
         lastName: trimmedLastName,
-        heightCm: formState.heightCm,
-        weightKg: formState.weightKg,
+        height: formState.height,
+        weight: formState.weight,
         lengthUnit: formState.lengthUnit,
         weightUnit: formState.weightUnit,
         gender: formState.gender,
@@ -219,7 +243,14 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
     setFormState((prev) => {
       if (prev.lengthUnit === value) return prev;
       logger.info(`[MyAccount] Length unit set to ${value.toUpperCase()}`);
-      return { ...prev, lengthUnit: value };
+      const currentHeight = parseOptionalNumber(prev.height);
+      const heightCm =
+        currentHeight !== undefined
+          ? lengthUnitToCm(currentHeight, prev.lengthUnit)
+          : undefined;
+      const nextHeight =
+        heightCm !== undefined ? formatLength(heightCm, value) : "";
+      return { ...prev, lengthUnit: value, height: nextHeight };
     });
   };
 
@@ -228,7 +259,14 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
     setFormState((prev) => {
       if (prev.weightUnit === value) return prev;
       logger.info(`[MyAccount] Weight unit set to ${value.toUpperCase()}`);
-      return { ...prev, weightUnit: value };
+      const currentWeight = parseOptionalNumber(prev.weight);
+      const weightKg =
+        currentWeight !== undefined
+          ? weightUnitToKg(currentWeight, prev.weightUnit)
+          : undefined;
+      const nextWeight =
+        weightKg !== undefined ? formatWeight(weightKg, value) : "";
+      return { ...prev, weightUnit: value, weight: nextWeight };
     });
   };
 
@@ -239,6 +277,9 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
       return { ...prev, gender: value };
     });
   };
+
+  const heightStep = formState.lengthUnit === "m" ? 0.01 : 0.1;
+  const weightStep = 0.01;
 
   return (
     <AppScreen
@@ -344,25 +385,29 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
-                  label="Height (cm)"
-                  value={formState.heightCm}
-                  onChange={handleChange("heightCm")}
-                  placeholder="eg. 175"
+                  label={`Height (${getLengthUnitLabel(formState.lengthUnit).toUpperCase()})`}
+                  value={formState.height}
+                  onChange={handleChange("height")}
+                  placeholder={
+                    formState.lengthUnit === "m" ? "eg. 1.75" : "eg. 175"
+                  }
                   type="number"
                   inputMode="decimal"
                   min={0}
-                  step="0.1"
+                  step={heightStep}
                   disabled={isLoading || isSaving}
                 />
                 <Field
-                  label="Weight (kg)"
-                  value={formState.weightKg}
-                  onChange={handleChange("weightKg")}
-                  placeholder="eg. 70"
+                  label={`Weight (${getWeightUnitLabel(formState.weightUnit).toUpperCase()})`}
+                  value={formState.weight}
+                  onChange={handleChange("weight")}
+                  placeholder={
+                    formState.weightUnit === "lb" ? "eg. 154" : "eg. 70"
+                  }
                   type="number"
                   inputMode="decimal"
                   min={0}
-                  step="0.1"
+                  step={weightStep}
                   disabled={isLoading || isSaving}
                 />
               </div>
@@ -482,32 +527,24 @@ function Field({ label, className, ...inputProps }: FieldProps) {
 }
 
 function normalizeProfile(profile: Profile): FormState {
+  const lengthUnit = normalizeLengthUnit(profile.length_unit);
+  const weightUnit = normalizeWeightUnit(profile.weight_unit);
   return {
     displayName: profile.display_name?.trim() ?? "",
     firstName: profile.first_name?.trim() ?? "",
     lastName: profile.last_name?.trim() ?? "",
-    heightCm:
+    height:
       profile.height_cm !== undefined && profile.height_cm !== null
-        ? String(profile.height_cm)
+        ? formatLength(profile.height_cm, lengthUnit)
         : "",
-    weightKg:
+    weight:
       profile.weight_kg !== undefined && profile.weight_kg !== null
-        ? String(profile.weight_kg)
+        ? formatWeight(profile.weight_kg, weightUnit)
         : "",
-    lengthUnit: coerceLengthUnit(profile.length_unit),
-    weightUnit: coerceWeightUnit(profile.weight_unit),
+    lengthUnit,
+    weightUnit,
     gender: coerceGender(profile.gender),
   };
-}
-
-function coerceLengthUnit(value: Profile["length_unit"]): LengthUnit {
-  return value === "cm" || value === "m" ? value : DEFAULT_LENGTH_UNIT;
-}
-
-function coerceWeightUnit(value: Profile["weight_unit"]): WeightUnit {
-  if (value === "kg" || value === "lb") return value;
-  if (value === "lbs") return "lb";
-  return DEFAULT_WEIGHT_UNIT;
 }
 
 function coerceGender(value: Profile["gender"]): GenderOption {

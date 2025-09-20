@@ -11,6 +11,7 @@ import { useAuth } from "../AuthContext";
 import {
   Exercise,
   supabaseAPI,
+  type UnitWeight,
   type UserRoutineExerciseSet,
 } from "../../utils/supabase/supabase-api";
 import { logger } from "../../utils/logging";
@@ -19,6 +20,14 @@ import { loadRoutineExercisesWithSets, SETS_PREFETCH_CONCURRENCY } from "../../u
 import ListItem from "../ui/ListItem";
 import ActionSheet from "../sheets/ActionSheet";
 import { useAppStateSaver } from "../../utils/appState";
+import {
+  DEFAULT_WEIGHT_UNIT,
+  formatWeight,
+  getWeightUnitLabel,
+  isWeightInputWithinPrecision,
+  normalizeWeightUnit,
+  weightUnitToKg,
+} from "../../utils/unitConversion";
 
 // --- Journal-based persistence (simple, testable) ---
 import {
@@ -99,6 +108,9 @@ export function ExerciseSetupScreen({
 }: ExerciseSetupScreenProps) {
   const { userToken } = useAuth();
 
+  const [weightUnit, setWeightUnit] = useState<UnitWeight>(DEFAULT_WEIGHT_UNIT);
+  const [weightUnitReady, setWeightUnitReady] = useState(false);
+  const previousWeightUnitRef = useRef<UnitWeight>(DEFAULT_WEIGHT_UNIT);
   const [exercises, setExercises] = useState<UIExercise[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
   const [savingAll, setSavingAll] = useState(false);
@@ -121,6 +133,83 @@ export function ExerciseSetupScreen({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const workoutStartRef = useRef<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPreferences = async () => {
+      if (!userToken) {
+        if (!cancelled) {
+          setWeightUnit(DEFAULT_WEIGHT_UNIT);
+          previousWeightUnitRef.current = DEFAULT_WEIGHT_UNIT;
+          setWeightUnitReady(true);
+        }
+        return;
+      }
+      try {
+        const profile = await supabaseAPI.getMyProfile();
+        if (cancelled) return;
+        const preferredUnit = normalizeWeightUnit(profile?.weight_unit);
+        setWeightUnit(preferredUnit);
+        previousWeightUnitRef.current = preferredUnit;
+      } catch (error) {
+        if (!cancelled) {
+          logger.error("Failed to load weight unit preference", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setWeightUnitReady(true);
+        }
+      }
+    };
+
+    loadPreferences();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userToken]);
+
+  const weightUnitLabel = useMemo(
+    () => getWeightUnitLabel(weightUnit).toUpperCase(),
+    [weightUnit]
+  );
+
+  const toDisplayWeight = useCallback(
+    (value: number | string | null | undefined): string => {
+      const numeric =
+        typeof value === "number"
+          ? value
+          : value != null && value !== ""
+          ? Number(value)
+          : 0;
+      if (!Number.isFinite(numeric)) return "0";
+      const formatted = formatWeight(numeric, weightUnit);
+      return formatted !== "" ? formatted : "0";
+    },
+    [weightUnit]
+  );
+
+  useEffect(() => {
+    if (!weightUnitReady) return;
+    const previousUnit = previousWeightUnitRef.current;
+    if (previousUnit === weightUnit) return;
+
+    setExercises((prev) =>
+      prev.map((exercise) => ({
+        ...exercise,
+        sets: exercise.sets.map((set) => {
+          const numeric = Number(set.weight);
+          if (!Number.isFinite(numeric)) {
+            return { ...set, weight: "0" };
+          }
+          const weightKg = weightUnitToKg(numeric, previousUnit);
+          const formatted = formatWeight(weightKg, weightUnit);
+          return { ...set, weight: formatted !== "" ? formatted : "0" };
+        }),
+      }))
+    );
+    previousWeightUnitRef.current = weightUnit;
+  }, [weightUnit, weightUnitReady]);
 
   type SaverState = {
     exercises: UIExercise[];
@@ -239,7 +328,7 @@ export function ExerciseSetupScreen({
      Load saved exercises using routineLoader
      ------------------------------------------------------------------------------------- */
   useEffect(() => {
-    if (!userToken) return;
+    if (!userToken || !weightUnitReady) return;
     // If state was restored from app-state cache, skip fetching
     if (exercises.length > 0) {
       setLoadingSaved(false);
@@ -265,7 +354,10 @@ export function ExerciseSetupScreen({
           loaded: true,
           expanded: false,
           completed: false,
-          sets: r.sets,
+          sets: r.sets.map((set) => ({
+            ...set,
+            weight: toDisplayWeight(set.weight),
+          })),
         }));
         setExercises(uiList);
         savedSnapshotRef.current = snapshotExercises(uiList);
@@ -281,7 +373,7 @@ export function ExerciseSetupScreen({
     return () => {
       cancelled = true;
     };
-  }, [routineId, userToken]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [routineId, userToken, weightUnitReady, toDisplayWeight]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* -------------------------------------------------------------------------------------
      Add selected exercises AFTER initial load completes
@@ -341,7 +433,7 @@ export function ExerciseSetupScreen({
           id: r.routine_template_exercise_set_id,
           set_order: r.set_order ?? 0,
           reps: String(r.planned_reps ?? "0"),
-          weight: String(r.planned_weight_kg ?? "0"),
+          weight: toDisplayWeight(r.planned_weight_kg),
         }));
 
       withExercises((draft) => {
@@ -499,6 +591,9 @@ export function ExerciseSetupScreen({
       if (sIdx < 0) return;
 
       const prev = ex.sets[sIdx];
+      if (field === "weight" && !isWeightInputWithinPrecision(value)) {
+        return;
+      }
       const next: UISet = { ...prev, [field]: value };
       ex.sets[sIdx] = next;
 
@@ -653,7 +748,7 @@ export function ExerciseSetupScreen({
       }
       const plan = collapseJournal(journal);
       if (!journalIsNoop(journal)) {
-        await runJournal(plan, routineId, exIdMap);
+        await runJournal(plan, routineId, exIdMap, weightUnit);
       }
       journalRef.current = makeJournal();
 
@@ -694,7 +789,10 @@ export function ExerciseSetupScreen({
         loaded: true,
         expanded: false,
         completed: false,
-        sets: r.sets,
+        sets: r.sets.map((set) => ({
+          ...set,
+          weight: toDisplayWeight(set.weight),
+        })),
       }));
       setExercises(uiList);
       savedSnapshotRef.current = snapshotExercises(uiList);
@@ -726,7 +824,7 @@ export function ExerciseSetupScreen({
 
     setSavingAll(true);
     try {
-      await runJournal(plan, routineId, exIdMap);
+      await runJournal(plan, routineId, exIdMap, weightUnit);
       journalRef.current = makeJournal();
       await reloadFromDb();
       toast.success("All changes saved!");
@@ -908,6 +1006,7 @@ export function ExerciseSetupScreen({
               name={ex.name}
               initials={initials}
               items={items}
+              weightUnitLabel={weightUnitLabel}
               mode={inWorkout ? "workout" : "edit"}
               onChange={(key, field, value) =>
                 onChangeSet(
