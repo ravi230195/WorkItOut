@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ExpandingCard from "../ui/ExpandingCard";
 import { NumberInput } from "../ui/number-input";
 import { Minus, Plus } from "lucide-react";
+import { formatNumber } from "../../utils/unitConversion";
 
 interface MeasurementEntry {
   date: string;
@@ -25,7 +26,8 @@ export default function MeasurementCard({
 }: MeasurementCardProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const step = 0.5;
+  const step = useMemo(() => (unit === "m" ? 0.01 : 0.5), [unit]);
+  const diffPrecision = unit === "m" ? 2 : 1;
   const parse = (v: string) => {
     const n = parseFloat(v);
     return isNaN(n) ? 0 : n;
@@ -53,7 +55,9 @@ export default function MeasurementCard({
       ? parse(entries[0]?.value ?? "0") - parse(entries[1].value)
       : null;
   const diffText =
-    diff != null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}${unit}` : undefined;
+    diff != null
+      ? `${diff >= 0 ? "+" : ""}${formatNumber(diff, diffPrecision)}${unit}`
+      : undefined;
 
   return (
     <ExpandingCard
