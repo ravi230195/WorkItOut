@@ -22,6 +22,25 @@ export const formatNumber = (value: number, precision: number): string => {
   return Number(rounded.toFixed(precision)).toString();
 };
 
+export const WEIGHT_DECIMAL_PLACES = 2;
+
+export const isWithinDecimalPrecision = (value: string, maxDecimals: number): boolean => {
+  if (maxDecimals < 0) return true;
+  if (!value) return true;
+  const trimmed = value.trim();
+  if (!trimmed) return true;
+
+  if (trimmed === "." || trimmed === "-." || trimmed === "+.") {
+    return maxDecimals >= 0;
+  }
+
+  const precisionPattern = new RegExp(`^[-+]?\\d*(?:\\.\\d{0,${maxDecimals}})?$`);
+  return precisionPattern.test(trimmed);
+};
+
+export const isWeightInputWithinPrecision = (value: string): boolean =>
+  isWithinDecimalPrecision(value, WEIGHT_DECIMAL_PLACES);
+
 export const normalizeLengthUnit = (value: UnitLength | string | null | undefined): UnitLength => {
   return value === "m" || value === "cm" ? (value as UnitLength) : DEFAULT_LENGTH_UNIT;
 };
@@ -66,7 +85,7 @@ export const formatLength = (
 export const formatWeight = (
   weightKg: number | null | undefined,
   unit: UnitWeight,
-  precision = 2,
+  precision = WEIGHT_DECIMAL_PLACES,
 ): string => {
   if (weightKg == null || !Number.isFinite(weightKg)) {
     return "";

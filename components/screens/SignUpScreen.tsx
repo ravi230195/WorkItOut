@@ -5,6 +5,7 @@ import { TactileButton } from "../TactileButton";
 import { supabaseAPI } from "../../utils/supabase/supabase-api";
 import { toast } from "sonner";
 import { AppScreen, Stack, Spacer } from "../layouts";
+import { isWeightInputWithinPrecision } from "../../utils/unitConversion";
 
 interface SignUpScreenProps {
   onAuthSuccess: (token: string, refreshToken: string) => void;
@@ -197,7 +198,11 @@ export function SignUpScreen({ onAuthSuccess, onNavigateToSignIn, onNavigateToWe
                     type="number"
                     placeholder="Weight (kg)"
                     value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
+                    onChange={(e) =>
+                      setWeight((prev) =>
+                        isWeightInputWithinPrecision(e.target.value) ? e.target.value : prev,
+                      )
+                    }
                     className="w-full px-4 py-3 rounded-xl border border-border bg-input-background text-black placeholder:text-black focus:outline-none focus:ring-2 focus:ring-warm-coral/30 focus:border-warm-coral"
                     disabled={isLoading}
                     min="1"

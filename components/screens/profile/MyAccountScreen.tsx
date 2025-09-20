@@ -30,6 +30,7 @@ import {
   getLengthUnitLabel,
   getWeightUnitLabel,
   lengthUnitToCm,
+  isWeightInputWithinPrecision,
   normalizeLengthUnit,
   normalizeWeightUnit,
   weightUnitToKg,
@@ -153,8 +154,13 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
 
   const handleChange = (field: TextFieldKey) =>
     (event: ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      setFormState((prev) => ({ ...prev, [field]: value }));
+      const { value } = event.target;
+      setFormState((prev) => {
+        if (field === "weight" && !isWeightInputWithinPrecision(value)) {
+          return prev;
+        }
+        return { ...prev, [field]: value };
+      });
     };
 
   const handleSubmit = async (event: FormEvent) => {

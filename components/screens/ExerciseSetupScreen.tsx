@@ -24,6 +24,7 @@ import {
   DEFAULT_WEIGHT_UNIT,
   formatWeight,
   getWeightUnitLabel,
+  isWeightInputWithinPrecision,
   normalizeWeightUnit,
   weightUnitToKg,
 } from "../../utils/unitConversion";
@@ -590,6 +591,9 @@ export function ExerciseSetupScreen({
       if (sIdx < 0) return;
 
       const prev = ex.sets[sIdx];
+      if (field === "weight" && !isWeightInputWithinPrecision(value)) {
+        return;
+      }
       const next: UISet = { ...prev, [field]: value };
       ex.sets[sIdx] = next;
 
