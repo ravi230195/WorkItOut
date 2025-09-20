@@ -27,14 +27,15 @@ export default function MeasurementCard({
   const [expanded, setExpanded] = useState(false);
 
   const step = useMemo(() => (unit === "m" ? 0.01 : 0.5), [unit]);
-  const diffPrecision = unit === "m" ? 2 : 1;
+  const valuePrecision = unit === "m" ? 2 : 1;
+  const diffPrecision = valuePrecision;
   const parse = (v: string) => {
     const n = parseFloat(v);
     return isNaN(n) ? 0 : n;
   };
   const update = (delta: number) => {
     const current = entries[0]?.value ?? "0";
-    onEntryChange(0, (parse(current) + delta).toFixed(1));
+    onEntryChange(0, (parse(current) + delta).toFixed(valuePrecision));
   };
 
   const handleDec = (e: React.MouseEvent) => {

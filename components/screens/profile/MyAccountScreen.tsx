@@ -272,6 +272,8 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
     });
   };
 
+  const heightStep = formState.lengthUnit === "m" ? 0.01 : 0.1;
+
   return (
     <AppScreen
       header={
@@ -385,7 +387,7 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
                   type="number"
                   inputMode="decimal"
                   min={0}
-                  step="0.1"
+                  step={heightStep}
                   disabled={isLoading || isSaving}
                 />
                 <Field
