@@ -20,6 +20,9 @@ export interface SetListProps {
   mode?: SetListMode;
   items: SetListItem[];
 
+  /** Weight unit label shown in the header */
+  weightUnitLabel?: string;
+
   /** Used when interactive */
   onChange?: (key: string | number, field: "reps" | "weight", value: string) => void;
   onRemove?: (key: string | number) => void;
@@ -43,6 +46,7 @@ export interface SetListProps {
 const SetList: React.FC<SetListProps> = ({
   mode = "edit",
   items,
+  weightUnitLabel = "kg",
   onChange,
   onRemove,
   onAdd,
@@ -92,7 +96,7 @@ const SetList: React.FC<SetListProps> = ({
       /* RAVI DBG: style={{ border: "2px solid green" }}*/>
         <span>Set</span>
         <span className="text-center">Reps</span>
-        <span className="text-center">Weight (kg)</span>
+        <span className="text-center">Weight ({weightUnitLabel})</span>
         <span />
       </div>
 

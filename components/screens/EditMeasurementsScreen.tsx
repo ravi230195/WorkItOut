@@ -3,13 +3,20 @@ import { BottomNavigation } from "../BottomNavigation";
 import { BottomNavigationButton } from "../BottomNavigationButton";
 import { toast } from "sonner";
 import MeasurementCard from "../measurements/MeasurementCard";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { supabaseAPI } from "../../utils/supabase/supabase-api";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { supabaseAPI, type UnitLength } from "../../utils/supabase/supabase-api";
 import {
   collapseMeasurementJournal,
   makeMeasurementJournal,
   recordMeasurementUpdate,
 } from "../measurements/measurementJournal";
+import { logger } from "../../utils/logging";
+import {
+  DEFAULT_LENGTH_UNIT,
+  formatLength,
+  getLengthUnitLabel,
+  parseLengthInput,
+} from "../../utils/unitConversion";
 
 interface EditMeasurementsScreenProps {
   onBack: () => void;
@@ -32,12 +39,14 @@ type PartKey = typeof measurementParts[number]["key"];
 
 type MeasurementEntry = { measured_on: string } & Record<PartKey, string>;
 
+const MEASUREMENTS_LENGTH_UNIT: UnitLength = DEFAULT_LENGTH_UNIT;
+
 export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScreenProps) {
   const [entries, setEntries] = useState<MeasurementEntry[]>([]);
   const [hasTodayEntry, setHasTodayEntry] = useState(true);
   const journalRef = useRef(makeMeasurementJournal());
   const savedSnapshotRef = useRef<MeasurementEntry[]>([]);
-  const loadEntries = async () => {
+  const loadEntries = useCallback(async () => {
     const rows = await supabaseAPI.getBodyMeasurements(4);
     const today = new Date().toISOString().split("T")[0];
     const existingToday = rows.some((r) => r.measured_on === today);
@@ -47,7 +56,9 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
       const newRow: any = { measured_on: today };
       measurementParts.forEach((part) => {
         newRow[part.key] =
-          last && last[part.key] != null ? String(last[part.key]) : "";
+          last && last[part.key] != null
+            ? formatLength(Number(last[part.key]), MEASUREMENTS_LENGTH_UNIT)
+            : "";
       });
       data = [newRow, ...rows];
     }
@@ -60,7 +71,10 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
     const mapped = data.map((r) => {
       const obj: any = { measured_on: r.measured_on };
       measurementParts.forEach((part) => {
-        obj[part.key] = r[part.key] != null ? String(r[part.key]) : "";
+        obj[part.key] =
+          r[part.key] != null
+            ? formatLength(Number(r[part.key]), MEASUREMENTS_LENGTH_UNIT)
+            : "";
       });
       return obj as MeasurementEntry;
     });
@@ -68,11 +82,25 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
     journalRef.current = makeMeasurementJournal();
     setEntries(mapped);
     setHasTodayEntry(existingToday);
-  };
+  }, []);
 
   useEffect(() => {
-    loadEntries();
-  }, []);
+    let cancelled = false;
+    const fetchEntries = async () => {
+      try {
+        if (cancelled) return;
+        await loadEntries();
+      } catch (error) {
+        logger.error("Failed to load measurements", error);
+      }
+    };
+
+    void fetchEntries();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadEntries]);
 
   const handleSave = async () => {
     const collapsed = collapseMeasurementJournal(journalRef.current);
@@ -90,8 +118,8 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
     for (const [date, parts] of Object.entries(collapsed)) {
       const payload: Record<string, any> = { measured_on: date };
       for (const [key, value] of Object.entries(parts)) {
-        const num = parseFloat(value);
-        if (!isNaN(num)) payload[key] = num;
+        const parsed = parseLengthInput(value, MEASUREMENTS_LENGTH_UNIT);
+        if (parsed !== undefined && !isNaN(parsed)) payload[key] = parsed;
       }
       if (Object.keys(payload).length > 1) {
         await supabaseAPI.upsertBodyMeasurement(payload as any);
@@ -146,6 +174,7 @@ export default function EditMeasurementsScreen({ onBack }: EditMeasurementsScree
             <MeasurementCard
               label={m.label}
               icon={m.icon}
+              unit={getLengthUnitLabel(MEASUREMENTS_LENGTH_UNIT)}
               entries={entries.map((e) => ({ date: e.measured_on, value: e[m.key] || "" }))}
               onEntryChange={(index, value) =>
                 setEntries((prev) => {

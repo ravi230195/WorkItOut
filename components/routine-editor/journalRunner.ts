@@ -1,8 +1,13 @@
 // components/routine-editor/journalRunner.ts
-import { supabaseAPI } from "../../utils/supabase/supabase-api";
+import { supabaseAPI, type UnitWeight } from "../../utils/supabase/supabase-api";
 import type { SavePlan } from "./collapseJournal";
 import type { Id } from "./journalTypes";
 import { logger } from "../../utils/logging";
+import {
+  DEFAULT_WEIGHT_UNIT,
+  normalizeWeightUnit,
+  weightUnitToKg,
+} from "../../utils/unitConversion";
 
 // Debug logging utility
 const DGB = (message: string, data?: any) => {
@@ -17,9 +22,20 @@ const DGB = (message: string, data?: any) => {
 /** Map both temp and DB exercise ids to (templateId, exerciseId) */
 export type ExIdMap = Record<Id, { templateId?: number; exerciseId: number }>;
 
-export async function runJournal(plan: SavePlan, routineId: number, exMap: ExIdMap) {
+export async function runJournal(
+  plan: SavePlan,
+  routineId: number,
+  exMap: ExIdMap,
+  weightUnit: UnitWeight = DEFAULT_WEIGHT_UNIT
+) {
   DGB(`Starting runJournal with plan:`, plan);
   DGB(`Routine ID: ${routineId}, Exercise Map:`, exMap);
+
+  const normalizedWeightUnit = normalizeWeightUnit(weightUnit);
+  const convertWeightToKg = (value: number): number => {
+    if (!Number.isFinite(value)) return 0;
+    return weightUnitToKg(value, normalizedWeightUnit);
+  };
   
   // 1) delete whole exercises
   if (plan.deleteExercises.length) {
@@ -36,7 +52,11 @@ export async function runJournal(plan: SavePlan, routineId: number, exMap: ExIdM
   // 3) update values
   if (plan.updateSets.length) {
     DGB(`Updating ${plan.updateSets.length} sets:`, plan.updateSets);
-    await Promise.all(plan.updateSets.map((u) => supabaseAPI.updateExerciseSet(u.id, u.reps, u.weight)));
+    await Promise.all(
+      plan.updateSets.map((u) =>
+        supabaseAPI.updateExerciseSet(u.id, u.reps, convertWeightToKg(u.weight))
+      )
+    );
   }
 
   // 4) update orders
@@ -78,7 +98,11 @@ export async function runJournal(plan: SavePlan, routineId: number, exMap: ExIdM
     }
 
     const payload = rows
-      .map((r) => ({ reps: r.reps, weight: r.weight, set_order: r.set_order || 0 }))
+      .map((r) => ({
+        reps: r.reps,
+        weight: convertWeightToKg(r.weight),
+        set_order: r.set_order || 0,
+      }))
       .filter((r) => r.reps > 0 || r.weight > 0);
 
     DGB(`Filtered payload for exercise ${exId}:`, payload);

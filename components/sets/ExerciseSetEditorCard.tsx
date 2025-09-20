@@ -8,6 +8,7 @@ type Props = {
   name: string;
   initials: string;
   items: SetListItem[];
+  weightUnitLabel?: string;
 
   onChange?: (key: string | number, field: "reps" | "weight", value: string) => void;
   onRemove?: (key: string | number) => void;
@@ -37,6 +38,7 @@ type Props = {
 
 const ExerciseSetEditorCard: React.FC<Props> = ({
   items,
+  weightUnitLabel,
   onChange,
   onRemove,
   onAdd,
@@ -66,6 +68,7 @@ const ExerciseSetEditorCard: React.FC<Props> = ({
       <SetList
         mode={mode}
         items={items}
+        weightUnitLabel={weightUnitLabel}
         onDeleteExercise={mode === "workout" ? undefined : onDeleteExercise}
         deleteDisabled={deleteDisabled}
         onChange={onChange}
