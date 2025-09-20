@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 
 export interface FabAction {
@@ -13,11 +13,11 @@ interface FabSpeedDialProps {
   actions: FabAction[];
   onOpenChange?: (open: boolean) => void;
   /**
-   * Width of the glowing backdrop. Accepts any valid CSS length (defaults to 224px).
+   * Width of the glowing backdrop. Accepts any valid CSS length (defaults to auto width).
    */
   backdropWidth?: CssLength;
   /**
-   * Height of the glowing backdrop. Accepts any valid CSS length (defaults to 224px).
+   * Height of the glowing backdrop. Accepts any valid CSS length (defaults to auto height).
    */
   backdropHeight?: CssLength;
   /**
@@ -28,6 +28,8 @@ interface FabSpeedDialProps {
 
 const DEFAULT_BACKDROP_SIZE = 224;
 const DEFAULT_FADE_DURATION = 400;
+const BACKDROP_PADDING_X = 48;
+const BACKDROP_PADDING_Y = 48;
 
 const toCssLength = (value: CssLength) =>
   typeof value === "number" ? `${value}px` : value;
@@ -35,12 +37,62 @@ const toCssLength = (value: CssLength) =>
 export default function FabSpeedDial({
   actions,
   onOpenChange,
-  backdropWidth = DEFAULT_BACKDROP_SIZE,
-  backdropHeight = DEFAULT_BACKDROP_SIZE,
+  backdropWidth,
+  backdropHeight,
   backdropFadeDuration = DEFAULT_FADE_DURATION,
 }: FabSpeedDialProps) {
   const [open, setOpen] = useState(false);
   const [showBackdrop, setShowBackdrop] = useState(false);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
+  const [autoBackdropSize, setAutoBackdropSize] = useState({
+    width: DEFAULT_BACKDROP_SIZE,
+    height: DEFAULT_BACKDROP_SIZE,
+  });
+
+  useLayoutEffect(() => {
+    if (!open || !actionsRef.current) {
+      return;
+    }
+
+    const measure = () => {
+      if (!actionsRef.current) return;
+
+      const rect = actionsRef.current.getBoundingClientRect();
+      setAutoBackdropSize({
+        width: rect.width + BACKDROP_PADDING_X,
+        height: rect.height + BACKDROP_PADDING_Y,
+      });
+    };
+
+    measure();
+
+    const observer =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => measure())
+        : null;
+
+    if (observer && actionsRef.current) {
+      observer.observe(actionsRef.current);
+    }
+
+    window.addEventListener("resize", measure);
+
+    return () => {
+      if (observer) {
+        observer.disconnect();
+      }
+      window.removeEventListener("resize", measure);
+    };
+  }, [open]);
+
+  const computedBackdropWidth =
+    backdropWidth === undefined
+      ? `${autoBackdropSize.width}px`
+      : toCssLength(backdropWidth);
+  const computedBackdropHeight =
+    backdropHeight === undefined
+      ? `${autoBackdropSize.height}px`
+      : toCssLength(backdropHeight);
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -78,15 +130,18 @@ export default function FabSpeedDial({
               open ? "opacity-100 scale-100" : "opacity-0 scale-95"
             }`}
             style={{
-              width: toCssLength(backdropWidth),
-              height: toCssLength(backdropHeight),
+              width: computedBackdropWidth,
+              height: computedBackdropHeight,
               transitionDuration: `${backdropFadeDuration}ms`,
             }}
           />
         )}
 
         {open && (
-          <div className="relative flex flex-col items-end gap-4 mb-4 z-10">
+          <div
+            ref={actionsRef}
+            className="relative flex flex-col items-end gap-4 mb-4 z-10"
+          >
             {actions.map((action) => (
               <button
                 key={action.label}
