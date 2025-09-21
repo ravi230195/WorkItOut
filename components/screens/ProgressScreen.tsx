@@ -1,1247 +1,1152 @@
-// components/screens/ProgressScreen.tsx
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader } from "../ui/card";
-import { Progress } from "../ui/progress";
-import { TrendingUp, Calendar, Award, Zap, Medal, Trophy, Footprints, Activity, Target, BarChart3, Star, Flame, Rocket, ChevronRight, Check, Dumbbell } from "lucide-react";
-import { Badge } from "../ui/badge";
-import { supabaseAPI, Workout, Profile } from "../../utils/supabase/supabase-api";
-import { AppScreen, Section, ScreenHeader, Stack, Spacer } from "../layouts";
-import { logger } from "../../utils/logging";
+import { useEffect, useMemo, useRef, useState } from "react";
+import * as shape from "d3-shape";
+import { scaleLinear, scalePoint } from "d3-scale";
+
+import AppScreen from "../layouts/AppScreen";
+import type { TimeRange, TrendPoint } from "../../src/types/progress";
 import { useAuth } from "../AuthContext";
-import { useStepTracking } from "../../hooks/useStepTracking";
-import { useWorkoutTracking } from "../../hooks/useWorkoutTracking";
+import { supabaseAPI, SAMPLE_ROUTINE_USER_ID } from "../../utils/supabase/supabase-api";
+import type { Profile } from "../../utils/supabase/supabase-types";
+import { loadRoutineExercisesWithSets, type LoadedExercise } from "../../utils/routineLoader";
+import { RoutineAccess } from "../../hooks/useAppNavigation";
+
+type ProgressDomain = "strength" | "cardio" | "measurement";
 
 interface ProgressScreenProps {
   bottomBar?: React.ReactNode;
+  onSelectRoutine?: (routineId: number, routineName: string, access?: RoutineAccess) => void;
 }
 
-// Type definitions for progress data
-interface StepsData {
-  current: number;
-  target: number;
-  progress: number;
-  remaining: number;
-  achieved: boolean;
-  dailyBreakdown?: Array<{
-    day: string;
-    steps: number;
-    target: number;
-    achieved: boolean;
-  }>;
-  weeklyBreakdown?: Array<{
-    week: string;
-    steps: number;
-    target: number;
-    achieved: boolean;
-  }>;
+interface TrendChartProps {
+  data: TrendPoint[];
+  color: string;
+  range: TimeRange;
+  formatter: (value: number) => string;
 }
 
-interface RoutineData {
-  current: number;
-  target: number;
-  progress: number;
-  remaining: number;
-  achieved: boolean;
-  types?: Array<{
-    name: string;
-    count: number;
-    icon: any;
-    color: string;
-    target: number;
-  }>;
-  dailyBreakdown?: Array<{
-    day: string;
-    timeSpent: number;
-    target: number;
-    achieved: boolean;
-  }>;
-  weeklyBreakdown?: Array<{
-    week: string;
-    timeSpent: number;
-    target: number;
-    achieved: boolean;
-  }>;
-}
-
-interface PeriodData {
-  steps: StepsData;
-  routines: RoutineData;
-  calories?: {
-    current: number;
-    target: number;
-    progress: number;
-    remaining: number;
-  };
-}
-
-// Mock user data (in real app, this would come from auth context)
-const userData = {
-  name: "Alex",
-  streak: 5,
-  isOnTrack: true
+type KpiDatum = {
+  title: string;
+  value: string;
+  unit?: string;
+  previous?: number;
+  currentNumeric?: number;
 };
 
-// Mock routine activities for today
-const todaysRoutines = [
-  { name: "Morning Cardio", duration: 30, type: "Cardio" },
-  { name: "Strength Training", duration: 45, type: "Strength" },
-  { name: "Yoga Session", duration: 20, type: "Flexibility" }
+type HistoryEntry =
+  | {
+      type: "strength";
+      id: string;
+      name: string;
+      date: string;
+      duration: string;
+      totalWeight: string;
+      routineTemplateId?: number;
+    }
+  | {
+      type: "cardio";
+      id: string;
+      activity: string;
+      date: string;
+      duration: string;
+      distance: string;
+      calories?: string;
+      routineTemplateId?: number;
+    };
+
+type Snapshot = {
+  series: TrendPoint[][];
+  kpis: KpiDatum[];
+  history: HistoryEntry[];
+};
+
+const DOMAIN_OPTIONS: Array<{ value: ProgressDomain; label: string }> = [
+  { value: "strength", label: "Strength" },
+  { value: "cardio", label: "Cardio" },
+  { value: "measurement", label: "Measurement" },
 ];
 
-// Fallback/static data used until live aggregates load
-const progressData: Record<'day' | 'week' | 'month' | 'year', PeriodData> = {
-  day: {
-    steps: {
-      current: 7750,
-      target: 10000,
-      progress: 77.5,
-      remaining: 2250,
-      achieved: false
-    },
-    routines: {
-      current: 3,
-      target: 1,
-      progress: 100,
-      remaining: 0,
-      achieved: true
-    },
-    calories: {
-      current: 320,
-      target: 400,
-      progress: 80,
-      remaining: 80
-    }
-  },
-  week: {
-    steps: {
-      current: 54320,
-      target: 70000,
-      progress: 77.6,
-      remaining: 15680,
-      achieved: false,
-      dailyBreakdown: [
-        { day: "Mon", steps: 8200, target: 10000, achieved: false },
-        { day: "Tue", steps: 9100, target: 10000, achieved: false },
-        { day: "Wed", steps: 7800, target: 10000, achieved: false },
-        { day: "Thu", steps: 8900, target: 10000, achieved: false },
-        { day: "Fri", steps: 7600, target: 10000, achieved: false },
-        { day: "Sat", steps: 11200, target: 10000, achieved: true },
-        { day: "Sun", steps: 1520, target: 10000, achieved: false }
-      ]
-    },
-    routines: {
-      current: 4,
-      target: 5,
-      progress: 80,
-      remaining: 1,
-      achieved: false,
-      dailyBreakdown: [
-        { day: "Mon", timeSpent: 45, target: 30, achieved: true },
-        { day: "Tue", timeSpent: 60, target: 30, achieved: true },
-        { day: "Wed", timeSpent: 25, target: 30, achieved: false },
-        { day: "Thu", timeSpent: 40, target: 30, achieved: true },
-        { day: "Fri", timeSpent: 35, target: 30, achieved: true },
-        { day: "Sat", timeSpent: 50, target: 30, achieved: true },
-        { day: "Sun", timeSpent: 0, target: 30, achieved: false }
-      ]
-    }
-  },
-  month: {
-    steps: {
-      current: 190351,
-      target: 300000,
-      progress: 63.5,
-      remaining: 109649,
-      achieved: false,
-      weeklyBreakdown: [
-        { week: "W1", steps: 68000, target: 70000, achieved: false },
-        { week: "W2", steps: 72000, target: 70000, achieved: true },
-        { week: "W3", steps: 65000, target: 70000, achieved: false },
-        { week: "W4", steps: 55351, target: 70000, achieved: false }
-      ]
-    },
-    routines: {
-      current: 16,
-      target: 20,
-      progress: 80,
-      remaining: 4,
-      achieved: false,
-      types: [
-        { name: "Walking", count: 121, icon: Footprints, color: "text-black", target: 150 },
-        { name: "Running", count: 62, icon: Activity, color: "text-black", target: 80 },
-        { name: "Cycling", count: 33, icon: Activity, color: "text-black", target: 40 },
-        { name: "Strength", count: 45, icon: Dumbbell, color: "text-black", target: 50 }
+const RANGE_OPTIONS: Array<{ value: TimeRange; label: string }> = [
+  { value: "week", label: "Week" },
+  { value: "threeMonths", label: "3 Month" },
+  { value: "sixMonths", label: "6 Month" },
+];
+
+const KPI_COLORS = ["#7FD1AE", "#FFB38A", "#FFE08A", "#8FC5FF"] as const;
+const DOMAIN_ACCENT: Record<ProgressDomain, string> = {
+  strength: "#E27D60",
+  cardio: "#68A691",
+  measurement: "#8FC5FF",
+};
+const CHART_HEIGHT = 240;
+const CHART_INSET = { top: 16, bottom: 8, left: 16, right: 16 };
+const RANGE_POINTS: Record<TimeRange, number> = { week: 7, threeMonths: 12, sixMonths: 6 };
+const RANGE_STEPS: Record<TimeRange, number> = { week: 1, threeMonths: 7, sixMonths: 30 };
+
+const MOCK: Record<ProgressDomain, Record<TimeRange, Snapshot>> = {
+  strength: {
+    week: {
+      series: [
+        generateTrend("strength", "week", 1050, 0.32, 0),
+        generateTrend("strength", "week", 860, 0.28, 1),
+        generateTrend("strength", "week", 1340, 0.3, 2),
+        generateTrend("strength", "week", 620, 0.26, 3),
       ],
-      weeklyBreakdown: [
-        { week: "W1", timeSpent: 180, target: 150, achieved: true },
-        { week: "W2", timeSpent: 210, target: 150, achieved: true },
-        { week: "W3", timeSpent: 140, target: 150, achieved: false },
-        { week: "W4", timeSpent: 165, target: 150, achieved: true }
-      ]
-    }
-  },
-  year: {
-    steps: {
-      current: 2150000,
-      target: 3650000,
-      progress: 58.9,
-      remaining: 1500000,
-      achieved: false
+      kpis: [
+        { title: "Duration", unit: "hours", value: "3h 18m", currentNumeric: 198, previous: 172 },
+        { title: "Workouts", value: "5", currentNumeric: 5, previous: 4 },
+        { title: "Total Weight", unit: "kg", value: "82,640", currentNumeric: 82640, previous: 79320 },
+        { title: "Streak", unit: "days", value: "6", currentNumeric: 6, previous: 4 },
+      ],
+      history: [
+        { type: "strength", id: "s1", name: "Upper Power", date: daysAgoISO(1), duration: "52 min", totalWeight: "28,450 kg" },
+        { type: "strength", id: "s2", name: "Posterior Chain", date: daysAgoISO(3), duration: "47 min", totalWeight: "30,120 kg" },
+        { type: "strength", id: "s3", name: "Power Pull", date: daysAgoISO(5), duration: "41 min", totalWeight: "24,360 kg" },
+      ],
     },
-    routines: {
-      current: 180,
-      target: 240,
-      progress: 75,
-      remaining: 60,
-      achieved: false
-    }
-  }
+    threeMonths: {
+      series: [
+        generateTrend("strength", "threeMonths", 1220, 0.24, 0),
+        generateTrend("strength", "threeMonths", 940, 0.22, 1),
+        generateTrend("strength", "threeMonths", 1480, 0.25, 2),
+        generateTrend("strength", "threeMonths", 680, 0.21, 3),
+      ],
+      kpis: [
+        { title: "Duration", unit: "hours", value: "12h 42m", currentNumeric: 762, previous: 708 },
+        { title: "Workouts", value: "18", currentNumeric: 18, previous: 16 },
+        { title: "Total Weight", unit: "kg", value: "322,130", currentNumeric: 322130, previous: 304980 },
+        { title: "Streak", unit: "days", value: "12", currentNumeric: 12, previous: 9 },
+      ],
+      history: [],
+    },
+    sixMonths: {
+      series: [
+        generateTrend("strength", "sixMonths", 1380, 0.18, 0),
+        generateTrend("strength", "sixMonths", 980, 0.17, 1),
+        generateTrend("strength", "sixMonths", 1620, 0.2, 2),
+        generateTrend("strength", "sixMonths", 720, 0.15, 3),
+      ],
+      kpis: [
+        { title: "Duration", unit: "hours", value: "156", currentNumeric: 9360, previous: 9020 },
+        { title: "Workouts", value: "182", currentNumeric: 182, previous: 178 },
+        { title: "Total Weight", unit: "kg", value: "3.4M", currentNumeric: 3400000, previous: 3320000 },
+        { title: "Streak", unit: "days", value: "21", currentNumeric: 21, previous: 18 },
+      ],
+      history: [],
+    },
+  },
+  cardio: {
+    week: {
+      series: [
+        generateTrend("cardio", "week", 8, 0.32, 0),
+        generateTrend("cardio", "week", 6.4, 0.28, 1),
+        generateTrend("cardio", "week", 9.8, 0.3, 2),
+        generateTrend("cardio", "week", 5.2, 0.26, 3),
+      ],
+      kpis: [
+        { title: "Total Time", unit: "hours", value: "4h 05m", currentNumeric: 245, previous: 203 },
+        { title: "Distance", unit: "km", value: "42.5", currentNumeric: 42.5, previous: 38.2 },
+        { title: "Calories", unit: "kcal", value: "3,420", currentNumeric: 3420, previous: 3150 },
+        { title: "Steps", value: "64,210", currentNumeric: 64210, previous: 60890 },
+      ],
+      history: [
+        { type: "cardio", id: "c1", activity: "Outdoor Run", date: daysAgoISO(1), duration: "00:42:10", distance: "7.4 km", calories: "612 kcal" },
+        { type: "cardio", id: "c2", activity: "Indoor Run", date: daysAgoISO(3), duration: "00:35:05", distance: "5.6 km", calories: "438 kcal" },
+        { type: "cardio", id: "c3", activity: "Cycling", date: daysAgoISO(5), duration: "00:48:44", distance: "18.2 km", calories: "502 kcal" },
+      ],
+    },
+    threeMonths: {
+      series: [
+        generateTrend("cardio", "threeMonths", 28, 0.22, 0),
+        generateTrend("cardio", "threeMonths", 21, 0.2, 1),
+        generateTrend("cardio", "threeMonths", 34, 0.23, 2),
+        generateTrend("cardio", "threeMonths", 17, 0.19, 3),
+      ],
+      kpis: [
+        { title: "Total Time", unit: "hours", value: "15h 38m", currentNumeric: 938, previous: 902 },
+        { title: "Distance", unit: "km", value: "168", currentNumeric: 168, previous: 160 },
+        { title: "Calories", unit: "kcal", value: "13,420", currentNumeric: 13420, previous: 12680 },
+        { title: "Steps", value: "262,410", currentNumeric: 262410, previous: 254000 },
+      ],
+      history: [],
+    },
+    sixMonths: {
+      series: [
+        generateTrend("cardio", "sixMonths", 52, 0.18, 0),
+        generateTrend("cardio", "sixMonths", 38, 0.16, 1),
+        generateTrend("cardio", "sixMonths", 58, 0.19, 2),
+        generateTrend("cardio", "sixMonths", 32, 0.15, 3),
+      ],
+      kpis: [
+        { title: "Total Time", unit: "hours", value: "168", currentNumeric: 10080, previous: 9980 },
+        { title: "Distance", unit: "km", value: "1,932", currentNumeric: 1932, previous: 1870 },
+        { title: "Calories", unit: "kcal", value: "124,650", currentNumeric: 124650, previous: 123200 },
+        { title: "Steps", value: "2.9M", currentNumeric: 2900000, previous: 2840000 },
+      ],
+      history: [],
+    },
+  },
+  measurement: {
+    week: {
+      series: [
+        generateTrend("measurement", "week", 101.2, 0.03, 0),
+        generateTrend("measurement", "week", 36.4, 0.025, 1),
+        generateTrend("measurement", "week", 58.8, 0.024, 2),
+        generateTrend("measurement", "week", 96.7, 0.028, 3),
+      ],
+      kpis: [
+        { title: "Chest", unit: "cm", value: "101.2", currentNumeric: 101.2, previous: 101.5 },
+        { title: "Arms", unit: "cm", value: "36.4", currentNumeric: 36.4, previous: 36.1 },
+        { title: "Legs", unit: "cm", value: "58.8", currentNumeric: 58.8, previous: 58.6 },
+        { title: "Back", unit: "cm", value: "96.7", currentNumeric: 96.7, previous: 97.1 },
+      ],
+      history: [],
+    },
+    threeMonths: {
+      series: [
+        generateTrend("measurement", "threeMonths", 101.4, 0.03, 0),
+        generateTrend("measurement", "threeMonths", 36.2, 0.024, 1),
+        generateTrend("measurement", "threeMonths", 59.1, 0.022, 2),
+        generateTrend("measurement", "threeMonths", 96.9, 0.027, 3),
+      ],
+      kpis: [
+        { title: "Chest", unit: "cm", value: "101.4", currentNumeric: 101.4, previous: 102.0 },
+        { title: "Arms", unit: "cm", value: "36.2", currentNumeric: 36.2, previous: 36.0 },
+        { title: "Legs", unit: "cm", value: "59.1", currentNumeric: 59.1, previous: 58.9 },
+        { title: "Back", unit: "cm", value: "96.9", currentNumeric: 96.9, previous: 97.3 },
+      ],
+      history: [],
+    },
+    sixMonths: {
+      series: [
+        generateTrend("measurement", "sixMonths", 102.8, 0.032, 0),
+        generateTrend("measurement", "sixMonths", 36.0, 0.022, 1),
+        generateTrend("measurement", "sixMonths", 59.6, 0.02, 2),
+        generateTrend("measurement", "sixMonths", 97.2, 0.026, 3),
+      ],
+      kpis: [
+        { title: "Chest", unit: "cm", value: "102.8", currentNumeric: 102.8, previous: 103.6 },
+        { title: "Arms", unit: "cm", value: "36.0", currentNumeric: 36.0, previous: 35.8 },
+        { title: "Legs", unit: "cm", value: "59.6", currentNumeric: 59.6, previous: 59.2 },
+        { title: "Back", unit: "cm", value: "97.2", currentNumeric: 97.2, previous: 97.9 },
+      ],
+      history: [],
+    },
+  },
 };
 
-// Fallback monthly data for year view (replaced by live aggregates when available)
-const monthlyYearDataFallback = [
-  { month: "Jan", steps: 280000, stepsTarget: 300000, stepsAchieved: false, routines: 18, routinesTarget: 20, routinesAchieved: false },
-  { month: "Feb", steps: 310000, stepsTarget: 300000, stepsAchieved: true, routines: 22, routinesTarget: 20, routinesAchieved: true },
-  { month: "Mar", steps: 295000, stepsTarget: 300000, stepsAchieved: false, routines: 19, routinesTarget: 20, routinesAchieved: false },
-  { month: "Apr", steps: 320000, stepsTarget: 300000, stepsAchieved: true, routines: 21, routinesTarget: 20, routinesAchieved: true },
-  { month: "May", steps: 305000, stepsTarget: 300000, stepsAchieved: true, routines: 20, routinesTarget: 20, routinesAchieved: true },
-  { month: "Jun", steps: 290000, stepsTarget: 300000, stepsAchieved: false, routines: 18, routinesTarget: 20, routinesAchieved: false },
-  { month: "Jul", steps: 315000, stepsTarget: 300000, stepsAchieved: true, routines: 23, routinesTarget: 20, routinesAchieved: true },
-  { month: "Aug", steps: 300000, stepsTarget: 300000, stepsAchieved: true, routines: 20, routinesTarget: 20, routinesAchieved: true },
-  { month: "Sep", steps: 285000, stepsTarget: 300000, stepsAchieved: false, routines: 17, routinesTarget: 20, routinesAchieved: false },
-  { month: "Oct", steps: 325000, stepsTarget: 300000, stepsAchieved: true, routines: 24, routinesTarget: 20, routinesAchieved: true },
-  { month: "Nov", steps: 310000, stepsTarget: 300000, stepsAchieved: true, routines: 21, routinesTarget: 20, routinesAchieved: true },
-  { month: "Dec", steps: 295000, stepsTarget: 300000, stepsAchieved: false, routines: 19, routinesTarget: 20, routinesAchieved: false }
-];
-
-// Fallback calendar data for year view (replaced by live aggregates when available)
-const generateYearCalendarDataFallback = () => {
-  const data: Record<string, { steps: boolean; routines: boolean }> = {};
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  
-  // Generate random data for demonstration
-  for (let month = 0; month < 12; month++) {
-    const daysInMonth = new Date(currentYear, month + 1, 0).getDate();
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateKey = `${month + 1}/${day}`;
-      data[dateKey] = {
-        steps: Math.random() > 0.3, // 70% chance of steps
-        routines: Math.random() > 0.4 // 60% chance of routines
-      };
-    }
-  }
-  return data;
-};
-
-// Local state for live aggregates
-import { fetchStepsByDay, fetchWorkoutsByDay, weekStart, weekEnd, monthStart, monthEnd } from "../../hooks/useHealthAggregates";
-
-const yearCalendarDataFallback = generateYearCalendarDataFallback();
-
-export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
-  const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([]);
-  const [workoutStats, setWorkoutStats] = useState({
-    thisWeekCount: 0,
-    totalMinutes: 0,
-    monthlyCount: 16,
-    monthlyTarget: 20,
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'year'>('month');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenProps) {
+  const [domain, setDomain] = useState<ProgressDomain>("cardio");
+  const [range, setRange] = useState<TimeRange>("week");
+  const [selectedKpiIndex, setSelectedKpiIndex] = useState(0);
+  const [domainMenuOpen, setDomainMenuOpen] = useState(false);
+  const domainMenuRef = useRef<HTMLDivElement | null>(null);
   const { userToken } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  // Live health data
-  const { steps, goal: stepGoal, isLoading: stepsLoading, forceRefreshStepData } = useStepTracking(true);
-  const { count: workoutCount, totalMinutes: workoutMinutes, isLoading: workoutsLoading, refresh: refreshWorkouts } = useWorkoutTracking();
+  const [firstName, setFirstName] = useState<string | null>(null);
+  const [strengthHistory, setStrengthHistory] = useState<HistoryEntry[]>([]);
+  const [strengthHistoryLoading, setStrengthHistoryLoading] = useState(false);
 
-  // Fetch user profile for display name
+  const baseSnapshot = useMemo(() => MOCK[domain][range], [domain, range]);
+  const snapshot = useMemo(() => {
+    if (domain === "strength" && strengthHistory.length > 0) {
+      return { ...baseSnapshot, history: strengthHistory };
+    }
+    return baseSnapshot;
+  }, [baseSnapshot, domain, strengthHistory]);
+  const valueFormatter = useMemo(() => getKpiFormatter(domain, selectedKpiIndex), [domain, selectedKpiIndex]);
+  const trendSeries = snapshot.series[selectedKpiIndex] ?? snapshot.series[0] ?? [];
+  const shouldShowHistory =
+    domain !== "measurement" && (snapshot.history.length > 0 || (domain === "strength" && strengthHistoryLoading));
+  const showHistoryLoading = domain === "strength" && strengthHistoryLoading && snapshot.history.length === 0;
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!userToken) return;
-      try {
-        const profileData = await supabaseAPI.getMyProfile();
-        setProfile(profileData);
-      } catch (error) {
-        logger.error("Failed to fetch profile for Progress screen:", error);
+    setSelectedKpiIndex(0);
+  }, [domain, range]);
+
+  useEffect(() => {
+    if (!domainMenuOpen) return;
+    const handleClick = (event: MouseEvent) => {
+      if (domainMenuRef.current && !domainMenuRef.current.contains(event.target as Node)) {
+        setDomainMenuOpen(false);
       }
     };
-    fetchProfile();
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [domainMenuOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!userToken) {
+      setFirstName(null);
+      setStrengthHistory([]);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    (async () => {
+      try {
+        const profile = await supabaseAPI.getMyProfile();
+        if (!cancelled) {
+          setFirstName(extractFirstName(profile));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setFirstName(null);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [userToken]);
 
   useEffect(() => {
-    const fetchProgressData = async () => {
-      setIsLoading(true);
+    let cancelled = false;
+    setStrengthHistoryLoading(true);
+    (async () => {
       try {
-        // Mock data for now since supabaseAPI.getRecentWorkouts doesn't exist
-        const mockWorkouts: Workout[] = [];
-        setRecentWorkouts(mockWorkouts);
+        const routines = await supabaseAPI.getSampleRoutines();
+        const entries: HistoryEntry[] = [];
+        for (const routine of routines.slice(0, 5)) {
+          if (cancelled) break;
+          try {
+            const exercises = await loadRoutineExercisesWithSets(routine.routine_template_id, {
+              userIdOverride: SAMPLE_ROUTINE_USER_ID,
+            });
+            const durationMinutes = estimateRoutineDurationMinutes(exercises.length);
+            const totalWeightKg = calculateTotalWeight(exercises);
+            entries.push({
+              type: "strength",
+              id: String(routine.routine_template_id),
+              routineTemplateId: routine.routine_template_id,
+              name: routine.name,
+              date: routine.created_at ?? new Date().toISOString(),
+              duration: formatDuration(durationMinutes),
+              totalWeight: formatWeight(totalWeightKg),
+            });
+          } catch (error) {
+            // Ignore routines that fail to load
+          }
+        }
 
-        // Compute stats from workouts
-        const now = new Date();
-        const thisWeekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-
-        const thisWeekWorkouts = mockWorkouts.filter(workout =>
-          new Date(workout.started_at) >= thisWeekStart
-        );
-
-        const totalMinutes = mockWorkouts.reduce((sum, workout) =>
-          sum + (workout.duration_minutes || 0), 0
-        );
-
-        setWorkoutStats({
-          thisWeekCount: thisWeekWorkouts.length,
-          totalMinutes,
-          monthlyCount: Math.min(mockWorkouts.length, 20),
-          monthlyTarget: 20
-        });
+        if (!cancelled) {
+          entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          setStrengthHistory(entries);
+        }
       } catch (error) {
-        logger.error("Failed to fetch progress data:", error);
+        if (!cancelled) {
+          setStrengthHistory([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setStrengthHistoryLoading(false);
+        }
       }
+    })();
+
+    return () => {
+      cancelled = true;
     };
+  }, [userToken]);
 
-    fetchProgressData();
-    // Kick off fresh native reads for steps/workouts
-    forceRefreshStepData().catch(() => {});
-    refreshWorkouts().catch(() => {});
-  }, []);
+  const trendColor = KPI_COLORS[selectedKpiIndex % KPI_COLORS.length];
 
-  // Dynamic aggregates state
-  const [periodData, setPeriodData] = useState<Partial<Record<'day'|'week'|'month'|'year', PeriodData>>>({});
-  const [monthlyYearData, setMonthlyYearData] = useState<Array<{ month: string; steps: number; stepsTarget: number; stepsAchieved: boolean; routines: number; routinesTarget: number; routinesAchieved: boolean }>>(monthlyYearDataFallback);
-  const [yearCalendarData, setYearCalendarData] = useState<Record<string, { steps: boolean; routines: boolean }>>(yearCalendarDataFallback);
+  const encouragement = getEncouragement(firstName);
 
-  // Compute current period data from live Health aggregates
-  useEffect(() => {
-    const compute = async () => {
-      try {
-        if (selectedPeriod === 'day') {
-          // Day view already uses live hooks for steps/workouts; still compute to drive badges
-          const stepsCurrent = steps ?? 0;
-          const target = stepGoal || 10000;
-          const stepsData: StepsData = {
-            current: stepsCurrent,
-            target,
-            progress: Math.min(100, Math.max(0, (stepsCurrent / Math.max(1, target)) * 100)),
-            remaining: Math.max(0, target - stepsCurrent),
-            achieved: stepsCurrent >= target,
-          };
-          const routinesCurrent = workoutCount;
-          const routinesTarget = 1;
-          const routinesData: RoutineData = {
-            current: routinesCurrent,
-            target: routinesTarget,
-            progress: Math.min(100, Math.max(0, (routinesCurrent / Math.max(1, routinesTarget)) * 100)),
-            remaining: Math.max(0, routinesTarget - routinesCurrent),
-            achieved: routinesCurrent >= routinesTarget,
-          };
-          setPeriodData(prev => ({ ...prev, day: { steps: stepsData, routines: routinesData } }));
-          return;
-        }
-
-        if (selectedPeriod === 'week') {
-          const now = new Date();
-          const s = weekStart(now);
-          const e = weekEnd(now);
-          const stepsByDay = await fetchStepsByDay(s, e);
-          const wByDay = await fetchWorkoutsByDay(s, e);
-
-          const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-          const dailySteps = Array.from({ length: 7 }, (_, i) => {
-            const d = new Date(s); d.setDate(s.getDate() + i);
-            const key = `${d.getMonth()+1}/${d.getDate()}`;
-            const stepsVal = stepsByDay[key]?.steps || 0;
-            return { day: dayNames[d.getDay()], steps: stepsVal, target: stepGoal, achieved: stepsVal >= stepGoal };
-          });
-          const stepsCurrent = dailySteps.reduce((sum, d) => sum + d.steps, 0);
-          const stepsTarget = stepGoal * 7;
-          const stepsData: StepsData = {
-            current: stepsCurrent,
-            target: stepsTarget,
-            progress: Math.min(100, Math.max(0, (stepsCurrent / Math.max(1, stepsTarget)) * 100)),
-            remaining: Math.max(0, stepsTarget - stepsCurrent),
-            achieved: stepsCurrent >= stepsTarget,
-            dailyBreakdown: dailySteps,
-          };
-
-          const dailyRoutines = Array.from({ length: 7 }, (_, i) => {
-            const d = new Date(s); d.setDate(s.getDate() + i);
-            const key = `${d.getMonth()+1}/${d.getDate()}`;
-            const minutes = Math.round(wByDay[key]?.minutes || 0);
-            const perDayTarget = 30; // 30 min/day target
-            return { day: dayNames[d.getDay()], timeSpent: minutes, target: perDayTarget, achieved: minutes >= perDayTarget };
-          });
-          const routinesCount = Object.values(wByDay).reduce((sum, v) => sum + (v?.count || 0), 0);
-          const routinesTarget = 5; // 5 workouts/week target
-          const routinesData: RoutineData = {
-            current: routinesCount,
-            target: routinesTarget,
-            progress: Math.min(100, Math.max(0, (routinesCount / Math.max(1, routinesTarget)) * 100)),
-            remaining: Math.max(0, routinesTarget - routinesCount),
-            achieved: routinesCount >= routinesTarget,
-            dailyBreakdown: dailyRoutines,
-          };
-
-          setPeriodData(prev => ({ ...prev, week: { steps: stepsData, routines: routinesData } }));
-          return;
-        }
-
-        if (selectedPeriod === 'month') {
-          const now = new Date();
-          const s = monthStart(now);
-          const e = monthEnd(now);
-          const stepsByDay = await fetchStepsByDay(s, e);
-          const wByDay = await fetchWorkoutsByDay(s, e);
-
-          // Build weekly buckets within month (partial weeks adjusted)
-          const weeks: Array<{ start: Date; end: Date; label: string; days: number }> = [];
-          let wS = weekStart(s);
-          while (wS <= e) {
-            const wE = weekEnd(wS);
-            const startIn = wS < s ? s : wS;
-            const endIn = wE > e ? e : wE;
-            const days = Math.floor((new Date(endIn.getFullYear(), endIn.getMonth(), endIn.getDate()).getTime() - new Date(startIn.getFullYear(), startIn.getMonth(), startIn.getDate()).getTime())/86400000) + 1;
-            weeks.push({ start: startIn, end: endIn, label: `W${weeks.length+1}`, days });
-            wS = new Date(wS.getFullYear(), wS.getMonth(), wS.getDate() + 7);
-          }
-
-          const weeklySteps = weeks.map(w => {
-            let total = 0;
-            for (let d = new Date(w.start); d <= w.end; d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1)) {
-              const key = `${d.getMonth()+1}/${d.getDate()}`;
-              total += stepsByDay[key]?.steps || 0;
-            }
-            const target = stepGoal * w.days; // adjust for partial weeks
-            return { week: w.label, steps: total, target, achieved: total >= target };
-          });
-
-          const weeklyMinutes = weeks.map(w => {
-            let minutes = 0;
-            for (let d = new Date(w.start); d <= w.end; d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1)) {
-              const key = `${d.getMonth()+1}/${d.getDate()}`;
-              minutes += Math.round(wByDay[key]?.minutes || 0);
-            }
-            const target = Math.round(150 * (w.days/7)); // 150 min/week adjusted
-            return { week: w.label, timeSpent: minutes, target, achieved: minutes >= target };
-          });
-
-          const stepsCurrent = weeklySteps.reduce((s, w) => s + w.steps, 0);
-          const stepsTarget = Array.from({length: (e.getDate())}, (_, i) => 0).reduce((acc) => acc, 0) + stepGoal * e.getDate();
-
-          const stepsData: StepsData = {
-            current: stepsCurrent,
-            target: stepsTarget,
-            progress: Math.min(100, Math.max(0, (stepsCurrent / Math.max(1, stepsTarget)) * 100)),
-            remaining: Math.max(0, stepsTarget - stepsCurrent),
-            achieved: stepsCurrent >= stepsTarget,
-            weeklyBreakdown: weeklySteps,
-          } as any;
-
-          const routinesCount = Object.values(wByDay).reduce((sum, v) => sum + (v?.count || 0), 0);
-          const routinesTarget = weeks.length * 5; // 5/week
-          const routinesData: RoutineData = {
-            current: routinesCount,
-            target: routinesTarget,
-            progress: Math.min(100, Math.max(0, (routinesCount / Math.max(1, routinesTarget)) * 100)),
-            remaining: Math.max(0, routinesTarget - routinesCount),
-            achieved: routinesCount >= routinesTarget,
-            weeklyBreakdown: weeklyMinutes,
-          } as any;
-
-          setPeriodData(prev => ({ ...prev, month: { steps: stepsData, routines: routinesData } }));
-          return;
-        }
-
-        if (selectedPeriod === 'year') {
-          const year = selectedYear;
-          const start = new Date(year, 0, 1, 0, 0, 0, 0);
-          const end = new Date(year, 11, 31, 23, 59, 59, 999);
-          const stepsByDay = await fetchStepsByDay(start, end);
-          const wByDay = await fetchWorkoutsByDay(start, end);
-
-          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          const monthly = months.map((m, idx) => {
-            const daysInMonth = new Date(year, idx+1, 0).getDate();
-            let stepsSum = 0;
-            let workoutsCount = 0;
-            for (let d = 1; d <= daysInMonth; d++) {
-              const key = `${idx+1}/${d}`;
-              stepsSum += stepsByDay[key]?.steps || 0;
-              workoutsCount += wByDay[key]?.count || 0;
-            }
-            const stepsTarget = stepGoal * daysInMonth;
-            const routinesTarget = Math.ceil(daysInMonth / 7) * 5; // 5/week
-            return {
-              month: m,
-              steps: stepsSum,
-              stepsTarget,
-              stepsAchieved: stepsSum >= stepsTarget,
-              routines: workoutsCount,
-              routinesTarget,
-              routinesAchieved: workoutsCount >= routinesTarget,
-            };
-          });
-          setMonthlyYearData(monthly);
-
-          // Calendar flags for current selected year
-          const cal: Record<string, { steps: boolean; routines: boolean }> = {};
-          for (let m = 0; m < 12; m++) {
-            const dim = new Date(year, m+1, 0).getDate();
-            for (let d = 1; d <= dim; d++) {
-              const key = `${m+1}/${d}`;
-              cal[key] = {
-                steps: (stepsByDay[key]?.steps || 0) > 0,
-                routines: (wByDay[key]?.count || 0) > 0,
-              };
-            }
-          }
-          setYearCalendarData(cal);
-
-          // Also compute high-level aggregates for year header cards
-          const stepsTotal = monthly.reduce((s, m) => s + m.steps, 0);
-          const stepsTargetYear = monthly.reduce((s, m) => s + m.stepsTarget, 0);
-          const stepsData: StepsData = {
-            current: stepsTotal,
-            target: stepsTargetYear,
-            progress: Math.min(100, Math.max(0, (stepsTotal / Math.max(1, stepsTargetYear)) * 100)),
-            remaining: Math.max(0, stepsTargetYear - stepsTotal),
-            achieved: stepsTotal >= stepsTargetYear,
-          } as any;
-          const workoutsTotal = monthly.reduce((s, m) => s + m.routines, 0);
-          const workoutsTargetYear = monthly.reduce((s, m) => s + m.routinesTarget, 0);
-          const routinesData: RoutineData = {
-            current: workoutsTotal,
-            target: workoutsTargetYear,
-            progress: Math.min(100, Math.max(0, (workoutsTotal / Math.max(1, workoutsTargetYear)) * 100)),
-            remaining: Math.max(0, workoutsTargetYear - workoutsTotal),
-            achieved: workoutsTotal >= workoutsTargetYear,
-          } as any;
-          setPeriodData(prev => ({ ...prev, year: { steps: stepsData, routines: routinesData } }));
-          return;
-        }
-      } catch (e) {
-        logger.error('Failed computing health aggregates for period', selectedPeriod, e);
-      }
-    };
-
-    compute();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPeriod, selectedYear, stepGoal]);
-
-  // Get current period data (prefer live aggregates)
-  const currentData = periodData[selectedPeriod] || progressData[selectedPeriod];
-
-  // Get period-specific title
-  const getPeriodTitle = () => {
-    switch (selectedPeriod) {
-      case 'day': return 'Today';
-      case 'week': return 'This Week';
-      case 'month': return 'This Month';
-      case 'year': return 'This Year';
-      default: return 'This Month';
-    }
-  };
-
-  // Get month name
-  const getMonthName = (monthIndex: number) => {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                   'July', 'August', 'September', 'October', 'November', 'December'];
-    return months[monthIndex];
-  };
-
-  // First name only for personalization
-  const getFirstName = () => {
-    if (profile?.first_name && profile.first_name.trim() !== "") {
-      return profile.first_name.split(" ")[0];
-    }
-    if (profile?.display_name && profile.display_name.trim() !== "") {
-      return profile.display_name.split(" ")[0];
-    }
-    return null;
-  };
-
-  // Dynamic motivational message based on current progress/consistency
-  const getMotivationMessage = () => {
-    const name = getFirstName();
-    const stepsP = currentData?.steps?.progress ?? 0;
-    const routinesP = currentData?.routines?.progress ?? 0;
-    const score = (stepsP + routinesP) / 2;
-
-    const you = name ?? "there";
-    if (score >= 90) return `On fire, ${you}! Keep pushing 🔥`;
-    if (score >= 75) return `Great momentum, ${you}! Almost there 💪`;
-    if (score >= 50) return `Nice work, ${you}! Keep it going 👏`;
-    if (score >= 25) return `You got this, ${you}! Small steps add up 🚶`;
-    return `New day, ${you}. Let's get moving 💫`;
-  };
-
-  // Navigate months
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    if (direction === 'prev') {
-      if (selectedMonth === 0) {
-        setSelectedMonth(11);
-        setSelectedYear(selectedYear - 1);
-      } else {
-        setSelectedMonth(selectedMonth - 1);
-      }
-    } else {
-      if (selectedMonth === 11) {
-        setSelectedMonth(0);
-        setSelectedYear(selectedYear + 1);
-      } else {
-        setSelectedMonth(selectedMonth + 1);
-      }
-    }
-  };
-
-  // Render steps visualization based on period
-  const renderStepsVisualization = () => {
-    if (selectedPeriod === 'week' && currentData.steps.dailyBreakdown) {
-      return (
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-black">Daily Breakdown</h3>
-          <div className="flex gap-3">
-            {currentData.steps.dailyBreakdown.map((day, index) => (
-              <div key={index} className="flex-1 text-center">
-                <div className="text-xs font-medium text-black mb-2">{day.day}</div>
-                <div className="relative">
-                  <div 
-                    className={`w-full rounded-lg transition-all duration-300 ${
-                      day.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                    }`}
-                    style={{
-                      height: `${Math.max(20, (day.steps / Math.max(...currentData.steps.dailyBreakdown!.map(d => d.steps))) * 80)}px`
-                    }}
-                  />
-                  {day.achieved && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
-                  )}
-                </div>
-                <div className="text-xs font-medium text-black mt-2">
-                  {(day.steps / 1000).toFixed(0)}k
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    } else if (selectedPeriod === 'month' && currentData.steps.weeklyBreakdown) {
-      return (
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-black">Weekly Breakdown</h3>
-          <div className="flex gap-3">
-            {currentData.steps.weeklyBreakdown.map((week, index) => (
-              <div key={index} className="flex-1 text-center">
-                <div className="text-xs font-medium text-black mb-2">{week.week}</div>
-                <div className="relative">
-                  <div 
-                    className={`w-full rounded-lg transition-all duration-300 ${
-                      week.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                    }`}
-                    style={{
-                      height: `${Math.max(20, (week.steps / Math.max(...currentData.steps.weeklyBreakdown!.map(w => w.steps))) * 80)}px`
-                    }}
-                  />
-                  {week.achieved && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
-                  )}
-                </div>
-                <div className="text-xs font-medium text-black mt-2">
-                  {(week.steps / 1000).toFixed(0)}k
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
-  // Render routine visualization for week view
-  const renderRoutineVisualization = () => {
-    if (selectedPeriod === 'week' && currentData.routines.dailyBreakdown) {
-      return (
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-black">Daily Routine Time</h3>
-          <div className="flex gap-3">
-            {currentData.routines.dailyBreakdown.map((day, index) => (
-              <div key={index} className="flex-1 text-center">
-                <div className="text-xs font-medium text-black mb-2">{day.day}</div>
-                <div className="relative">
-                  <div 
-                    className={`w-full rounded-lg transition-all duration-300 ${
-                      day.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
-                    }`}
-                    style={{
-                      height: `${Math.max(20, (day.timeSpent / Math.max(...currentData.routines.dailyBreakdown!.map(d => d.timeSpent))) * 80)}px`
-                    }}
-                  />
-                  {day.achieved && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-coral rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
-                  )}
-                </div>
-                <div className="text-xs font-medium text-black mt-2">
-                  {day.timeSpent}m
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
-  // Render routine types based on period
-  const renderRoutineTypes = () => {
-    if (selectedPeriod === 'month' && currentData.routines.types) {
-      return (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-black">Routine Types</h3>
-          <div className="space-y-2">
-            {currentData.routines.types.map((type, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-white/60 rounded-xl hover:bg-white/80 transition-all duration-200 border border-white/20">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 ${type.color} bg-current/10 rounded-full flex items-center justify-center`}>
-                    <type.icon size={18} />
-                  </div>
-                  <span className="font-semibold text-black">{type.name}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-black">{type.count} times</span>
-                  <ChevronRight size={16} className="text-black" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
-  // Render weekly targets for month view
-  const renderWeeklyTargets = () => {
-    if (selectedPeriod === 'month' && currentData.steps.weeklyBreakdown && currentData.routines.weeklyBreakdown) {
-      return (
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-black">Weekly Steps Targets</h3>
-            <div className="flex gap-3">
-              {currentData.steps.weeklyBreakdown.map((week, index) => (
-                <div key={index} className="flex-1 text-center">
-                  <div className="text-xs font-medium text-black mb-2">{week.week}</div>
-                  <div className="relative">
-                    <div 
-                      className={`w-full rounded-lg transition-all duration-300 ${
-                        week.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                      }`}
-                      style={{
-                        height: `${Math.max(20, (week.steps / Math.max(...currentData.steps.weeklyBreakdown!.map(w => w.steps))) * 80)}px`
-                      }}
-                    />
-                    {week.achieved && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-xs font-medium text-black mt-2">
-                    {(week.steps / 1000).toFixed(0)}k
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-black">Weekly Routine Targets</h3>
-            <div className="flex gap-3">
-              {currentData.routines.weeklyBreakdown.map((week, index) => (
-                <div key={index} className="flex-1 text-center">
-                  <div className="text-xs font-medium text-black mb-2">{week.week}</div>
-                  <div className="relative">
-                    <div 
-                      className={`w-full rounded-lg transition-all duration-300 ${
-                        week.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
-                      }`}
-                      style={{
-                        height: `${Math.max(20, (week.timeSpent / Math.max(...currentData.routines.weeklyBreakdown!.map(w => w.timeSpent))) * 80)}px`
-                      }}
-                    />
-                    {week.achieved && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-coral rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-xs font-medium text-black mt-2">
-                    {week.timeSpent}m
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
-  // Render year monthly breakdown with horizontal scroll (uses live monthlyYearData when available)
-  const renderYearMonthlyBreakdown = () => {
-    if (selectedPeriod === 'year') {
-      return (
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-black">Monthly Steps Targets</h3>
-            <div className="overflow-x-auto">
-              <div className="flex gap-2 min-w-max">
-                {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
-                  <div key={index} className="w-16 text-center">
-                    <div className="text-xs font-medium text-black mb-2">{month.month}</div>
-                    <div className="relative">
-                      <div 
-                        className={`w-full rounded-lg transition-all duration-300 ${
-                          month.stepsAchieved ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                        }`}
-                        style={{
-                          height: `${Math.max(20, (month.steps / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.steps))) * 80)}px`
-                        }}
-                      />
-                      {month.stepsAchieved && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-sage rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-xs font-medium text-black mt-2">
-                      {(month.steps / 1000).toFixed(0)}k
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-black">Monthly Routine Targets</h3>
-            <div className="overflow-x-auto">
-              <div className="flex gap-2 min-w-max">
-                {(monthlyYearData || monthlyYearDataFallback).map((month, index) => (
-                  <div key={index} className="w-16 text-center">
-                    <div className="text-xs font-medium text-black mb-2">{month.month}</div>
-                    <div className="relative">
-                      <div 
-                        className={`w-full rounded-lg transition-all duration-300 ${
-                          month.routinesAchieved ? 'bg-warm-coral' : 'bg-warm-coral/20'
-                        }`}
-                        style={{
-                          height: `${Math.max(20, (month.routines / Math.max(...(monthlyYearData || monthlyYearDataFallback).map(m => m.routines))) * 80)}px`
-                        }}
-                      />
-                      {month.routinesAchieved && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-warm-coral rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-xs font-medium text-black mt-2">
-                      {month.routines}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
-  // Render year calendar view
-  const renderYearCalendar = () => {
-    if (selectedPeriod === 'year') {
-      const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-      const firstDayOfMonth = new Date(selectedYear, selectedMonth, 1).getDay();
-      
-      return (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-black">Activity Calendar</h3>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigateMonth('prev')}
-                className="p-1 rounded-full hover:bg-white/20 transition-colors"
-              >
-                <ChevronRight size={16} className="text-black rotate-180" />
-              </button>
-              <span className="text-sm font-medium text-black min-w-[80px] text-center">
-                {getMonthName(selectedMonth)} {selectedYear}
-              </span>
-              <button
-                onClick={() => navigateMonth('next')}
-                className="p-1 rounded-full hover:bg-white/20 transition-colors"
-              >
-                <ChevronRight size={16} className="text-black" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-7 gap-1">
-            {/* Day headers */}
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-              <div key={day} className="text-xs font-medium text-black text-center p-1">
-                {day}
-              </div>
-            ))}
-            
-            {/* Empty cells for days before month starts */}
-            {Array.from({ length: firstDayOfMonth }, (_, index) => (
-              <div key={`empty-${index}`} className="w-8 h-8" />
-            ))}
-            
-            {/* Days of the month */}
-            {Array.from({ length: daysInMonth }, (_, dayIndex) => {
-              const day = dayIndex + 1;
-              const dateKey = `${selectedMonth + 1}/${day}`;
-              const dayData = (yearCalendarData || yearCalendarDataFallback)[dateKey];
-              
-              if (!dayData) return <div key={day} className="w-8 h-8" />;
-              
-              const hasSteps = dayData.steps;
-              const hasRoutines = dayData.routines;
-              
-              return (
-                <div key={day} className="relative w-8 h-8 flex items-center justify-center">
-                  <span className="text-xs text-black">{day}</span>
-                  {hasSteps && (
-                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-warm-sage rounded-full" />
-                  )}
-                  {hasRoutines && (
-                    <div className="absolute bottom-0 right-1/2 transform translate-x-1/2 w-2 h-2 bg-warm-coral rounded-full" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          
-          <div className="flex items-center gap-4 text-xs text-black justify-center">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-warm-sage rounded-full" />
-              <span>Steps</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-warm-coral rounded-full" />
-              <span>Routines</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
-  // Render today's routines for day view
-  const renderTodaysRoutines = () => {
-    if (selectedPeriod === 'day') {
-      return (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-black">Today's Workouts</h3>
-          <div className="p-4 bg-white/60 rounded-xl border border-white/20 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-warm-coral/20 rounded-full flex items-center justify-center">
-                <Dumbbell size={18} className="text-black" />
-              </div>
-              <div>
-                <span className="font-semibold text-black">{workoutsLoading ? 'Loading…' : `${workoutCount} workout${workoutCount === 1 ? '' : 's'}`}</span>
-                <div className="text-xs text-black">{workoutsLoading ? '' : `${workoutMinutes} min total`}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    return null;
+  const handleStrengthHistorySelect = (entry: HistoryEntry) => {
+    if (entry.type !== "strength") return;
+    if (!onSelectRoutine) return;
+    const { routineTemplateId } = entry;
+    if (typeof routineTemplateId !== "number") return;
+    onSelectRoutine(routineTemplateId, entry.name, RoutineAccess.ReadOnly);
   };
 
   return (
     <AppScreen
-      header={<ScreenHeader title={"Progress"}
-        showBorder={false}
-        denseSmall
-        titleClassName="text-[17px] font-bold"/>}
-      maxContent="responsive"
-      showHeaderBorder={false}
-      showBottomBarBorder={false}
+      header={null}
       bottomBar={bottomBar}
       bottomBarSticky
-      contentClassName=""
-      headerInScrollArea={true}
+      showHeaderBorder={false}
+      showBottomBarBorder={false}
     >
-      <Stack gap="fluid">
-        {/* Motivational greeting with first name */}
-        {(
-          <Section variant="plain" padding="none">
-            <div className="px-1">
-              <h2 className="text-2xl font-bold text-black">{getMotivationMessage()}</h2>
-            </div>
-          </Section>
-        )}
+      <div className="flex flex-col gap-6 px-4 pb-8 pt-6 sm:px-6">
+        <section className="relative" ref={domainMenuRef}>
+          <h1 className="mb-3 text-2xl font-semibold tracking-tight text-[#111111]">{encouragement}</h1>
+          <button
+            type="button"
+            onClick={() => setDomainMenuOpen((open) => !open)}
+            aria-haspopup="listbox"
+            aria-expanded={domainMenuOpen}
+            className="flex w-full items-center justify-between rounded-2xl px-5 py-3 text-sm font-semibold text-[#E27D60] shadow-[0_12px_24px_-16px_rgba(30,36,50,0.4)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            style={{
+              backgroundColor: "transparent",
+              border: "1px solid #E27D60",
+            }}
+          >
+            <span>{DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? "Select"}</span>
+            <span className="ml-3 text-base" aria-hidden>
+              {domainMenuOpen ? "▲" : "▼"}
+            </span>
+          </button>
+          {domainMenuOpen ? (
+            <ul
+              role="listbox"
+              className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[rgba(30,36,50,0.08)] bg-white shadow-[0_16px_32px_-18px_rgba(30,36,50,0.35)]"
+            >
+              {DOMAIN_OPTIONS.map((option) => {
+                const isActive = option.value === domain;
+                return (
+                  <li key={option.value}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={isActive}
+                      onClick={() => {
+                        setDomain(option.value);
+                        setDomainMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between px-5 py-3 text-sm font-semibold transition ${
+                        isActive ? "bg-[rgba(226,125,96,0.15)] text-[#E27D60]" : "text-[rgba(34,49,63,0.75)] hover:bg-[rgba(226,125,96,0.08)]"
+                      }`}
+                    >
+                      <span>{option.label}</span>
+                      {isActive ? <span aria-hidden>✓</span> : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </section>
 
-        {/* Period Selector */}
-        <Section variant="plain" padding="none">
-          <div className="flex bg-white/60 rounded-2xl p-1 border border-white/20">
-            {(['day', 'week', 'month', 'year'] as const).map((period) => (
+        <section className="flex flex-wrap items-center justify-center gap-2 px-1 py-1">
+          {RANGE_OPTIONS.map((option) => {
+            const isActive = option.value === range;
+            const accent = "#68A691";
+            return (
               <button
-                key={period}
-                onClick={() => setSelectedPeriod(period)}
-                className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  selectedPeriod === period
-                    ? 'bg-warm-sage text-black shadow-md'
-                    : 'text-black hover:text-black hover:bg-white/40'
-                }`}
+                key={option.value}
+                type="button"
+                onClick={() => setRange(option.value)}
+                aria-pressed={isActive}
+                className="rounded-full px-4 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[rgba(30,36,50,0.2)] sm:text-sm"
+                style={{
+                  backgroundColor: isActive ? accent : "transparent",
+                  color: isActive ? "#ffffff" : accent,
+                  border: `1px solid ${accent}`,
+                  boxShadow: isActive ? "0 12px 22px -16px rgba(30,36,50,0.35)" : "0 2px 6px -4px rgba(30,36,50,0.18)",
+                  transform: isActive ? "scale(1.05)" : "scale(1)",
+                  transition: "all 0.28s cubic-bezier(0.22, 0.61, 0.36, 1)",
+                  minWidth: 86,
+                }}
               >
-                {period.charAt(0).toUpperCase() + period.slice(1)}
+                {option.label}
               </button>
-            ))}
-          </div>
-        </Section>
+            );
+          })}
+        </section>
 
-        {/* Month View - Weekly Targets at Top */}
-        {selectedPeriod === 'month' && (
-          <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-warm-peach/20 rounded-full flex items-center justify-center">
-                    <BarChart3 size={24} className="text-black" />
-                  </div>
-                  <h2 className="font-bold text-black text-xl">Weekly Targets</h2>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {renderWeeklyTargets()}
-              </CardContent>
-            </Card>
-          </Section>
-        )}
+        <section className="-mx-2 sm:mx-0">
+          <TrendChart data={trendSeries} color={trendColor} range={range} formatter={valueFormatter} />
+        </section>
 
-        {/* Steps Overview Card - Hidden for Month and Year */}
-        {selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
-          <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader className="pb-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-warm-sage/20 rounded-full flex items-center justify-center">
-                      <Footprints size={24} className="text-black" />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-black text-xl">{getPeriodTitle()} Steps</h2>
-                      <p className="text-sm text-black">Goal: {(selectedPeriod==='day' ? stepGoal : currentData.steps.target).toLocaleString()}</p>
-                    </div>
-                  </div>
-                  {selectedPeriod === 'day' ? (
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      ((stepsLoading ? false : steps >= stepGoal) ) ? 'bg-warm-sage' : 'bg-warm-sage/20'
-                    }`}>
-                      {((stepsLoading ? false : steps >= stepGoal)) ? (
-                        <Check size={20} className="text-black" />
-                      ) : (
-                        <div className="w-4 h-4 border-2 border-warm-sage rounded-sm" />
-                      )}
-                    </div>
-                  ) : (
-                    <Badge className={`${currentData.steps.achieved ? 'bg-warm-sage' : 'bg-warm-sage/20'} text-black border-warm-sage/30 px-3 py-1 text-sm font-semibold`}>
-                      {currentData.steps.progress.toFixed(0)}%
-                    </Badge>
-                  )}
+        <section className="mt-8 grid grid-cols-2 gap-4">
+          {snapshot.kpis.map((kpi, index) => {
+            const isActive = index === selectedKpiIndex;
+            const tileColor = KPI_COLORS[index] ?? KPI_COLORS[0];
+            const formatter = getKpiFormatter(domain, index);
+            const previous = kpi.previous ?? null;
+            const currentNumeric = kpi.currentNumeric ?? null;
+            const trend = determineTrend(currentNumeric, previous);
+            const displayUnit = kpi.unit && kpi.unit.toLowerCase() !== "sessions" ? kpi.unit : undefined;
+            return (
+              <button
+                key={`${domain}-${range}-${kpi.title}`}
+                type="button"
+                onClick={() => setSelectedKpiIndex(index)}
+                className={`rounded-2xl px-5 py-4 text-left shadow-[0_16px_28px_-18px_rgba(30,36,50,0.35)] transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  isActive ? "ring-0" : "ring-0"
+                }`}
+                style={{
+                  backgroundColor: isActive ? tileColor : "#FFFFFF",
+                  border: isActive ? "none" : "1px solid rgba(30,36,50,0.08)",
+                }}
+                aria-pressed={isActive}
+                aria-label={`${kpi.title} ${kpi.value}${kpi.sublabel ? `, ${kpi.sublabel}` : ""}`}
+              >
+                <header
+                  className={`text-xs font-semibold uppercase tracking-wide ${
+                    isActive ? "text-[#22313F]" : "text-[rgba(34,49,63,0.65)]"
+                  }`}
+                >
+                  {displayUnit ? `${kpi.title} (${displayUnit})` : kpi.title}
+                </header>
+                <div className={`mt-3 text-3xl font-semibold ${isActive ? "text-[#111111]" : "text-[#111111]"}`}>
+                  {kpi.value}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Steps Progress */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-4xl font-bold text-black">
-                      {(selectedPeriod==='day' ? steps : currentData.steps.current).toLocaleString()}
+                {previous !== null && currentNumeric !== null ? (
+                  <p
+                    className={`mt-2 flex items-center gap-1 text-xs font-medium ${
+                      isActive ? trend.colorActive : trend.color
+                    }`}
+                  >
+                    <span>{trend.icon}</span>
+                    <span>
+                      {trend.text} {formatter(Math.abs(trend.delta))}
                     </span>
-                    <span className="text-sm font-medium text-black">
-                      {selectedPeriod==='day'
-                        ? (stepsLoading
-                            ? 'Loading…'
-                            : steps < stepGoal
-                              ? `${(stepGoal - steps).toLocaleString()} remaining`
-                              : 'Goal achieved! 🎉')
-                        : currentData.steps.remaining > 0
-                          ? `${currentData.steps.remaining.toLocaleString()} remaining`
-                          : 'Goal achieved! 🎉'
-                      }
-                    </span>
-                  </div>
-                  {/* Progress bar - Always shown for steps */}
-                  <Progress
-                    value={selectedPeriod==='day' ? Math.min(100, Math.max(0, (steps / Math.max(1, stepGoal)) * 100)) : currentData.steps.progress}
-                    className="h-4 bg-warm-sage/20 rounded-full"
-                    style={{
-                      '--progress-color': 'hsl(var(--warm-sage))'
-                    } as React.CSSProperties}
-                  />
-                </div>
+                  </p>
+                ) : null}
+              </button>
+            );
+          })}
+        </section>
 
-                {/* Dynamic Visualization */}
-                {renderStepsVisualization()}
-              </CardContent>
-            </Card>
-          </Section>
-        )}
+        {shouldShowHistory ? (
+          <section className="rounded-3xl border border-[rgba(30,36,50,0.08)] bg-white p-5 shadow-[0_18px_36px_-20px_rgba(30,36,50,0.4)]">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-[#111111]">History</h2>
+              <span className="text-xs font-medium text-[rgba(34,49,63,0.6)]">Latest to oldest</span>
+            </div>
+            {showHistoryLoading ? (
+              <div className="mt-4 text-sm font-medium text-[rgba(34,49,63,0.65)]">Loading sample routines...</div>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {[...snapshot.history]
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map((entry) => {
+                    if (entry.type === "strength") {
+                      const content = (
+                        <>
+                          <div>
+                            <p className="text-sm font-semibold text-[#111111]">{entry.name}</p>
+                            <p className="text-xs text-[rgba(34,49,63,0.65)]">
+                              {formatHistoryDate(entry.date)} · {entry.duration}
+                            </p>
+                          </div>
+                          <p className="text-sm font-semibold text-[#111111]">{entry.totalWeight}</p>
+                        </>
+                      );
 
-        {/* Workouts Overview Card - Hidden for Month and Year */}
-        {selectedPeriod !== 'month' && selectedPeriod !== 'year' && (
-          <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader className="pb-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-warm-coral/20 rounded-full flex items-center justify-center">
-                      <Dumbbell size={24} className="text-black" />
-                    </div>
-                    <div>
-                      <h2 className="font-bold text-black text-xl">{getPeriodTitle()} Workouts</h2>
-                      <p className="text-sm text-black">Goal: {selectedPeriod==='day' ? 1 : currentData.routines.target} {selectedPeriod==='day' ? 'workout' : 'routines'}</p>
-                    </div>
-                  </div>
-                  {selectedPeriod === 'day' ? (
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      (workoutsLoading ? false : workoutCount >= 1) ? 'bg-warm-coral' : 'bg-warm-coral/20'
-                    }`}>
-                      {(workoutsLoading ? false : workoutCount >= 1) ? (
-                        <Check size={20} className="text-black" />
-                      ) : (
-                        <div className="w-4 h-4 border-2 border-warm-coral rounded-sm" />
-                      )}
-                    </div>
-                  ) : (
-                    <Badge className={`${currentData.routines.achieved ? 'bg-warm-coral' : 'bg-warm-coral/20'} text-black border-warm-coral/30 px-3 py-1 text-sm font-semibold`}>
-                      {currentData.routines.progress.toFixed(0)}%
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Routines Progress - Hidden for Day view */}
-                {selectedPeriod !== 'day' && (
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-4xl font-bold text-black">
-                        {currentData.routines.current}
-                      </span>
-                      <span className="text-sm font-medium text-black">
-                        {currentData.routines.remaining > 0 
-                          ? `${currentData.routines.remaining} more to go`
-                          : 'Target exceeded! 🚀'
-                        }
-                      </span>
-                    </div>
-                    <Progress
-                      value={currentData.routines.progress}
-                      className="h-4 bg-warm-coral/20 rounded-full"
-                      style={{
-                        '--progress-color': 'hsl(var(--warm-coral))'
-                      } as React.CSSProperties}
-                    />
-                  </div>
-                )}
+                      const canNavigate = typeof entry.routineTemplateId === "number" && !!onSelectRoutine;
 
-                {/* Today's Routines for Day View */}
-                {renderTodaysRoutines()}
+                      return (
+                        <li key={entry.id}>
+                          {canNavigate ? (
+                            <button
+                              type="button"
+                              onClick={() => handleStrengthHistorySelect(entry)}
+                              className="flex w-full items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[rgba(226,125,96,0.35)]"
+                            >
+                              {content}
+                            </button>
+                          ) : (
+                            <div className="flex items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3">
+                              {content}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    }
+                    return (
+                      <li
+                        key={entry.id}
+                        className="flex items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-[#111111]">{normalizeActivity(entry.activity)}</p>
+                          <p className="text-xs text-[rgba(34,49,63,0.65)]">
+                            {formatHistoryDate(entry.date)} · {entry.duration}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-[#111111]">{entry.distance}</p>
+                          {entry.calories ? (
+                            <p className="text-xs text-[rgba(34,49,63,0.65)]">{entry.calories}</p>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+              </ul>
+            )}
+          </section>
+        ) : null}
 
-                {/* Dynamic Routine Visualization */}
-                {renderRoutineVisualization()}
-
-                {/* Dynamic Routine Types */}
-                {renderRoutineTypes()}
-              </CardContent>
-            </Card>
-          </Section>
-        )}
-
-        {/* Month View - Routine Types (show only if types exist) */}
-        {selectedPeriod === 'month' && (currentData.routines.types && currentData.routines.types.length > 0) && (
-          <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-warm-coral/20 rounded-full flex items-center justify-center">
-                    <Dumbbell size={24} className="text-black" />
-                  </div>
-                  <h2 className="font-bold text-black text-xl">Routine Types</h2>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {renderRoutineTypes()}
-              </CardContent>
-            </Card>
-          </Section>
-        )}
-
-        {/* Year View - Monthly Breakdown */}
-        {selectedPeriod === 'year' && (
-          <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-warm-peach/20 rounded-full flex items-center justify-center">
-                    <BarChart3 size={24} className="text-black" />
-                  </div>
-                  <h2 className="font-bold text-black text-xl">Monthly Breakdown</h2>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {renderYearMonthlyBreakdown()}
-              </CardContent>
-            </Card>
-          </Section>
-        )}
-
-        {/* Year View - Calendar */}
-        {selectedPeriod === 'year' && (
-          <Section variant="plain" padding="none">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-warm-mint/20 rounded-full flex items-center justify-center">
-                    <Calendar size={24} className="text-black" />
-                  </div>
-                  <h2 className="font-bold text-black text-xl">Activity Calendar</h2>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {renderYearCalendar()}
-              </CardContent>
-            </Card>
-          </Section>
-        )}
-      </Stack>
+        <div className="h-6" />
+      </div>
     </AppScreen>
   );
 }
+
+function normalizeActivity(activity: string) {
+  const mapping: Record<string, string> = {
+    "outdoor walk": "Outdoor Walk",
+    "indoor walk": "Indoor Walk",
+    "outdoor run": "Outdoor Run",
+    "indoor run": "Indoor Run",
+    cycling: "Cycling",
+    elliptical: "Elliptical",
+    rowing: "Rowing",
+    "stair stepper": "Stair Stepper",
+    swimming: "Swimming",
+  };
+  return mapping[activity.trim().toLowerCase()] ?? activity;
+}
+
+function daysAgoISO(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date.toISOString();
+}
+
+function formatHistoryDate(iso: string) {
+  const date = new Date(iso);
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function estimateRoutineDurationMinutes(exerciseCount: number) {
+  if (!Number.isFinite(exerciseCount) || exerciseCount <= 0) return 30;
+  return exerciseCount * 10;
+}
+
+function calculateTotalWeight(exercises: LoadedExercise[]) {
+  return exercises.reduce((total, exercise) => {
+    return (
+      total +
+      exercise.sets.reduce((setTotal, set) => {
+        const reps = Number.parseFloat(set.reps);
+        const weight = Number.parseFloat(set.weight);
+        if (!Number.isFinite(reps) || !Number.isFinite(weight)) return setTotal;
+        if (reps <= 0 || weight <= 0) return setTotal;
+        return setTotal + reps * weight;
+      }, 0)
+    );
+  }, 0);
+}
+
+function formatDuration(minutes: number) {
+  const safeMinutes = Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : 0;
+  const hours = Math.floor(safeMinutes / 60);
+  const remainingMinutes = safeMinutes % 60;
+  if (hours > 0) {
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  }
+  return `${Math.max(remainingMinutes, 1)} min`;
+}
+
+function formatWeight(weightKg: number) {
+  const safeWeight = Number.isFinite(weightKg) && weightKg > 0 ? weightKg : 0;
+  return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.round(safeWeight))} kg`;
+}
+
+function generateTrend(domain: ProgressDomain, range: TimeRange, seed: number, variance: number, metric: number): TrendPoint[] {
+  const today = new Date();
+  const points = RANGE_POINTS[range];
+  const stepDays = RANGE_STEPS[range];
+  const rng = createRng(`${domain}-${range}-${seed}-${variance}-${metric}`);
+
+  let current = domain === "measurement" ? seed : seed * 0.55;
+  if (domain === "strength") {
+    current *= 1 + metric * 0.08;
+  } else if (domain === "cardio") {
+    current *= 1 + metric * 0.05;
+  } else {
+    current *= 1 + metric * 0.02;
+  }
+  const values: TrendPoint[] = [];
+
+  for (let index = 0; index < points; index += 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (points - 1 - index) * stepDays);
+    const progress = points > 1 ? index / (points - 1) : 1;
+
+    const noise = (rng() - 0.5) * variance * seed * 0.18;
+
+    if (domain === "strength") {
+      const push = seed * variance * (0.12 + rng() * 0.18 + metric * 0.04);
+      const plateauChance = rng();
+      if (plateauChance > 0.75) {
+        current += push * 0.15 + noise;
+      } else {
+        current += push + noise;
+      }
+    } else if (domain === "cardio") {
+      const burst = seed * variance * (0.08 + rng() * 0.22 + metric * 0.03);
+      current += burst + noise;
+      if (rng() > 0.82) {
+        current -= seed * variance * 0.12;
+      }
+    } else {
+      const downwardDrift = seed * variance * (0.04 + progress * 0.06 + metric * 0.015);
+      current -= downwardDrift;
+      current += noise;
+    }
+
+    const baseFloor = domain === "measurement" ? seed * 0.75 : seed * 0.35;
+    const baseCeiling = domain === "measurement" ? seed * 1.05 : seed * (range === "sixMonths" ? 1.45 : 1.25);
+    const floor = domain === "measurement" ? baseFloor * (1 - metric * 0.02) : baseFloor * (1 + metric * 0.03);
+    const ceiling = baseCeiling * (1 + metric * 0.08);
+    current = Math.min(ceiling, Math.max(floor, current));
+
+    values.push({
+      x: date.toISOString(),
+      y: Number(current.toFixed(2)),
+      isPersonalBest: index === points - 2,
+    });
+  }
+
+  return values;
+}
+
+function formatDayLabel(range: TimeRange, iso: string, index: number, total: number) {
+  const date = new Date(iso);
+  if (range === "week") {
+    return date.toLocaleDateString(undefined, { weekday: "short" });
+  }
+
+  if (range === "threeMonths") {
+    const month = date.toLocaleDateString(undefined, { month: "short" });
+    const weekInMonth = getWeekOfMonth(date);
+    return `${month} W${weekInMonth}`;
+  }
+
+  // six months
+  return date.toLocaleDateString(undefined, { month: "short" });
+}
+
+function formatTickValue(value: number) {
+  if (Math.abs(value) >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(1)}M`;
+  }
+  if (Math.abs(value) >= 1_000) {
+    return `${(value / 1_000).toFixed(1)}k`;
+  }
+  return value.toFixed(0);
+}
+
+function generateTicks(domain: [number, number], count: number) {
+  const [min, max] = domain;
+  if (min === max) {
+    return [Number(min.toFixed(2))];
+  }
+  const step = (max - min) / Math.max(count - 1, 1);
+  return Array.from({ length: count }, (_, index) => Number((min + index * step).toFixed(2)));
+}
+
+function getWeekOfMonth(date: Date) {
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const offset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+  return Math.floor((date.getDate() + offset - 1) / 7) + 1;
+}
+
+function createRng(key: string) {
+  let seed = 0;
+  for (let index = 0; index < key.length; index += 1) {
+    seed = (seed << 5) - seed + key.charCodeAt(index);
+    seed |= 0;
+  }
+  return mulberry32(seed >>> 0);
+}
+
+function mulberry32(a: number) {
+  return function rng() {
+    a += 0x6D2B79F5;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = t + Math.imul(t ^ (t >>> 7), 61 | t) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function getEncouragement(firstName?: string | null) {
+  const suffix = firstName ? `, ${firstName}` : "";
+  return `You’ve got this${suffix}`;
+}
+
+function extractFirstName(profile: Profile | null): string | null {
+  if (!profile) return null;
+  const direct = profile.first_name?.trim();
+  if (direct) {
+    return direct.split(/\s+/)[0];
+  }
+  const display = profile.display_name?.trim();
+  if (display) {
+    const [first] = display.split(/\s+/);
+    if (first) {
+      return first;
+    }
+  }
+  return null;
+}
+
+const TREND_ICONS = {
+  up: "▲",
+  down: "▼",
+  flat: "=",
+} as const;
+
+const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+const decimalOneFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const decimalTwoFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function clampNonNegative(value: number) {
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
+function formatDurationMinutes(value: number) {
+  const totalMinutes = clampNonNegative(value);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = Math.round(totalMinutes % 60);
+  if (hours > 0 && minutes > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  if (hours > 0) {
+    return `${hours}h`;
+  }
+  return `${minutes}m`;
+}
+
+function formatKilograms(value: number) {
+  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} kg`;
+}
+
+function formatDays(value: number) {
+  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} days`;
+}
+
+function formatWorkouts(value: number) {
+  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} workouts`;
+}
+
+function formatKilometers(value: number) {
+  return `${decimalOneFormatter.format(clampNonNegative(value))} km`;
+}
+
+function formatCalories(value: number) {
+  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} kcal`;
+}
+
+function formatSteps(value: number) {
+  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} steps`;
+}
+
+function formatCentimeters(value: number) {
+  return `${decimalTwoFormatter.format(clampNonNegative(value))} cm`;
+}
+
+function getKpiFormatter(domain: ProgressDomain, index: number): (value: number) => string {
+  switch (domain) {
+    case "strength":
+      return [
+        formatDurationMinutes,
+        formatWorkouts,
+        formatKilograms,
+        formatDays,
+      ][index] ?? ((value) => integerFormatter.format(Math.round(value)));
+    case "cardio":
+      return [
+        formatDurationMinutes,
+        formatKilometers,
+        formatCalories,
+        formatSteps,
+      ][index] ?? ((value) => integerFormatter.format(Math.round(value)));
+    case "measurement":
+    default:
+      return [formatCentimeters, formatCentimeters, formatCentimeters, formatCentimeters][index] ??
+        ((value) => decimalTwoFormatter.format(clampNonNegative(value)));
+  }
+}
+
+function determineTrend(currentValue: number | null, previousValue: number | null) {
+  if (currentValue === null || previousValue === null) {
+    return {
+      icon: TREND_ICONS.flat,
+      color: "text-[rgba(34,49,63,0.55)]",
+      colorActive: "text-[#22313F]",
+      text: "No change",
+      delta: 0,
+    };
+  }
+  const current = clampNonNegative(currentValue);
+  const previous = clampNonNegative(previousValue);
+  const difference = current - previous;
+  if (Math.abs(difference) < 0.01) {
+    return {
+      icon: TREND_ICONS.flat,
+      color: "text-[rgba(34,49,63,0.45)]",
+      colorActive: "text-[#22313F]",
+      text: "Same as prior",
+      delta: 0,
+    };
+  }
+  if (difference > 0) {
+    return {
+      icon: TREND_ICONS.up,
+      color: "text-[rgba(46,125,102,0.85)]",
+      colorActive: "text-[rgba(46,125,102,1)]",
+      text: "Up",
+      delta: difference,
+    };
+  }
+  return {
+    icon: TREND_ICONS.down,
+    color: "text-[rgba(226,125,96,0.85)]",
+    colorActive: "text-[rgba(226,125,96,1)]",
+    text: "Down",
+    delta: Math.abs(difference),
+  };
+}
+
+const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(0);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const gradientId = useMemo(() => `grad-${Math.random().toString(36).slice(2, 10)}`, []);
+  const inset = useMemo(() => {
+    if (range === "threeMonths") {
+      return { top: 16, bottom: 12, left: 28, right: 36 } as const;
+    }
+    if (range === "sixMonths") {
+      return { top: 16, bottom: 12, left: 24, right: 28 } as const;
+    }
+    return { top: 16, bottom: 12, left: 18, right: 18 } as const;
+  }, [range]);
+
+  useEffect(() => {
+    const current = containerRef.current;
+    if (!current) return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        setWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(current);
+    return () => observer.disconnect();
+  }, []);
+
+  const { areaPath, linePath, dots, ticks, yPosition, averageY, averageValue } = useMemo(() => {
+    if (!width || data.length === 0) {
+      return {
+        areaPath: "",
+        linePath: "",
+        dots: [] as Array<{ cx: number; cy: number; label: string }>,
+        ticks: [] as number[],
+        yPosition: (value: number) => value,
+        averageY: inset.top,
+        averageValue: 0,
+      };
+    }
+
+    const values = data.map((point) => point.y);
+    const maxValue = Math.max(...values);
+    const minValue = Math.min(...values);
+    const paddedMax = maxValue === 0 ? 1 : maxValue * 1.12;
+    const paddedMin = minValue === maxValue ? minValue * 0.9 : minValue * 0.9;
+
+    const xScale = scalePoint<number>()
+      .domain(data.map((_, index) => index))
+      .range([inset.left, width - inset.right])
+      .padding(data.length === 1 ? 1 : 0.4);
+
+    const yScale = scaleLinear()
+      .domain([paddedMin, paddedMax])
+      .range([CHART_HEIGHT - inset.bottom, inset.top])
+      .nice();
+
+    const line = shape
+      .line<TrendPoint>()
+      .x((_, index) => xScale(index) ?? inset.left)
+      .y((point) => yScale(point.y))
+      .curve(shape.curveCatmullRom.alpha(0.5));
+
+    const area = shape
+      .area<TrendPoint>()
+      .x((_, index) => xScale(index) ?? inset.left)
+      .y0(CHART_HEIGHT - inset.bottom)
+      .y1((point) => yScale(point.y))
+      .curve(shape.curveCatmullRom.alpha(0.5));
+
+    const dots = data.map((point, index) => ({
+      cx: xScale(index) ?? inset.left,
+      cy: yScale(point.y),
+      label: point.x,
+    }));
+
+    const tickCount = range === "week" ? 3 : range === "threeMonths" ? 4 : 5;
+    const ticks = generateTicks(yScale.domain() as [number, number], tickCount);
+    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+
+    return {
+      areaPath: area(data) ?? "",
+      linePath: line(data) ?? "",
+      dots,
+      ticks,
+      yPosition: (value: number) => yScale(value),
+      averageY: yScale(average),
+      averageValue: average,
+    };
+  }, [data, inset.bottom, inset.left, inset.right, inset.top, range, width]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="w-full"
+      style={{ height: CHART_HEIGHT }}
+      onMouseLeave={() => setHoverIndex(null)}
+    >
+      {width > 0 && data.length > 0 ? (
+        <svg
+          key={`${range}-${data.length}-${color}`}
+          width={width}
+          height={CHART_HEIGHT}
+          role="img"
+          aria-label="Progress trend"
+          className="transition-opacity duration-300"
+        >
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.18} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          {ticks.map((tick) => (
+            <line
+              key={`grid-${tick}`}
+              x1={inset.left}
+              x2={width - inset.right}
+              y1={yPosition(tick)}
+              y2={yPosition(tick)}
+              stroke="rgba(30,36,50,0.08)"
+              strokeDasharray="4 6"
+            />
+          ))}
+          <line
+            x1={inset.left}
+            x2={width - inset.right}
+            y1={averageY}
+            y2={averageY}
+            stroke={color}
+            strokeOpacity={0.45}
+            strokeWidth={2}
+            strokeDasharray="4 6"
+          />
+          <path d={areaPath} fill={`url(#${gradientId})`} />
+          <path d={linePath} fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
+          {dots.map((dot, index) => (
+            <g key={dot.label}>
+              <circle
+                cx={dot.cx}
+                cy={dot.cy}
+                r={3.5}
+                stroke={color}
+                strokeWidth={1}
+                fill="#FFFFFF"
+                style={{ cursor: "pointer" }}
+                tabIndex={0}
+                onMouseEnter={() => setHoverIndex(index)}
+                onMouseLeave={() => setHoverIndex(null)}
+                onFocus={() => setHoverIndex(index)}
+                onBlur={() => setHoverIndex(null)}
+              />
+              <rect
+                x={dot.cx - Math.max(20, (width - inset.left - inset.right) / Math.max(dots.length, 1) / 2)}
+                width={Math.max(40, (width - inset.left - inset.right) / Math.max(dots.length, 1))}
+                y={inset.top}
+                height={CHART_HEIGHT - inset.top - inset.bottom}
+                fill="transparent"
+                onMouseEnter={() => setHoverIndex(index)}
+                onMouseLeave={() => setHoverIndex(null)}
+              />
+            </g>
+          ))}
+          {data.map((point, index) => {
+            const label = formatDayLabel(range, point.x, index, data.length);
+            if (!label) return null;
+            const labelY = range === "threeMonths" ? CHART_HEIGHT - 20 : CHART_HEIGHT - 4;
+            return (
+              <text
+                key={`x-${point.x}`}
+                x={dots[index]?.cx ?? inset.left}
+                y={labelY}
+                textAnchor={range === "threeMonths" ? "end" : "middle"}
+                fontSize={range === "threeMonths" ? 9 : 10}
+                fill="rgba(30,36,50,0.4)"
+                transform={
+                  range === "threeMonths"
+                    ? `rotate(-35, ${dots[index]?.cx ?? inset.left}, ${labelY})`
+                    : undefined
+                }
+              >
+                {label}
+              </text>
+            );
+          })}
+          {dots.length > 0 ? (
+            <line
+              x1={dots[dots.length - 1].cx}
+              x2={dots[dots.length - 1].cx}
+              y1={inset.top}
+              y2={CHART_HEIGHT - inset.bottom}
+              stroke="rgba(30,36,50,0.15)"
+              strokeDasharray="2 4"
+            />
+          ) : null}
+          {ticks.map((tick) => (
+            <text
+              key={`y-${tick}`}
+              x={width - inset.right + 6}
+              y={yPosition(tick)}
+              textAnchor="start"
+              fontSize={11}
+              fill="rgba(30,36,50,0.25)"
+            >
+              {formatTickValue(tick)}
+            </text>
+          ))}
+          {hoverIndex !== null && dots[hoverIndex] ? (
+            <g transform={`translate(${dots[hoverIndex].cx},${dots[hoverIndex].cy})`} pointerEvents="none">
+              <line
+                x1={0}
+                x2={0}
+                y1={0}
+                y2={CHART_HEIGHT - dots[hoverIndex].cy - inset.bottom}
+                stroke={color}
+                strokeOpacity={0.18}
+                strokeDasharray="2 4"
+              />
+              <circle r={6} fill={color} fillOpacity={0.18} />
+              <circle r={3.5} stroke={color} strokeWidth={1.5} fill="#FFFFFF" />
+            <foreignObject x={-70} y={-60} width={140} height={52}>
+              <div className="rounded-2xl border border-[rgba(30,36,50,0.08)] bg-white px-3 py-2 text-[10px] font-semibold text-[#111111] shadow-[0_12px_20px_-16px_rgba(30,36,50,0.45)]">
+                <p className="text-[11px] font-semibold text-[#111111]">
+                    {formatter(data[hoverIndex].y)}
+                </p>
+                <p className="text-[10px] font-medium text-[rgba(30,36,50,0.55)]">
+                  {new Date(data[hoverIndex].x).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
+            </foreignObject>
+          </g>
+        ) : null}
+        <text
+          x={width - inset.right}
+          y={averageY - 8}
+          textAnchor="end"
+          fontSize={10}
+          fill="rgba(30,36,50,0.45)"
+        >
+            {`Avg ${formatter(averageValue)}`}
+        </text>
+        </svg>
+      ) : (
+        <div className="h-full w-full" />
+      )}
+    </div>
+  );
+};
+
+export default ProgressScreen;

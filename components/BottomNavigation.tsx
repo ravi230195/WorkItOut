@@ -43,7 +43,7 @@ export function BottomNavigation({
     return (
       <nav
         aria-label="Bottom navigation"
-        className={`w-full h-14 flex items-center justify-center bg-background ${className}`}
+        className={`w-full h-14 flex items-center justify-center bg-background pointer-events-auto ${className}`}
       >
         <div className="flex w-full items-center justify-center gap-3">
           {children}
@@ -56,7 +56,7 @@ export function BottomNavigation({
   return (
     <nav
       aria-label="Bottom navigation"
-      className={`w-full h-14 flex items-center justify-center bg-background ${className}`}
+      className={`w-full h-14 flex items-center justify-center bg-background pointer-events-auto ${className}`}
     >
       <ul className="w-full flex justify-around">
         {tabs.map((tab) => {

@@ -255,9 +255,10 @@ export default function AppScreen({
           ref={bottomRef}
           className={cx(
             "shrink-0",
-            bottomBarSticky && "sticky bottom-0 z-30",
+            bottomBarSticky && "sticky bottom-0 z-50",
             "bg-background",
             showBottomBarBorder && "border-t border-border",
+            "pointer-events-auto",
             bottomBarShellClassName,
           )}
           style={
