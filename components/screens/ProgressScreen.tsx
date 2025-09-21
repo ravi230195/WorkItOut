@@ -459,6 +459,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
             const previous = kpi.previous ?? null;
             const currentNumeric = kpi.currentNumeric ?? null;
             const trend = determineTrend(currentNumeric, previous);
+            const displayUnit = kpi.unit && kpi.unit.toLowerCase() !== "sessions" ? kpi.unit : undefined;
             return (
               <button
                 key={`${domain}-${range}-${kpi.title}`}
@@ -479,7 +480,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
                     isActive ? "text-[#22313F]" : "text-[rgba(34,49,63,0.65)]"
                   }`}
                 >
-                  {kpi.unit ? `${kpi.title} (${kpi.unit})` : kpi.title}
+                  {displayUnit ? `${kpi.title} (${displayUnit})` : kpi.title}
                 </header>
                 <div className={`mt-3 text-3xl font-semibold ${isActive ? "text-[#111111]" : "text-[#111111]"}`}>
                   {kpi.value}
