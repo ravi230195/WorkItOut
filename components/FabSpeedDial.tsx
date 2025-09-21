@@ -17,9 +17,17 @@ interface FabSpeedDialProps {
    */
   backdropWidth?: CssLength;
   /**
+   * Extra width added on top of the computed/auto width. Accepts any CSS length.
+   */
+  backdropWidthOffset?: CssLength;
+  /**
    * Height of the glowing backdrop. Accepts any valid CSS length (defaults to auto height).
    */
   backdropHeight?: CssLength;
+  /**
+   * Extra height added on top of the computed/auto height. Accepts any CSS length.
+   */
+  backdropHeightOffset?: CssLength;
   /**
    * Milliseconds for the backdrop fade animation (defaults to 400ms).
    */
@@ -31,11 +39,40 @@ const DEFAULT_FADE_DURATION = 400;
 const toCssLength = (value: CssLength) =>
   typeof value === "number" ? `${value}px` : value;
 
+const addOffset = (
+  base: CssLength | undefined,
+  offset: CssLength | undefined
+): string | undefined => {
+  if (base === undefined && offset === undefined) {
+    return undefined;
+  }
+
+  const baseCss = base !== undefined ? toCssLength(base) : undefined;
+  const offsetCss = offset !== undefined ? toCssLength(offset) : undefined;
+
+  if (!offsetCss || offsetCss === "0" || offsetCss === "0px") {
+    return baseCss;
+  }
+
+  if (!baseCss || baseCss === "0" || baseCss === "0px") {
+    return offsetCss;
+  }
+
+  const disallowedForCalc = ["auto", "fit-content", "max-content", "min-content"];
+  if (typeof baseCss === "string" && disallowedForCalc.includes(baseCss)) {
+    return baseCss;
+  }
+
+  return `calc(${baseCss} + ${offsetCss})`;
+};
+
 export default function FabSpeedDial({
   actions,
   onOpenChange,
   backdropWidth,
+  backdropWidthOffset,
   backdropHeight,
+  backdropHeightOffset,
   backdropFadeDuration = DEFAULT_FADE_DURATION,
 }: FabSpeedDialProps) {
   const [open, setOpen] = useState(false);
@@ -101,18 +138,27 @@ export default function FabSpeedDial({
     };
   }, [open]);
 
-  const computedBackdropWidth =
+  const baseBackdropWidth: CssLength | undefined =
     backdropWidth === undefined
       ? autoBackdropSize.width > 0
-        ? `${autoBackdropSize.width}px`
+        ? autoBackdropSize.width
         : undefined
-      : toCssLength(backdropWidth);
-  const computedBackdropHeight =
+      : backdropWidth;
+  const baseBackdropHeight: CssLength | undefined =
     backdropHeight === undefined
       ? autoBackdropSize.height > 0
-        ? `${autoBackdropSize.height}px`
+        ? autoBackdropSize.height
         : undefined
-      : toCssLength(backdropHeight);
+      : backdropHeight;
+
+  const computedBackdropWidth = addOffset(
+    baseBackdropWidth,
+    backdropWidthOffset
+  );
+  const computedBackdropHeight = addOffset(
+    baseBackdropHeight,
+    backdropHeightOffset
+  );
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout> | undefined;
