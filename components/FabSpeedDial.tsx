@@ -189,26 +189,25 @@ export default function FabSpeedDial({
 
   return (
     <div className="fixed right-4 bottom-20 z-40">
-      <div className="relative">
-        {showBackdrop && (
-          <div
-            className={`pointer-events-none absolute right-0 bottom-0 translate-x-6 translate-y-6 rounded-[36px] bg-white/90 shadow-xl blur-lg transition-all ease-out -z-10 transform ${
-              open ? "opacity-100 scale-100" : "opacity-0 scale-95"
-            }`}
-            style={{
-              width: computedBackdropWidth,
-              height: computedBackdropHeight,
-              transitionDuration: `${backdropFadeDuration}ms`,
-            }}
-          />
-        )}
+      <div
+        className={`flex flex-col items-end ${open ? "gap-4" : ""}`}
+      >
+        <div ref={dialRef} className="relative">
+          {showBackdrop && (
+            <div
+              className={`pointer-events-none absolute right-0 bottom-0 translate-x-6 rounded-[36px] bg-white/90 shadow-xl blur-lg transition-all ease-out -z-10 transform ${
+                open ? "opacity-100 scale-100" : "opacity-0 scale-95"
+              }`}
+              style={{
+                width: computedBackdropWidth,
+                height: computedBackdropHeight,
+                transitionDuration: `${backdropFadeDuration}ms`,
+              }}
+            />
+          )}
 
-        <div
-          ref={dialRef}
-          className="relative flex flex-col items-end gap-4 z-10"
-        >
           {open && (
-            <div className="flex flex-col items-end gap-4">
+            <div className="flex flex-col items-end gap-4 z-10">
               {actions.map((action) => (
                 <button
                   key={action.label}
@@ -233,20 +232,20 @@ export default function FabSpeedDial({
               ))}
             </div>
           )}
-
-          <button
-            onClick={toggle}
-            aria-label="Speed dial"
-            aria-expanded={open}
-            className="
-              relative z-20 w-16 h-16 rounded-full bg-primary text-black
-              shadow-lg flex items-center justify-center
-              transition-transform
-            "
-          >
-            <Plus className={`w-6 h-6 transition-transform ${open ? "rotate-45" : ""}`} />
-          </button>
         </div>
+
+        <button
+          onClick={toggle}
+          aria-label="Speed dial"
+          aria-expanded={open}
+          className="
+            relative z-20 w-16 h-16 rounded-full bg-primary text-black
+            shadow-lg flex items-center justify-center
+            transition-transform
+          "
+        >
+          <Plus className={`w-6 h-6 transition-transform ${open ? "rotate-45" : ""}`} />
+        </button>
       </div>
     </div>
   );
