@@ -9,6 +9,8 @@ import type {
 } from "./supabase-types";
 import { localCache } from "../cache/localCache";
 
+export const SAMPLE_ROUTINE_USER_ID = "58b39a78-0284-445f-8c88-4fed2944c8be";
+
 export class SupabaseDBRead extends SupabaseBase {
   // Exercises (global)
   async getExercises(opts: {
@@ -110,16 +112,15 @@ export class SupabaseDBRead extends SupabaseBase {
 
   // Routines (per user)
   async getSampleRoutines(): Promise<UserRoutine[]> {
-    const user = "58b39a78-0284-445f-8c88-4fed2944c8be"
-    const url = `${SUPABASE_URL}/rest/v1/user_routines?user_id=eq.${user}&is_active=eq.true&select=*&order=created_at.asc`;
-    const key = this.keyUserRoutines(user);
+    const url = `${SUPABASE_URL}/rest/v1/user_routines?user_id=eq.${SAMPLE_ROUTINE_USER_ID}&is_active=eq.true&select=*&order=created_at.asc`;
+    const key = this.keyUserRoutines(SAMPLE_ROUTINE_USER_ID);
     const { data: routines } = await this.getOrFetchAndCache<UserRoutine[]>(url, key, CACHE_TTL.routines, true);
     return routines;
   }
 
   // Routine exercises (per routine)
-  async getUserRoutineExercises(routineTemplateId: number): Promise<UserRoutineExercise[]> {
-    const userId = await this.getUserId();
+  async getUserRoutineExercises(routineTemplateId: number, userIdOverride?: string): Promise<UserRoutineExercise[]> {
+    const userId = userIdOverride ?? (await this.getUserId());
     const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&is_active=is.true&select=*`;
     const key = this.keyRoutineExercises(userId, routineTemplateId);
     
@@ -132,9 +133,10 @@ export class SupabaseDBRead extends SupabaseBase {
 
   // Routine exercises with details (flattened)
   async getUserRoutineExercisesWithDetails(
-    routineTemplateId: number
+    routineTemplateId: number,
+    userIdOverride?: string
   ): Promise<Array<UserRoutineExercise & { exercise_name?: string; category?: string }>> {
-    const userId = await this.getUserId();
+    const userId = userIdOverride ?? (await this.getUserId());
     const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_data?routine_template_id=eq.${routineTemplateId}&select=*,exercises(name,category)`;
     const key = this.keyRoutineExercisesWithDetails(userId, routineTemplateId);
 
@@ -155,8 +157,8 @@ export class SupabaseDBRead extends SupabaseBase {
   }
 
   // Sets per routine exercise
-  async getExerciseSetsForRoutine(routineTemplateExerciseId: number): Promise<UserRoutineExerciseSet[]> {
-    const userId = await this.getUserId();
+  async getExerciseSetsForRoutine(routineTemplateExerciseId: number, userIdOverride?: string): Promise<UserRoutineExerciseSet[]> {
+    const userId = userIdOverride ?? (await this.getUserId());
     const url = `${SUPABASE_URL}/rest/v1/user_routine_exercises_set_data?routine_template_exercise_id=eq.${routineTemplateExerciseId}&is_active=eq.true&order=set_order`;
     const key = this.keyRoutineSets(userId, routineTemplateExerciseId);
     const { data: sets } = await this.getOrFetchAndCache<UserRoutineExerciseSet[]>(url, key, CACHE_TTL.routineSets, true);

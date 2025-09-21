@@ -34,15 +34,20 @@ const normalizeField = (val: unknown): string => {
 
 export async function loadRoutineExercisesWithSets(
   routineId: number,
-  opts: { concurrency?: number; timer?: typeof performanceTimer } = {}
+  opts: { concurrency?: number; timer?: typeof performanceTimer; userIdOverride?: string } = {}
 ): Promise<LoadedExercise[]> {
-  const { concurrency = SETS_PREFETCH_CONCURRENCY, timer = performanceTimer } = opts;
+  const {
+    concurrency = SETS_PREFETCH_CONCURRENCY,
+    timer = performanceTimer,
+    userIdOverride,
+  } = opts;
   const mainTimer = timer.start("routineLoader - load routine exercises");
 
   try {
     const exerciseTimer = timer.start("routineLoader - fetch routine exercises");
     const rows = (await supabaseAPI.getUserRoutineExercisesWithDetails(
-      routineId
+      routineId,
+      userIdOverride
     )) as SavedExerciseWithDetails[];
     exerciseTimer.endWithLog();
 
@@ -73,7 +78,7 @@ export async function loadRoutineExercisesWithSets(
       const setsBatch = await Promise.all(
         batch.map((r) =>
           supabaseAPI
-            .getExerciseSetsForRoutine(r.routine_template_exercise_id)
+            .getExerciseSetsForRoutine(r.routine_template_exercise_id, userIdOverride)
             .then((rows) =>
               (rows as UserRoutineExerciseSet[])
                 .sort((a, b) => (a.set_order || 0) - (b.set_order || 0))

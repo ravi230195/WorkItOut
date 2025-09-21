@@ -1,4 +1,4 @@
-import SupabaseDBRead from "./supabase-db-read";
+import SupabaseDBRead, { SAMPLE_ROUTINE_USER_ID } from "./supabase-db-read";
 import SupabaseDBWrite from "./supabase-db-write";
 import { isHardDeleteEnabled } from "../delete-config";
 
@@ -49,3 +49,4 @@ export const supabaseAPI = new SupabaseAPI();
 
 // Re-export types so your existing imports keep working
 export * from "./supabase-types";
+export { SAMPLE_ROUTINE_USER_ID };
