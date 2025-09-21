@@ -323,6 +323,8 @@ export default function WorkoutDashboardScreen({
             icon: <Ruler className="w-6 h-6" />,
           },
         ]}
+        backdropWidthOffset="100px"
+        backdropHeightOffset="40px"
       />
     </AppScreen>
   );
