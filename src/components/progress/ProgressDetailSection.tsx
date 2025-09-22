@@ -1,5 +1,14 @@
-import { useId, useMemo, useState } from 'react';
-import type { ActivityCategory, TimeRange, MuscleGroup } from '../../types/progress';
+import { useEffect, useId, useMemo, useState } from 'react';
+import type {
+  ActivityCategory,
+  TimeRange,
+  MuscleGroup,
+  SeriesPoint,
+  KPI,
+  WorkoutSummary,
+  BestRecord,
+} from '../../types/progress';
+import { CardioProgressProvider } from '../../screen/progress/CardioProgress';
 import { MockProgressProvider } from '../../screen/progress/MockData';
 import {
   BADGE_BASE_CLASS,
@@ -13,6 +22,7 @@ import {
   PANEL_SURFACE_CLASS,
 } from '../../screen/progress/util';
 import KpiCard from './KpiCard';
+import { logger } from '../../../utils/logging';
 // npm i recharts
 import {
   ResponsiveContainer,
@@ -127,16 +137,95 @@ export default function ProgressDetailSection({
   const gradientId = useId();
 
   const activeMuscle = category === 'strength' ? strengthFocus ?? 'all' : undefined;
+  const provider = useMemo(
+    () => (category === 'cardio' ? CardioProgressProvider : MockProgressProvider),
+    [category],
+  );
 
-  const series = MockProgressProvider.series({ category, range: timeRange, muscle: activeMuscle });
-  const prev = compare
-    ? MockProgressProvider.previousSeries({ category, range: timeRange, muscle: activeMuscle })
-    : [];
-  const kpis = MockProgressProvider.kpis({ category, range: timeRange });
-  const workouts = MockProgressProvider.recentWorkouts({ category, range: timeRange, limit: 6 });
-  const bestAll = MockProgressProvider.bestsAllTime({ category });
-  const bestPeriod = MockProgressProvider.bestsInPeriod({ category, range: timeRange });
-  const target = MockProgressProvider.targetLine?.({ category, range: timeRange });
+  const [series, setSeries] = useState<SeriesPoint[]>([]);
+  const [previousSeries, setPreviousSeries] = useState<SeriesPoint[]>([]);
+  const [kpis, setKpis] = useState<KPI[]>([]);
+  const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
+  const [bestAll, setBestAll] = useState<BestRecord[]>([]);
+  const [bestPeriod, setBestPeriod] = useState<BestRecord[]>([]);
+  const [target, setTarget] = useState<number | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+      try {
+        const [seriesData, prevData, kpiData, workoutData, bestAllData, bestPeriodData, targetValue] = await Promise.all([
+          provider.series({ category, range: timeRange, muscle: activeMuscle, cardioFocus }),
+          provider.previousSeries({ category, range: timeRange, muscle: activeMuscle, cardioFocus }),
+          provider.kpis({ category, range: timeRange, cardioFocus }),
+          provider.recentWorkouts({ category, range: timeRange, limit: 6, cardioFocus }),
+          provider.bestsAllTime({ category, cardioFocus }),
+          provider.bestsInPeriod({ category, range: timeRange, cardioFocus }),
+          provider.targetLine
+            ? provider.targetLine({ category, range: timeRange, cardioFocus })
+            : Promise.resolve<number | undefined>(undefined),
+        ]);
+        if (cancelled) return;
+        setSeries(seriesData);
+        setPreviousSeries(prevData);
+        setKpis(kpiData);
+        setWorkouts(workoutData);
+        setBestAll(bestAllData);
+        setBestPeriod(bestPeriodData);
+        setTarget(targetValue ?? undefined);
+      } catch (error) {
+        if (cancelled) return;
+        logger.warn('[progress] failed to load live progress data', error);
+        setLoadError('Unable to load live progress data. Showing cached mock values.');
+        try {
+          const [seriesData, prevData, kpiData, workoutData, bestAllData, bestPeriodData, targetValue] = await Promise.all([
+            MockProgressProvider.series({ category, range: timeRange, muscle: activeMuscle, cardioFocus }),
+            MockProgressProvider.previousSeries({ category, range: timeRange, muscle: activeMuscle, cardioFocus }),
+            MockProgressProvider.kpis({ category, range: timeRange, cardioFocus }),
+            MockProgressProvider.recentWorkouts({ category, range: timeRange, limit: 6, cardioFocus }),
+            MockProgressProvider.bestsAllTime({ category, cardioFocus }),
+            MockProgressProvider.bestsInPeriod({ category, range: timeRange, cardioFocus }),
+            MockProgressProvider.targetLine
+              ? MockProgressProvider.targetLine({ category, range: timeRange, cardioFocus })
+              : Promise.resolve<number | undefined>(undefined),
+          ]);
+          if (cancelled) return;
+          setSeries(seriesData);
+          setPreviousSeries(prevData);
+          setKpis(kpiData);
+          setWorkouts(workoutData);
+          setBestAll(bestAllData);
+          setBestPeriod(bestPeriodData);
+          setTarget(targetValue ?? undefined);
+        } catch (fallbackError) {
+          if (cancelled) return;
+          logger.error('[progress] mock fallback failed', fallbackError);
+          setSeries([]);
+          setPreviousSeries([]);
+          setKpis([]);
+          setWorkouts([]);
+          setBestAll([]);
+          setBestPeriod([]);
+          setTarget(undefined);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [provider, category, timeRange, activeMuscle, cardioFocus]);
 
   const meta = useMemo(
     () => getMetricMeta(category, strengthFocus, cardioFocus),
@@ -161,6 +250,11 @@ export default function ProgressDetailSection({
                 {meta.focusLabel}
               </span>
             )}
+            {loadError && (
+              <p className={`text-xs ${TEXT_SUBTLE_CLASS}`} role="status">
+                {loadError}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -172,7 +266,12 @@ export default function ProgressDetailSection({
             </button>
           </div>
         </div>
-        <div className="h-[260px]">
+        <div className="relative h-[260px]">
+          {isLoading && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 text-sm text-neutral-600 dark:bg-zinc-900/60 dark:text-neutral-300">
+              Loading…
+            </div>
+          )}
           <ResponsiveContainer width="100%" height="100%">
             {category === 'body' ? (
               <LineChart data={series} aria-label="Body progress chart" margin={{ top: 24, right: 16, left: 8, bottom: 8 }}>
@@ -207,10 +306,10 @@ export default function ProgressDetailSection({
                   />
                 )}
                 <Line type="monotone" dataKey="value" stroke={meta.primaryColor} strokeWidth={2} dot={dotRenderer} activeDot={{ r: 4 }} />
-                {prev.length > 0 && (
+                {compare && previousSeries.length > 0 && (
                   <Line
                     type="monotone"
-                    data={prev}
+                    data={previousSeries}
                     dataKey="value"
                     stroke={meta.accentColor}
                     strokeOpacity={0.25}
@@ -266,10 +365,10 @@ export default function ProgressDetailSection({
                   dot={dotRenderer}
                   activeDot={{ r: 5 }}
                 />
-                {prev.length > 0 && (
+                {compare && previousSeries.length > 0 && (
                   <Area
                     type="monotone"
-                    data={prev}
+                    data={previousSeries}
                     dataKey="value"
                     stroke={meta.accentColor}
                     strokeOpacity={0.25}
