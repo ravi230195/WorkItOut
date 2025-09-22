@@ -369,6 +369,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
       bottomBarSticky
       showHeaderBorder={false}
       showBottomBarBorder={false}
+      maxContent="responsive"
     >
       <div className="flex flex-col gap-6 px-4 pb-8 pt-6 sm:px-6">
         <section className="relative" ref={domainMenuRef}>

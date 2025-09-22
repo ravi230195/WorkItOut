@@ -17,7 +17,7 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
       }
       showHeaderBorder={false}
       showBottomBarBorder={false}
-      maxContent="md"
+      maxContent="responsive"
     >
       <Stack gap="fluid" className="py-6">
         <Section variant="plain" padding="none">
