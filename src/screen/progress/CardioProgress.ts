@@ -36,6 +36,7 @@ const CARDIO_PERMISSIONS = [
   'READ_ACTIVE_CALORIES',
   'READ_TOTAL_CALORIES',
   'READ_HEART_RATE',
+  'READ_STEPS',
 ] as const;
 
 const FOCUS_CONFIG: Record<CardioFocus, { metric: FocusMetric }> = {
@@ -96,9 +97,50 @@ interface CardioSnapshot {
   current: AggregatedStats;
   previous: AggregatedStats;
   allWorkouts: NormalizedWorkout[];
+  steps: { current: number; previous: number };
 }
 
 const workoutCache = new Map<TimeRange, Promise<WorkoutBundle | null>>();
+const stepsCache = new Map<TimeRange, Promise<{ current: number; previous: number }>>();
+
+type HealthModule = typeof import('capacitor-health');
+
+let healthModulePromise: Promise<HealthModule | null> | null = null;
+
+async function getHealthModule(): Promise<HealthModule | null> {
+  if (!healthModulePromise) {
+    healthModulePromise = (async () => {
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        const platform = Capacitor.getPlatform();
+        if (platform !== 'ios' && platform !== 'android') {
+          return null;
+        }
+
+        const module = await import('capacitor-health');
+        const available = await module.Health.isHealthAvailable();
+        if (!available?.available) {
+          return null;
+        }
+
+        try {
+          await module.Health.requestHealthPermissions({
+            permissions: Array.from(new Set([...CARDIO_PERMISSIONS])) as any,
+          });
+        } catch (err) {
+          logger.warn('[cardio] Permission request failed', err);
+        }
+
+        return module;
+      } catch (err) {
+        logger.warn('[cardio] getHealthModule failed', err);
+        return null;
+      }
+    })();
+  }
+
+  return healthModulePromise;
+}
 
 function normalizeCardioFocus(focus?: string): CardioFocus {
   const key = (focus ?? '').toLowerCase();
@@ -224,25 +266,12 @@ function normalizeWorkout(raw: any): NormalizedWorkout | null {
 
 async function fetchNormalizedWorkouts(start: Date, end: Date, includeHeartRate: boolean): Promise<NormalizedWorkout[]> {
   try {
-    const { Capacitor } = await import('@capacitor/core');
-    const platform = Capacitor.getPlatform();
-    if (platform !== 'ios' && platform !== 'android') {
+    const module = await getHealthModule();
+    if (!module) {
       return [];
     }
 
-    const { Health } = await import('capacitor-health');
-    const available = await Health.isHealthAvailable();
-    if (!available?.available) {
-      return [];
-    }
-
-    try {
-      await Health.requestHealthPermissions({ permissions: [...CARDIO_PERMISSIONS] });
-    } catch (err) {
-      logger.warn('[cardio] Permission request failed', err);
-    }
-
-    const response: any = await Health.queryWorkouts({
+    const response: any = await module.Health.queryWorkouts({
       startDate: start.toISOString(),
       endDate: end.toISOString(),
       includeHeartRate,
@@ -261,6 +290,78 @@ async function fetchNormalizedWorkouts(start: Date, end: Date, includeHeartRate:
     logger.warn('[cardio] fetchNormalizedWorkouts failed', err);
     return [];
   }
+}
+
+async function fetchStepsTotalForRange(start: Date, end: Date): Promise<number | null> {
+  try {
+    const module = await getHealthModule();
+    if (!module) {
+      return null;
+    }
+
+    const aggregated: any = await module.Health.queryAggregated({
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      dataType: 'steps',
+      bucket: 'day',
+    });
+
+    let total = 0;
+    if (Array.isArray(aggregated?.aggregatedData)) {
+      aggregated.aggregatedData.forEach((row: any) => {
+        const value = Number(row?.value ?? row?.sum ?? row?.count ?? 0);
+        if (Number.isFinite(value)) {
+          total += value;
+        }
+      });
+    }
+
+    if (total === 0) {
+      const fallback = Number(aggregated?.value ?? aggregated?.sum ?? aggregated?.count ?? 0);
+      if (Number.isFinite(fallback) && fallback > 0) {
+        total = fallback;
+      }
+    }
+
+    if (!Number.isFinite(total)) {
+      return null;
+    }
+
+    return Math.max(0, Math.round(total));
+  } catch (err) {
+    logger.warn('[cardio] fetchStepsTotalForRange failed', err);
+    return null;
+  }
+}
+
+async function getStepsTotals(range: TimeRange): Promise<{ current: number; previous: number }> {
+  if (stepsCache.has(range)) {
+    return stepsCache.get(range)!;
+  }
+
+  const promise = (async () => {
+    const bounds = getRangeBounds(range);
+    const [currentRaw, previousRaw] = await Promise.all([
+      fetchStepsTotalForRange(bounds.start, bounds.end),
+      fetchStepsTotalForRange(bounds.previousStart, bounds.previousEnd),
+    ]);
+
+    if (currentRaw == null && previousRaw == null) {
+      logger.warn('[cardio] Step data unavailable for range', range);
+      return { current: 0, previous: 0 };
+    }
+
+    return {
+      current: currentRaw ?? 0,
+      previous: previousRaw ?? 0,
+    };
+  })().catch((err) => {
+    logger.warn('[cardio] getStepsTotals failed', err);
+    return { current: 0, previous: 0 };
+  });
+
+  stepsCache.set(range, promise);
+  return promise;
 }
 
 async function getWorkoutBundle(range: TimeRange): Promise<WorkoutBundle | null> {
@@ -409,31 +510,41 @@ function formatCalories(calories: number): string {
   return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.round(calories))} kcal`;
 }
 
+function formatSteps(steps: number): string {
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.max(0, Math.round(steps)));
+}
+
 function computeDelta(current: number, previous: number | null | undefined): number | null {
   if (!previous || previous === 0) return null;
   return (current - previous) / previous;
 }
 
-function buildKpis(current: AggregatedStats, previous: AggregatedStats): KPI[] {
-  const distanceDelta = computeDelta(current.totalDistanceKm, previous.totalDistanceKm);
+function buildKpis(
+  current: AggregatedStats,
+  previous: AggregatedStats,
+  steps: { current: number; previous: number },
+): KPI[] {
   const minutesDelta = computeDelta(current.totalMinutes, previous.totalMinutes);
+  const distanceDelta = computeDelta(current.totalDistanceKm, previous.totalDistanceKm);
+  const stepsDelta = computeDelta(steps.current, steps.previous);
   const caloriesDelta = computeDelta(current.totalCalories, previous.totalCalories);
-  const hrDelta =
-    current.avgHeartRate && previous.avgHeartRate
-      ? (current.avgHeartRate - previous.avgHeartRate) / previous.avgHeartRate
-      : null;
 
-  return [
-    { icon: '🏃', label: 'Distance', value: formatDistance(current.totalDistanceKm), deltaPct: distanceDelta },
+  const kpis: KPI[] = [
     { icon: '⏱️', label: 'Active Minutes', value: formatMinutes(current.totalMinutes), deltaPct: minutesDelta },
-    {
-      icon: '❤️',
-      label: 'Avg HR',
-      value: current.avgHeartRate ? `${current.avgHeartRate} bpm` : '—',
-      deltaPct: hrDelta,
-    },
+    { icon: '🏃', label: 'Distance', value: formatDistance(current.totalDistanceKm), deltaPct: distanceDelta },
+    { icon: '👣', label: 'Steps', value: formatSteps(steps.current), deltaPct: stepsDelta },
     { icon: '🔥', label: 'Calories', value: formatCalories(current.totalCalories), deltaPct: caloriesDelta },
   ];
+
+  if (current.avgHeartRate != null) {
+    const hrDelta =
+      previous.avgHeartRate != null && previous.avgHeartRate !== 0
+        ? (current.avgHeartRate - previous.avgHeartRate) / previous.avgHeartRate
+        : null;
+    kpis.push({ icon: '❤️', label: 'Avg HR', value: `${current.avgHeartRate} bpm`, deltaPct: hrDelta });
+  }
+
+  return kpis;
 }
 
 function titleFromWorkout(workout: NormalizedWorkout): string {
@@ -512,12 +623,12 @@ function bestRecordsForPeriod(workouts: NormalizedWorkout[]): BestRecord[] {
 }
 
 async function getSnapshot(range: TimeRange, focus: CardioFocus): Promise<CardioSnapshot | null> {
-  const bundle = await getWorkoutBundle(range);
+  const [bundle, steps] = await Promise.all([getWorkoutBundle(range), getStepsTotals(range)]);
   if (!bundle) return null;
   const current = aggregateStats(range, focus, bundle.current, bundle.rangeEnd);
   const previous = aggregateStats(range, focus, bundle.previous, bundle.previousRangeEnd);
   const allWorkouts = [...bundle.current, ...bundle.previous];
-  return { current, previous, allWorkouts };
+  return { current, previous, allWorkouts, steps };
 }
 
 function targetForFocus(focus: CardioFocus): number {
@@ -556,7 +667,7 @@ export const CardioProgressProvider: ProgressDataProvider = {
     if (!snapshot) {
       return MockProgressProvider.kpis({ ...params, category: 'cardio' } as any);
     }
-    return buildKpis(snapshot.current, snapshot.previous);
+    return buildKpis(snapshot.current, snapshot.previous, snapshot.steps);
   },
   async recentWorkouts(params) {
     if (params.category !== 'cardio') {
