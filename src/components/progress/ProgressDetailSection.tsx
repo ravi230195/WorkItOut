@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from 'react';
 import type { ActivityCategory, TimeRange, MuscleGroup } from '../../types/progress';
-import { MockProgressProvider as provider } from './_mockProgressData';
+import { MockProgressProvider as provider } from '../../screen/progress/MockData';
 import KpiCard from './KpiCard';
 // npm i recharts
 import {
