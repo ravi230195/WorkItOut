@@ -370,8 +370,8 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
       showHeaderBorder={false}
       showBottomBarBorder={false}
       maxContent="responsive"
+      contentClassName="flex flex-col gap-6 pb-8"
     >
-      <div className="flex flex-col gap-6 px-4 pb-8 pt-6 sm:px-6">
         <section className="relative" ref={domainMenuRef}>
           <h1 className="mb-3 text-2xl font-semibold tracking-tight text-[#111111]">{encouragement}</h1>
           <button
@@ -574,8 +574,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
           </section>
         ) : null}
 
-        <div className="h-6" />
-      </div>
+      <div className="h-6" />
     </AppScreen>
   );
 }
