@@ -3,12 +3,21 @@ import * as shape from "d3-shape";
 import { scaleLinear, scalePoint } from "d3-scale";
 
 import AppScreen from "../layouts/AppScreen";
-import type { TimeRange, TrendPoint } from "../../src/types/progress";
+import type { TimeRange } from "../../src/types/progress";
 import { useAuth } from "../AuthContext";
+
 import { supabaseAPI, SAMPLE_ROUTINE_USER_ID } from "../../utils/supabase/supabase-api";
 import type { Profile } from "../../utils/supabase/supabase-types";
 import { loadRoutineExercisesWithSets, type LoadedExercise } from "../../utils/routineLoader";
 import { RoutineAccess } from "../../hooks/useAppNavigation";
+import { Stack } from "../layouts";
+import Spacer from "../layouts/Spacer";
+
+type TrendPoint = {
+  x: string; // ISO date
+  y: number; // value
+  isPersonalBest?: boolean;
+};
 
 type ProgressDomain = "strength" | "cardio" | "measurement";
 
@@ -72,13 +81,7 @@ const RANGE_OPTIONS: Array<{ value: TimeRange; label: string }> = [
 ];
 
 const KPI_COLORS = ["#7FD1AE", "#FFB38A", "#FFE08A", "#8FC5FF"] as const;
-const DOMAIN_ACCENT: Record<ProgressDomain, string> = {
-  strength: "#E27D60",
-  cardio: "#68A691",
-  measurement: "#8FC5FF",
-};
 const CHART_HEIGHT = 240;
-const CHART_INSET = { top: 16, bottom: 8, left: 16, right: 16 };
 const RANGE_POINTS: Record<TimeRange, number> = { week: 7, threeMonths: 12, sixMonths: 6 };
 const RANGE_STEPS: Record<TimeRange, number> = { week: 1, threeMonths: 7, sixMonths: 30 };
 
@@ -369,8 +372,11 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
       bottomBarSticky
       showHeaderBorder={false}
       showBottomBarBorder={false}
+      maxContent="responsive"
+      contentClassName=""
     >
-      <div className="flex flex-col gap-6 px-4 pb-8 pt-6 sm:px-6">
+      <Stack gap="fluid">
+        <Spacer y="sm" />
         <section className="relative" ref={domainMenuRef}>
           <h1 className="mb-3 text-2xl font-semibold tracking-tight text-[#111111]">{encouragement}</h1>
           <button
@@ -407,7 +413,9 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
                         setDomainMenuOpen(false);
                       }}
                       className={`flex w-full items-center justify-between px-5 py-3 text-sm font-semibold transition ${
-                        isActive ? "bg-[rgba(226,125,96,0.15)] text-[#E27D60]" : "text-[rgba(34,49,63,0.75)] hover:bg-[rgba(226,125,96,0.08)]"
+                        isActive
+                          ? "bg-[rgba(226,125,96,0.15)] text-[#E27D60]"
+                          : "text-[rgba(34,49,63,0.75)] hover:bg-[rgba(226,125,96,0.08)]"
                       }`}
                     >
                       <span>{option.label}</span>
@@ -419,7 +427,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
             </ul>
           ) : null}
         </section>
-
+        <Spacer y="sm" />
         <section className="flex flex-wrap items-center justify-center gap-2 px-1 py-1">
           {RANGE_OPTIONS.map((option) => {
             const isActive = option.value === range;
@@ -446,11 +454,26 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
             );
           })}
         </section>
-
-        <section className="-mx-2 sm:mx-0">
+        <Spacer y="sm" />
+        <section className="rounded-3xl border border-[rgba(30,36,50,0.08)] bg-white p-5 shadow-[0_18px_36px_-20px_rgba(30,36,50,0.4)]">
+          <header className="flex items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[rgba(34,49,63,0.65)]">{DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? "Select"}</div>
+              <h2 className="text-xl font-semibold text-[#111111]">
+                {snapshot.kpis[selectedKpiIndex]?.title ?? snapshot.kpis[0]?.title ?? ""}
+              </h2>
+              <p className="text-xs font-medium text-[rgba(34,49,63,0.65)]">
+                {RANGE_OPTIONS.find((opt) => opt.value === range)?.label ?? ""} overview
+              </p>
+            </div>
+            <div className="rounded-full border border-[rgba(30,36,50,0.12)] bg-[#F7F6F3] px-3 py-1 text-xs font-semibold text-[rgba(34,49,63,0.7)]">
+              {DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? ""}
+            </div>
+          </header>
+          <Spacer y="sm" />
           <TrendChart data={trendSeries} color={trendColor} range={range} formatter={valueFormatter} />
         </section>
-
+        <Spacer y="sm" />
         <section className="mt-8 grid grid-cols-2 gap-4">
           {snapshot.kpis.map((kpi, index) => {
             const isActive = index === selectedKpiIndex;
@@ -473,7 +496,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
                   border: isActive ? "none" : "1px solid rgba(30,36,50,0.08)",
                 }}
                 aria-pressed={isActive}
-                aria-label={`${kpi.title} ${kpi.value}${kpi.sublabel ? `, ${kpi.sublabel}` : ""}`}
+                aria-label={`${kpi.title} ${kpi.value}`}
               >
                 <header
                   className={`text-xs font-semibold uppercase tracking-wide ${
@@ -501,7 +524,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
             );
           })}
         </section>
-
+        <Spacer y="sm" />
         {shouldShowHistory ? (
           <section className="rounded-3xl border border-[rgba(30,36,50,0.08)] bg-white p-5 shadow-[0_18px_36px_-20px_rgba(30,36,50,0.4)]">
             <div className="flex items-center justify-between">
@@ -572,9 +595,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
             )}
           </section>
         ) : null}
-
-        <div className="h-6" />
-      </div>
+      </Stack>
     </AppScreen>
   );
 }
@@ -1117,30 +1138,30 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
               />
               <circle r={6} fill={color} fillOpacity={0.18} />
               <circle r={3.5} stroke={color} strokeWidth={1.5} fill="#FFFFFF" />
-            <foreignObject x={-70} y={-60} width={140} height={52}>
-              <div className="rounded-2xl border border-[rgba(30,36,50,0.08)] bg-white px-3 py-2 text-[10px] font-semibold text-[#111111] shadow-[0_12px_20px_-16px_rgba(30,36,50,0.45)]">
-                <p className="text-[11px] font-semibold text-[#111111]">
+              <foreignObject x={-70} y={-60} width={140} height={52}>
+                <div className="rounded-2xl border border-[rgba(30,36,50,0.08)] bg-white px-3 py-2 text-[10px] font-semibold text-[#111111] shadow-[0_12px_20px_-16px_rgba(30,36,50,0.45)]">
+                  <p className="text-[11px] font-semibold text-[#111111]">
                     {formatter(data[hoverIndex].y)}
-                </p>
-                <p className="text-[10px] font-medium text-[rgba(30,36,50,0.55)]">
-                  {new Date(data[hoverIndex].x).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
-            </foreignObject>
-          </g>
-        ) : null}
-        <text
-          x={width - inset.right}
-          y={averageY - 8}
-          textAnchor="end"
-          fontSize={10}
-          fill="rgba(30,36,50,0.45)"
-        >
+                  </p>
+                  <p className="text-[10px] font-medium text-[rgba(30,36,50,0.55)]">
+                    {new Date(data[hoverIndex].x).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
+              </foreignObject>
+            </g>
+          ) : null}
+          <text
+            x={width - inset.right}
+            y={averageY - 8}
+            textAnchor="end"
+            fontSize={10}
+            fill="rgba(30,36,50,0.45)"
+          >
             {`Avg ${formatter(averageValue)}`}
-        </text>
+          </text>
         </svg>
       ) : (
         <div className="h-full w-full" />
@@ -1150,3 +1171,4 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
 };
 
 export default ProgressScreen;
+
