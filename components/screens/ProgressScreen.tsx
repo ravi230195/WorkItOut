@@ -7,19 +7,27 @@ import type { TimeRange } from "../../src/types/progress";
 import { useAuth } from "../AuthContext";
 
 import { supabaseAPI, SAMPLE_ROUTINE_USER_ID } from "../../utils/supabase/supabase-api";
-import type { Profile } from "../../utils/supabase/supabase-types";
-import { loadRoutineExercisesWithSets, type LoadedExercise } from "../../utils/routineLoader";
+import { loadRoutineExercisesWithSets } from "../../utils/routineLoader";
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { Stack } from "../layouts";
 import Spacer from "../layouts/Spacer";
-
-type TrendPoint = {
-  x: string; // ISO date
-  y: number; // value
-  isPersonalBest?: boolean;
-};
-
-type ProgressDomain = "strength" | "cardio" | "measurement";
+import { DOMAIN_OPTIONS, RANGE_OPTIONS, MOCK_SNAPSHOTS } from "./progress/MockData";
+import type { HistoryEntry, ProgressDomain, TrendPoint } from "./progress/types";
+import {
+  calculateTotalWeight,
+  determineTrend,
+  estimateRoutineDurationMinutes,
+  extractFirstName,
+  formatDuration,
+  formatHistoryDate,
+  formatWeight,
+  getEncouragement,
+  getKpiFormatter,
+  normalizeActivity,
+  formatDayLabel,
+  formatTickValue,
+  generateTicks,
+} from "./progress/utils";
 
 interface ProgressScreenProps {
   bottomBar?: React.ReactNode;
@@ -32,210 +40,26 @@ interface TrendChartProps {
   range: TimeRange;
   formatter: (value: number) => string;
 }
-
-type KpiDatum = {
-  title: string;
-  value: string;
-  unit?: string;
-  previous?: number;
-  currentNumeric?: number;
-};
-
-type HistoryEntry =
-  | {
-      type: "strength";
-      id: string;
-      name: string;
-      date: string;
-      duration: string;
-      totalWeight: string;
-      routineTemplateId?: number;
-    }
-  | {
-      type: "cardio";
-      id: string;
-      activity: string;
-      date: string;
-      duration: string;
-      distance: string;
-      calories?: string;
-      routineTemplateId?: number;
-    };
-
-type Snapshot = {
-  series: TrendPoint[][];
-  kpis: KpiDatum[];
-  history: HistoryEntry[];
-};
-
-const DOMAIN_OPTIONS: Array<{ value: ProgressDomain; label: string }> = [
-  { value: "strength", label: "Strength" },
-  { value: "cardio", label: "Cardio" },
-  { value: "measurement", label: "Measurement" },
-];
-
-const RANGE_OPTIONS: Array<{ value: TimeRange; label: string }> = [
-  { value: "week", label: "Week" },
-  { value: "threeMonths", label: "3 Month" },
-  { value: "sixMonths", label: "6 Month" },
-];
-
 const KPI_COLORS = ["#7FD1AE", "#FFB38A", "#FFE08A", "#8FC5FF"] as const;
 const CHART_HEIGHT = 240;
-const RANGE_POINTS: Record<TimeRange, number> = { week: 7, threeMonths: 12, sixMonths: 6 };
-const RANGE_STEPS: Record<TimeRange, number> = { week: 1, threeMonths: 7, sixMonths: 30 };
 
-const MOCK: Record<ProgressDomain, Record<TimeRange, Snapshot>> = {
-  strength: {
-    week: {
-      series: [
-        generateTrend("strength", "week", 1050, 0.32, 0),
-        generateTrend("strength", "week", 860, 0.28, 1),
-        generateTrend("strength", "week", 1340, 0.3, 2),
-        generateTrend("strength", "week", 620, 0.26, 3),
-      ],
-      kpis: [
-        { title: "Duration", unit: "hours", value: "3h 18m", currentNumeric: 198, previous: 172 },
-        { title: "Workouts", value: "5", currentNumeric: 5, previous: 4 },
-        { title: "Total Weight", unit: "kg", value: "82,640", currentNumeric: 82640, previous: 79320 },
-        { title: "Streak", unit: "days", value: "6", currentNumeric: 6, previous: 4 },
-      ],
-      history: [
-        { type: "strength", id: "s1", name: "Upper Power", date: daysAgoISO(1), duration: "52 min", totalWeight: "28,450 kg" },
-        { type: "strength", id: "s2", name: "Posterior Chain", date: daysAgoISO(3), duration: "47 min", totalWeight: "30,120 kg" },
-        { type: "strength", id: "s3", name: "Power Pull", date: daysAgoISO(5), duration: "41 min", totalWeight: "24,360 kg" },
-      ],
-    },
-    threeMonths: {
-      series: [
-        generateTrend("strength", "threeMonths", 1220, 0.24, 0),
-        generateTrend("strength", "threeMonths", 940, 0.22, 1),
-        generateTrend("strength", "threeMonths", 1480, 0.25, 2),
-        generateTrend("strength", "threeMonths", 680, 0.21, 3),
-      ],
-      kpis: [
-        { title: "Duration", unit: "hours", value: "12h 42m", currentNumeric: 762, previous: 708 },
-        { title: "Workouts", value: "18", currentNumeric: 18, previous: 16 },
-        { title: "Total Weight", unit: "kg", value: "322,130", currentNumeric: 322130, previous: 304980 },
-        { title: "Streak", unit: "days", value: "12", currentNumeric: 12, previous: 9 },
-      ],
-      history: [],
-    },
-    sixMonths: {
-      series: [
-        generateTrend("strength", "sixMonths", 1380, 0.18, 0),
-        generateTrend("strength", "sixMonths", 980, 0.17, 1),
-        generateTrend("strength", "sixMonths", 1620, 0.2, 2),
-        generateTrend("strength", "sixMonths", 720, 0.15, 3),
-      ],
-      kpis: [
-        { title: "Duration", unit: "hours", value: "156", currentNumeric: 9360, previous: 9020 },
-        { title: "Workouts", value: "182", currentNumeric: 182, previous: 178 },
-        { title: "Total Weight", unit: "kg", value: "3.4M", currentNumeric: 3400000, previous: 3320000 },
-        { title: "Streak", unit: "days", value: "21", currentNumeric: 21, previous: 18 },
-      ],
-      history: [],
-    },
-  },
-  cardio: {
-    week: {
-      series: [
-        generateTrend("cardio", "week", 8, 0.32, 0),
-        generateTrend("cardio", "week", 6.4, 0.28, 1),
-        generateTrend("cardio", "week", 9.8, 0.3, 2),
-        generateTrend("cardio", "week", 5.2, 0.26, 3),
-      ],
-      kpis: [
-        { title: "Total Time", unit: "hours", value: "4h 05m", currentNumeric: 245, previous: 203 },
-        { title: "Distance", unit: "km", value: "42.5", currentNumeric: 42.5, previous: 38.2 },
-        { title: "Calories", unit: "kcal", value: "3,420", currentNumeric: 3420, previous: 3150 },
-        { title: "Steps", value: "64,210", currentNumeric: 64210, previous: 60890 },
-      ],
-      history: [
-        { type: "cardio", id: "c1", activity: "Outdoor Run", date: daysAgoISO(1), duration: "00:42:10", distance: "7.4 km", calories: "612 kcal" },
-        { type: "cardio", id: "c2", activity: "Indoor Run", date: daysAgoISO(3), duration: "00:35:05", distance: "5.6 km", calories: "438 kcal" },
-        { type: "cardio", id: "c3", activity: "Cycling", date: daysAgoISO(5), duration: "00:48:44", distance: "18.2 km", calories: "502 kcal" },
-      ],
-    },
-    threeMonths: {
-      series: [
-        generateTrend("cardio", "threeMonths", 28, 0.22, 0),
-        generateTrend("cardio", "threeMonths", 21, 0.2, 1),
-        generateTrend("cardio", "threeMonths", 34, 0.23, 2),
-        generateTrend("cardio", "threeMonths", 17, 0.19, 3),
-      ],
-      kpis: [
-        { title: "Total Time", unit: "hours", value: "15h 38m", currentNumeric: 938, previous: 902 },
-        { title: "Distance", unit: "km", value: "168", currentNumeric: 168, previous: 160 },
-        { title: "Calories", unit: "kcal", value: "13,420", currentNumeric: 13420, previous: 12680 },
-        { title: "Steps", value: "262,410", currentNumeric: 262410, previous: 254000 },
-      ],
-      history: [],
-    },
-    sixMonths: {
-      series: [
-        generateTrend("cardio", "sixMonths", 52, 0.18, 0),
-        generateTrend("cardio", "sixMonths", 38, 0.16, 1),
-        generateTrend("cardio", "sixMonths", 58, 0.19, 2),
-        generateTrend("cardio", "sixMonths", 32, 0.15, 3),
-      ],
-      kpis: [
-        { title: "Total Time", unit: "hours", value: "168", currentNumeric: 10080, previous: 9980 },
-        { title: "Distance", unit: "km", value: "1,932", currentNumeric: 1932, previous: 1870 },
-        { title: "Calories", unit: "kcal", value: "124,650", currentNumeric: 124650, previous: 123200 },
-        { title: "Steps", value: "2.9M", currentNumeric: 2900000, previous: 2840000 },
-      ],
-      history: [],
-    },
-  },
-  measurement: {
-    week: {
-      series: [
-        generateTrend("measurement", "week", 101.2, 0.03, 0),
-        generateTrend("measurement", "week", 36.4, 0.025, 1),
-        generateTrend("measurement", "week", 58.8, 0.024, 2),
-        generateTrend("measurement", "week", 96.7, 0.028, 3),
-      ],
-      kpis: [
-        { title: "Chest", unit: "cm", value: "101.2", currentNumeric: 101.2, previous: 101.5 },
-        { title: "Arms", unit: "cm", value: "36.4", currentNumeric: 36.4, previous: 36.1 },
-        { title: "Legs", unit: "cm", value: "58.8", currentNumeric: 58.8, previous: 58.6 },
-        { title: "Back", unit: "cm", value: "96.7", currentNumeric: 96.7, previous: 97.1 },
-      ],
-      history: [],
-    },
-    threeMonths: {
-      series: [
-        generateTrend("measurement", "threeMonths", 101.4, 0.03, 0),
-        generateTrend("measurement", "threeMonths", 36.2, 0.024, 1),
-        generateTrend("measurement", "threeMonths", 59.1, 0.022, 2),
-        generateTrend("measurement", "threeMonths", 96.9, 0.027, 3),
-      ],
-      kpis: [
-        { title: "Chest", unit: "cm", value: "101.4", currentNumeric: 101.4, previous: 102.0 },
-        { title: "Arms", unit: "cm", value: "36.2", currentNumeric: 36.2, previous: 36.0 },
-        { title: "Legs", unit: "cm", value: "59.1", currentNumeric: 59.1, previous: 58.9 },
-        { title: "Back", unit: "cm", value: "96.9", currentNumeric: 96.9, previous: 97.3 },
-      ],
-      history: [],
-    },
-    sixMonths: {
-      series: [
-        generateTrend("measurement", "sixMonths", 102.8, 0.032, 0),
-        generateTrend("measurement", "sixMonths", 36.0, 0.022, 1),
-        generateTrend("measurement", "sixMonths", 59.6, 0.02, 2),
-        generateTrend("measurement", "sixMonths", 97.2, 0.026, 3),
-      ],
-      kpis: [
-        { title: "Chest", unit: "cm", value: "102.8", currentNumeric: 102.8, previous: 103.6 },
-        { title: "Arms", unit: "cm", value: "36.0", currentNumeric: 36.0, previous: 35.8 },
-        { title: "Legs", unit: "cm", value: "59.6", currentNumeric: 59.6, previous: 59.2 },
-        { title: "Back", unit: "cm", value: "97.2", currentNumeric: 97.2, previous: 97.9 },
-      ],
-      history: [],
-    },
-  },
-};
+const COLOR_VALUES = {
+  accent: "#E27D60",
+  rangeAccent: "#68A691",
+  white: "#FFFFFF",
+  borderSubtle: "rgba(30,36,50,0.08)",
+  chartGuide: "rgba(30,36,50,0.15)",
+  chartTick: "rgba(30,36,50,0.25)",
+  chartText: "rgba(30,36,50,0.45)",
+  chartLabel: "rgba(30,36,50,0.4)",
+  chartTooltipMuted: "rgba(30,36,50,0.55)",
+  textPrimary: "#111111",
+  textMuted: "rgba(34,49,63,0.65)",
+  textSecondary: "rgba(34,49,63,0.7)",
+  textHint: "rgba(34,49,63,0.6)",
+  badgeBackground: "#F7F6F3",
+  surfaceAlt: "#F8F6F3",
+} as const;
 
 export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenProps) {
   const [domain, setDomain] = useState<ProgressDomain>("cardio");
@@ -248,7 +72,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const [strengthHistory, setStrengthHistory] = useState<HistoryEntry[]>([]);
   const [strengthHistoryLoading, setStrengthHistoryLoading] = useState(false);
 
-  const baseSnapshot = useMemo(() => MOCK[domain][range], [domain, range]);
+  const baseSnapshot = useMemo(() => MOCK_SNAPSHOTS[domain][range], [domain, range]);
   const snapshot = useMemo(() => {
     if (domain === "strength" && strengthHistory.length > 0) {
       return { ...baseSnapshot, history: strengthHistory };
@@ -378,16 +202,22 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
       <Stack gap="fluid">
         <Spacer y="sm" />
         <section className="relative" ref={domainMenuRef}>
-          <h1 className="mb-3 text-2xl font-semibold tracking-tight text-[#111111]">{encouragement}</h1>
+          <h1
+            className="mb-3 text-2xl font-semibold tracking-tight"
+            style={{ color: COLOR_VALUES.textPrimary }}
+          >
+            {encouragement}
+          </h1>
           <button
             type="button"
             onClick={() => setDomainMenuOpen((open) => !open)}
             aria-haspopup="listbox"
             aria-expanded={domainMenuOpen}
-            className="flex w-full items-center justify-between rounded-2xl px-5 py-3 text-sm font-semibold text-[#E27D60] shadow-[0_12px_24px_-16px_rgba(30,36,50,0.4)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            className="flex w-full items-center justify-between rounded-2xl px-5 py-3 text-sm font-semibold shadow-[0_12px_24px_-16px_rgba(30,36,50,0.4)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             style={{
               backgroundColor: "transparent",
-              border: "1px solid #E27D60",
+              border: `1px solid ${COLOR_VALUES.accent}`,
+              color: COLOR_VALUES.accent,
             }}
           >
             <span>{DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? "Select"}</span>
@@ -431,7 +261,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
         <section className="flex flex-wrap items-center justify-center gap-2 px-1 py-1">
           {RANGE_OPTIONS.map((option) => {
             const isActive = option.value === range;
-            const accent = "#68A691";
+            const accent = COLOR_VALUES.rangeAccent;
             return (
               <button
                 key={option.value}
@@ -441,7 +271,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
                 className="rounded-full px-4 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[rgba(30,36,50,0.2)] sm:text-sm"
                 style={{
                   backgroundColor: isActive ? accent : "transparent",
-                  color: isActive ? "#ffffff" : accent,
+                  color: isActive ? COLOR_VALUES.white : accent,
                   border: `1px solid ${accent}`,
                   boxShadow: isActive ? "0 12px 22px -16px rgba(30,36,50,0.35)" : "0 2px 6px -4px rgba(30,36,50,0.18)",
                   transform: isActive ? "scale(1.05)" : "scale(1)",
@@ -455,21 +285,32 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
           })}
         </section>
         <Spacer y="sm" />
-        <section className="rounded-3xl border border-[rgba(30,36,50,0.08)] bg-white p-5 shadow-[0_18px_36px_-20px_rgba(30,36,50,0.4)]">
-          <header className="flex items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[rgba(34,49,63,0.65)]">{DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? "Select"}</div>
-              <h2 className="text-xl font-semibold text-[#111111]">
-                {snapshot.kpis[selectedKpiIndex]?.title ?? snapshot.kpis[0]?.title ?? ""}
-              </h2>
-              <p className="text-xs font-medium text-[rgba(34,49,63,0.65)]">
-                {RANGE_OPTIONS.find((opt) => opt.value === range)?.label ?? ""} overview
-              </p>
-            </div>
-            <div className="rounded-full border border-[rgba(30,36,50,0.12)] bg-[#F7F6F3] px-3 py-1 text-xs font-semibold text-[rgba(34,49,63,0.7)]">
-              {DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? ""}
-            </div>
-          </header>
+          <section className="rounded-3xl border border-[rgba(30,36,50,0.08)] bg-white p-5 shadow-[0_18px_36px_-20px_rgba(30,36,50,0.4)]">
+            <header className="flex items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div
+                  className="text-xs font-semibold uppercase tracking-[0.14em]"
+                  style={{ color: COLOR_VALUES.textMuted }}
+                >
+                  {DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? "Select"}
+                </div>
+                <h2 className="text-xl font-semibold" style={{ color: COLOR_VALUES.textPrimary }}>
+                  {snapshot.kpis[selectedKpiIndex]?.title ?? snapshot.kpis[0]?.title ?? ""}
+                </h2>
+                <p className="text-xs font-medium" style={{ color: COLOR_VALUES.textMuted }}>
+                  {RANGE_OPTIONS.find((opt) => opt.value === range)?.label ?? ""} overview
+                </p>
+              </div>
+              <div
+                className="rounded-full border border-[rgba(30,36,50,0.12)] px-3 py-1 text-xs font-semibold"
+                style={{
+                  color: COLOR_VALUES.textSecondary,
+                  backgroundColor: COLOR_VALUES.badgeBackground,
+                }}
+              >
+                {DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? ""}
+              </div>
+            </header>
           <Spacer y="sm" />
           <TrendChart data={trendSeries} color={trendColor} range={range} formatter={valueFormatter} />
         </section>
@@ -492,20 +333,22 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
                   isActive ? "ring-0" : "ring-0"
                 }`}
                 style={{
-                  backgroundColor: isActive ? tileColor : "#FFFFFF",
-                  border: isActive ? "none" : "1px solid rgba(30,36,50,0.08)",
+                  backgroundColor: isActive ? tileColor : COLOR_VALUES.white,
+                  border: isActive ? "none" : `1px solid ${COLOR_VALUES.borderSubtle}`,
                 }}
                 aria-pressed={isActive}
                 aria-label={`${kpi.title} ${kpi.value}`}
               >
                 <header
-                  className={`text-xs font-semibold uppercase tracking-wide ${
-                    isActive ? "text-[#22313F]" : "text-[rgba(34,49,63,0.65)]"
-                  }`}
+                  className="text-xs font-semibold uppercase tracking-wide"
+                  style={{ color: isActive ? "#22313F" : COLOR_VALUES.textMuted }}
                 >
                   {displayUnit ? `${kpi.title} (${displayUnit})` : kpi.title}
                 </header>
-                <div className={`mt-3 text-3xl font-semibold ${isActive ? "text-[#111111]" : "text-[#111111]"}`}>
+                <div
+                  className="mt-3 text-3xl font-semibold"
+                  style={{ color: COLOR_VALUES.textPrimary }}
+                >
                   {kpi.value}
                 </div>
                 {previous !== null && currentNumeric !== null ? (
@@ -528,67 +371,88 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
         {shouldShowHistory ? (
           <section className="rounded-3xl border border-[rgba(30,36,50,0.08)] bg-white p-5 shadow-[0_18px_36px_-20px_rgba(30,36,50,0.4)]">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[#111111]">History</h2>
-              <span className="text-xs font-medium text-[rgba(34,49,63,0.6)]">Latest to oldest</span>
+              <h2 className="text-lg font-semibold" style={{ color: COLOR_VALUES.textPrimary }}>
+                History
+              </h2>
+              <span className="text-xs font-medium" style={{ color: COLOR_VALUES.textHint }}>
+                Latest to oldest
+              </span>
             </div>
             {showHistoryLoading ? (
-              <div className="mt-4 text-sm font-medium text-[rgba(34,49,63,0.65)]">Loading sample routines...</div>
+              <div className="mt-4 text-sm font-medium" style={{ color: COLOR_VALUES.textMuted }}>
+                Loading sample routines...
+              </div>
             ) : (
               <ul className="mt-4 space-y-3">
                 {[...snapshot.history]
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .map((entry) => {
-                    if (entry.type === "strength") {
-                      const content = (
-                        <>
-                          <div>
-                            <p className="text-sm font-semibold text-[#111111]">{entry.name}</p>
-                            <p className="text-xs text-[rgba(34,49,63,0.65)]">
-                              {formatHistoryDate(entry.date)} · {entry.duration}
+                      if (entry.type === "strength") {
+                        const content = (
+                          <>
+                            <div>
+                              <p className="text-sm font-semibold" style={{ color: COLOR_VALUES.textPrimary }}>
+                                {entry.name}
+                              </p>
+                              <p className="text-xs" style={{ color: COLOR_VALUES.textMuted }}>
+                                {formatHistoryDate(entry.date)} · {entry.duration}
+                              </p>
+                            </div>
+                            <p className="text-sm font-semibold" style={{ color: COLOR_VALUES.textPrimary }}>
+                              {entry.totalWeight}
                             </p>
-                          </div>
-                          <p className="text-sm font-semibold text-[#111111]">{entry.totalWeight}</p>
-                        </>
-                      );
+                          </>
+                        );
 
                       const canNavigate = typeof entry.routineTemplateId === "number" && !!onSelectRoutine;
 
                       return (
                         <li key={entry.id}>
                           {canNavigate ? (
-                            <button
-                              type="button"
-                              onClick={() => handleStrengthHistorySelect(entry)}
-                              className="flex w-full items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[rgba(226,125,96,0.35)]"
-                            >
-                              {content}
-                            </button>
-                          ) : (
-                            <div className="flex items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3">
-                              {content}
-                            </div>
-                          )}
+                              <button
+                                type="button"
+                                onClick={() => handleStrengthHistorySelect(entry)}
+                                className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[rgba(226,125,96,0.35)]"
+                                style={{ backgroundColor: COLOR_VALUES.surfaceAlt }}
+                              >
+                                {content}
+                              </button>
+                            ) : (
+                              <div
+                                className="flex items-center justify-between rounded-2xl px-4 py-3"
+                                style={{ backgroundColor: COLOR_VALUES.surfaceAlt }}
+                              >
+                                {content}
+                              </div>
+                            )}
                         </li>
                       );
                     }
                     return (
-                      <li
-                        key={entry.id}
-                        className="flex items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3"
-                      >
-                        <div>
-                          <p className="text-sm font-semibold text-[#111111]">{normalizeActivity(entry.activity)}</p>
-                          <p className="text-xs text-[rgba(34,49,63,0.65)]">
-                            {formatHistoryDate(entry.date)} · {entry.duration}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-[#111111]">{entry.distance}</p>
-                          {entry.calories ? (
-                            <p className="text-xs text-[rgba(34,49,63,0.65)]">{entry.calories}</p>
-                          ) : null}
-                        </div>
-                      </li>
+                        <li
+                          key={entry.id}
+                          className="flex items-center justify-between rounded-2xl px-4 py-3"
+                          style={{ backgroundColor: COLOR_VALUES.surfaceAlt }}
+                        >
+                          <div>
+                            <p className="text-sm font-semibold" style={{ color: COLOR_VALUES.textPrimary }}>
+                              {normalizeActivity(entry.activity)}
+                            </p>
+                            <p className="text-xs" style={{ color: COLOR_VALUES.textMuted }}>
+                              {formatHistoryDate(entry.date)} · {entry.duration}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold" style={{ color: COLOR_VALUES.textPrimary }}>
+                              {entry.distance}
+                            </p>
+                            {entry.calories ? (
+                              <p className="text-xs" style={{ color: COLOR_VALUES.textMuted }}>
+                                {entry.calories}
+                              </p>
+                            ) : null}
+                          </div>
+                        </li>
                     );
                   })}
               </ul>
@@ -598,324 +462,6 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
       </Stack>
     </AppScreen>
   );
-}
-
-function normalizeActivity(activity: string) {
-  const mapping: Record<string, string> = {
-    "outdoor walk": "Outdoor Walk",
-    "indoor walk": "Indoor Walk",
-    "outdoor run": "Outdoor Run",
-    "indoor run": "Indoor Run",
-    cycling: "Cycling",
-    elliptical: "Elliptical",
-    rowing: "Rowing",
-    "stair stepper": "Stair Stepper",
-    swimming: "Swimming",
-  };
-  return mapping[activity.trim().toLowerCase()] ?? activity;
-}
-
-function daysAgoISO(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  return date.toISOString();
-}
-
-function formatHistoryDate(iso: string) {
-  const date = new Date(iso);
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-function estimateRoutineDurationMinutes(exerciseCount: number) {
-  if (!Number.isFinite(exerciseCount) || exerciseCount <= 0) return 30;
-  return exerciseCount * 10;
-}
-
-function calculateTotalWeight(exercises: LoadedExercise[]) {
-  return exercises.reduce((total, exercise) => {
-    return (
-      total +
-      exercise.sets.reduce((setTotal, set) => {
-        const reps = Number.parseFloat(set.reps);
-        const weight = Number.parseFloat(set.weight);
-        if (!Number.isFinite(reps) || !Number.isFinite(weight)) return setTotal;
-        if (reps <= 0 || weight <= 0) return setTotal;
-        return setTotal + reps * weight;
-      }, 0)
-    );
-  }, 0);
-}
-
-function formatDuration(minutes: number) {
-  const safeMinutes = Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : 0;
-  const hours = Math.floor(safeMinutes / 60);
-  const remainingMinutes = safeMinutes % 60;
-  if (hours > 0) {
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
-  }
-  return `${Math.max(remainingMinutes, 1)} min`;
-}
-
-function formatWeight(weightKg: number) {
-  const safeWeight = Number.isFinite(weightKg) && weightKg > 0 ? weightKg : 0;
-  return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.round(safeWeight))} kg`;
-}
-
-function generateTrend(domain: ProgressDomain, range: TimeRange, seed: number, variance: number, metric: number): TrendPoint[] {
-  const today = new Date();
-  const points = RANGE_POINTS[range];
-  const stepDays = RANGE_STEPS[range];
-  const rng = createRng(`${domain}-${range}-${seed}-${variance}-${metric}`);
-
-  let current = domain === "measurement" ? seed : seed * 0.55;
-  if (domain === "strength") {
-    current *= 1 + metric * 0.08;
-  } else if (domain === "cardio") {
-    current *= 1 + metric * 0.05;
-  } else {
-    current *= 1 + metric * 0.02;
-  }
-  const values: TrendPoint[] = [];
-
-  for (let index = 0; index < points; index += 1) {
-    const date = new Date(today);
-    date.setDate(today.getDate() - (points - 1 - index) * stepDays);
-    const progress = points > 1 ? index / (points - 1) : 1;
-
-    const noise = (rng() - 0.5) * variance * seed * 0.18;
-
-    if (domain === "strength") {
-      const push = seed * variance * (0.12 + rng() * 0.18 + metric * 0.04);
-      const plateauChance = rng();
-      if (plateauChance > 0.75) {
-        current += push * 0.15 + noise;
-      } else {
-        current += push + noise;
-      }
-    } else if (domain === "cardio") {
-      const burst = seed * variance * (0.08 + rng() * 0.22 + metric * 0.03);
-      current += burst + noise;
-      if (rng() > 0.82) {
-        current -= seed * variance * 0.12;
-      }
-    } else {
-      const downwardDrift = seed * variance * (0.04 + progress * 0.06 + metric * 0.015);
-      current -= downwardDrift;
-      current += noise;
-    }
-
-    const baseFloor = domain === "measurement" ? seed * 0.75 : seed * 0.35;
-    const baseCeiling = domain === "measurement" ? seed * 1.05 : seed * (range === "sixMonths" ? 1.45 : 1.25);
-    const floor = domain === "measurement" ? baseFloor * (1 - metric * 0.02) : baseFloor * (1 + metric * 0.03);
-    const ceiling = baseCeiling * (1 + metric * 0.08);
-    current = Math.min(ceiling, Math.max(floor, current));
-
-    values.push({
-      x: date.toISOString(),
-      y: Number(current.toFixed(2)),
-      isPersonalBest: index === points - 2,
-    });
-  }
-
-  return values;
-}
-
-function formatDayLabel(range: TimeRange, iso: string, index: number, total: number) {
-  const date = new Date(iso);
-  if (range === "week") {
-    return date.toLocaleDateString(undefined, { weekday: "short" });
-  }
-
-  if (range === "threeMonths") {
-    const month = date.toLocaleDateString(undefined, { month: "short" });
-    const weekInMonth = getWeekOfMonth(date);
-    return `${month} W${weekInMonth}`;
-  }
-
-  // six months
-  return date.toLocaleDateString(undefined, { month: "short" });
-}
-
-function formatTickValue(value: number) {
-  if (Math.abs(value) >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (Math.abs(value) >= 1_000) {
-    return `${(value / 1_000).toFixed(1)}k`;
-  }
-  return value.toFixed(0);
-}
-
-function generateTicks(domain: [number, number], count: number) {
-  const [min, max] = domain;
-  if (min === max) {
-    return [Number(min.toFixed(2))];
-  }
-  const step = (max - min) / Math.max(count - 1, 1);
-  return Array.from({ length: count }, (_, index) => Number((min + index * step).toFixed(2)));
-}
-
-function getWeekOfMonth(date: Date) {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const offset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-  return Math.floor((date.getDate() + offset - 1) / 7) + 1;
-}
-
-function createRng(key: string) {
-  let seed = 0;
-  for (let index = 0; index < key.length; index += 1) {
-    seed = (seed << 5) - seed + key.charCodeAt(index);
-    seed |= 0;
-  }
-  return mulberry32(seed >>> 0);
-}
-
-function mulberry32(a: number) {
-  return function rng() {
-    a += 0x6D2B79F5;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = t + Math.imul(t ^ (t >>> 7), 61 | t) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function getEncouragement(firstName?: string | null) {
-  const suffix = firstName ? `, ${firstName}` : "";
-  return `You’ve got this${suffix}`;
-}
-
-function extractFirstName(profile: Profile | null): string | null {
-  if (!profile) return null;
-  const direct = profile.first_name?.trim();
-  if (direct) {
-    return direct.split(/\s+/)[0];
-  }
-  const display = profile.display_name?.trim();
-  if (display) {
-    const [first] = display.split(/\s+/);
-    if (first) {
-      return first;
-    }
-  }
-  return null;
-}
-
-const TREND_ICONS = {
-  up: "▲",
-  down: "▼",
-  flat: "=",
-} as const;
-
-const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
-const decimalOneFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const decimalTwoFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-function clampNonNegative(value: number) {
-  return Number.isFinite(value) ? Math.max(0, value) : 0;
-}
-
-function formatDurationMinutes(value: number) {
-  const totalMinutes = clampNonNegative(value);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = Math.round(totalMinutes % 60);
-  if (hours > 0 && minutes > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  if (hours > 0) {
-    return `${hours}h`;
-  }
-  return `${minutes}m`;
-}
-
-function formatKilograms(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} kg`;
-}
-
-function formatDays(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} days`;
-}
-
-function formatWorkouts(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} workouts`;
-}
-
-function formatKilometers(value: number) {
-  return `${decimalOneFormatter.format(clampNonNegative(value))} km`;
-}
-
-function formatCalories(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} kcal`;
-}
-
-function formatSteps(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} steps`;
-}
-
-function formatCentimeters(value: number) {
-  return `${decimalTwoFormatter.format(clampNonNegative(value))} cm`;
-}
-
-function getKpiFormatter(domain: ProgressDomain, index: number): (value: number) => string {
-  switch (domain) {
-    case "strength":
-      return [
-        formatDurationMinutes,
-        formatWorkouts,
-        formatKilograms,
-        formatDays,
-      ][index] ?? ((value) => integerFormatter.format(Math.round(value)));
-    case "cardio":
-      return [
-        formatDurationMinutes,
-        formatKilometers,
-        formatCalories,
-        formatSteps,
-      ][index] ?? ((value) => integerFormatter.format(Math.round(value)));
-    case "measurement":
-    default:
-      return [formatCentimeters, formatCentimeters, formatCentimeters, formatCentimeters][index] ??
-        ((value) => decimalTwoFormatter.format(clampNonNegative(value)));
-  }
-}
-
-function determineTrend(currentValue: number | null, previousValue: number | null) {
-  if (currentValue === null || previousValue === null) {
-    return {
-      icon: TREND_ICONS.flat,
-      color: "text-[rgba(34,49,63,0.55)]",
-      colorActive: "text-[#22313F]",
-      text: "No change",
-      delta: 0,
-    };
-  }
-  const current = clampNonNegative(currentValue);
-  const previous = clampNonNegative(previousValue);
-  const difference = current - previous;
-  if (Math.abs(difference) < 0.01) {
-    return {
-      icon: TREND_ICONS.flat,
-      color: "text-[rgba(34,49,63,0.45)]",
-      colorActive: "text-[#22313F]",
-      text: "Same as prior",
-      delta: 0,
-    };
-  }
-  if (difference > 0) {
-    return {
-      icon: TREND_ICONS.up,
-      color: "text-[rgba(46,125,102,0.85)]",
-      colorActive: "text-[rgba(46,125,102,1)]",
-      text: "Up",
-      delta: difference,
-    };
-  }
-  return {
-    icon: TREND_ICONS.down,
-    color: "text-[rgba(226,125,96,0.85)]",
-    colorActive: "text-[rgba(226,125,96,1)]",
-    text: "Down",
-    delta: Math.abs(difference),
-  };
 }
 
 const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }) => {
@@ -1062,7 +608,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
                 r={3.5}
                 stroke={color}
                 strokeWidth={1}
-                fill="#FFFFFF"
+                fill={COLOR_VALUES.white}
                 style={{ cursor: "pointer" }}
                 tabIndex={0}
                 onMouseEnter={() => setHoverIndex(index)}
@@ -1092,7 +638,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
                 y={labelY}
                 textAnchor={range === "threeMonths" ? "end" : "middle"}
                 fontSize={range === "threeMonths" ? 9 : 10}
-                fill="rgba(30,36,50,0.4)"
+                fill={COLOR_VALUES.chartLabel}
                 transform={
                   range === "threeMonths"
                     ? `rotate(-35, ${dots[index]?.cx ?? inset.left}, ${labelY})`
@@ -1109,7 +655,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
               x2={dots[dots.length - 1].cx}
               y1={inset.top}
               y2={CHART_HEIGHT - inset.bottom}
-              stroke="rgba(30,36,50,0.15)"
+              stroke={COLOR_VALUES.chartGuide}
               strokeDasharray="2 4"
             />
           ) : null}
@@ -1120,7 +666,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
               y={yPosition(tick)}
               textAnchor="start"
               fontSize={11}
-              fill="rgba(30,36,50,0.25)"
+              fill={COLOR_VALUES.chartTick}
             >
               {formatTickValue(tick)}
             </text>
@@ -1137,13 +683,16 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
                 strokeDasharray="2 4"
               />
               <circle r={6} fill={color} fillOpacity={0.18} />
-              <circle r={3.5} stroke={color} strokeWidth={1.5} fill="#FFFFFF" />
+              <circle r={3.5} stroke={color} strokeWidth={1.5} fill={COLOR_VALUES.white} />
               <foreignObject x={-70} y={-60} width={140} height={52}>
-                <div className="rounded-2xl border border-[rgba(30,36,50,0.08)] bg-white px-3 py-2 text-[10px] font-semibold text-[#111111] shadow-[0_12px_20px_-16px_rgba(30,36,50,0.45)]">
-                  <p className="text-[11px] font-semibold text-[#111111]">
+                <div
+                  className="rounded-2xl border border-[rgba(30,36,50,0.08)] bg-white px-3 py-2 text-[10px] font-semibold shadow-[0_12px_20px_-16px_rgba(30,36,50,0.45)]"
+                  style={{ color: COLOR_VALUES.textPrimary }}
+                >
+                  <p className="text-[11px] font-semibold" style={{ color: COLOR_VALUES.textPrimary }}>
                     {formatter(data[hoverIndex].y)}
                   </p>
-                  <p className="text-[10px] font-medium text-[rgba(30,36,50,0.55)]">
+                  <p className="text-[10px] font-medium" style={{ color: COLOR_VALUES.chartTooltipMuted }}>
                     {new Date(data[hoverIndex].x).toLocaleDateString(undefined, {
                       month: "short",
                       day: "numeric",
@@ -1158,7 +707,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
             y={averageY - 8}
             textAnchor="end"
             fontSize={10}
-            fill="rgba(30,36,50,0.45)"
+            fill={COLOR_VALUES.chartText}
           >
             {`Avg ${formatter(averageValue)}`}
           </text>
