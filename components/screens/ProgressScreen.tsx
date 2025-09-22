@@ -232,7 +232,6 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
             </ul>
           ) : null}
         </section>
-        <Spacer y="sm" />
         <section className="flex flex-wrap items-center justify-center gap-2 px-1 py-1">
           {RANGE_OPTIONS.map((option) => {
             const isActive = option.value === range;
@@ -259,7 +258,6 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
             );
           })}
         </section>
-        <Spacer y="sm" />
         <section className="rounded-3xl border border-[rgba(30,36,50,0.08)] bg-white p-5 shadow-[0_18px_36px_-20px_rgba(30,36,50,0.4)]">
           <header className="flex items-center justify-between gap-3">
             <div className="space-y-1">
@@ -275,10 +273,8 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
               {DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? ""}
             </div>
           </header>
-          <Spacer y="sm" />
           <TrendChart data={trendSeries} color={trendColor} range={range} formatter={valueFormatter} />
         </section>
-        <Spacer y="sm" />
         <section className="mt-8 grid grid-cols-2 gap-4">
           {snapshot.kpis.map((kpi, index) => {
             const isActive = index === selectedKpiIndex;
