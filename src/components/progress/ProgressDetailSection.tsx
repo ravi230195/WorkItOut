@@ -1,6 +1,17 @@
 import { useId, useMemo, useState } from 'react';
 import type { ActivityCategory, TimeRange, MuscleGroup } from '../../types/progress';
-import { MockProgressProvider as provider } from './_mockProgressData';
+import { MockProgressProvider } from '../../screen/progress/MockData';
+import {
+  BADGE_BASE_CLASS,
+  TEXT_EMPHASIS_CLASS,
+  TEXT_SOFT_CLASS,
+  TEXT_SUBTLE_CLASS,
+  createDotRenderer,
+  createNumberFormatter,
+  formatChartDate,
+  capitalizeWord,
+  PANEL_SURFACE_CLASS,
+} from '../../screen/progress/util';
 import KpiCard from './KpiCard';
 // npm i recharts
 import {
@@ -14,16 +25,7 @@ import {
   YAxis,
   Tooltip,
   ReferenceLine,
-  DotProps,
 } from 'recharts';
-
-const formatter = (decimals = 0) =>
-  new Intl.NumberFormat(undefined, {
-    maximumFractionDigits: decimals,
-    minimumFractionDigits: decimals,
-  });
-
-const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
 type MetricMeta = {
   label: string;
@@ -43,25 +45,6 @@ type Props = {
   cardioFocus?: string;
 };
 
-const fmtDate = (iso: string, granularity: TimeRange) => {
-  const d = new Date(iso);
-  if (granularity === 'week') {
-    return d.toLocaleDateString(undefined, { weekday: 'short' });
-  }
-  if (granularity === 'threeMonths') {
-    return `W${getWeekNumber(d)}`;
-  }
-  return d.toLocaleDateString(undefined, { month: 'short' });
-};
-
-function getWeekNumber(d: Date) {
-  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNum = dt.getUTCDay() || 7;
-  dt.setUTCDate(dt.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
-  return Math.ceil((((dt as unknown as number) - (yearStart as unknown as number)) / 86400000 + 1) / 7);
-}
-
 const cardioMap: Record<string, { label: string; unit: string; decimals?: number }> = {
   all: { label: 'Active Minutes', unit: 'min' },
   running: { label: 'Distance', unit: 'km', decimals: 1 },
@@ -80,9 +63,9 @@ const getMetricMeta = (
 ): MetricMeta => {
   if (category === 'strength') {
     const focus = strengthFocus ?? 'all';
-    const focusName = focus === 'all' ? 'All' : capitalize(focus);
+    const focusName = focus === 'all' ? 'All' : capitalizeWord(focus);
     const unit = 'kg';
-    const format = formatter(0);
+    const format = createNumberFormatter(0);
     return {
       label: `${focus === 'all' ? 'Total Volume' : `${focusName} Volume`} (${unit})`,
       unitLabel: unit,
@@ -98,11 +81,11 @@ const getMetricMeta = (
     const focusKey = cardioFocus && cardioMap[cardioFocus] ? cardioFocus : 'all';
     const meta = cardioMap[focusKey];
     const decimals = meta.decimals ?? 0;
-    const format = formatter(decimals);
+    const format = createNumberFormatter(decimals);
     const focusLabel = (() => {
       if (focusKey === 'all') return 'All Cardio';
       if (focusKey === 'hiit') return 'HIIT Cardio';
-      return `${capitalize(focusKey)} Cardio`;
+      return `${capitalizeWord(focusKey)} Cardio`;
     })();
     return {
       label: `${meta.label} (${meta.unit})`,
@@ -115,7 +98,7 @@ const getMetricMeta = (
     };
   }
 
-  const format = formatter(1);
+  const format = createNumberFormatter(1);
   return {
     label: 'Change (kg)',
     unitLabel: 'kg',
@@ -133,21 +116,6 @@ const getMetricMeta = (
   };
 };
 
-const createDotRenderer = (color: string) => (props: DotProps) => {
-  const { cx, cy, payload } = props;
-  if (typeof cx !== 'number' || typeof cy !== 'number' || !payload) {
-    return null;
-  }
-  if (payload.isPR) {
-    return (
-      <text x={cx} y={cy - 8} textAnchor="middle" fontSize={12} aria-hidden>
-        ⭐
-      </text>
-    );
-  }
-  return <circle cx={cx} cy={cy} r={3} fill={color} opacity={0.9} aria-hidden />;
-};
-
 export default function ProgressDetailSection({
   category,
   timeRange,
@@ -160,15 +128,15 @@ export default function ProgressDetailSection({
 
   const activeMuscle = category === 'strength' ? strengthFocus ?? 'all' : undefined;
 
-  const series = provider.series({ category, range: timeRange, muscle: activeMuscle });
+  const series = MockProgressProvider.series({ category, range: timeRange, muscle: activeMuscle });
   const prev = compare
-    ? provider.previousSeries({ category, range: timeRange, muscle: activeMuscle })
+    ? MockProgressProvider.previousSeries({ category, range: timeRange, muscle: activeMuscle })
     : [];
-  const kpis = provider.kpis({ category, range: timeRange });
-  const workouts = provider.recentWorkouts({ category, range: timeRange, limit: 6 });
-  const bestAll = provider.bestsAllTime({ category });
-  const bestPeriod = provider.bestsInPeriod({ category, range: timeRange });
-  const target = provider.targetLine?.({ category, range: timeRange });
+  const kpis = MockProgressProvider.kpis({ category, range: timeRange });
+  const workouts = MockProgressProvider.recentWorkouts({ category, range: timeRange, limit: 6 });
+  const bestAll = MockProgressProvider.bestsAllTime({ category });
+  const bestPeriod = MockProgressProvider.bestsInPeriod({ category, range: timeRange });
+  const target = MockProgressProvider.targetLine?.({ category, range: timeRange });
 
   const meta = useMemo(
     () => getMetricMeta(category, strengthFocus, cardioFocus),
@@ -182,15 +150,14 @@ export default function ProgressDetailSection({
 
   return (
     <section className="flex flex-col gap-4" aria-label="Detailed progress insights">
-      <div
-        className="rounded-2xl border border-white/25 bg-white/85 dark:bg-zinc-900/70 shadow-lg p-4 text-black dark:text-white"
-        aria-label="Progress trend chart"
-      >
+      <div className={`${PANEL_SURFACE_CLASS} p-4 ${TEXT_EMPHASIS_CLASS}`} aria-label="Progress trend chart">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
           <div className="flex flex-col gap-1">
             <h3 className="text-base font-semibold tracking-tight">Trend</h3>
             {meta.focusLabel && (
-              <span className="w-fit rounded-full border border-white/40 bg-white/70 px-3 py-1 text-xs font-semibold text-neutral-600 dark:bg-zinc-900/60 dark:text-neutral-300">
+              <span
+                className={`w-fit ${BADGE_BASE_CLASS} px-3 py-1 text-xs font-semibold ${TEXT_SOFT_CLASS}`}
+              >
                 {meta.focusLabel}
               </span>
             )}
@@ -210,7 +177,11 @@ export default function ProgressDetailSection({
             {category === 'body' ? (
               <LineChart data={series} aria-label="Body progress chart" margin={{ top: 24, right: 16, left: 8, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.12} />
-                <XAxis dataKey="date" tickFormatter={(value) => fmtDate(value, timeRange)} tick={{ fontSize: 12 }} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(value) => formatChartDate(value, timeRange)}
+                  tick={{ fontSize: 12 }}
+                />
                 <YAxis
                   width={60}
                   tick={{ fontSize: 12 }}
@@ -257,7 +228,11 @@ export default function ProgressDetailSection({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.12} />
-                <XAxis dataKey="date" tickFormatter={(value) => fmtDate(value, timeRange)} tick={{ fontSize: 12 }} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(value) => formatChartDate(value, timeRange)}
+                  tick={{ fontSize: 12 }}
+                />
                 <YAxis
                   width={60}
                   tick={{ fontSize: 12 }}
@@ -316,9 +291,9 @@ export default function ProgressDetailSection({
         ))}
       </div>
 
-      <div className="rounded-2xl border border-white/25 bg-white/85 dark:bg-zinc-900/70 shadow-lg" aria-label="Recent workouts">
+      <div className={PANEL_SURFACE_CLASS} aria-label="Recent workouts">
         <div className="p-4 border-b border-white/20">
-          <h3 className="text-base font-semibold tracking-tight text-black dark:text-white">Recent Sessions</h3>
+          <h3 className={`text-base font-semibold tracking-tight ${TEXT_EMPHASIS_CLASS}`}>Recent Sessions</h3>
         </div>
         <ul className="divide-y divide-white/20">
           {workouts.map((workout) => (
@@ -330,9 +305,9 @@ export default function ProgressDetailSection({
                       👑
                     </span>
                   )}
-                  <p className="font-semibold truncate text-black dark:text-white">{workout.title}</p>
+                  <p className={`font-semibold truncate ${TEXT_EMPHASIS_CLASS}`}>{workout.title}</p>
                 </div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                <p className={`text-sm ${TEXT_SUBTLE_CLASS}`}>
                   {workout.subtitle} · {new Date(workout.date).toLocaleDateString()}
                 </p>
               </div>
@@ -345,24 +320,24 @@ export default function ProgressDetailSection({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4" aria-label="Performance records">
-        <div className="rounded-2xl border border-white/25 bg-white/85 dark:bg-zinc-900/70 shadow-lg p-4">
-          <h3 className="text-base font-semibold tracking-tight text-black dark:text-white mb-2">All-Time Bests</h3>
-          <ul className="text-sm text-neutral-600 dark:text-neutral-300 space-y-2">
+        <div className={`${PANEL_SURFACE_CLASS} p-4`}>
+          <h3 className={`text-base font-semibold tracking-tight ${TEXT_EMPHASIS_CLASS} mb-2`}>All-Time Bests</h3>
+          <ul className={`text-sm ${TEXT_SOFT_CLASS} space-y-2`}>
             {bestAll.map((best, idx) => (
               <li key={`${best.label}-${idx}`} className="flex justify-between gap-2">
                 <span>{best.label}</span>
-                <span className="font-semibold text-black dark:text-white">{best.value}</span>
+                <span className={`font-semibold ${TEXT_EMPHASIS_CLASS}`}>{best.value}</span>
               </li>
             ))}
           </ul>
         </div>
-        <div className="rounded-2xl border border-white/25 bg-white/85 dark:bg-zinc-900/70 shadow-lg p-4">
-          <h3 className="text-base font-semibold tracking-tight text-black dark:text-white mb-2">Best This Period</h3>
-          <ul className="text-sm text-neutral-600 dark:text-neutral-300 space-y-2">
+        <div className={`${PANEL_SURFACE_CLASS} p-4`}>
+          <h3 className={`text-base font-semibold tracking-tight ${TEXT_EMPHASIS_CLASS} mb-2`}>Best This Period</h3>
+          <ul className={`text-sm ${TEXT_SOFT_CLASS} space-y-2`}>
             {bestPeriod.map((best, idx) => (
               <li key={`${best.label}-${idx}`} className="flex justify-between gap-2">
                 <span>{best.label}</span>
-                <span className="font-semibold text-black dark:text-white">{best.value}</span>
+                <span className={`font-semibold ${TEXT_EMPHASIS_CLASS}`}>{best.value}</span>
               </li>
             ))}
           </ul>

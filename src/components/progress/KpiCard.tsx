@@ -1,4 +1,5 @@
 import { KPI } from '../../types/progress';
+import { KPI_CARD_SURFACE_CLASS, TEXT_EMPHASIS_CLASS, TEXT_SOFT_CLASS } from '../../screen/progress/util';
 
 type Props = {
   kpi: KPI;
@@ -15,17 +16,17 @@ export default function KpiCard({ kpi }: Props) {
 
   return (
     <article
-      className="flex flex-col justify-between rounded-2xl border border-white/20 bg-white/80 dark:bg-zinc-900/70 shadow-sm p-4 min-w-[150px] text-black dark:text-white"
+      className={`flex flex-col justify-between ${KPI_CARD_SURFACE_CLASS} p-4 min-w-[150px] ${TEXT_EMPHASIS_CLASS}`}
       aria-label={ariaLabel}
     >
-      <div className="flex items-center gap-3 text-sm text-neutral-600 dark:text-neutral-300">
+      <div className={`flex items-center gap-3 text-sm ${TEXT_SOFT_CLASS}`}>
         <span aria-hidden className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--brand-orange-subtle)] text-lg">
           {kpi.icon}
         </span>
-        <span className="truncate font-medium">{kpi.label}</span>
+        <span className={`truncate font-medium ${TEXT_EMPHASIS_CLASS}`}>{kpi.label}</span>
       </div>
       <div className="mt-4 flex items-baseline gap-3">
-        <span className="text-2xl font-semibold tracking-tight">{kpi.value}</span>
+        <span className={`text-2xl font-semibold tracking-tight ${TEXT_EMPHASIS_CLASS}`}>{kpi.value}</span>
         <span className={`text-xs font-semibold ${trendColor}`} aria-hidden>
           {trendSymbol}
           {pct !== null ? ` ${Math.abs(pct * 100).toFixed(0)}%` : ''}
