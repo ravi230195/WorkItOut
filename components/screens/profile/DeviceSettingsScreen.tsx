@@ -1,10 +1,38 @@
+import { useCallback, useMemo, useState } from "react";
+
 import { AppScreen, ScreenHeader, Section, Stack } from "../../layouts";
+import { TactileButton } from "../../TactileButton";
+import {
+  getAvailableLogLevels,
+  getLogLevel,
+  setLogLevel,
+  type LogLevel,
+} from "../../../utils/logging";
 
 interface DeviceSettingsScreenProps {
   onBack: () => void;
 }
 
 export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
+  const availableLevels = useMemo(() => getAvailableLogLevels(), []);
+  const [currentLevel, setCurrentLevel] = useState<LogLevel>(() => {
+    try {
+      return getLogLevel();
+    } catch {
+      return "INFO";
+    }
+  });
+
+  const handleLevelChange = useCallback((level: LogLevel) => {
+    try {
+      setLogLevel(level);
+    } catch {
+      // Ignore storage errors (e.g. private mode) but still update UI state
+    }
+
+    setCurrentLevel(level);
+  }, []);
+
   return (
     <AppScreen
       header={
@@ -69,6 +97,41 @@ export function DeviceSettingsScreen({ onBack }: DeviceSettingsScreenProps) {
               </div>
             </Stack>
           </div>
+        </Section>
+
+        <Section
+          variant="card"
+          padding="lg"
+          className="rounded-[28px] border border-black/5 bg-white/80 backdrop-blur-md shadow-[0px_20px_40px_-28px_rgba(15,23,42,0.45)]"
+          title="Debug logging"
+          subtitle="Choose the minimum level of detail you want to see in the console on this device."
+        >
+          <Stack gap="md">
+            <p className="text-sm leading-relaxed text-black/70">
+              Higher verbosity levels include all messages from the lower levels. The preference is saved locally, so you can
+              tweak logging without affecting other devices.
+            </p>
+
+            <Stack direction="x" gap="sm" wrap align="start" className="items-center gap-y-3">
+              {availableLevels.map((level) => {
+                const isActive = level === currentLevel;
+
+                return (
+                  <TactileButton
+                    key={level}
+                    type="button"
+                    size="sm"
+                    variant={isActive ? "primary" : "secondary"}
+                    aria-pressed={isActive}
+                    onClick={() => handleLevelChange(level)}
+                    className="uppercase tracking-[0.22em] text-[11px]"
+                  >
+                    {level}
+                  </TactileButton>
+                );
+              })}
+            </Stack>
+          </Stack>
         </Section>
       </Stack>
     </AppScreen>
