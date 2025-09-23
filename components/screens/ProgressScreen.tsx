@@ -4,7 +4,7 @@ import { scaleLinear, scalePoint } from "d3-scale";
 
 import AppScreen from "../layouts/AppScreen";
 import type { TimeRange } from "../../src/types/progress";
-import type { HistoryEntry, KpiDatum, ProgressDomain, TrendPoint } from "../progress/Progress.types";
+import type { HistoryEntry, KpiDatum, ProgressDomain, Snapshot, TrendPoint } from "../progress/Progress.types";
 import { PROGRESS_MOCK_SNAPSHOTS } from "../progress/progressScreen.mockData";
 import { useAuth } from "../AuthContext";
 
@@ -14,7 +14,8 @@ import { loadRoutineExercisesWithSets, type LoadedExercise } from "../../utils/r
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { Stack } from "../layouts";
 import Spacer from "../layouts/Spacer";
-import ProgressDetailSection from "../../src/components/progress/ProgressDetailSection";
+import { loadProgressDetailData, type ProgressDetailData } from "../../src/components/progress/ProgressDetailSection";
+import { logger } from "../../utils/logging";
 
 interface ProgressScreenProps {
   bottomBar?: React.ReactNode;
@@ -53,19 +54,24 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const [firstName, setFirstName] = useState<string | null>(null);
   const [strengthHistory, setStrengthHistory] = useState<HistoryEntry[]>([]);
   const [strengthHistoryLoading, setStrengthHistoryLoading] = useState(false);
+  const [cardioSnapshot, setCardioSnapshot] = useState<Snapshot | null>(null);
+  const [cardioLoading, setCardioLoading] = useState(false);
+  const [cardioError, setCardioError] = useState<string | null>(null);
 
   const baseSnapshot = useMemo(() => PROGRESS_MOCK_SNAPSHOTS[domain][range], [domain, range]);
   const snapshot = useMemo(() => {
+    if (domain === "cardio" && cardioSnapshot) {
+      return cardioSnapshot;
+    }
     if (domain === "strength" && strengthHistory.length > 0) {
       return { ...baseSnapshot, history: strengthHistory };
     }
     return baseSnapshot;
-  }, [baseSnapshot, domain, strengthHistory]);
+  }, [baseSnapshot, cardioSnapshot, domain, strengthHistory]);
   const valueFormatter = useMemo(() => getKpiFormatter(domain, selectedKpiIndex), [domain, selectedKpiIndex]);
   const trendSeries = snapshot.series[selectedKpiIndex] ?? snapshot.series[0] ?? [];
   const isCardioDomain = domain === "cardio";
   const shouldShowHistory =
-    !isCardioDomain &&
     domain !== "measurement" &&
     (snapshot.history.length > 0 || (domain === "strength" && strengthHistoryLoading));
   const showHistoryLoading = domain === "strength" && strengthHistoryLoading && snapshot.history.length === 0;
@@ -161,6 +167,52 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
       cancelled = true;
     };
   }, [userToken]);
+
+  useEffect(() => {
+    if (domain !== "cardio") {
+      return;
+    }
+
+    let cancelled = false;
+    setCardioLoading(true);
+    setCardioError(null);
+
+    (async () => {
+      try {
+        const { data, usedFallback } = await loadProgressDetailData({
+          category: "cardio",
+          timeRange: range,
+          cardioFocus: "all",
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        if (usedFallback) {
+          setCardioSnapshot(null);
+          setCardioError("Unable to load cardio progress. Showing mock data.");
+        } else {
+          setCardioSnapshot(buildCardioSnapshot(baseSnapshot, data));
+        }
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        logger.warn("[progress] cardio snapshot load failed", error);
+        setCardioSnapshot(null);
+        setCardioError("Unable to load cardio progress. Showing mock data.");
+      } finally {
+        if (!cancelled) {
+          setCardioLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [baseSnapshot, domain, range]);
 
   const trendColor = KPI_COLORS[selectedKpiIndex % KPI_COLORS.length];
 
@@ -262,150 +314,146 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
             );
           })}
         </section>
-        {isCardioDomain ? (
-          <ProgressDetailSection category="cardio" timeRange={range} cardioFocus="all" />
-        ) : (
-          <>
-            <section className="rounded-3xl border border-[rgba(30,36,50,0.08)] bg-white p-5 shadow-[0_18px_36px_-20px_rgba(30,36,50,0.4)]">
-              <header className="flex items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[rgba(34,49,63,0.65)]">{DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? "Select"}</div>
-                  <h2 className="text-xl font-semibold text-[#111111]">
-                    {snapshot.kpis[selectedKpiIndex]?.title ?? snapshot.kpis[0]?.title ?? ""}
-                  </h2>
-                  <p className="text-xs font-medium text-[rgba(34,49,63,0.65)]">
-                    {RANGE_OPTIONS.find((opt) => opt.value === range)?.label ?? ""} overview
-                  </p>
+        <section className="rounded-3xl border border-[rgba(30,36,50,0.08)] bg-white p-5 shadow-[0_18px_36px_-20px_rgba(30,36,50,0.4)]">
+          <header className="flex items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[rgba(34,49,63,0.65)]">{DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? "Select"}</div>
+              <h2 className="text-xl font-semibold text-[#111111]">
+                {snapshot.kpis[selectedKpiIndex]?.title ?? snapshot.kpis[0]?.title ?? ""}
+              </h2>
+              <p className="text-xs font-medium text-[rgba(34,49,63,0.65)]">
+                {RANGE_OPTIONS.find((opt) => opt.value === range)?.label ?? ""} overview
+              </p>
+              {isCardioDomain && (cardioLoading || cardioError) ? (
+                <p className="text-xs font-medium text-[rgba(34,49,63,0.65)]">
+                  {cardioLoading ? "Loading cardio data..." : cardioError}
+                </p>
+              ) : null}
+            </div>
+            <div className="rounded-full border border-[rgba(30,36,50,0.12)] bg-[#F7F6F3] px-3 py-1 text-xs font-semibold text-[rgba(34,49,63,0.7)]">
+              {DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? ""}
+            </div>
+          </header>
+          <TrendChart data={trendSeries} color={trendColor} range={range} formatter={valueFormatter} />
+        </section>
+        <section className="mt-8 grid grid-cols-2 gap-4">
+          {snapshot.kpis.map((kpi, index) => {
+            const isActive = index === selectedKpiIndex;
+            const tileColor = KPI_COLORS[index] ?? KPI_COLORS[0];
+            const formatter = getKpiFormatter(domain, index);
+            const previous = kpi.previous ?? null;
+            const currentNumeric = kpi.currentNumeric ?? null;
+            const trend = determineTrend(currentNumeric, previous);
+            const displayUnit = kpi.unit && kpi.unit.toLowerCase() !== "sessions" ? kpi.unit : undefined;
+            return (
+              <button
+                key={`${domain}-${range}-${kpi.title}`}
+                type="button"
+                onClick={() => setSelectedKpiIndex(index)}
+                className={`rounded-2xl px-5 py-4 text-left shadow-[0_16px_28px_-18px_rgba(30,36,50,0.35)] transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  isActive ? "ring-0" : "ring-0"
+                }`}
+                style={{
+                  backgroundColor: isActive ? tileColor : "#FFFFFF",
+                  border: isActive ? "none" : "1px solid rgba(30,36,50,0.08)",
+                }}
+                aria-pressed={isActive}
+                aria-label={`${kpi.title} ${kpi.value}`}
+              >
+                <header
+                  className={`text-xs font-semibold uppercase tracking-wide ${
+                    isActive ? "text-[#22313F]" : "text-[rgba(34,49,63,0.65)]"
+                  }`}
+                >
+                  {displayUnit ? `${kpi.title} (${displayUnit})` : kpi.title}
+                </header>
+                <div className={`mt-3 text-3xl font-semibold ${isActive ? "text-[#111111]" : "text-[#111111]"}`}>
+                  {kpi.value}
                 </div>
-                <div className="rounded-full border border-[rgba(30,36,50,0.12)] bg-[#F7F6F3] px-3 py-1 text-xs font-semibold text-[rgba(34,49,63,0.7)]">
-                  {DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? ""}
-                </div>
-              </header>
-              <TrendChart data={trendSeries} color={trendColor} range={range} formatter={valueFormatter} />
-            </section>
-            <section className="mt-8 grid grid-cols-2 gap-4">
-              {snapshot.kpis.map((kpi, index) => {
-                const isActive = index === selectedKpiIndex;
-                const tileColor = KPI_COLORS[index] ?? KPI_COLORS[0];
-                const formatter = getKpiFormatter(domain, index);
-                const previous = kpi.previous ?? null;
-                const currentNumeric = kpi.currentNumeric ?? null;
-                const trend = determineTrend(currentNumeric, previous);
-                const displayUnit = kpi.unit && kpi.unit.toLowerCase() !== "sessions" ? kpi.unit : undefined;
-                return (
-                  <button
-                    key={`${domain}-${range}-${kpi.title}`}
-                    type="button"
-                    onClick={() => setSelectedKpiIndex(index)}
-                    className={`rounded-2xl px-5 py-4 text-left shadow-[0_16px_28px_-18px_rgba(30,36,50,0.35)] transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                      isActive ? "ring-0" : "ring-0"
+                {previous !== null && currentNumeric !== null ? (
+                  <p
+                    className={`mt-2 flex items-center gap-1 text-xs font-medium ${
+                      isActive ? trend.colorActive : trend.color
                     }`}
-                    style={{
-                      backgroundColor: isActive ? tileColor : "#FFFFFF",
-                      border: isActive ? "none" : "1px solid rgba(30,36,50,0.08)",
-                    }}
-                    aria-pressed={isActive}
-                    aria-label={`${kpi.title} ${kpi.value}`}
                   >
-                    <header
-                      className={`text-xs font-semibold uppercase tracking-wide ${
-                        isActive ? "text-[#22313F]" : "text-[rgba(34,49,63,0.65)]"
-                      }`}
-                    >
-                      {displayUnit ? `${kpi.title} (${displayUnit})` : kpi.title}
-                    </header>
-                    <div className={`mt-3 text-3xl font-semibold ${isActive ? "text-[#111111]" : "text-[#111111]"}`}>
-                      {kpi.value}
-                    </div>
-                    {previous !== null && currentNumeric !== null ? (
-                      <p
-                        className={`mt-2 flex items-center gap-1 text-xs font-medium ${
-                          isActive ? trend.colorActive : trend.color
-                        }`}
-                      >
-                        <span>{trend.icon}</span>
-                        <span>
-                          {trend.text} {formatter(Math.abs(trend.delta))}
-                        </span>
-                      </p>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </section>
-            <Spacer y="sm" />
-            {shouldShowHistory ? (
-              <section className="rounded-3xl border border-[rgba(30,36,50,0.08)] bg-white p-5 shadow-[0_18px_36px_-20px_rgba(30,36,50,0.4)]">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-[#111111]">History</h2>
-                  <span className="text-xs font-medium text-[rgba(34,49,63,0.6)]">Latest to oldest</span>
-                </div>
-                {showHistoryLoading ? (
-                  <div className="mt-4 text-sm font-medium text-[rgba(34,49,63,0.65)]">Loading sample routines...</div>
-                ) : (
-                  <ul className="mt-4 space-y-3">
-                    {[...snapshot.history]
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .map((entry) => {
-                        if (entry.type === "strength") {
-                          const content = (
-                            <>
-                              <div>
-                                <p className="text-sm font-semibold text-[#111111]">{entry.name}</p>
-                                <p className="text-xs text-[rgba(34,49,63,0.65)]">
-                                  {formatHistoryDate(entry.date)} · {entry.duration}
-                                </p>
-                              </div>
-                              <p className="text-sm font-semibold text-[#111111]">{entry.totalWeight}</p>
-                            </>
-                          );
+                    <span>{trend.icon}</span>
+                    <span>
+                      {trend.text} {formatter(Math.abs(trend.delta))}
+                    </span>
+                  </p>
+                ) : null}
+              </button>
+            );
+          })}
+        </section>
+        <Spacer y="sm" />
+        {shouldShowHistory ? (
+          <section className="rounded-3xl border border-[rgba(30,36,50,0.08)] bg-white p-5 shadow-[0_18px_36px_-20px_rgba(30,36,50,0.4)]">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-[#111111]">History</h2>
+              <span className="text-xs font-medium text-[rgba(34,49,63,0.6)]">Latest to oldest</span>
+            </div>
+            {showHistoryLoading ? (
+              <div className="mt-4 text-sm font-medium text-[rgba(34,49,63,0.65)]">Loading sample routines...</div>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {[...snapshot.history]
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map((entry) => {
+                    if (entry.type === "strength") {
+                      const content = (
+                        <>
+                          <div>
+                            <p className="text-sm font-semibold text-[#111111]">{entry.name}</p>
+                            <p className="text-xs text-[rgba(34,49,63,0.65)]">
+                              {formatHistoryDate(entry.date)} · {entry.duration}
+                            </p>
+                          </div>
+                          <p className="text-sm font-semibold text-[#111111]">{entry.totalWeight}</p>
+                        </>
+                      );
 
-                          const canNavigate = typeof entry.routineTemplateId === "number" && !!onSelectRoutine;
+                      const canNavigate = typeof entry.routineTemplateId === "number" && !!onSelectRoutine;
 
-                          return (
-                            <li key={entry.id}>
-                              {canNavigate ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handleStrengthHistorySelect(entry)}
-                                  className="flex w-full items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[rgba(226,125,96,0.35)]"
-                                >
-                                  {content}
-                                </button>
-                              ) : (
-                                <div className="flex items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3">
-                                  {content}
-                                </div>
-                              )}
-                            </li>
-                          );
-                        }
-                        return (
-                          <li
-                            key={entry.id}
-                            className="flex items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3"
-                          >
-                            <div>
-                              <p className="text-sm font-semibold text-[#111111]">{normalizeActivity(entry.activity)}</p>
-                              <p className="text-xs text-[rgba(34,49,63,0.65)]">
-                                {formatHistoryDate(entry.date)} · {entry.duration}
-                              </p>
+                      return (
+                        <li key={entry.id}>
+                          {canNavigate ? (
+                            <button
+                              type="button"
+                              onClick={() => handleStrengthHistorySelect(entry)}
+                              className="flex w-full items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[rgba(226,125,96,0.35)]"
+                            >
+                              {content}
+                            </button>
+                          ) : (
+                            <div className="flex items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3">
+                              {content}
                             </div>
-                            <div className="text-right">
-                              <p className="text-sm font-semibold text-[#111111]">{entry.distance}</p>
-                              {entry.calories ? (
-                                <p className="text-xs text-[rgba(34,49,63,0.65)]">{entry.calories}</p>
-                              ) : null}
-                            </div>
-                          </li>
-                        );
-                      })}
-                  </ul>
-                )}
-              </section>
-            ) : null}
-          </>
-        )}
+                          )}
+                        </li>
+                      );
+                    }
+                    return (
+                      <li key={entry.id} className="flex items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3">
+                        <div>
+                          <p className="text-sm font-semibold text-[#111111]">{normalizeActivity(entry.activity)}</p>
+                          <p className="text-xs text-[rgba(34,49,63,0.65)]">
+                            {formatHistoryDate(entry.date)} · {entry.duration}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-[#111111]">{entry.distance}</p>
+                          {entry.calories ? (
+                            <p className="text-xs text-[rgba(34,49,63,0.65)]">{entry.calories}</p>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+              </ul>
+            )}
+          </section>
+        ) : null}
       </Stack>
     </AppScreen>
   );
@@ -429,6 +477,95 @@ function normalizeActivity(activity: string) {
 function formatHistoryDate(iso: string) {
   const date = new Date(iso);
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function buildCardioSnapshot(base: Snapshot, data: ProgressDetailData): Snapshot {
+  const primarySeries = convertSeriesToTrend(data.series);
+  const fallbackSeries = base.series.slice(1);
+  const mergedSeries = [primarySeries, ...fallbackSeries];
+
+  const kpis = data.kpis.length ? mergeKpis(data.kpis, base.kpis) : base.kpis;
+  const history = data.workouts.length ? data.workouts.map(mapWorkoutToHistoryEntry) : base.history;
+
+  return {
+    series: mergedSeries,
+    kpis,
+    history,
+  };
+}
+
+function convertSeriesToTrend(series: ProgressDetailData["series"]): TrendPoint[] {
+  return series.map((point) => ({
+    x: point.date,
+    y: point.value,
+    isPersonalBest: point.isPR ?? false,
+  }));
+}
+
+function mergeKpis(cardioKpis: ProgressDetailData["kpis"], fallback: KpiDatum[]): KpiDatum[] {
+  const converted = cardioKpis.map((kpi) => ({
+    title: kpi.label,
+    value: kpi.value,
+    unit: undefined,
+    previous: undefined,
+    currentNumeric: undefined,
+  }));
+
+  if (converted.length < fallback.length) {
+    return [...converted, ...fallback.slice(converted.length)];
+  }
+
+  return converted;
+}
+
+function mapWorkoutToHistoryEntry(workout: ProgressDetailData["workouts"][number]): HistoryEntry {
+  const { duration, distance, calories } = parseWorkoutDetails(workout.subtitle, workout.highlight);
+
+  return {
+    type: "cardio",
+    id: workout.id,
+    activity: workout.title,
+    date: workout.date,
+    duration,
+    distance,
+    calories,
+  };
+}
+
+function parseWorkoutDetails(subtitle: string, highlight: string) {
+  const parts = subtitle
+    .split("·")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const duration = parts[0] ?? "—";
+  const remainder = parts.slice(1);
+
+  let distance: string | null = null;
+  let calories: string | undefined;
+
+  const assignFrom = (value: string) => {
+    const normalized = value.trim();
+    if (!normalized) return;
+    const lower = normalized.toLowerCase();
+    if (lower.includes("km")) {
+      if (!distance) distance = normalized;
+    }
+    if (lower.includes("kcal")) {
+      if (!calories) calories = normalized;
+    }
+  };
+
+  assignFrom(highlight);
+  remainder.forEach(assignFrom);
+
+  const safeDistance = distance ?? (highlight.toLowerCase().includes("km") ? highlight : "—");
+
+  return {
+    duration,
+    distance: safeDistance,
+    calories,
+  };
 }
 
 function estimateRoutineDurationMinutes(exerciseCount: number) {
