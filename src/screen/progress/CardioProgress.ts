@@ -188,7 +188,8 @@ function stepsToDisplay(value: number) {
  * friendly structures.
  */
 class CardioProgressProvider implements ProgressDataProvider {
-  private cache = new Map<TimeRange, Promise<AggregatedData>>();
+  private cache = new Map<TimeRange, AggregatedData>();
+  private inflight = new Map<TimeRange, Promise<AggregatedData>>();
 
   private platformPromise?: Promise<string>;
 
@@ -505,16 +506,29 @@ class CardioProgressProvider implements ProgressDataProvider {
   }
 
   private async ensure(range: TimeRange): Promise<AggregatedData> {
-    if (!this.cache.has(range)) {
-      const loadPromise = this.fetchAggregated(range)
-        .then((result) => result)
-        .catch((error) => {
-          this.cache.delete(range);
-          throw error;
-        });
-      this.cache.set(range, loadPromise);
+    const cached = this.cache.get(range);
+    if (cached) {
+      return cached;
     }
-    return this.cache.get(range)!;
+
+    const inflight = this.inflight.get(range);
+    if (inflight) {
+      return inflight;
+    }
+
+    const loadPromise = this.fetchAggregated(range)
+      .then((result) => {
+        this.cache.set(range, result);
+        this.inflight.delete(range);
+        return result;
+      })
+      .catch((error) => {
+        this.inflight.delete(range);
+        throw error;
+      });
+
+    this.inflight.set(range, loadPromise);
+    return loadPromise;
   }
 
   private async fetchAggregated(range: TimeRange): Promise<AggregatedData> {
