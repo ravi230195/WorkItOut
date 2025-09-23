@@ -147,12 +147,16 @@ function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
 }
 
 export function useCardioProgressSnapshot(range: TimeRange) {
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(() =>
+    toSnapshot(cardioProvider.getUnavailableSnapshot(range)),
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    const unavailable = toSnapshot(cardioProvider.getUnavailableSnapshot(range));
+    setSnapshot(unavailable);
     cardioProvider
       .snapshot(range)
       .then((raw) => {
@@ -162,7 +166,7 @@ export function useCardioProgressSnapshot(range: TimeRange) {
       .catch((error) => {
         if (!cancelled) {
           logger.debug("[cardio] Failed to load cardio snapshot", error);
-          setSnapshot(null);
+          setSnapshot(unavailable);
         }
       })
       .finally(() => {

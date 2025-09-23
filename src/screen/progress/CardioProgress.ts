@@ -10,7 +10,6 @@ import type {
   SeriesPoint,
   TimeRange,
 } from "@/types/progress";
-import { PROGRESS_MOCK_SNAPSHOTS } from "../../../components/screens/progress/MockData";
 import { logger } from "../../../utils/logging";
 
 const TARGET_MINUTES = 40;
@@ -240,58 +239,60 @@ function stepsToDisplay(value: number) {
 class CardioProgressProvider implements ProgressDataProvider {
   private cache = new Map<TimeRange, Promise<AggregatedData>>();
 
-  private useMockFallback = false;
-
-  private mockSnapshotCache = new Map<TimeRange, CardioProgressSnapshot>();
-
   private platformPromise?: Promise<string>;
 
-  private async withNativeFallback<T>(
-    range: TimeRange,
-    loader: () => Promise<T>,
-    fallback: () => T,
-  ): Promise<T> {
-    if (this.useMockFallback) {
-      return Promise.resolve(fallback());
-    }
-
-    try {
-      return await loader();
-    } catch (error) {
-      if (!this.useMockFallback) {
-        logger.debug("[cardio] Falling back to mock cardio data", { range, error });
-      }
-      this.useMockFallback = true;
-      return Promise.resolve(fallback());
-    }
-  }
-
   async series(range: TimeRange, focus: CardioFocus, options?: { compare?: boolean }): Promise<CardioSeriesResponse> {
-    return this.withNativeFallback(
-      range,
-      () => this.seriesNative(range, focus, options),
-      () => this.seriesFromMock(range, focus, options),
-    );
+    try {
+      return await this.seriesNative(range, focus, options);
+    } catch (error) {
+      logger.debug("[cardio] Unable to load cardio series", { range, focus, error });
+      return this.seriesUnavailable(range, focus, options);
+    }
   }
 
   async kpis(range: TimeRange): Promise<CardioKpi[]> {
-    return this.withNativeFallback(range, () => this.kpisNative(range), () => this.kpisFromMock(range));
+    try {
+      return await this.kpisNative(range);
+    } catch (error) {
+      logger.debug("[cardio] Unable to load cardio KPIs", { range, error });
+      return this.kpisUnavailable(range);
+    }
   }
 
   async recentWorkouts(range: TimeRange): Promise<CardioWorkoutSummary[]> {
-    return this.withNativeFallback(range, () => this.recentWorkoutsNative(range), () => this.recentWorkoutsFromMock(range));
+    try {
+      return await this.recentWorkoutsNative(range);
+    } catch (error) {
+      logger.debug("[cardio] Unable to load cardio workouts", { range, error });
+      return [];
+    }
   }
 
   async bests(range: TimeRange): Promise<CardioBest[]> {
-    return this.withNativeFallback(range, () => this.bestsNative(range), () => this.bestsFromMock(range));
+    try {
+      return await this.bestsNative(range);
+    } catch (error) {
+      logger.debug("[cardio] Unable to load cardio bests", { range, error });
+      return [];
+    }
   }
 
   async targetLine(range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null> {
-    return this.withNativeFallback(range, () => this.targetLineNative(range, focus), () => this.targetLineFromMock(range, focus));
+    try {
+      return await this.targetLineNative(range, focus);
+    } catch (error) {
+      logger.debug("[cardio] Unable to load cardio target line", { range, focus, error });
+      return this.targetLineUnavailable(focus);
+    }
   }
 
   async snapshot(range: TimeRange): Promise<CardioProgressSnapshot> {
-    return this.withNativeFallback(range, () => this.snapshotNative(range), () => this.snapshotFromMock(range));
+    try {
+      return await this.snapshotNative(range);
+    } catch (error) {
+      logger.debug("[cardio] Unable to load cardio snapshot", { range, error });
+      return this.snapshotUnavailable(range);
+    }
   }
 
   private async seriesNative(
@@ -413,152 +414,83 @@ class CardioProgressProvider implements ProgressDataProvider {
     };
   }
 
-  private seriesFromMock(
+  private seriesUnavailable(
     range: TimeRange,
     focus: CardioFocus,
     options?: { compare?: boolean },
   ): CardioSeriesResponse {
-    const snapshot = this.getMockSnapshot(range);
-    const base = snapshot.series[focus];
+    const buckets = buildBucketSets(range);
+    return this.seriesUnavailableFromBuckets(focus, buckets, options);
+  }
+
+  private seriesUnavailableFromBuckets(
+    focus: CardioFocus,
+    buckets: ReturnType<typeof buildBucketSets>,
+    options?: { compare?: boolean },
+  ): CardioSeriesResponse {
     const includePrevious = options?.compare !== false;
+    const mapBucket = (bucket: Bucket): SeriesPoint => ({ iso: bucket.iso, value: 0 });
     return {
       focus,
-      current: base.current.map((point) => ({ ...point })),
-      previous: includePrevious && base.previous ? base.previous.map((point) => ({ ...point })) : undefined,
-      personalBest: base.personalBest,
+      current: buckets.current.map(mapBucket),
+      previous: includePrevious ? buckets.previous.map(mapBucket) : undefined,
     };
   }
 
-  private kpisFromMock(range: TimeRange): CardioKpi[] {
-    const snapshot = this.getMockSnapshot(range);
-    return snapshot.kpis.map((kpi) => ({ ...kpi }));
+  private kpisUnavailable(_range: TimeRange): CardioKpi[] {
+    return [
+      {
+        key: "activeMinutes",
+        title: "Total Time",
+        unit: "minutes",
+        value: "N/A",
+      },
+      {
+        key: "distance",
+        title: "Distance",
+        unit: "km",
+        value: "N/A",
+      },
+      {
+        key: "calories",
+        title: "Calories",
+        unit: "kcal",
+        value: "N/A",
+      },
+      {
+        key: "steps",
+        title: "Steps",
+        value: "N/A",
+      },
+    ];
   }
 
-  private recentWorkoutsFromMock(range: TimeRange): CardioWorkoutSummary[] {
-    const snapshot = this.getMockSnapshot(range);
-    return snapshot.workouts.map((workout) => ({ ...workout }));
+  private targetLineUnavailable(focus: CardioFocus): CardioTargetLine | null {
+    if (focus !== "activeMinutes") {
+      return null;
+    }
+    return { focus, value: TARGET_MINUTES, unit: "minutes" };
   }
 
-  private bestsFromMock(range: TimeRange): CardioBest[] {
-    const snapshot = this.getMockSnapshot(range);
-    return snapshot.bests.map((best) => ({ ...best }));
-  }
-
-  private targetLineFromMock(range: TimeRange, focus: CardioFocus): CardioTargetLine | null {
-    if (focus !== "activeMinutes") return null;
-    const snapshot = this.getMockSnapshot(range);
-    return snapshot.targetLine ? { ...snapshot.targetLine } : { focus, value: TARGET_MINUTES, unit: "minutes" };
-  }
-
-  private snapshotFromMock(range: TimeRange): CardioProgressSnapshot {
-    const base = this.getMockSnapshot(range);
+  private snapshotUnavailable(range: TimeRange): CardioProgressSnapshot {
+    const buckets = buildBucketSets(range);
     return {
       range,
       series: {
-        activeMinutes: this.seriesFromMock(range, "activeMinutes"),
-        distance: this.seriesFromMock(range, "distance"),
-        calories: this.seriesFromMock(range, "calories"),
-        steps: this.seriesFromMock(range, "steps"),
+        activeMinutes: this.seriesUnavailableFromBuckets("activeMinutes", buckets),
+        distance: this.seriesUnavailableFromBuckets("distance", buckets),
+        calories: this.seriesUnavailableFromBuckets("calories", buckets),
+        steps: this.seriesUnavailableFromBuckets("steps", buckets),
       },
-      kpis: this.kpisFromMock(range),
-      workouts: this.recentWorkoutsFromMock(range),
-      bests: this.bestsFromMock(range),
-      targetLine: this.targetLineFromMock(range, "activeMinutes"),
+      kpis: this.kpisUnavailable(range),
+      workouts: [],
+      bests: [],
+      targetLine: this.targetLineUnavailable("activeMinutes"),
     };
   }
 
-  private getMockSnapshot(range: TimeRange): CardioProgressSnapshot {
-    if (!this.mockSnapshotCache.has(range)) {
-      this.mockSnapshotCache.set(range, this.buildMockSnapshot(range));
-    }
-    return this.mockSnapshotCache.get(range)!;
-  }
-
-  private buildMockSnapshot(range: TimeRange): CardioProgressSnapshot {
-    const base = PROGRESS_MOCK_SNAPSHOTS.cardio?.[range];
-
-    const series: Record<CardioFocus, CardioSeriesResponse> = {
-      activeMinutes: { focus: "activeMinutes", current: [] },
-      distance: { focus: "distance", current: [] },
-      calories: { focus: "calories", current: [] },
-      steps: { focus: "steps", current: [] },
-    };
-
-    if (base?.series) {
-      CARDIO_FOCUS_LIST.forEach((focus, index) => {
-        const points = base.series[index] ?? [];
-        const current = points.map((point) => ({
-          iso: typeof point.x === "string" ? point.x : new Date(point.x).toISOString(),
-          value: safeNumber(point.y),
-          isPersonalBest: point.isPersonalBest,
-        }));
-        const personalBest = current.length ? Math.max(...current.map((value) => value.value)) : undefined;
-        series[focus] = { focus, current, personalBest };
-      });
-    }
-
-    const kpis = CARDIO_FOCUS_LIST.map((focus, index) => {
-      const card = base?.kpis?.[index];
-      return {
-        key: focus,
-        title: card?.title ?? this.defaultKpiTitle(focus),
-        value: card?.value ?? "0",
-        unit: card?.unit,
-        previous: typeof card?.previous === "number" ? card.previous : undefined,
-        currentNumeric: typeof card?.currentNumeric === "number" ? card.currentNumeric : undefined,
-      } satisfies CardioKpi;
-    });
-
-    const workouts: CardioWorkoutSummary[] = Array.isArray(base?.history)
-      ? base.history
-          .filter((entry: any) => entry?.type === "cardio")
-          .map((entry: any) => this.convertMockHistoryEntry(entry))
-      : [];
-
-    const bests = this.computeBestsFromWorkouts(workouts);
-
-    return {
-      range,
-      series,
-      kpis,
-      workouts,
-      bests,
-      targetLine: { focus: "activeMinutes", value: TARGET_MINUTES, unit: "minutes" },
-    };
-  }
-
-  private defaultKpiTitle(focus: CardioFocus): string {
-    switch (focus) {
-      case "distance":
-        return "Distance";
-      case "calories":
-        return "Calories";
-      case "steps":
-        return "Steps";
-      case "activeMinutes":
-      default:
-        return "Total Time";
-    }
-  }
-
-  private convertMockHistoryEntry(entry: any): CardioWorkoutSummary {
-    const start = new Date(entry?.date ?? Date.now());
-    const durationMinutes = parseDurationLabel(entry?.duration);
-    const end = Number.isFinite(durationMinutes)
-      ? new Date(start.getTime() + durationMinutes * MIN_MS)
-      : start;
-    const distanceKm = parseDistanceValue(entry?.distance);
-    const calories = parseCaloriesValue(entry?.calories);
-
-    return {
-      id: String(entry?.id ?? `mock-${start.getTime()}`),
-      activity: normalizeActivityName(entry?.activity),
-      start: start.toISOString(),
-      end: end.toISOString(),
-      durationMinutes,
-      distanceKm: typeof distanceKm === "number" && Number.isFinite(distanceKm) ? distanceKm : undefined,
-      calories: typeof calories === "number" && Number.isFinite(calories) ? calories : undefined,
-    };
+  public getUnavailableSnapshot(range: TimeRange): CardioProgressSnapshot {
+    return this.snapshotUnavailable(range);
   }
 
   private computeBestsFromWorkouts(workouts: CardioWorkoutSummary[]): CardioBest[] {
