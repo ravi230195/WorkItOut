@@ -13,8 +13,6 @@ import type {
 import { logger } from "../../../utils/logging";
 
 const TARGET_MINUTES = 40;
-const CARDIO_FOCUS_LIST: CardioFocus[] = ["activeMinutes", "distance", "calories", "steps"];
-
 const ACTIVITY_LABELS: Record<string, string> = {
   "outdoor walk": "Outdoor Walk",
   "indoor walk": "Indoor Walk",
@@ -163,67 +161,6 @@ function minutesToDisplay(value: number) {
   return `${minuteFormatter.format(minutes)}m`;
 }
 
-function parseDurationLabel(raw: unknown): number {
-  if (typeof raw === "number") {
-    return Number.isFinite(raw) ? raw : 0;
-  }
-  if (typeof raw !== "string") return 0;
-  const trimmed = raw.trim();
-  if (!trimmed) return 0;
-
-  const colonParts = trimmed.split(":").map((part) => Number.parseFloat(part));
-  if (colonParts.every((part) => Number.isFinite(part))) {
-    if (colonParts.length === 3) {
-      const [hours, minutes, seconds] = colonParts;
-      return hours * 60 + minutes + seconds / 60;
-    }
-    if (colonParts.length === 2) {
-      const [minutes, seconds] = colonParts;
-      return minutes + seconds / 60;
-    }
-  }
-
-  const numberMatch = trimmed.match(/(-?\d+(?:\.\d+)?)/);
-  if (!numberMatch) return 0;
-  const value = Number.parseFloat(numberMatch[1]);
-  if (!Number.isFinite(value)) return 0;
-  if (/h/i.test(trimmed) && !/min/i.test(trimmed)) {
-    return value * 60;
-  }
-  return value;
-}
-
-function parseDistanceValue(raw: unknown): number | undefined {
-  if (typeof raw === "number") {
-    return Number.isFinite(raw) ? raw : undefined;
-  }
-  if (typeof raw !== "string") return undefined;
-  const trimmed = raw.trim();
-  if (!trimmed) return undefined;
-  const numberMatch = trimmed.match(/(-?\d+(?:\.\d+)?)/);
-  if (!numberMatch) return undefined;
-  const value = Number.parseFloat(numberMatch[1]);
-  if (!Number.isFinite(value)) return undefined;
-  if (/mile/i.test(trimmed)) {
-    return value * 1.60934;
-  }
-  if (/meter/i.test(trimmed) && !/kilometer/i.test(trimmed)) {
-    return value / 1000;
-  }
-  return value;
-}
-
-function parseCaloriesValue(raw: unknown): number | undefined {
-  if (typeof raw === "number") {
-    return Number.isFinite(raw) ? raw : undefined;
-  }
-  if (typeof raw !== "string") return undefined;
-  const numberMatch = raw.match(/(-?\d+(?:\.\d+)?)/);
-  if (!numberMatch) return undefined;
-  const value = Number.parseFloat(numberMatch[1]);
-  return Number.isFinite(value) ? value : undefined;
-}
-
 function kilometersToDisplay(value: number) {
   return `${kmFormatter.format(Math.max(0, value))} km`;
 }
@@ -236,6 +173,20 @@ function stepsToDisplay(value: number) {
   return `${stepFormatter.format(Math.max(0, value))}`;
 }
 
+/**
+ * The provider is the single entry point that the progress screen calls via
+ * {@link useCardioProgressSnapshot}.  Each public method (series/kpis/bests…)
+ * funnels into {@link CardioProgressProvider.ensure}, which caches the
+ * aggregated buckets for the requested range.  `ensure` delegates to
+ * `fetchAggregated`, which asks Capacitor for the active platform and then
+ * populates the buckets with native readings by calling
+ * {@link CardioProgressProvider.populateFromIos} or
+ * {@link CardioProgressProvider.populateFromAndroid}.  Those helpers are where
+ * we invoke the HealthKit (via `capacitor-health`) and Health Connect (via
+ * `@kiwi-health/capacitor-health-connect`) bridges to pull workouts, samples,
+ * and aggregate totals directly from the phone before shaping them into the UI
+ * friendly structures.
+ */
 class CardioProgressProvider implements ProgressDataProvider {
   private cache = new Map<TimeRange, Promise<AggregatedData>>();
 

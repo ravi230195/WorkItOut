@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 
-import type { TimeRange, CardioFocus, CardioProgressSnapshot } from "@/types/progress";
+import type {
+  TimeRange,
+  CardioFocus,
+  CardioProgressSnapshot,
+  SeriesPoint,
+  CardioKpi,
+  CardioWorkoutSummary,
+} from "@/types/progress";
 import { CardioProgressProvider } from "@/screen/progress/CardioProgress";
 import type { HistoryEntry, Snapshot } from "../../progress/Progress.types";
 import { supabaseAPI, SAMPLE_ROUTINE_USER_ID } from "../../../utils/supabase/supabase-api";
@@ -118,29 +125,34 @@ function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
   const series = CARDIO_FOCUS_ORDER.map((focus) => {
     const entry = raw.series[focus];
     if (!entry) return [];
-    return entry.current.map((point) => ({
+    return entry.current.map((point: SeriesPoint) => ({
       x: point.iso,
       y: point.value,
       isPersonalBest: point.isPersonalBest,
     }));
   });
 
-  const kpis = raw.kpis.map(({ title, value, unit, previous, currentNumeric }) => ({
-    title,
-    value,
-    unit,
-    previous,
-    currentNumeric,
-  }));
+  const kpis = raw.kpis.map((kpi: CardioKpi) => {
+    const { title, value, unit, previous, currentNumeric } = kpi;
+    return {
+      title,
+      value,
+      unit,
+      previous,
+      currentNumeric,
+    };
+  });
 
-  const history: HistoryEntry[] = raw.workouts.map((workout) => ({
+  const history: HistoryEntry[] = raw.workouts.map((workout: CardioWorkoutSummary) => ({
     type: "cardio",
     id: workout.id,
     activity: workout.activity,
     date: workout.start,
     duration: formatHistoryDuration(workout.durationMinutes),
     distance: workout.distanceKm ? `${distanceFormatter.format(workout.distanceKm)} km` : "0 km",
-    calories: typeof workout.calories === "number" ? `${integerFormatter.format(Math.round(workout.calories))} kcal` : undefined,
+    calories: typeof workout.calories === "number"
+      ? `${integerFormatter.format(Math.round(workout.calories))} kcal`
+      : undefined,
   }));
 
   return { series, kpis, history };
