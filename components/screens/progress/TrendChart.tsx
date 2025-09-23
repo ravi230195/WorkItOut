@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as shape from "d3-shape";
 import { scaleLinear, scalePoint } from "d3-scale";
 
-import type { TimeRange } from "../../../src/types/progress";
+import type { TimeRange } from "@/types/progress";
 import type { TrendPoint } from "../../progress/Progress.types";
 import { PROGRESS_THEME, formatDayLabel, formatTickValue, generateTicks } from "./util";
 

@@ -9,6 +9,7 @@ import { KPI_COLORS, getEncouragement, getKpiFormatter } from "./progress/util";
 import { HistorySection } from "./progress/HistorySection";
 import { KpiTiles } from "./progress/KpiTiles";
 import { useAuth } from "../AuthContext";
+import { logger } from "../../utils/logging";
 
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { Stack } from "../layouts";
@@ -16,7 +17,7 @@ import Spacer from "../layouts/Spacer";
 import { DomainSelector } from "./progress/DomainSelector";
 import { RangeSelector } from "./progress/RangeSelector";
 import { DOMAIN_LABELS, DOMAIN_OPTIONS, RANGE_LABELS, RANGE_OPTIONS } from "./progress/constants";
-import { useStrengthHistory, useUserFirstName } from "./progress/hooks";
+import { useCardioProgressSnapshot, useStrengthHistory, useUserFirstName } from "./progress/hooks";
 
 interface ProgressScreenProps {
   bottomBar?: React.ReactNode;
@@ -30,8 +31,14 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const { userToken } = useAuth();
   const firstName = useUserFirstName(userToken);
   const { history: strengthHistory, loading: strengthHistoryLoading } = useStrengthHistory(userToken);
+  const { snapshot: cardioSnapshot, loading: cardioLoading } = useCardioProgressSnapshot(range);
 
-  const baseSnapshot = useMemo(() => PROGRESS_MOCK_SNAPSHOTS[domain][range], [domain, range]);
+  const baseSnapshot = useMemo(() => {
+    if (domain === "cardio" && cardioSnapshot) {
+      return cardioSnapshot;
+    }
+    return PROGRESS_MOCK_SNAPSHOTS[domain][range];
+  }, [cardioSnapshot, domain, range]);
   const snapshot = useMemo(() => {
     if (domain === "strength" && strengthHistory.length > 0) {
       return { ...baseSnapshot, history: strengthHistory };
@@ -41,12 +48,47 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const valueFormatter = useMemo(() => getKpiFormatter(domain, selectedKpiIndex), [domain, selectedKpiIndex]);
   const trendSeries = snapshot.series[selectedKpiIndex] ?? snapshot.series[0] ?? [];
   const shouldShowHistory =
-    domain !== "measurement" && (snapshot.history.length > 0 || (domain === "strength" && strengthHistoryLoading));
-  const showHistoryLoading = domain === "strength" && strengthHistoryLoading && snapshot.history.length === 0;
+    domain !== "measurement" &&
+    (snapshot.history.length > 0 ||
+      (domain === "strength" && strengthHistoryLoading) ||
+      (domain === "cardio" && cardioLoading));
+  const showHistoryLoading =
+    (domain === "strength" && strengthHistoryLoading && snapshot.history.length === 0) ||
+    (domain === "cardio" && cardioLoading && snapshot.history.length === 0);
 
   useEffect(() => {
     setSelectedKpiIndex(0);
   }, [domain, range]);
+
+  // ADD: Log when cardio domain is selected and data is requested
+  useEffect(() => {
+    if (domain === "cardio") {
+      logger.debug("[cardio] ProgressScreen: Cardio domain selected", { 
+        range, 
+        selectedKpiIndex,
+        hasCardioSnapshot: !!cardioSnapshot,
+        cardioLoading 
+      });
+    }
+  }, [domain, range, selectedKpiIndex, cardioSnapshot, cardioLoading]);
+
+  // ADD: Log when snapshot data changes
+  useEffect(() => {
+    if (domain === "cardio" && cardioSnapshot) {
+      logger.debug("[cardio] ProgressScreen: Cardio snapshot received", {
+        range,
+        kpiCount: cardioSnapshot.kpis?.length || 0,
+        seriesCount: cardioSnapshot.series?.length || 0,
+        historyCount: cardioSnapshot.history?.length || 0,
+        kpis: cardioSnapshot.kpis?.map(kpi => ({
+          title: kpi.title,
+          value: kpi.value,
+          currentNumeric: kpi.currentNumeric,
+          previous: kpi.previous
+        }))
+      });
+    }
+  }, [domain, cardioSnapshot]);
 
   const trendColor = KPI_COLORS[selectedKpiIndex % KPI_COLORS.length];
 

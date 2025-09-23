@@ -1,0 +1,71 @@
+export type TimeRange = "week" | "threeMonths" | "sixMonths";
+
+export type CardioFocus = "activeMinutes" | "distance" | "calories" | "steps";
+
+export type SeriesPoint = {
+  iso: string;
+  value: number;
+  isPersonalBest?: boolean;
+};
+
+export type CardioSeriesResponse = {
+  focus: CardioFocus;
+  current: SeriesPoint[];
+  previous?: SeriesPoint[];
+  personalBest?: number;
+};
+
+export type CardioKpi = {
+  key: CardioFocus;
+  title: string;
+  value: string;
+  unit?: string;
+  currentNumeric?: number;
+  previous?: number;
+};
+
+export type CardioWorkoutSummary = {
+  id: string;
+  activity: string;
+  start: string;
+  end: string;
+  durationMinutes: number;
+  distanceKm?: number;
+  calories?: number;
+  steps?: number;
+  averageHeartRate?: number;
+  source?: string;
+};
+
+export type CardioBest = {
+  id: string;
+  label: string;
+  metric: CardioFocus;
+  value: string;
+  date: string;
+  detail?: string;
+};
+
+export type CardioTargetLine = {
+  focus: CardioFocus;
+  value: number;
+  unit?: string;
+};
+
+export type CardioProgressSnapshot = {
+  range: TimeRange;
+  series: Record<CardioFocus, CardioSeriesResponse>;
+  kpis: CardioKpi[];
+  workouts: CardioWorkoutSummary[];
+  bests: CardioBest[];
+  targetLine?: CardioTargetLine | null;
+};
+
+export interface ProgressDataProvider {
+  series(range: TimeRange, focus: CardioFocus, options?: { compare?: boolean }): Promise<CardioSeriesResponse>;
+  kpis(range: TimeRange): Promise<CardioKpi[]>;
+  recentWorkouts(range: TimeRange): Promise<CardioWorkoutSummary[]>;
+  bests(range: TimeRange): Promise<CardioBest[]>;
+  targetLine(range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null>;
+  snapshot(range: TimeRange): Promise<CardioProgressSnapshot>;
+}

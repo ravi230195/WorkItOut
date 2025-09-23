@@ -1,4 +1,4 @@
-import type { TimeRange } from "../../../src/types/progress";
+import type { TimeRange } from "@/types/progress";
 import type { DomainSnapshotMap, ProgressDomain, TrendPoint } from "../../progress/Progress.types";
 
 const RANGE_POINTS: Record<TimeRange, number> = { week: 7, threeMonths: 12, sixMonths: 6 };

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import type { TimeRange } from "../../../src/types/progress";
+import type { TimeRange } from "@/types/progress";
 import { PROGRESS_THEME } from "./util";
 import { RANGE_OPTIONS, type RangeOption } from "./constants";
 

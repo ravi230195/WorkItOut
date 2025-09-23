@@ -1,4 +1,4 @@
-import type { TimeRange } from "../../../src/types/progress";
+import type { TimeRange } from "@/types/progress";
 import type { TrendPoint } from "../../progress/Progress.types";
 import { PROGRESS_THEME } from "./util";
 import { TrendChart } from "./TrendChart";
