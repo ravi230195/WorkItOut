@@ -144,9 +144,6 @@ export const LOG_LEVELS = {
     message: string,
     args: any[]
   ) => {
-    if (level === 'DEBUG') {
-      return;
-    }
     // gate: treat .log as DEBUG severity
     const severity: LogLevel = level === "LOG" ? "DEBUG" : level;
     if (!shouldLog(severity)) return;
