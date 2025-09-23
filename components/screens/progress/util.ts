@@ -1,4 +1,4 @@
-import type { TimeRange } from "../../../src/types/progress";
+import type { TimeRange } from "@/types/progress";
 import type { ProgressDomain } from "../../progress/Progress.types";
 import type { LoadedExercise } from "../../../utils/routineLoader";
 import type { Profile } from "../../../utils/supabase/supabase-types";

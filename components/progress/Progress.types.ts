@@ -1,4 +1,4 @@
-import type { TimeRange } from "../../src/types/progress";
+import type { TimeRange } from "@/types/progress";
 
 export type TrendPoint = {
   x: string; // ISO date

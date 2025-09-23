@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import AppScreen from "../layouts/AppScreen";
-import type { TimeRange } from "../../src/types/progress";
+import type { TimeRange } from "@/types/progress";
 import type { HistoryEntry, ProgressDomain } from "../progress/Progress.types";
 import { PROGRESS_MOCK_SNAPSHOTS } from "./progress/MockData";
 import { TrendOverview } from "./progress/TrendOverview";
@@ -16,7 +16,7 @@ import Spacer from "../layouts/Spacer";
 import { DomainSelector } from "./progress/DomainSelector";
 import { RangeSelector } from "./progress/RangeSelector";
 import { DOMAIN_LABELS, DOMAIN_OPTIONS, RANGE_LABELS, RANGE_OPTIONS } from "./progress/constants";
-import { useStrengthHistory, useUserFirstName } from "./progress/hooks";
+import { useCardioProgressSnapshot, useStrengthHistory, useUserFirstName } from "./progress/hooks";
 
 interface ProgressScreenProps {
   bottomBar?: React.ReactNode;
@@ -30,8 +30,14 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const { userToken } = useAuth();
   const firstName = useUserFirstName(userToken);
   const { history: strengthHistory, loading: strengthHistoryLoading } = useStrengthHistory(userToken);
+  const { snapshot: cardioSnapshot, loading: cardioLoading } = useCardioProgressSnapshot(range);
 
-  const baseSnapshot = useMemo(() => PROGRESS_MOCK_SNAPSHOTS[domain][range], [domain, range]);
+  const baseSnapshot = useMemo(() => {
+    if (domain === "cardio" && cardioSnapshot) {
+      return cardioSnapshot;
+    }
+    return PROGRESS_MOCK_SNAPSHOTS[domain][range];
+  }, [cardioSnapshot, domain, range]);
   const snapshot = useMemo(() => {
     if (domain === "strength" && strengthHistory.length > 0) {
       return { ...baseSnapshot, history: strengthHistory };
@@ -41,8 +47,13 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const valueFormatter = useMemo(() => getKpiFormatter(domain, selectedKpiIndex), [domain, selectedKpiIndex]);
   const trendSeries = snapshot.series[selectedKpiIndex] ?? snapshot.series[0] ?? [];
   const shouldShowHistory =
-    domain !== "measurement" && (snapshot.history.length > 0 || (domain === "strength" && strengthHistoryLoading));
-  const showHistoryLoading = domain === "strength" && strengthHistoryLoading && snapshot.history.length === 0;
+    domain !== "measurement" &&
+    (snapshot.history.length > 0 ||
+      (domain === "strength" && strengthHistoryLoading) ||
+      (domain === "cardio" && cardioLoading));
+  const showHistoryLoading =
+    (domain === "strength" && strengthHistoryLoading && snapshot.history.length === 0) ||
+    (domain === "cardio" && cardioLoading && snapshot.history.length === 0);
 
   useEffect(() => {
     setSelectedKpiIndex(0);
