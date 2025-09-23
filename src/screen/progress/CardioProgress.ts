@@ -824,22 +824,18 @@ class CardioProgressProvider implements ProgressDataProvider {
 
   private async populateFromIos(
     buckets: Bucket[],
-    start: Date,
-    end: Date,
+    startRaw: Date,
+    endRaw: Date,
     workouts: CardioWorkoutSummary[],
   ): Promise<void> {
     try {
       const { Health } = await import("capacitor-health");
-      
+      const start = startRaw.toISOString();
+      const end = endRaw.toISOString();
       // ADD: Enhanced permission request logging
-      logger.debug("[cardio] iOS populateFromIos: Starting", { 
-        start: start.toISOString(), 
-        end: end.toISOString(),
-        bucketCount: buckets.length,
-        dateRange: `${start.toISOString()} to ${end.toISOString()}`
-      });
-      
-      logger.debug("[cardio] iOS request permissions", { start: start.toISOString(), end: end.toISOString() });
+      logger.debug("[cardio] iOS populateFromIos: Starting", { start, end, bucketCount: buckets.length, dateRange: `${start} to ${end}`});
+      logger.debug("[cardio] iOS request permissions", { start, end});
+
       const permissionResult = await Health.requestHealthPermissions({
         permissions: [
           "READ_WORKOUTS",
@@ -851,27 +847,11 @@ class CardioProgressProvider implements ProgressDataProvider {
         ],
       });
       
-      logger.debug("[cardio] iOS permissions result", { 
-        permissions: permissionResult,
-        granted: Object.values(permissionResult).every(Boolean)
-      });
+      logger.debug("[cardio] iOS permissions result", {  permissions: permissionResult, granted: Object.values(permissionResult).every(Boolean)});
 
       // ADD: Enhanced workout query logging
-      logger.debug("[cardio] iOS queryWorkouts: Request", { 
-        start: start.toISOString(), 
-        end: end.toISOString(),
-        includeHeartRate: true,
-        includeRoute: false,
-        includeSteps: true
-      });
-      
-      const workoutResponse: any = await Health.queryWorkouts({
-        startDate: start.toISOString(),
-        endDate: end.toISOString(),
-        includeHeartRate: true,
-        includeRoute: false,
-        includeSteps: true,
-      });
+      logger.debug("[cardio] iOS queryWorkouts: Request", {start, end, includeHeartRate: true, includeRoute: false, includeSteps: true});
+      const workoutResponse: any = await Health.queryWorkouts({ startDate: start, endDate: end, includeHeartRate: true, includeRoute: false, includeSteps: true});
       
       // ADD: Basic workout response logging
       logger.debug("[cardio] iOS queryWorkouts: Response", {
@@ -973,19 +953,9 @@ class CardioProgressProvider implements ProgressDataProvider {
 
       try {
         // ADD: Enhanced steps aggregation logging
-        logger.debug("[cardio] iOS queryAggregated steps: Request", { 
-          start: start.toISOString(), 
-          end: end.toISOString(),
-          dataType: "steps",
-          bucket: "day"
-        });
+        logger.debug("[cardio] iOS queryAggregated steps: Request", { start, end, dataType: "steps", bucket: "day"});
         
-        const stepsAggregated: any = await Health.queryAggregated({
-          startDate: start.toISOString(),
-          endDate: end.toISOString(),
-          dataType: "steps",
-          bucket: "day",
-        });
+        const stepsAggregated: any = await Health.queryAggregated({startDate: start, endDate: end, dataType: "steps", bucket: "day"});
         
         // ADD: Enhanced steps response logging
         logger.debug("[cardio] iOS queryAggregated steps: Response", {
@@ -1038,19 +1008,9 @@ class CardioProgressProvider implements ProgressDataProvider {
 
       try {
         // ADD: Enhanced calories aggregation logging
-        logger.debug("[cardio] iOS queryAggregated active calories: Request", { 
-          start: start.toISOString(), 
-          end: end.toISOString(),
-          dataType: "active-calories",
-          bucket: "day"
-        });
+        logger.debug("[cardio] iOS queryAggregated active calories: Request", { start, end, dataType: "active-calories", bucket: "day"});
         
-        const caloriesAggregated: any = await Health.queryAggregated({
-          startDate: start.toISOString(),
-          endDate: end.toISOString(),
-          dataType: "active-calories",
-          bucket: "day",
-        });
+        const caloriesAggregated: any = await Health.queryAggregated({startDate: start, endDate: end, dataType: "active-calories", bucket: "day"});
         
         // ADD: Enhanced calories response logging
         logger.debug("[cardio] iOS queryAggregated active calories: Response", {
@@ -1069,9 +1029,7 @@ class CardioProgressProvider implements ProgressDataProvider {
         let totalCalories = 0;
         
         // ADD: Print all calorie data one by one in readable format
-        logger.debug("[cardio] iOS queryAggregated calories: Detailed calorie breakdown", { 
-          totalCalorieRows: calorieRows.length 
-        });
+        logger.debug("[cardio] iOS queryAggregated calories: Detailed calorie breakdown", { totalCalorieRows: calorieRows.length });
         
         const printCalorie = (row: any, i: number) => {
           logger.debug(`[cardio] iOS Calorie Row #${i + 1}/${calorieRows.length}`, {
@@ -1097,10 +1055,10 @@ class CardioProgressProvider implements ProgressDataProvider {
         }
         
         logger.debug("[cardio] iOS calories processed", {
-          processedRows: processedCalories,
+          processedRows: processedCalories, 
           totalCalories,
-          bucketsWithCalories: buckets.filter(b => b.totals.calories > 0).length
-        });
+          bucketsWithCalories: buckets.filter(b => b.totals.calories > 0).length});
+
       } catch (error) {
         logger.debug("[cardio] iOS calorie aggregation failed", error);
       }
