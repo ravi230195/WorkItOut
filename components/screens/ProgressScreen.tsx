@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import AppScreen from "../layouts/AppScreen";
-import type { TimeRange } from "@/types/progress";
+import type { TimeRange } from "../../src/types/progress";
 import type { HistoryEntry, ProgressDomain } from "../progress/Progress.types";
 import { PROGRESS_MOCK_SNAPSHOTS } from "./progress/MockData";
 import { TrendOverview } from "./progress/TrendOverview";
@@ -9,6 +9,7 @@ import { KPI_COLORS, getEncouragement, getKpiFormatter } from "./progress/util";
 import { HistorySection } from "./progress/HistorySection";
 import { KpiTiles } from "./progress/KpiTiles";
 import { useAuth } from "../AuthContext";
+import { logger } from "../../utils/logging";
 
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { Stack } from "../layouts";
@@ -58,6 +59,36 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   useEffect(() => {
     setSelectedKpiIndex(0);
   }, [domain, range]);
+
+  // ADD: Log when cardio domain is selected and data is requested
+  useEffect(() => {
+    if (domain === "cardio") {
+      logger.debug("[cardio] ProgressScreen: Cardio domain selected", { 
+        range, 
+        selectedKpiIndex,
+        hasCardioSnapshot: !!cardioSnapshot,
+        cardioLoading 
+      });
+    }
+  }, [domain, range, selectedKpiIndex, cardioSnapshot, cardioLoading]);
+
+  // ADD: Log when snapshot data changes
+  useEffect(() => {
+    if (domain === "cardio" && cardioSnapshot) {
+      logger.debug("[cardio] ProgressScreen: Cardio snapshot received", {
+        range,
+        kpiCount: cardioSnapshot.kpis?.length || 0,
+        seriesCount: cardioSnapshot.series?.length || 0,
+        historyCount: cardioSnapshot.history?.length || 0,
+        kpis: cardioSnapshot.kpis?.map(kpi => ({
+          title: kpi.title,
+          value: kpi.value,
+          currentNumeric: kpi.currentNumeric,
+          previous: kpi.previous
+        }))
+      });
+    }
+  }, [domain, cardioSnapshot]);
 
   const trendColor = KPI_COLORS[selectedKpiIndex % KPI_COLORS.length];
 

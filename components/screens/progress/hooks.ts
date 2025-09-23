@@ -125,25 +125,22 @@ function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
   const series = CARDIO_FOCUS_ORDER.map((focus) => {
     const entry = raw.series[focus];
     if (!entry) return [];
-    return entry.current.map((point: SeriesPoint) => ({
+    return entry.current.map((point) => ({
       x: point.iso,
       y: point.value,
       isPersonalBest: point.isPersonalBest,
     }));
   });
 
-  const kpis = raw.kpis.map((kpi: CardioKpi) => {
-    const { title, value, unit, previous, currentNumeric } = kpi;
-    return {
-      title,
-      value,
-      unit,
-      previous,
-      currentNumeric,
-    };
-  });
+  const kpis = raw.kpis.map(({ title, value, unit, previous, currentNumeric }) => ({
+    title,
+    value,
+    unit,
+    previous,
+    currentNumeric,
+  }));
 
-  const history: HistoryEntry[] = raw.workouts.map((workout: CardioWorkoutSummary) => ({
+  const history: HistoryEntry[] = raw.workouts.map((workout) => ({
     type: "cardio",
     id: workout.id,
     activity: workout.activity,
@@ -167,17 +164,46 @@ export function useCardioProgressSnapshot(range: TimeRange) {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    
+    // ADD: Log hook initialization
+    logger.debug("[cardio] useCardioProgressSnapshot: Hook initialized", { range });
+    
     const unavailable = toSnapshot(cardioProvider.getUnavailableSnapshot(range));
     setSnapshot(unavailable);
+    
+    // ADD: Log when calling provider
+    logger.debug("[cardio] useCardioProgressSnapshot: Calling cardioProvider.snapshot", { range });
+    
     cardioProvider
       .snapshot(range)
-      .then((raw) => {
+      .then((raw: any) => {
         if (cancelled) return;
-        setSnapshot(toSnapshot(raw));
+        
+        // ADD: Log raw data received from provider
+        logger.debug("[cardio] useCardioProgressSnapshot: Raw snapshot received from provider", {
+          range,
+          seriesKeys: Object.keys(raw.series || {}),
+          kpiCount: raw.kpis?.length || 0,
+          workoutCount: raw.workouts?.length || 0,
+          bestCount: raw.bests?.length || 0,
+          hasTargetLine: !!raw.targetLine
+        });
+        
+        const converted = toSnapshot(raw);
+        
+        // ADD: Log converted data
+        logger.debug("[cardio] useCardioProgressSnapshot: Converted to Snapshot format", {
+          range,
+          seriesCount: converted.series?.length || 0,
+          kpiCount: converted.kpis?.length || 0,
+          historyCount: converted.history?.length || 0
+        });
+        
+        setSnapshot(converted);
       })
-      .catch((error) => {
+      .catch((error: any) => {
         if (!cancelled) {
-          logger.debug("[cardio] Failed to load cardio snapshot", error);
+          logger.debug("[cardio] useCardioProgressSnapshot: Failed to load cardio snapshot", { range, error });
           setSnapshot(unavailable);
         }
       })
