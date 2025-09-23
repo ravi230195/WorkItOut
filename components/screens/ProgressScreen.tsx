@@ -8,8 +8,6 @@ import { TrendChart } from "./progress/TrendChart";
 import {
   PROGRESS_THEME,
   KPI_COLORS,
-  normalizeActivity,
-  formatHistoryDate,
   estimateRoutineDurationMinutes,
   calculateTotalWeight,
   formatDuration,
@@ -17,8 +15,9 @@ import {
   getEncouragement,
   extractFirstName,
   getKpiFormatter,
-  determineTrend,
 } from "./progress/util";
+import { HistorySection } from "./progress/HistorySection";
+import { KpiTiles } from "./progress/KpiTiles";
 import { useAuth } from "../AuthContext";
 
 import { supabaseAPI, SAMPLE_ROUTINE_USER_ID } from "../../utils/supabase/supabase-api";
@@ -67,29 +66,7 @@ const RANGE_BUTTON_STYLE = (isActive: boolean): CSSProperties => ({
   minWidth: 86,
 });
 
-const KPI_TILE_STYLE = (isActive: boolean, tileColor: string): CSSProperties => ({
-  backgroundColor: isActive ? tileColor : PROGRESS_THEME.cardBackground,
-  border: isActive ? "none" : `1px solid ${PROGRESS_THEME.cardBorder}`,
-});
-
-const KPI_HEADER_CLASS_ACTIVE = "text-[#22313F]" as const;
-const KPI_HEADER_CLASS_INACTIVE = "text-[rgba(34,49,63,0.65)]" as const;
-
 const DOMAIN_OPTION_HOVER_CLASS = "hover:bg-[rgba(226,125,96,0.08)]" as const;
-
-const HISTORY_SECTION_STYLE: CSSProperties = {
-  borderColor: PROGRESS_THEME.cardBorder,
-  boxShadow: PROGRESS_THEME.cardShadow,
-};
-
-const HISTORY_ITEM_BUTTON_STYLE: CSSProperties & { ["--tw-ring-color"]?: string } = {
-  backgroundColor: PROGRESS_THEME.historyBackground,
-  ["--tw-ring-color"]: PROGRESS_THEME.accentPrimaryFocusRing,
-};
-
-const HISTORY_ITEM_STYLE: CSSProperties = {
-  backgroundColor: PROGRESS_THEME.historyBackground,
-};
 
 export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenProps) {
   const [domain, setDomain] = useState<ProgressDomain>("cardio");
@@ -326,137 +303,14 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
           </header>
           <TrendChart data={trendSeries} color={trendColor} range={range} formatter={valueFormatter} />
         </section>
-        <section className="mt-8 grid grid-cols-2 gap-4">
-          {snapshot.kpis.map((kpi, index) => {
-            const isActive = index === selectedKpiIndex;
-            const tileColor = KPI_COLORS[index] ?? KPI_COLORS[0];
-            const formatter = getKpiFormatter(domain, index);
-            const previous = kpi.previous ?? null;
-            const currentNumeric = kpi.currentNumeric ?? null;
-            const trend = determineTrend(currentNumeric, previous);
-            const displayUnit = kpi.unit && kpi.unit.toLowerCase() !== "sessions" ? kpi.unit : undefined;
-            return (
-              <button
-                key={`${domain}-${range}-${kpi.title}`}
-                type="button"
-                onClick={() => setSelectedKpiIndex(index)}
-                className={`rounded-2xl px-5 py-4 text-left shadow-[0_16px_28px_-18px_rgba(30,36,50,0.35)] transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                  isActive ? "ring-0" : "ring-0"
-                }`}
-                style={KPI_TILE_STYLE(isActive, tileColor)}
-                aria-pressed={isActive}
-                aria-label={`${kpi.title} ${kpi.value}`}
-              >
-                <header
-                  className={`text-xs font-semibold uppercase tracking-wide ${
-                    isActive ? KPI_HEADER_CLASS_ACTIVE : KPI_HEADER_CLASS_INACTIVE
-                  }`}
-                >
-                  {displayUnit ? `${kpi.title} (${displayUnit})` : kpi.title}
-                </header>
-                <div className={`mt-3 text-3xl font-semibold ${isActive ? "text-[#111111]" : "text-[#111111]"}`}>
-                  {kpi.value}
-                </div>
-                {previous !== null && currentNumeric !== null ? (
-                  <p
-                    className={`mt-2 flex items-center gap-1 text-xs font-medium ${
-                      isActive ? trend.colorActive : trend.color
-                    }`}
-                  >
-                    <span>{trend.icon}</span>
-                    <span>
-                      {trend.text} {formatter(Math.abs(trend.delta))}
-                    </span>
-                  </p>
-                ) : null}
-              </button>
-            );
-          })}
-        </section>
+        <KpiTiles domain={domain} kpis={snapshot.kpis} selectedIndex={selectedKpiIndex} onSelect={setSelectedKpiIndex} />
         <Spacer y="sm" />
         {shouldShowHistory ? (
-          <section
-            className="rounded-3xl border bg-white p-5"
-            style={HISTORY_SECTION_STYLE}
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[#111111]">History</h2>
-              <span className="text-xs font-medium" style={{ color: PROGRESS_THEME.textSubtle }}>
-                Latest to oldest
-              </span>
-            </div>
-            {showHistoryLoading ? (
-              <div className="mt-4 text-sm font-medium" style={{ color: PROGRESS_THEME.textMuted }}>
-                Loading sample routines...
-              </div>
-            ) : (
-              <ul className="mt-4 space-y-3">
-                {[...snapshot.history]
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .map((entry) => {
-                    if (entry.type === "strength") {
-                      const content = (
-                        <>
-                          <div>
-                            <p className="text-sm font-semibold text-[#111111]">{entry.name}</p>
-                            <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
-                              {formatHistoryDate(entry.date)} · {entry.duration}
-                            </p>
-                          </div>
-                          <p className="text-sm font-semibold text-[#111111]">{entry.totalWeight}</p>
-                        </>
-                      );
-
-                      const canNavigate = typeof entry.routineTemplateId === "number" && !!onSelectRoutine;
-
-                          return (
-                            <li key={entry.id}>
-                              {canNavigate ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handleStrengthHistorySelect(entry)}
-                                  className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                                  style={HISTORY_ITEM_BUTTON_STYLE}
-                                >
-                                  {content}
-                                </button>
-                              ) : (
-                                <div
-                                  className="flex items-center justify-between rounded-2xl px-4 py-3"
-                                  style={HISTORY_ITEM_STYLE}
-                                >
-                                  {content}
-                                </div>
-                              )}
-                            </li>
-                          );
-                    }
-                    return (
-                      <li
-                        key={entry.id}
-                        className="flex items-center justify-between rounded-2xl px-4 py-3"
-                        style={HISTORY_ITEM_STYLE}
-                      >
-                        <div>
-                          <p className="text-sm font-semibold text-[#111111]">{normalizeActivity(entry.activity)}</p>
-                          <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
-                            {formatHistoryDate(entry.date)} · {entry.duration}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-[#111111]">{entry.distance}</p>
-                          {entry.calories ? (
-                            <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
-                              {entry.calories}
-                            </p>
-                          ) : null}
-                        </div>
-                      </li>
-                    );
-                  })}
-              </ul>
-            )}
-          </section>
+          <HistorySection
+            entries={snapshot.history}
+            showLoading={showHistoryLoading}
+            onSelectStrength={domain === "strength" ? handleStrengthHistorySelect : undefined}
+          />
         ) : null}
       </Stack>
     </AppScreen>
