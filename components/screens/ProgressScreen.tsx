@@ -5,12 +5,27 @@ import { scaleLinear, scalePoint } from "d3-scale";
 import AppScreen from "../layouts/AppScreen";
 import type { TimeRange } from "../../src/types/progress";
 import type { HistoryEntry, KpiDatum, ProgressDomain, TrendPoint } from "../progress/Progress.types";
-import { PROGRESS_MOCK_SNAPSHOTS } from "../progress/progressScreen.mockData";
+import { PROGRESS_THEME } from "./progress/constants";
+import { PROGRESS_MOCK_SNAPSHOTS } from "./progress/MockData";
+import {
+  calculateTotalWeight,
+  determineTrend,
+  estimateRoutineDurationMinutes,
+  extractFirstName,
+  formatDayLabel,
+  formatDuration,
+  formatHistoryDate,
+  formatTickValue,
+  formatWeight,
+  generateTicks,
+  getEncouragement,
+  getKpiFormatter,
+  normalizeActivity,
+} from "./progress/utils";
 import { useAuth } from "../AuthContext";
 
 import { supabaseAPI, SAMPLE_ROUTINE_USER_ID } from "../../utils/supabase/supabase-api";
-import type { Profile } from "../../utils/supabase/supabase-types";
-import { loadRoutineExercisesWithSets, type LoadedExercise } from "../../utils/routineLoader";
+import { loadRoutineExercisesWithSets } from "../../utils/routineLoader";
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { Stack } from "../layouts";
 import Spacer from "../layouts/Spacer";
@@ -191,8 +206,8 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
             aria-expanded={domainMenuOpen}
             className="flex w-full items-center justify-between rounded-2xl px-5 py-3 text-sm font-semibold text-[#E27D60] shadow-[0_12px_24px_-16px_rgba(30,36,50,0.4)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             style={{
-              backgroundColor: "transparent",
-              border: "1px solid #E27D60",
+              backgroundColor: PROGRESS_THEME.clear,
+              border: `1px solid ${PROGRESS_THEME.accent}`,
             }}
           >
             <span>{DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? "Select"}</span>
@@ -235,7 +250,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
         <section className="flex flex-wrap items-center justify-center gap-2 px-1 py-1">
           {RANGE_OPTIONS.map((option) => {
             const isActive = option.value === range;
-            const accent = "#68A691";
+            const accent = PROGRESS_THEME.rangeAccent;
             return (
               <button
                 key={option.value}
@@ -244,10 +259,10 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
                 aria-pressed={isActive}
                 className="rounded-full px-4 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[rgba(30,36,50,0.2)] sm:text-sm"
                 style={{
-                  backgroundColor: isActive ? accent : "transparent",
+                  backgroundColor: isActive ? accent : PROGRESS_THEME.clear,
                   color: isActive ? "#ffffff" : accent,
                   border: `1px solid ${accent}`,
-                  boxShadow: isActive ? "0 12px 22px -16px rgba(30,36,50,0.35)" : "0 2px 6px -4px rgba(30,36,50,0.18)",
+                  boxShadow: isActive ? PROGRESS_THEME.rangeShadowActive : PROGRESS_THEME.rangeShadowInactive,
                   transform: isActive ? "scale(1.05)" : "scale(1)",
                   transition: "all 0.28s cubic-bezier(0.22, 0.61, 0.36, 1)",
                   minWidth: 86,
@@ -293,8 +308,8 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
                   isActive ? "ring-0" : "ring-0"
                 }`}
                 style={{
-                  backgroundColor: isActive ? tileColor : "#FFFFFF",
-                  border: isActive ? "none" : "1px solid rgba(30,36,50,0.08)",
+                  backgroundColor: isActive ? tileColor : PROGRESS_THEME.surface,
+                  border: isActive ? "none" : `1px solid ${PROGRESS_THEME.border}`,
                 }}
                 aria-pressed={isActive}
                 aria-label={`${kpi.title} ${kpi.value}`}
@@ -399,242 +414,6 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
       </Stack>
     </AppScreen>
   );
-}
-
-function normalizeActivity(activity: string) {
-  const mapping: Record<string, string> = {
-    "outdoor walk": "Outdoor Walk",
-    "indoor walk": "Indoor Walk",
-    "outdoor run": "Outdoor Run",
-    "indoor run": "Indoor Run",
-    cycling: "Cycling",
-    elliptical: "Elliptical",
-    rowing: "Rowing",
-    "stair stepper": "Stair Stepper",
-    swimming: "Swimming",
-  };
-  return mapping[activity.trim().toLowerCase()] ?? activity;
-}
-
-function formatHistoryDate(iso: string) {
-  const date = new Date(iso);
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-function estimateRoutineDurationMinutes(exerciseCount: number) {
-  if (!Number.isFinite(exerciseCount) || exerciseCount <= 0) return 30;
-  return exerciseCount * 10;
-}
-
-function calculateTotalWeight(exercises: LoadedExercise[]) {
-  return exercises.reduce((total, exercise) => {
-    return (
-      total +
-      exercise.sets.reduce((setTotal, set) => {
-        const reps = Number.parseFloat(set.reps);
-        const weight = Number.parseFloat(set.weight);
-        if (!Number.isFinite(reps) || !Number.isFinite(weight)) return setTotal;
-        if (reps <= 0 || weight <= 0) return setTotal;
-        return setTotal + reps * weight;
-      }, 0)
-    );
-  }, 0);
-}
-
-function formatDuration(minutes: number) {
-  const safeMinutes = Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : 0;
-  const hours = Math.floor(safeMinutes / 60);
-  const remainingMinutes = safeMinutes % 60;
-  if (hours > 0) {
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
-  }
-  return `${Math.max(remainingMinutes, 1)} min`;
-}
-
-function formatWeight(weightKg: number) {
-  const safeWeight = Number.isFinite(weightKg) && weightKg > 0 ? weightKg : 0;
-  return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.round(safeWeight))} kg`;
-}
-
-function formatDayLabel(range: TimeRange, iso: string, index: number, total: number) {
-  const date = new Date(iso);
-  if (range === "week") {
-    return date.toLocaleDateString(undefined, { weekday: "short" });
-  }
-
-  if (range === "threeMonths") {
-    const month = date.toLocaleDateString(undefined, { month: "short" });
-    const weekInMonth = getWeekOfMonth(date);
-    return `${month} W${weekInMonth}`;
-  }
-
-  // six months
-  return date.toLocaleDateString(undefined, { month: "short" });
-}
-
-function formatTickValue(value: number) {
-  if (Math.abs(value) >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (Math.abs(value) >= 1_000) {
-    return `${(value / 1_000).toFixed(1)}k`;
-  }
-  return value.toFixed(0);
-}
-
-function generateTicks(domain: [number, number], count: number) {
-  const [min, max] = domain;
-  if (min === max) {
-    return [Number(min.toFixed(2))];
-  }
-  const step = (max - min) / Math.max(count - 1, 1);
-  return Array.from({ length: count }, (_, index) => Number((min + index * step).toFixed(2)));
-}
-
-function getWeekOfMonth(date: Date) {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const offset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-  return Math.floor((date.getDate() + offset - 1) / 7) + 1;
-}
-
-
-function getEncouragement(firstName?: string | null) {
-  const suffix = firstName ? `, ${firstName}` : "";
-  return `You’ve got this${suffix}`;
-}
-
-function extractFirstName(profile: Profile | null): string | null {
-  if (!profile) return null;
-  const direct = profile.first_name?.trim();
-  if (direct) {
-    return direct.split(/\s+/)[0];
-  }
-  const display = profile.display_name?.trim();
-  if (display) {
-    const [first] = display.split(/\s+/);
-    if (first) {
-      return first;
-    }
-  }
-  return null;
-}
-
-const TREND_ICONS = {
-  up: "▲",
-  down: "▼",
-  flat: "=",
-} as const;
-
-const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
-const decimalOneFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const decimalTwoFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-function clampNonNegative(value: number) {
-  return Number.isFinite(value) ? Math.max(0, value) : 0;
-}
-
-function formatDurationMinutes(value: number) {
-  const totalMinutes = clampNonNegative(value);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = Math.round(totalMinutes % 60);
-  if (hours > 0 && minutes > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  if (hours > 0) {
-    return `${hours}h`;
-  }
-  return `${minutes}m`;
-}
-
-function formatKilograms(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} kg`;
-}
-
-function formatDays(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} days`;
-}
-
-function formatWorkouts(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} workouts`;
-}
-
-function formatKilometers(value: number) {
-  return `${decimalOneFormatter.format(clampNonNegative(value))} km`;
-}
-
-function formatCalories(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} kcal`;
-}
-
-function formatSteps(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} steps`;
-}
-
-function formatCentimeters(value: number) {
-  return `${decimalTwoFormatter.format(clampNonNegative(value))} cm`;
-}
-
-function getKpiFormatter(domain: ProgressDomain, index: number): (value: number) => string {
-  switch (domain) {
-    case "strength":
-      return [
-        formatDurationMinutes,
-        formatWorkouts,
-        formatKilograms,
-        formatDays,
-      ][index] ?? ((value) => integerFormatter.format(Math.round(value)));
-    case "cardio":
-      return [
-        formatDurationMinutes,
-        formatKilometers,
-        formatCalories,
-        formatSteps,
-      ][index] ?? ((value) => integerFormatter.format(Math.round(value)));
-    case "measurement":
-    default:
-      return [formatCentimeters, formatCentimeters, formatCentimeters, formatCentimeters][index] ??
-        ((value) => decimalTwoFormatter.format(clampNonNegative(value)));
-  }
-}
-
-function determineTrend(currentValue: number | null, previousValue: number | null) {
-  if (currentValue === null || previousValue === null) {
-    return {
-      icon: TREND_ICONS.flat,
-      color: "text-[rgba(34,49,63,0.55)]",
-      colorActive: "text-[#22313F]",
-      text: "No change",
-      delta: 0,
-    };
-  }
-  const current = clampNonNegative(currentValue);
-  const previous = clampNonNegative(previousValue);
-  const difference = current - previous;
-  if (Math.abs(difference) < 0.01) {
-    return {
-      icon: TREND_ICONS.flat,
-      color: "text-[rgba(34,49,63,0.45)]",
-      colorActive: "text-[#22313F]",
-      text: "Same as prior",
-      delta: 0,
-    };
-  }
-  if (difference > 0) {
-    return {
-      icon: TREND_ICONS.up,
-      color: "text-[rgba(46,125,102,0.85)]",
-      colorActive: "text-[rgba(46,125,102,1)]",
-      text: "Up",
-      delta: difference,
-    };
-  }
-  return {
-    icon: TREND_ICONS.down,
-    color: "text-[rgba(226,125,96,0.85)]",
-    colorActive: "text-[rgba(226,125,96,1)]",
-    text: "Down",
-    delta: Math.abs(difference),
-  };
 }
 
 const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }) => {
