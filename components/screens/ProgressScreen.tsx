@@ -4,7 +4,7 @@ import { scaleLinear, scalePoint } from "d3-scale";
 
 import AppScreen from "../layouts/AppScreen";
 import type { TimeRange } from "../../src/types/progress";
-import type { HistoryEntry, KpiDatum, ProgressDomain, TrendPoint } from "../progress/Progress.types";
+import type { HistoryEntry, KpiDatum, ProgressDomain, Snapshot, TrendPoint } from "../progress/Progress.types";
 import { PROGRESS_MOCK_SNAPSHOTS } from "../progress/progressScreen.mockData";
 import { useAuth } from "../AuthContext";
 
@@ -14,6 +14,8 @@ import { loadRoutineExercisesWithSets, type LoadedExercise } from "../../utils/r
 import { RoutineAccess } from "../../hooks/useAppNavigation";
 import { Stack } from "../layouts";
 import Spacer from "../layouts/Spacer";
+import { loadProgressDetailData, type ProgressDetailData } from "../../src/components/progress/ProgressDetailSection";
+import { logger } from "../../utils/logging";
 
 interface ProgressScreenProps {
   bottomBar?: React.ReactNode;
@@ -52,18 +54,26 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const [firstName, setFirstName] = useState<string | null>(null);
   const [strengthHistory, setStrengthHistory] = useState<HistoryEntry[]>([]);
   const [strengthHistoryLoading, setStrengthHistoryLoading] = useState(false);
+  const [cardioSnapshot, setCardioSnapshot] = useState<Snapshot | null>(null);
+  const [cardioLoading, setCardioLoading] = useState(false);
+  const [cardioError, setCardioError] = useState<string | null>(null);
 
   const baseSnapshot = useMemo(() => PROGRESS_MOCK_SNAPSHOTS[domain][range], [domain, range]);
   const snapshot = useMemo(() => {
+    if (domain === "cardio" && cardioSnapshot) {
+      return cardioSnapshot;
+    }
     if (domain === "strength" && strengthHistory.length > 0) {
       return { ...baseSnapshot, history: strengthHistory };
     }
     return baseSnapshot;
-  }, [baseSnapshot, domain, strengthHistory]);
+  }, [baseSnapshot, cardioSnapshot, domain, strengthHistory]);
   const valueFormatter = useMemo(() => getKpiFormatter(domain, selectedKpiIndex), [domain, selectedKpiIndex]);
   const trendSeries = snapshot.series[selectedKpiIndex] ?? snapshot.series[0] ?? [];
+  const isCardioDomain = domain === "cardio";
   const shouldShowHistory =
-    domain !== "measurement" && (snapshot.history.length > 0 || (domain === "strength" && strengthHistoryLoading));
+    domain !== "measurement" &&
+    (snapshot.history.length > 0 || (domain === "strength" && strengthHistoryLoading));
   const showHistoryLoading = domain === "strength" && strengthHistoryLoading && snapshot.history.length === 0;
 
   useEffect(() => {
@@ -157,6 +167,52 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
       cancelled = true;
     };
   }, [userToken]);
+
+  useEffect(() => {
+    if (domain !== "cardio") {
+      return;
+    }
+
+    let cancelled = false;
+    setCardioLoading(true);
+    setCardioError(null);
+
+    (async () => {
+      try {
+        const { data, usedFallback } = await loadProgressDetailData({
+          category: "cardio",
+          timeRange: range,
+          cardioFocus: "all",
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        if (usedFallback) {
+          setCardioSnapshot(null);
+          setCardioError("Unable to load cardio progress. Showing mock data.");
+        } else {
+          setCardioSnapshot(buildCardioSnapshot(baseSnapshot, data));
+        }
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        logger.warn("[progress] cardio snapshot load failed", error);
+        setCardioSnapshot(null);
+        setCardioError("Unable to load cardio progress. Showing mock data.");
+      } finally {
+        if (!cancelled) {
+          setCardioLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [baseSnapshot, domain, range]);
 
   const trendColor = KPI_COLORS[selectedKpiIndex % KPI_COLORS.length];
 
@@ -268,6 +324,11 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
               <p className="text-xs font-medium text-[rgba(34,49,63,0.65)]">
                 {RANGE_OPTIONS.find((opt) => opt.value === range)?.label ?? ""} overview
               </p>
+              {isCardioDomain && (cardioLoading || cardioError) ? (
+                <p className="text-xs font-medium text-[rgba(34,49,63,0.65)]">
+                  {cardioLoading ? "Loading cardio data..." : cardioError}
+                </p>
+              ) : null}
             </div>
             <div className="rounded-full border border-[rgba(30,36,50,0.12)] bg-[#F7F6F3] px-3 py-1 text-xs font-semibold text-[rgba(34,49,63,0.7)]">
               {DOMAIN_OPTIONS.find((opt) => opt.value === domain)?.label ?? ""}
@@ -373,10 +434,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
                       );
                     }
                     return (
-                      <li
-                        key={entry.id}
-                        className="flex items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3"
-                      >
+                      <li key={entry.id} className="flex items-center justify-between rounded-2xl bg-[#F8F6F3] px-4 py-3">
                         <div>
                           <p className="text-sm font-semibold text-[#111111]">{normalizeActivity(entry.activity)}</p>
                           <p className="text-xs text-[rgba(34,49,63,0.65)]">
@@ -419,6 +477,95 @@ function normalizeActivity(activity: string) {
 function formatHistoryDate(iso: string) {
   const date = new Date(iso);
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function buildCardioSnapshot(base: Snapshot, data: ProgressDetailData): Snapshot {
+  const primarySeries = convertSeriesToTrend(data.series);
+  const fallbackSeries = base.series.slice(1);
+  const mergedSeries = [primarySeries, ...fallbackSeries];
+
+  const kpis = data.kpis.length ? mergeKpis(data.kpis, base.kpis) : base.kpis;
+  const history = data.workouts.length ? data.workouts.map(mapWorkoutToHistoryEntry) : base.history;
+
+  return {
+    series: mergedSeries,
+    kpis,
+    history,
+  };
+}
+
+function convertSeriesToTrend(series: ProgressDetailData["series"]): TrendPoint[] {
+  return series.map((point) => ({
+    x: point.date,
+    y: point.value,
+    isPersonalBest: point.isPR ?? false,
+  }));
+}
+
+function mergeKpis(cardioKpis: ProgressDetailData["kpis"], fallback: KpiDatum[]): KpiDatum[] {
+  const converted = cardioKpis.map((kpi) => ({
+    title: kpi.label,
+    value: kpi.value,
+    unit: undefined,
+    previous: undefined,
+    currentNumeric: undefined,
+  }));
+
+  if (converted.length < fallback.length) {
+    return [...converted, ...fallback.slice(converted.length)];
+  }
+
+  return converted;
+}
+
+function mapWorkoutToHistoryEntry(workout: ProgressDetailData["workouts"][number]): HistoryEntry {
+  const { duration, distance, calories } = parseWorkoutDetails(workout.subtitle, workout.highlight);
+
+  return {
+    type: "cardio",
+    id: workout.id,
+    activity: workout.title,
+    date: workout.date,
+    duration,
+    distance,
+    calories,
+  };
+}
+
+function parseWorkoutDetails(subtitle: string, highlight: string) {
+  const parts = subtitle
+    .split("·")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const duration = parts[0] ?? "—";
+  const remainder = parts.slice(1);
+
+  let distance: string | null = null;
+  let calories: string | undefined;
+
+  const assignFrom = (value: string) => {
+    const normalized = value.trim();
+    if (!normalized) return;
+    const lower = normalized.toLowerCase();
+    if (lower.includes("km")) {
+      if (!distance) distance = normalized;
+    }
+    if (lower.includes("kcal")) {
+      if (!calories) calories = normalized;
+    }
+  };
+
+  assignFrom(highlight);
+  remainder.forEach(assignFrom);
+
+  const safeDistance = distance ?? (highlight.toLowerCase().includes("km") ? highlight : "—");
+
+  return {
+    duration,
+    distance: safeDistance,
+    calories,
+  };
 }
 
 function estimateRoutineDurationMinutes(exerciseCount: number) {

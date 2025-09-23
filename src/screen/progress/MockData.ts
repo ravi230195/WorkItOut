@@ -76,17 +76,17 @@ function genBodySeries(range: TimeRange): SeriesPoint[] {
 }
 
 export const MockProgressProvider: ProgressDataProvider = {
-  series: ({ category, range }) =>
+  series: async ({ category, range }) =>
     category === 'body'
       ? genBodySeries(range)
       : genSeries(range, BASE_MAP[category][range], JITTER[range], true),
 
-  previousSeries: ({ category, range }) =>
+  previousSeries: async ({ category, range }) =>
     category === 'body'
       ? genBodySeries(range).map((point) => ({ ...point, value: Number((point.value * 0.85).toFixed(1)) }))
       : genSeries(range, BASE_MAP[category][range] * 0.92, JITTER[range] * 0.85, false),
 
-  kpis: ({ category, range }): KPI[] => {
+  kpis: async ({ category, range }): Promise<KPI[]> => {
     if (category === 'strength') {
       return [
         { icon: '🏋️', label: 'Total Volume', value: '12,350 kg', deltaPct: 0.12 },
@@ -111,7 +111,7 @@ export const MockProgressProvider: ProgressDataProvider = {
     ];
   },
 
-  recentWorkouts: ({ category }) => {
+  recentWorkouts: async ({ category }) => {
     if (category === 'strength') {
       return [
         { id: 'w1', date: workoutDate(0), title: 'Upper Body', subtitle: 'Chest/Back · 52 m', highlight: '2,850 kg', hasPR: true },
@@ -133,7 +133,7 @@ export const MockProgressProvider: ProgressDataProvider = {
     ];
   },
 
-  bestsAllTime: ({ category }): BestRecord[] => (
+  bestsAllTime: async ({ category }): Promise<BestRecord[]> => (
     category === 'strength'
       ? [
           { label: 'Bench', value: '100kg × 8', date: '2025-02-14' },
@@ -150,7 +150,7 @@ export const MockProgressProvider: ProgressDataProvider = {
         ]
   ),
 
-  bestsInPeriod: ({ category }): BestRecord[] => (
+  bestsInPeriod: async ({ category }): Promise<BestRecord[]> => (
     category === 'strength'
       ? [{ label: 'Top Volume Day', value: '7,430 kg', date: iso(today) }]
       : category === 'cardio'
@@ -158,5 +158,6 @@ export const MockProgressProvider: ProgressDataProvider = {
       : [{ label: 'Largest Δ Weight', value: '-0.6 kg', date: iso(today) }]
   ),
 
-  targetLine: ({ category }) => (category === 'cardio' ? 40 : category === 'strength' ? 2500 : 0),
+  targetLine: async ({ category }) =>
+    category === 'cardio' ? 40 : category === 'strength' ? 2500 : 0,
 };

@@ -31,12 +31,35 @@ export interface BestRecord {
 }
 
 export interface ProgressDataProvider {
-  series(params: { category: ActivityCategory; range: TimeRange; muscle?: MuscleGroup }): SeriesPoint[];
-  previousSeries(params: { category: ActivityCategory; range: TimeRange; muscle?: MuscleGroup }): SeriesPoint[];
-  kpis(params: { category: ActivityCategory; range: TimeRange }): KPI[];
-  recentWorkouts(params: { category: ActivityCategory; range: TimeRange; limit?: number }): WorkoutSummary[];
-  bestsAllTime(params: { category: ActivityCategory }): BestRecord[];
-  bestsInPeriod(params: { category: ActivityCategory; range: TimeRange }): BestRecord[];
-  targetLine?(params: { category: ActivityCategory; range: TimeRange }): number | undefined;
+  series(params: {
+    category: ActivityCategory;
+    range: TimeRange;
+    muscle?: MuscleGroup;
+    cardioFocus?: string;
+  }): Promise<SeriesPoint[]>;
+  previousSeries(params: {
+    category: ActivityCategory;
+    range: TimeRange;
+    muscle?: MuscleGroup;
+    cardioFocus?: string;
+  }): Promise<SeriesPoint[]>;
+  kpis(params: { category: ActivityCategory; range: TimeRange; cardioFocus?: string }): Promise<KPI[]>;
+  recentWorkouts(params: {
+    category: ActivityCategory;
+    range: TimeRange;
+    limit?: number;
+    cardioFocus?: string;
+  }): Promise<WorkoutSummary[]>;
+  bestsAllTime(params: { category: ActivityCategory; cardioFocus?: string }): Promise<BestRecord[]>;
+  bestsInPeriod(params: {
+    category: ActivityCategory;
+    range: TimeRange;
+    cardioFocus?: string;
+  }): Promise<BestRecord[]>;
+  targetLine?(params: {
+    category: ActivityCategory;
+    range: TimeRange;
+    cardioFocus?: string;
+  }): Promise<number | undefined>;
 }
 
