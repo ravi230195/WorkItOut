@@ -10,9 +10,11 @@ import type {
   SeriesPoint,
   TimeRange,
 } from "@/types/progress";
+import { PROGRESS_MOCK_SNAPSHOTS } from "../../../components/screens/progress/MockData";
 import { logger } from "../../../utils/logging";
 
 const TARGET_MINUTES = 40;
+const CARDIO_FOCUS_LIST: CardioFocus[] = ["activeMinutes", "distance", "calories", "steps"];
 
 const ACTIVITY_LABELS: Record<string, string> = {
   "outdoor walk": "Outdoor Walk",
@@ -162,6 +164,67 @@ function minutesToDisplay(value: number) {
   return `${minuteFormatter.format(minutes)}m`;
 }
 
+function parseDurationLabel(raw: unknown): number {
+  if (typeof raw === "number") {
+    return Number.isFinite(raw) ? raw : 0;
+  }
+  if (typeof raw !== "string") return 0;
+  const trimmed = raw.trim();
+  if (!trimmed) return 0;
+
+  const colonParts = trimmed.split(":").map((part) => Number.parseFloat(part));
+  if (colonParts.every((part) => Number.isFinite(part))) {
+    if (colonParts.length === 3) {
+      const [hours, minutes, seconds] = colonParts;
+      return hours * 60 + minutes + seconds / 60;
+    }
+    if (colonParts.length === 2) {
+      const [minutes, seconds] = colonParts;
+      return minutes + seconds / 60;
+    }
+  }
+
+  const numberMatch = trimmed.match(/(-?\d+(?:\.\d+)?)/);
+  if (!numberMatch) return 0;
+  const value = Number.parseFloat(numberMatch[1]);
+  if (!Number.isFinite(value)) return 0;
+  if (/h/i.test(trimmed) && !/min/i.test(trimmed)) {
+    return value * 60;
+  }
+  return value;
+}
+
+function parseDistanceValue(raw: unknown): number | undefined {
+  if (typeof raw === "number") {
+    return Number.isFinite(raw) ? raw : undefined;
+  }
+  if (typeof raw !== "string") return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  const numberMatch = trimmed.match(/(-?\d+(?:\.\d+)?)/);
+  if (!numberMatch) return undefined;
+  const value = Number.parseFloat(numberMatch[1]);
+  if (!Number.isFinite(value)) return undefined;
+  if (/mile/i.test(trimmed)) {
+    return value * 1.60934;
+  }
+  if (/meter/i.test(trimmed) && !/kilometer/i.test(trimmed)) {
+    return value / 1000;
+  }
+  return value;
+}
+
+function parseCaloriesValue(raw: unknown): number | undefined {
+  if (typeof raw === "number") {
+    return Number.isFinite(raw) ? raw : undefined;
+  }
+  if (typeof raw !== "string") return undefined;
+  const numberMatch = raw.match(/(-?\d+(?:\.\d+)?)/);
+  if (!numberMatch) return undefined;
+  const value = Number.parseFloat(numberMatch[1]);
+  return Number.isFinite(value) ? value : undefined;
+}
+
 function kilometersToDisplay(value: number) {
   return `${kmFormatter.format(Math.max(0, value))} km`;
 }
@@ -177,14 +240,71 @@ function stepsToDisplay(value: number) {
 class CardioProgressProvider implements ProgressDataProvider {
   private cache = new Map<TimeRange, Promise<AggregatedData>>();
 
+  private useMockFallback = false;
+
+  private mockSnapshotCache = new Map<TimeRange, CardioProgressSnapshot>();
+
   private platformPromise?: Promise<string>;
 
+  private async withNativeFallback<T>(
+    range: TimeRange,
+    loader: () => Promise<T>,
+    fallback: () => T,
+  ): Promise<T> {
+    if (this.useMockFallback) {
+      return Promise.resolve(fallback());
+    }
+
+    try {
+      return await loader();
+    } catch (error) {
+      if (!this.useMockFallback) {
+        logger.debug("[cardio] Falling back to mock cardio data", { range, error });
+      }
+      this.useMockFallback = true;
+      return Promise.resolve(fallback());
+    }
+  }
+
   async series(range: TimeRange, focus: CardioFocus, options?: { compare?: boolean }): Promise<CardioSeriesResponse> {
+    return this.withNativeFallback(
+      range,
+      () => this.seriesNative(range, focus, options),
+      () => this.seriesFromMock(range, focus, options),
+    );
+  }
+
+  async kpis(range: TimeRange): Promise<CardioKpi[]> {
+    return this.withNativeFallback(range, () => this.kpisNative(range), () => this.kpisFromMock(range));
+  }
+
+  async recentWorkouts(range: TimeRange): Promise<CardioWorkoutSummary[]> {
+    return this.withNativeFallback(range, () => this.recentWorkoutsNative(range), () => this.recentWorkoutsFromMock(range));
+  }
+
+  async bests(range: TimeRange): Promise<CardioBest[]> {
+    return this.withNativeFallback(range, () => this.bestsNative(range), () => this.bestsFromMock(range));
+  }
+
+  async targetLine(range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null> {
+    return this.withNativeFallback(range, () => this.targetLineNative(range, focus), () => this.targetLineFromMock(range, focus));
+  }
+
+  async snapshot(range: TimeRange): Promise<CardioProgressSnapshot> {
+    return this.withNativeFallback(range, () => this.snapshotNative(range), () => this.snapshotFromMock(range));
+  }
+
+  private async seriesNative(
+    range: TimeRange,
+    focus: CardioFocus,
+    options?: { compare?: boolean },
+  ): Promise<CardioSeriesResponse> {
     const data = await this.ensure(range);
     const selector = METRIC_SELECTORS[focus];
     const previousValues = data.previous.map((bucket) => selector(bucket));
     const historicalMax = previousValues.length ? Math.max(...previousValues) : 0;
-    const previous: SeriesPoint[] | undefined = options?.compare !== false && data.previous.length
+    const includePrevious = options?.compare !== false;
+    const previous: SeriesPoint[] | undefined = includePrevious && data.previous.length
       ? data.previous.map((bucket) => ({ iso: bucket.iso, value: selector(bucket) }))
       : undefined;
 
@@ -195,10 +315,10 @@ class CardioProgressProvider implements ProgressDataProvider {
     });
 
     const personalBest = Math.max(historicalMax, ...current.map((point) => point.value));
-    return { focus, current, previous, personalBest };
+    return { focus, current, previous, personalBest: personalBest > 0 ? personalBest : undefined };
   }
 
-  async kpis(range: TimeRange): Promise<CardioKpi[]> {
+  private async kpisNative(range: TimeRange): Promise<CardioKpi[]> {
     const data = await this.ensure(range);
     const minutesCurrent = data.current.reduce((sum, bucket) => sum + bucket.totals.minutes, 0);
     const minutesPrevious = data.previous.reduce((sum, bucket) => sum + bucket.totals.minutes, 0);
@@ -213,7 +333,7 @@ class CardioProgressProvider implements ProgressDataProvider {
       {
         key: "activeMinutes",
         title: "Total Time",
-        unit: "hours",
+        unit: "minutes",
         value: minutesToDisplay(minutesCurrent),
         currentNumeric: minutesCurrent,
         previous: minutesPrevious,
@@ -222,7 +342,7 @@ class CardioProgressProvider implements ProgressDataProvider {
         key: "distance",
         title: "Distance",
         unit: "km",
-        value: kilometersToDisplay(distanceCurrent),
+        value: `${kilometersToDisplay(distanceCurrent)} km`,
         currentNumeric: distanceCurrent,
         previous: distancePrevious,
       },
@@ -244,7 +364,7 @@ class CardioProgressProvider implements ProgressDataProvider {
     ];
   }
 
-  async recentWorkouts(range: TimeRange): Promise<CardioWorkoutSummary[]> {
+  private async recentWorkoutsNative(range: TimeRange): Promise<CardioWorkoutSummary[]> {
     const data = await this.ensure(range);
     const currentStart = data.current[0]?.start ?? new Date();
     const currentEnd = data.current[data.current.length - 1]?.end ?? new Date();
@@ -256,8 +376,192 @@ class CardioProgressProvider implements ProgressDataProvider {
     return filtered.slice(0, 6);
   }
 
-  async bests(range: TimeRange): Promise<CardioBest[]> {
-    const workouts = await this.recentWorkouts(range);
+  private async bestsNative(range: TimeRange): Promise<CardioBest[]> {
+    const workouts = await this.recentWorkoutsNative(range);
+    return this.computeBestsFromWorkouts(workouts);
+  }
+
+  private async targetLineNative(_range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null> {
+    if (focus !== "activeMinutes") return null;
+    return { focus, value: TARGET_MINUTES, unit: "minutes" };
+  }
+
+  private async snapshotNative(range: TimeRange): Promise<CardioProgressSnapshot> {
+    const [minutesSeries, distanceSeries, caloriesSeries, stepsSeries, kpis, workouts, bests, targetLine] = await Promise.all([
+      this.seriesNative(range, "activeMinutes"),
+      this.seriesNative(range, "distance"),
+      this.seriesNative(range, "calories"),
+      this.seriesNative(range, "steps"),
+      this.kpisNative(range),
+      this.recentWorkoutsNative(range),
+      this.bestsNative(range),
+      this.targetLineNative(range, "activeMinutes"),
+    ]);
+
+    return {
+      range,
+      series: {
+        activeMinutes: minutesSeries,
+        distance: distanceSeries,
+        calories: caloriesSeries,
+        steps: stepsSeries,
+      },
+      kpis,
+      workouts,
+      bests,
+      targetLine,
+    };
+  }
+
+  private seriesFromMock(
+    range: TimeRange,
+    focus: CardioFocus,
+    options?: { compare?: boolean },
+  ): CardioSeriesResponse {
+    const snapshot = this.getMockSnapshot(range);
+    const base = snapshot.series[focus];
+    const includePrevious = options?.compare !== false;
+    return {
+      focus,
+      current: base.current.map((point) => ({ ...point })),
+      previous: includePrevious && base.previous ? base.previous.map((point) => ({ ...point })) : undefined,
+      personalBest: base.personalBest,
+    };
+  }
+
+  private kpisFromMock(range: TimeRange): CardioKpi[] {
+    const snapshot = this.getMockSnapshot(range);
+    return snapshot.kpis.map((kpi) => ({ ...kpi }));
+  }
+
+  private recentWorkoutsFromMock(range: TimeRange): CardioWorkoutSummary[] {
+    const snapshot = this.getMockSnapshot(range);
+    return snapshot.workouts.map((workout) => ({ ...workout }));
+  }
+
+  private bestsFromMock(range: TimeRange): CardioBest[] {
+    const snapshot = this.getMockSnapshot(range);
+    return snapshot.bests.map((best) => ({ ...best }));
+  }
+
+  private targetLineFromMock(range: TimeRange, focus: CardioFocus): CardioTargetLine | null {
+    if (focus !== "activeMinutes") return null;
+    const snapshot = this.getMockSnapshot(range);
+    return snapshot.targetLine ? { ...snapshot.targetLine } : { focus, value: TARGET_MINUTES, unit: "minutes" };
+  }
+
+  private snapshotFromMock(range: TimeRange): CardioProgressSnapshot {
+    const base = this.getMockSnapshot(range);
+    return {
+      range,
+      series: {
+        activeMinutes: this.seriesFromMock(range, "activeMinutes"),
+        distance: this.seriesFromMock(range, "distance"),
+        calories: this.seriesFromMock(range, "calories"),
+        steps: this.seriesFromMock(range, "steps"),
+      },
+      kpis: this.kpisFromMock(range),
+      workouts: this.recentWorkoutsFromMock(range),
+      bests: this.bestsFromMock(range),
+      targetLine: this.targetLineFromMock(range, "activeMinutes"),
+    };
+  }
+
+  private getMockSnapshot(range: TimeRange): CardioProgressSnapshot {
+    if (!this.mockSnapshotCache.has(range)) {
+      this.mockSnapshotCache.set(range, this.buildMockSnapshot(range));
+    }
+    return this.mockSnapshotCache.get(range)!;
+  }
+
+  private buildMockSnapshot(range: TimeRange): CardioProgressSnapshot {
+    const base = PROGRESS_MOCK_SNAPSHOTS.cardio?.[range];
+
+    const series: Record<CardioFocus, CardioSeriesResponse> = {
+      activeMinutes: { focus: "activeMinutes", current: [] },
+      distance: { focus: "distance", current: [] },
+      calories: { focus: "calories", current: [] },
+      steps: { focus: "steps", current: [] },
+    };
+
+    if (base?.series) {
+      CARDIO_FOCUS_LIST.forEach((focus, index) => {
+        const points = base.series[index] ?? [];
+        const current = points.map((point) => ({
+          iso: typeof point.x === "string" ? point.x : new Date(point.x).toISOString(),
+          value: safeNumber(point.y),
+          isPersonalBest: point.isPersonalBest,
+        }));
+        const personalBest = current.length ? Math.max(...current.map((value) => value.value)) : undefined;
+        series[focus] = { focus, current, personalBest };
+      });
+    }
+
+    const kpis = CARDIO_FOCUS_LIST.map((focus, index) => {
+      const card = base?.kpis?.[index];
+      return {
+        key: focus,
+        title: card?.title ?? this.defaultKpiTitle(focus),
+        value: card?.value ?? "0",
+        unit: card?.unit,
+        previous: typeof card?.previous === "number" ? card.previous : undefined,
+        currentNumeric: typeof card?.currentNumeric === "number" ? card.currentNumeric : undefined,
+      } satisfies CardioKpi;
+    });
+
+    const workouts: CardioWorkoutSummary[] = Array.isArray(base?.history)
+      ? base.history
+          .filter((entry: any) => entry?.type === "cardio")
+          .map((entry: any) => this.convertMockHistoryEntry(entry))
+      : [];
+
+    const bests = this.computeBestsFromWorkouts(workouts);
+
+    return {
+      range,
+      series,
+      kpis,
+      workouts,
+      bests,
+      targetLine: { focus: "activeMinutes", value: TARGET_MINUTES, unit: "minutes" },
+    };
+  }
+
+  private defaultKpiTitle(focus: CardioFocus): string {
+    switch (focus) {
+      case "distance":
+        return "Distance";
+      case "calories":
+        return "Calories";
+      case "steps":
+        return "Steps";
+      case "activeMinutes":
+      default:
+        return "Total Time";
+    }
+  }
+
+  private convertMockHistoryEntry(entry: any): CardioWorkoutSummary {
+    const start = new Date(entry?.date ?? Date.now());
+    const durationMinutes = parseDurationLabel(entry?.duration);
+    const end = Number.isFinite(durationMinutes)
+      ? new Date(start.getTime() + durationMinutes * MIN_MS)
+      : start;
+    const distanceKm = parseDistanceValue(entry?.distance);
+    const calories = parseCaloriesValue(entry?.calories);
+
+    return {
+      id: String(entry?.id ?? `mock-${start.getTime()}`),
+      activity: normalizeActivityName(entry?.activity),
+      start: start.toISOString(),
+      end: end.toISOString(),
+      durationMinutes,
+      distanceKm: typeof distanceKm === "number" && Number.isFinite(distanceKm) ? distanceKm : undefined,
+      calories: typeof calories === "number" && Number.isFinite(calories) ? calories : undefined,
+    };
+  }
+
+  private computeBestsFromWorkouts(workouts: CardioWorkoutSummary[]): CardioBest[] {
     if (workouts.length === 0) return [];
 
     const longestDistance = workouts.reduce<CardioWorkoutSummary | null>((best, workout) => {
@@ -315,38 +619,6 @@ class CardioProgressProvider implements ProgressDataProvider {
       });
     }
     return bests;
-  }
-
-  async targetLine(_range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null> {
-    if (focus !== "activeMinutes") return null;
-    return { focus, value: TARGET_MINUTES, unit: "minutes" };
-  }
-
-  async snapshot(range: TimeRange): Promise<CardioProgressSnapshot> {
-    const [minutesSeries, distanceSeries, caloriesSeries, stepsSeries, kpis, workouts, bests, targetLine] = await Promise.all([
-      this.series(range, "activeMinutes"),
-      this.series(range, "distance"),
-      this.series(range, "calories"),
-      this.series(range, "steps"),
-      this.kpis(range),
-      this.recentWorkouts(range),
-      this.bests(range),
-      this.targetLine(range, "activeMinutes"),
-    ]);
-
-    return {
-      range,
-      series: {
-        activeMinutes: minutesSeries,
-        distance: distanceSeries,
-        calories: caloriesSeries,
-        steps: stepsSeries,
-      },
-      kpis,
-      workouts,
-      bests,
-      targetLine,
-    };
   }
 
   private async ensure(range: TimeRange): Promise<AggregatedData> {
