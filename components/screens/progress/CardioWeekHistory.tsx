@@ -333,8 +333,13 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
                   )}
                   style={buttonStyle}
                 >
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="flex flex-1 items-start gap-3 md:min-w-0">
+                  <div
+                    className={cn(
+                      "grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3",
+                      "sm:gap-4",
+                    )}
+                  >
+                    <div className="flex items-start gap-3 sm:min-w-0">
                       <div
                         className="flex h-10 w-10 items-center justify-center rounded-full border"
                         style={iconWrapperStyle}
@@ -365,10 +370,14 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
 
                     <div
                       className={cn(
-                        "grid w-full grid-cols-2 gap-3 justify-items-end text-right",
-                        "sm:w-auto sm:grid-cols-4 md:ml-auto",
+                        "relative grid grid-cols-2 justify-items-end gap-x-4 gap-y-3 pl-4 text-right",
+                        "sm:min-w-[11rem] sm:grid-cols-1 sm:gap-y-2 sm:pl-6",
                       )}
                     >
+                      <span
+                        className="absolute inset-y-1 left-0 w-px rounded-full"
+                        style={{ backgroundColor: hexToRgba(accent, 0.35) }}
+                      />
                       <Metric icon={Timer} value={workout.duration} label="Duration" align="end" />
                       <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} align="end" />
                       <Metric icon={BarChart3} value={metricThree ?? "—"} label={labelThree} align="end" />
@@ -377,7 +386,7 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
 
                     <ChevronDown
                       className={cn(
-                        "h-4 w-4 self-start transition-transform md:self-center",
+                        "h-4 w-4 justify-self-end self-start transition-transform",
                         isOpen && "rotate-180",
                       )}
                       style={{ color: PROGRESS_THEME.textMuted }}
