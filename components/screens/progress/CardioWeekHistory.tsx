@@ -365,14 +365,14 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
 
                     <div
                       className={cn(
-                        "grid w-full grid-cols-2 gap-3 text-left",
-                        "sm:grid-cols-4",
+                        "grid w-full grid-cols-2 gap-3 justify-items-end text-right",
+                        "sm:w-auto sm:grid-cols-4 md:ml-auto",
                       )}
                     >
-                      <Metric icon={Timer} value={workout.duration} label="Duration" align="start" />
-                      <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} align="start" />
-                      <Metric icon={BarChart3} value={metricThree ?? "—"} label={labelThree} align="start" />
-                      <Metric icon={Zap} value={workout.calories} label="Calories" iconColor={accent} align="start" />
+                      <Metric icon={Timer} value={workout.duration} label="Duration" align="end" />
+                      <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} align="end" />
+                      <Metric icon={BarChart3} value={metricThree ?? "—"} label={labelThree} align="end" />
+                      <Metric icon={Zap} value={workout.calories} label="Calories" iconColor={accent} align="end" />
                     </div>
 
                     <ChevronDown
