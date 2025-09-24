@@ -365,15 +365,14 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
 
                     <div
                       className={cn(
-                        "grid w-full grid-cols-2 gap-3",
+                        "grid w-full grid-cols-2 gap-3 text-left",
                         "sm:grid-cols-4",
-                        "md:ml-auto md:w-fit md:justify-items-end",
                       )}
                     >
-                      <Metric icon={Timer} value={workout.duration} label="Duration" alignEnd />
-                      <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} alignEnd />
-                      <Metric icon={BarChart3} value={metricThree ?? "—"} label={labelThree} alignEnd />
-                      <Metric icon={Zap} value={workout.calories} label="Calories" iconColor={accent} alignEnd />
+                      <Metric icon={Timer} value={workout.duration} label="Duration" align="start" />
+                      <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} align="start" />
+                      <Metric icon={BarChart3} value={metricThree ?? "—"} label={labelThree} align="start" />
+                      <Metric icon={Zap} value={workout.calories} label="Calories" iconColor={accent} align="start" />
                     </div>
 
                     <ChevronDown
@@ -430,20 +429,28 @@ function Detail({ label, value }: DetailProps) {
   );
 }
 
+type MetricAlignment = "start" | "center" | "end";
+
 type MetricProps = {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   value: ReactNode;
   label: string;
   iconColor?: string;
-  alignEnd?: boolean;
+  align?: MetricAlignment;
 };
 
-function Metric({ icon: Icon, value, label, iconColor, alignEnd }: MetricProps) {
+const METRIC_ALIGN_CLASSES: Record<MetricAlignment, string> = {
+  start: "items-start text-left",
+  center: "items-center text-center",
+  end: "items-end text-right",
+};
+
+function Metric({ icon: Icon, value, label, iconColor, align = "center" }: MetricProps) {
   return (
     <div
       className={cn(
         "flex flex-col gap-1",
-        alignEnd ? "items-end text-right" : "items-center text-center",
+        METRIC_ALIGN_CLASSES[align],
       )}
     >
       <Icon className="h-4 w-4" style={{ color: iconColor ?? PROGRESS_THEME.textMuted }} />
