@@ -363,11 +363,17 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
                       </div>
                     </div>
 
-                    <div className="grid flex-1 grid-cols-2 gap-3 text-center sm:grid-cols-4">
-                      <Metric icon={Timer} value={workout.duration} label="Duration" />
-                      <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} />
-                      <Metric icon={BarChart3} value={metricThree ?? "—"} label={labelThree} />
-                      <Metric icon={Zap} value={workout.calories} label="Calories" iconColor={accent} />
+                    <div
+                      className={cn(
+                        "grid w-full grid-cols-2 gap-3",
+                        "sm:grid-cols-4",
+                        "md:ml-auto md:w-fit md:justify-items-end",
+                      )}
+                    >
+                      <Metric icon={Timer} value={workout.duration} label="Duration" alignEnd />
+                      <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} alignEnd />
+                      <Metric icon={BarChart3} value={metricThree ?? "—"} label={labelThree} alignEnd />
+                      <Metric icon={Zap} value={workout.calories} label="Calories" iconColor={accent} alignEnd />
                     </div>
 
                     <ChevronDown
@@ -429,11 +435,17 @@ type MetricProps = {
   value: ReactNode;
   label: string;
   iconColor?: string;
+  alignEnd?: boolean;
 };
 
-function Metric({ icon: Icon, value, label, iconColor }: MetricProps) {
+function Metric({ icon: Icon, value, label, iconColor, alignEnd }: MetricProps) {
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div
+      className={cn(
+        "flex flex-col gap-1",
+        alignEnd ? "items-end text-right" : "items-center text-center",
+      )}
+    >
       <Icon className="h-4 w-4" style={{ color: iconColor ?? PROGRESS_THEME.textMuted }} />
       <span className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
         {value}
