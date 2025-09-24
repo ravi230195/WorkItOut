@@ -1,4 +1,11 @@
-import { useMemo, useState, type PropsWithChildren } from "react";
+import {
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ComponentType,
+  type ReactNode,
+  type SVGProps,
+} from "react";
 import {
   Activity,
   BarChart3,
@@ -15,40 +22,16 @@ import {
   Zap,
 } from "lucide-react";
 
+import { PROGRESS_THEME } from "./util";
+
 const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" ");
-
-function Card({ className, children }: PropsWithChildren<{ className?: string }>) {
-  return (
-    <div
-      className={cn(
-        "rounded-3xl border shadow-xl bg-white/95 backdrop-blur-sm",
-        "border-[rgba(224,122,95,0.15)]",
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
-}
-
-function Badge({ className, children }: PropsWithChildren<{ className?: string }>) {
-  return (
-    <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-xs", className)}>
-      {children}
-    </span>
-  );
-}
-
-const Label = ({ children }: { children: React.ReactNode }) => (
-  <span className="text-[11px] leading-none text-black/60">{children}</span>
-);
-
-const Value = ({ children }: { children: React.ReactNode }) => (
-  <span className="text-[13px] font-medium text-black">{children}</span>
-);
 
 type Day = (typeof DATA.days)[number];
 type DayKey = Day["key"];
+
+type Workout = Day["workouts"][number];
+
+type StyleWithRing = CSSProperties & { ["--tw-ring-color"]?: string };
 
 const DATA = {
   days: [
@@ -147,38 +130,96 @@ const DATA = {
   ],
 } as const;
 
+const SECTION_STYLE: CSSProperties = {
+  borderColor: PROGRESS_THEME.cardBorder,
+  boxShadow: PROGRESS_THEME.cardShadow,
+};
+
+const WEEK_STRIP_STYLE: CSSProperties = {
+  borderColor: PROGRESS_THEME.borderSubtle,
+  backgroundColor: PROGRESS_THEME.cardBackground,
+};
+
+const DIVIDER_STYLE: CSSProperties = {
+  backgroundColor: PROGRESS_THEME.borderSubtle,
+};
+
+const KPI_CARD_STYLE: CSSProperties = {
+  borderColor: PROGRESS_THEME.borderSubtle,
+  backgroundColor: PROGRESS_THEME.cardBackground,
+};
+
+const DETAIL_CARD_STYLE: CSSProperties = {
+  borderColor: PROGRESS_THEME.borderSubtle,
+  backgroundColor: PROGRESS_THEME.historyBackground,
+};
+
+const WORKOUT_ACCENTS: Record<string, string> = {
+  strength: PROGRESS_THEME.accentPrimary,
+  cardio: PROGRESS_THEME.accentSecondary,
+  hiit: PROGRESS_THEME.accentSecondary,
+  mobility: PROGRESS_THEME.accentSecondary,
+};
+
+function hexToRgba(hex: string, alpha: number) {
+  const normalized = hex.replace("#", "");
+  const value = Number.parseInt(normalized, 16);
+  const isShort = normalized.length === 3;
+  const r = isShort ? ((value >> 8) & 0xf) * 17 : (value >> 16) & 0xff;
+  const g = isShort ? ((value >> 4) & 0xf) * 17 : (value >> 8) & 0xff;
+  const b = isShort ? (value & 0xf) * 17 : value & 0xff;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getAccentColor(workout: Workout) {
+  return WORKOUT_ACCENTS[workout.type ?? ""] ?? PROGRESS_THEME.accentPrimary;
+}
+
 type WeekStripProps = {
   value: DayKey;
   onChange: (value: DayKey) => void;
-  embedded?: boolean;
 };
 
-function WeekStrip({ value, onChange, embedded = false }: WeekStripProps) {
+function WeekStrip({ value, onChange }: WeekStripProps) {
   const labels = ["M", "T", "W", "T", "F", "S", "S"];
   const clickable: Record<number, DayKey> = { 0: "mon", 2: "today", 6: "sun" };
   const currentEntry = Object.entries(clickable).find(([, key]) => key === value);
-  const currentIndex = currentEntry ? currentEntry[0] : undefined;
+  const currentIndex = currentEntry ? Number(currentEntry[0]) : undefined;
 
   return (
-    <div className={cn(embedded ? "rounded-xl border bg-white/70 p-2 mb-1" : "rounded-2xl border bg-white/70 p-2")}>
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] text-black/60 ml-1">Week so far</span>
-        <div className="flex gap-1">
+    <div className="rounded-2xl border px-3 py-2" style={WEEK_STRIP_STYLE}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: PROGRESS_THEME.textMuted }}>
+          Week so far
+        </span>
+        <div className="flex items-center gap-1.5">
           {labels.map((label, index) => {
-            const isActive = String(index) === currentIndex;
             const isEnabled = index in clickable;
+            const isActive = currentIndex === index;
             const dayKey = clickable[index];
+            const baseStyle: CSSProperties = {
+              borderColor: PROGRESS_THEME.borderSubtle,
+              color: PROGRESS_THEME.textSubtle,
+            };
+            const activeStyle: CSSProperties = isActive
+              ? {
+                  backgroundColor: hexToRgba(PROGRESS_THEME.accentPrimary, 0.16),
+                  borderColor: PROGRESS_THEME.accentPrimary,
+                  color: PROGRESS_THEME.accentPrimary,
+                }
+              : {};
+
             return (
               <button
                 key={`${label}-${index}`}
-                onClick={() => isEnabled && onChange(dayKey)}
-                className={cn(
-                  "w-7 h-7 rounded-full grid place-items-center text-[11px] border",
-                  isEnabled ? "hover:bg-black/5" : "opacity-40 cursor-default",
-                  isActive &&
-                    "bg-[rgba(224,122,95,0.18)] border-[rgba(224,122,95,0.25)] text-[var(--warm-brown,#3b332e)]",
-                )}
                 type="button"
+                onClick={() => isEnabled && dayKey && onChange(dayKey)}
+                disabled={!isEnabled}
+                className={cn(
+                  "grid h-8 w-8 place-items-center rounded-full border text-[11px] font-semibold transition",
+                  isEnabled ? "hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" : "cursor-default opacity-40",
+                )}
+                style={{ ...baseStyle, ...activeStyle }}
               >
                 {label}
               </button>
@@ -190,178 +231,227 @@ function WeekStrip({ value, onChange, embedded = false }: WeekStripProps) {
   );
 }
 
-type UnifiedDailyWorkoutCardInnerProps = {
+type DailyWorkoutCardProps = {
   dayKey: DayKey;
   setDayKey: (value: DayKey) => void;
 };
 
-function UnifiedDailyWorkoutCardInner({ dayKey, setDayKey }: UnifiedDailyWorkoutCardInnerProps) {
+function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
   const day = useMemo(() => DATA.days.find((entry) => entry.key === dayKey) ?? DATA.days[0], [dayKey]);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
   return (
-    <Card className="w-full max-w-sm bg-white overflow-hidden">
-      <div className="p-3 pb-0">
-        <WeekStrip value={day.key} onChange={setDayKey} embedded />
-      </div>
+    <section className="w-full rounded-3xl border bg-white p-5" style={SECTION_STYLE}>
+      <div className="flex flex-col gap-5">
+        <WeekStrip value={day.key} onChange={setDayKey} />
 
-      <div className="p-3 pt-2">
-        <div className="grid grid-cols-[auto,1fr] items-center gap-2">
-          <div className="inline-flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-[rgb(224,122,95)]" />
-            <span className="text-sm font-medium">{day.dateLabel}</span>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium" style={{ color: PROGRESS_THEME.textPrimary }}>
+            <Calendar className="h-4 w-4" style={{ color: PROGRESS_THEME.accentPrimary }} />
+            <span>{day.dateLabel}</span>
           </div>
-          <div className="justify-self-end grid grid-flow-col auto-cols-max gap-1.5">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {[
-              { Icon: Flame, value: day.dailyTotals.calories },
-              { Icon: Clock, value: day.dailyTotals.time },
-              { Icon: MapPin, value: day.dailyTotals.distance },
-              { Icon: Footprints, value: day.dailyTotals.steps },
-            ].map(({ Icon, value }, index) => (
+              { Icon: Flame, label: "Calories", value: day.dailyTotals.calories },
+              { Icon: Clock, label: "Duration", value: day.dailyTotals.time },
+              { Icon: MapPin, label: "Distance", value: day.dailyTotals.distance },
+              { Icon: Footprints, label: "Steps", value: day.dailyTotals.steps },
+            ].map(({ Icon, label, value }) => (
               <div
-                key={index}
-                className="h-8 px-2 rounded-lg border bg-white/80 inline-flex items-center gap-1"
+                key={label}
+                className="flex items-center gap-2 rounded-2xl border px-3 py-2"
+                style={KPI_CARD_STYLE}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-medium leading-none">{value}</span>
+                <Icon className="h-4 w-4" style={{ color: PROGRESS_THEME.textMuted }} />
+                <div className="flex flex-col">
+                  <span className="text-[13px] font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+                    {value}
+                  </span>
+                  <span className="text-[11px] uppercase tracking-[0.08em]" style={{ color: PROGRESS_THEME.textMuted }}>
+                    {label}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
         </div>
-      </div>
 
-      <div className="px-3">
-        <div className="h-px bg-black/10" />
-      </div>
+        <div className="h-px" style={DIVIDER_STYLE} />
 
-      <div className="p-3">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Activity className="w-3.5 h-3.5 text-black/60" />
-          <h4 className="text-xs text-black/80">Workouts</h4>
-        </div>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4" style={{ color: PROGRESS_THEME.textMuted }} />
+            <h4 className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: PROGRESS_THEME.textSubtle }}>
+              Workouts
+            </h4>
+          </div>
 
-        <div className={cn(day.workouts.length > 2 ? "space-y-2 overflow-y-auto max-h-56 pr-1 -mr-1" : "space-y-2")}>
-          {day.workouts.map((workout) => {
-            const isStrength = "sets" in workout;
-            const isOpen = Boolean(expanded[workout.id]);
-            const metric2 = isStrength ? (workout as { exercises: number }).exercises : (workout as { distance?: string }).distance;
-            const label2 = isStrength ? "exercises" : "distance";
-            const metric3 = isStrength
-              ? (workout as { sets: number }).sets
-              : ("steps" in workout ? (workout as { steps: number }).steps : "—");
-            const label3 = isStrength ? "sets" : "steps";
+          <div
+            className={cn(
+              "space-y-3",
+              day.workouts.length > 2 && "max-h-64 overflow-y-auto",
+            )}
+          >
+            {day.workouts.map((workout) => {
+              const accent = getAccentColor(workout);
+              const isStrength = workout.type === "strength" || "sets" in workout;
+              const isOpen = Boolean(expanded[workout.id]);
+              const metricTwo = isStrength
+                ? (workout as { exercises: number }).exercises
+                : (workout as { distance?: string }).distance;
+              const labelTwo = isStrength ? "Exercises" : "Distance";
+              const metricThree = isStrength
+                ? (workout as { sets: number }).sets
+                : ("steps" in workout ? (workout as { steps: number }).steps : "—");
+              const labelThree = isStrength ? "Sets" : "Steps";
 
-            return (
-              <button
-                key={workout.id}
-                onClick={() =>
-                  setExpanded((previous) => ({ ...previous, [workout.id]: !previous[workout.id] }))
-                }
-                className={cn(
-                  "group w-full rounded-2xl border p-3 text-left transition-all",
-                  "bg-gradient-to-r from-[rgba(245,240,236,0.6)] to-[rgba(245,240,236,0.3)]",
-                  "border-[rgba(224,122,95,0.25)] hover:border-[rgba(224,122,95,0.4)]",
-                )}
-                type="button"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div
-                      className={cn(
-                        "w-7 h-7 rounded-full grid place-items-center border shrink-0",
-                        isStrength
-                          ? "bg-[rgba(224,122,95,0.16)] border-[rgba(224,122,95,0.25)]"
-                          : "bg-[rgba(92,140,120,0.16)] border-[rgba(92,140,120,0.25)]",
-                      )}
-                    >
-                      {isStrength ? (
-                        <Dumbbell className="w-3.5 h-3.5 text-[rgb(224,122,95)]" />
-                      ) : (
-                        <Activity className="w-3.5 h-3.5 text-[rgb(92,140,120)]" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h5 className="text-[14px] font-medium text-black truncate">{workout.name}</h5>
-                        {"personalRecords" in workout && workout.personalRecords ? (
-                          <Badge className="bg-[rgba(224,122,95,0.1)] text-[rgb(224,122,95)] border-[rgba(224,122,95,0.2)] h-5">
-                            <Trophy className="w-3 h-3 mr-1" />
-                            {workout.personalRecords}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <div className="mt-0.5">
-                        <Label>{workout.time}</Label>
-                      </div>
-                    </div>
-                  </div>
+              const buttonStyle: StyleWithRing = {
+                borderColor: hexToRgba(accent, 0.28),
+                backgroundColor: hexToRgba(accent, 0.12),
+                ["--tw-ring-color"]: hexToRgba(accent, 0.3),
+              };
 
-                  <div className="grid grid-cols-2 gap-2 text-center">
-                    <div className="flex flex-col items-center">
-                      <Timer className="w-3.5 h-3.5 text-black/50" />
-                      <Value>{workout.duration}</Value>
-                      <Label>duration</Label>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <Target className="w-3.5 h-3.5 text-black/50" />
-                      <Value>{metric2}</Value>
-                      <Label>{label2}</Label>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <BarChart3 className="w-3.5 h-3.5 text-black/50" />
-                      <Value>{metric3}</Value>
-                      <Label>{label3}</Label>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <Zap className="w-3.5 h-3.5 text-[rgb(224,122,95)]/80" />
-                      <Value>{workout.calories}</Value>
-                      <Label>calories</Label>
-                    </div>
-                  </div>
+              const iconWrapperStyle: CSSProperties = {
+                borderColor: hexToRgba(accent, 0.4),
+                backgroundColor: hexToRgba(accent, 0.2),
+                color: accent,
+              };
 
-                  <ChevronDown className={cn("w-4 h-4 text-black/40 transition-transform", isOpen && "rotate-180")} />
-                </div>
+              const badgeStyle: CSSProperties = {
+                borderColor: hexToRgba(accent, 0.35),
+                backgroundColor: hexToRgba(accent, 0.15),
+                color: accent,
+              };
 
-                <div
+              return (
+                <button
+                  key={workout.id}
+                  type="button"
+                  onClick={() =>
+                    setExpanded((previous) => ({ ...previous, [workout.id]: !previous[workout.id] }))
+                  }
                   className={cn(
-                    "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
-                    isOpen ? "grid-rows-[1fr] opacity-100 mt-2" : "grid-rows-[0fr] opacity-0",
+                    "flex w-full flex-col gap-3 rounded-2xl border px-4 py-3 text-left transition",
+                    "hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
                   )}
+                  style={buttonStyle}
                 >
-                  <div className="overflow-hidden">
-                    <div className="rounded-xl border bg-white/70 p-3 text-sm text-black/70">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          Duration: <span className="font-medium text-black">{workout.duration}</span>
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="flex flex-1 items-start gap-3 md:min-w-0">
+                      <div
+                        className="flex h-10 w-10 items-center justify-center rounded-full border"
+                        style={iconWrapperStyle}
+                      >
+                        {isStrength ? (
+                          <Dumbbell className="h-4 w-4" />
+                        ) : (
+                          <Activity className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h5 className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+                            {workout.name}
+                          </h5>
+                          {"personalRecords" in workout && workout.personalRecords ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium" style={badgeStyle}>
+                              <Trophy className="h-3 w-3" />
+                              {workout.personalRecords}
+                            </span>
+                          ) : null}
                         </div>
-                        <div>
-                          {label2.charAt(0).toUpperCase() + label2.slice(1)}:{" "}
-                          <span className="font-medium text-black">{metric2}</span>
-                        </div>
-                        <div>
-                          {label3.charAt(0).toUpperCase() + label3.slice(1)}:{" "}
-                          <span className="font-medium text-black">{metric3}</span>
-                        </div>
-                        <div>
-                          Calories: <span className="font-medium text-black">{workout.calories}</span>
+                        <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
+                          {workout.time}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid flex-1 grid-cols-2 gap-3 text-center sm:grid-cols-4">
+                      <Metric icon={Timer} value={workout.duration} label="Duration" />
+                      <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} />
+                      <Metric icon={BarChart3} value={metricThree ?? "—"} label={labelThree} />
+                      <Metric icon={Zap} value={workout.calories} label="Calories" iconColor={accent} />
+                    </div>
+
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 self-start transition-transform md:self-center",
+                        isOpen && "rotate-180",
+                      )}
+                      style={{ color: PROGRESS_THEME.textMuted }}
+                    />
+                  </div>
+
+                  <div
+                    className={cn(
+                      "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
+                      isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                    )}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="rounded-2xl border px-4 py-3 text-sm" style={DETAIL_CARD_STYLE}>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <Detail label="Duration" value={workout.duration} />
+                          <Detail label={labelTwo} value={metricTwo ?? "—"} />
+                          <Detail label={labelThree} value={metricThree ?? "—"} />
+                          <Detail label="Calories" value={workout.calories} />
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
-    </Card>
+    </section>
+  );
+}
+
+type DetailProps = {
+  label: string;
+  value: ReactNode;
+};
+
+function Detail({ label, value }: DetailProps) {
+  return (
+    <p>
+      <span className="font-medium" style={{ color: PROGRESS_THEME.textSubtle }}>
+        {label}:
+      </span>{" "}
+      <span className="font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+        {value}
+      </span>
+    </p>
+  );
+}
+
+type MetricProps = {
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  value: ReactNode;
+  label: string;
+  iconColor?: string;
+};
+
+function Metric({ icon: Icon, value, label, iconColor }: MetricProps) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <Icon className="h-4 w-4" style={{ color: iconColor ?? PROGRESS_THEME.textMuted }} />
+      <span className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+        {value}
+      </span>
+      <span className="text-[11px] uppercase tracking-[0.08em]" style={{ color: PROGRESS_THEME.textMuted }}>
+        {label}
+      </span>
+    </div>
   );
 }
 
 export function CardioWeekHistory() {
   const [dayKey, setDayKey] = useState<DayKey>("today");
 
-  return <UnifiedDailyWorkoutCardInner dayKey={dayKey} setDayKey={setDayKey} />;
+  return <DailyWorkoutCard dayKey={dayKey} setDayKey={setDayKey} />;
 }
 
 export default CardioWeekHistory;
