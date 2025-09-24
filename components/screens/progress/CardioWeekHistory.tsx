@@ -189,10 +189,10 @@ function WeekStrip({ value, onChange }: WeekStripProps) {
   return (
     <div className="rounded-2xl border px-3 py-2" style={WEEK_STRIP_STYLE}>
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: PROGRESS_THEME.textMuted }}>
+        <span className="text-xs font-semibold uppercase" style={{ color: PROGRESS_THEME.textMuted }}>
           Week so far
         </span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {labels.map((label, index) => {
             const isEnabled = index in clickable;
             const isActive = currentIndex === index;
@@ -216,8 +216,10 @@ function WeekStrip({ value, onChange }: WeekStripProps) {
                 onClick={() => isEnabled && dayKey && onChange(dayKey)}
                 disabled={!isEnabled}
                 className={cn(
-                  "grid h-8 w-8 place-items-center rounded-full border text-[11px] font-semibold transition",
-                  isEnabled ? "hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" : "cursor-default opacity-40",
+                  "grid h-8 w-8 place-items-center rounded-full border text-sm font-semibold transition",
+                  isEnabled
+                    ? "hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                    : "cursor-default opacity-40",
                 )}
                 style={{ ...baseStyle, ...activeStyle }}
               >
@@ -241,7 +243,7 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
   return (
-    <section className="w-full rounded-3xl border bg-white p-5" style={SECTION_STYLE}>
+    <section className="w-full rounded-3xl border bg-white p-5" style={{ ...SECTION_STYLE, border: "1px solid red" }}>
       <div className="flex flex-col gap-5">
         <WeekStrip value={day.key} onChange={setDayKey} />
 
@@ -286,12 +288,7 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
             </h4>
           </div>
 
-          <div
-            className={cn(
-              "space-y-3",
-              day.workouts.length > 2 && "max-h-64 overflow-y-auto",
-            )}
-          >
+          <div className={cn("space-y-3", day.workouts.length > 2 && "max-h-64 overflow-y-auto")}>
             {day.workouts.map((workout) => {
               const accent = getAccentColor(workout);
               const isStrength = workout.type === "strength" || "sets" in workout;
