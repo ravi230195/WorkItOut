@@ -7,6 +7,7 @@ import { PROGRESS_MOCK_SNAPSHOTS } from "./progress/MockData";
 import { TrendOverview } from "./progress/TrendOverview";
 import { KPI_COLORS, getEncouragement, getKpiFormatter } from "./progress/util";
 import { HistorySection } from "./progress/HistorySection";
+import { CardioWeekHistory } from "./progress/CardioWeekHistory";
 import { KpiTiles } from "./progress/KpiTiles";
 import { useAuth } from "../AuthContext";
 import { logger } from "../../utils/logging";
@@ -47,7 +48,9 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   }, [baseSnapshot, domain, strengthHistory]);
   const valueFormatter = useMemo(() => getKpiFormatter(domain, selectedKpiIndex), [domain, selectedKpiIndex]);
   const trendSeries = snapshot.series[selectedKpiIndex] ?? snapshot.series[0] ?? [];
+  const shouldShowCardioWeekHistory = domain === "cardio" && range === "week";
   const shouldShowHistory =
+    !shouldShowCardioWeekHistory &&
     domain !== "measurement" &&
     (snapshot.history.length > 0 ||
       (domain === "strength" && strengthHistoryLoading) ||
@@ -132,7 +135,9 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
         />
         <KpiTiles domain={domain} kpis={snapshot.kpis} selectedIndex={selectedKpiIndex} onSelect={setSelectedKpiIndex} />
         <Spacer y="sm" />
-        {shouldShowHistory ? (
+        {shouldShowCardioWeekHistory ? (
+          <CardioWeekHistory />
+        ) : shouldShowHistory ? (
           <HistorySection
             entries={snapshot.history}
             showLoading={showHistoryLoading}
