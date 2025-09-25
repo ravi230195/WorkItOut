@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import AppScreen from "../layouts/AppScreen";
 import type { TimeRange } from "../../src/types/progress";
 import type { HistoryEntry, ProgressDomain } from "../progress/Progress.types";
-import { CARDIO_WEEK_HISTORY_MOCK, PROGRESS_MOCK_SNAPSHOTS } from "./progress/MockData";
+import { PROGRESS_MOCK_SNAPSHOTS } from "./progress/MockData";
 import { TrendOverview } from "./progress/TrendOverview";
 import { KPI_COLORS, getEncouragement, getKpiFormatter } from "./progress/util";
 import { HistorySection } from "./progress/HistorySection";
@@ -68,10 +68,6 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const cardioWeekHistoryDays = useMemo<CardioWeekHistoryDay[]>(() => {
     if (!shouldShowCardioWeekHistory) {
       return [];
-    }
-
-    if (USE_CARDIO_WEEK_MOCK) {
-      return CARDIO_WEEK_HISTORY_MOCK.days;
     }
 
     return buildCardioWeekHistory(snapshot.history);

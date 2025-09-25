@@ -1,6 +1,5 @@
 import type { TimeRange } from "@/types/progress";
 import type { DomainSnapshotMap, ProgressDomain, TrendPoint } from "../../progress/Progress.types";
-import type { CardioWeekHistoryDay } from "./CardioWeekHistory";
 
 const RANGE_POINTS: Record<TimeRange, number> = { week: 7, threeMonths: 12, sixMonths: 6 };
 const RANGE_STEPS: Record<TimeRange, number> = { week: 1, threeMonths: 7, sixMonths: 30 };
@@ -187,109 +186,7 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
   },
 };
 
-const CARDIO_WEEK_HISTORY_MOCK: { days: CardioWeekHistoryDay[] } = {
-  days: [
-    {
-      key: "today",
-      label: "W",
-      weekIndex: 2,
-      dateLabel: "Today, Dec 15",
-      dailyTotals: { calories: 450, time: "1h 23m", distance: "2.3 km", steps: 3420 },
-      workouts: [
-        {
-          id: 1,
-          type: "strength",
-          name: "Upper Push",
-          time: "6:30 AM",
-          duration: "45 min",
-          exercises: 6,
-          sets: 18,
-          calories: 320,
-          volume: "2,450 kg",
-          personalRecords: 2,
-        },
-        {
-          id: 2,
-          type: "cardio",
-          name: "Cardio Walk",
-          time: "2:15 PM",
-          duration: "38 min",
-          distance: "2.3 km",
-          steps: 3420,
-          calories: 130,
-        },
-        {
-          id: 7,
-          type: "cardio",
-          name: "Zone 2 Ride",
-          time: "7:45 PM",
-          duration: "30 min",
-          distance: "8.0 km",
-          calories: 210,
-        },
-      ],
-    },
-    {
-      key: "mon",
-      label: "M",
-      weekIndex: 0,
-      dateLabel: "Mon, Dec 16",
-      dailyTotals: { calories: 1040, time: "1h 46m", distance: "6.1 km", steps: 8920 },
-      workouts: [
-        {
-          id: 3,
-          type: "strength",
-          name: "Lower Body — Legs",
-          time: "6:10 AM",
-          duration: "48 min",
-          exercises: 8,
-          sets: 22,
-          calories: 620,
-          volume: "5,600 kg",
-        },
-        {
-          id: 4,
-          type: "hiit",
-          name: "Evening HIIT",
-          time: "7:20 PM",
-          duration: "28 min",
-          calories: 420,
-          rounds: 3,
-        },
-      ],
-    },
-    {
-      key: "sun",
-      label: "S",
-      weekIndex: 6,
-      dateLabel: "Sun, Dec 14",
-      dailyTotals: { calories: 1385, time: "2h 12m", distance: "14.8 km", steps: 17430 },
-      workouts: [
-        {
-          id: 5,
-          type: "cardio",
-          name: "Long Run",
-          time: "9:00 AM",
-          duration: "1h 22m",
-          distance: "12.1 km",
-          calories: 860,
-        },
-        {
-          id: 6,
-          type: "mobility",
-          name: "Mobility & Core",
-          time: "6:30 PM",
-          duration: "50 min",
-          exercises: 9,
-          rounds: 3,
-          calories: 525,
-        },
-      ],
-    },
-  ],
-};
-
-export { CARDIO_WEEK_HISTORY_MOCK, PROGRESS_MOCK_SNAPSHOTS };
+export { PROGRESS_MOCK_SNAPSHOTS };
 
 function daysAgoISO(days: number) {
   const date = new Date();
