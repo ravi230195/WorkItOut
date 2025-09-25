@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { PROGRESS_THEME } from "./util";
+import type { CardioHistoryEntry, HistoryEntry } from "../../progress/Progress.types";
 
 const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" ");
 
@@ -53,6 +54,13 @@ export type CardioWeekHistoryDay = {
 };
 
 type StyleWithRing = CSSProperties & { ["--tw-ring-color"]?: string };
+
+type AggregatedTotals = {
+  calories?: number;
+  distance?: number;
+  steps?: number;
+  time?: number;
+};
 
 const SECTION_STYLE: CSSProperties = {
   borderColor: PROGRESS_THEME.cardBorder,
@@ -175,6 +183,132 @@ class Workout {
     }
     return { label: this.isStrength ? "Sets" : "Steps", value: "—" };
   }
+}
+
+export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHistoryDay[] {
+  const cardioEntries = entries.filter((entry): entry is CardioHistoryEntry => entry.type === "cardio");
+  if (cardioEntries.length === 0) {
+    return [];
+  }
+
+  const grouped = cardioEntries.reduce<
+    Map<string, { date: Date; workouts: CardioWeekHistoryDay["workouts"]; totals: AggregatedTotals; label?: string }>
+  >((acc, entry) => {
+    const date = new Date(entry.date);
+    const key = date.toISOString().split("T")[0];
+    if (!acc.has(key)) {
+      acc.set(key, {
+        date,
+        workouts: [],
+        totals: {},
+        label: getWeekdayLabel(date),
+      });
+    }
+
+    const group = acc.get(key)!;
+    group.workouts.push({
+      id: entry.id,
+      type: entry.type,
+      name: entry.activity,
+      duration: entry.duration,
+      distance: entry.distance,
+      calories: entry.calories,
+      time: entry.time,
+      steps: entry.steps,
+    });
+
+    const calories = parseNumeric(entry.calories);
+    if (typeof calories === "number") {
+      group.totals.calories = (group.totals.calories ?? 0) + calories;
+    }
+
+    const distance = parseNumeric(entry.distance);
+    if (typeof distance === "number") {
+      group.totals.distance = (group.totals.distance ?? 0) + distance;
+    }
+
+    if (typeof entry.steps === "number") {
+      group.totals.steps = (group.totals.steps ?? 0) + entry.steps;
+    }
+
+    const minutes = parseDurationMinutes(entry.duration);
+    if (typeof minutes === "number") {
+      group.totals.time = (group.totals.time ?? 0) + minutes;
+    }
+
+    return acc;
+  }, new Map());
+
+  return Array.from(grouped.values())
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .map(({ date, workouts, totals, label }) => {
+      const weekIndex = getWeekIndex(date);
+      const formattedTotals: CardioWeekHistoryDay["dailyTotals"] = {
+        calories: typeof totals.calories === "number" ? Math.round(totals.calories) : totals.calories,
+        distance: typeof totals.distance === "number" ? `${totals.distance.toFixed(1)} km` : totals.distance,
+        steps: typeof totals.steps === "number" ? Math.round(totals.steps) : totals.steps,
+        time: typeof totals.time === "number" ? formatMinutes(totals.time) : totals.time,
+      };
+
+      return {
+        key: date.toISOString().split("T")[0],
+        label,
+        weekIndex,
+        dateLabel: formatDateLabel(date),
+        dailyTotals: formattedTotals,
+        workouts,
+      } satisfies CardioWeekHistoryDay;
+    });
+}
+
+function parseNumeric(value?: string) {
+  if (!value) return undefined;
+  const match = value.match(/[\d,.]+/);
+  if (!match) return undefined;
+  const normalized = match[0].replace(/,/g, "");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function parseDurationMinutes(value?: string) {
+  if (!value) return undefined;
+
+  if (/^\d{1,2}:\d{2}:\d{2}$/.test(value)) {
+    const [hours, minutes, seconds] = value.split(":").map(Number);
+    if ([hours, minutes, seconds].some((part) => Number.isNaN(part))) {
+      return undefined;
+    }
+    return hours * 60 + minutes + seconds / 60;
+  }
+
+  const hourMatch = value.match(/(\d+)\s*h/);
+  const minuteMatch = value.match(/(\d+)\s*m/);
+  const totalMinutes =
+    (hourMatch ? Number.parseInt(hourMatch[1], 10) * 60 : 0) +
+    (minuteMatch ? Number.parseInt(minuteMatch[1], 10) : 0);
+  return Number.isNaN(totalMinutes) ? undefined : totalMinutes;
+}
+
+function formatMinutes(totalMinutes: number) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = Math.round(totalMinutes % 60);
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+}
+
+function getWeekIndex(date: Date) {
+  const jsDay = date.getDay();
+  return jsDay === 0 ? 6 : jsDay - 1;
+}
+
+function getWeekdayLabel(date: Date) {
+  return date.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 1).toUpperCase();
+}
+
+function formatDateLabel(date: Date) {
+  return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
 
 type WeekStripProps = {
