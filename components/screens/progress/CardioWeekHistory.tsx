@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
   type CSSProperties,
@@ -21,109 +22,37 @@ import { PROGRESS_THEME } from "./util";
 
 const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" ");
 
-type Day = (typeof DATA.days)[number];
-type DayKey = Day["key"];
+export type CardioWeekHistoryWorkout = {
+  id: number | string;
+  name: string;
+  duration?: ReactNode;
+  time?: string;
+  calories?: ReactNode;
+  distance?: ReactNode;
+  steps?: ReactNode;
+  exercises?: number;
+  sets?: number;
+  rounds?: number;
+  volume?: ReactNode;
+  personalRecords?: number;
+  type?: string;
+};
 
-type Workout = Day["workouts"][number];
+export type CardioWeekHistoryDay = {
+  key: string;
+  label?: string;
+  weekIndex: number;
+  dateLabel: string;
+  dailyTotals: {
+    calories?: ReactNode;
+    time?: ReactNode;
+    distance?: ReactNode;
+    steps?: ReactNode;
+  };
+  workouts: CardioWeekHistoryWorkout[];
+};
 
 type StyleWithRing = CSSProperties & { ["--tw-ring-color"]?: string };
-
-const DATA = {
-  days: [
-    {
-      key: "today",
-      dateLabel: "Today, Dec 15",
-      dailyTotals: { calories: 450, time: "1h 23m", distance: "2.3 km", steps: 3420 },
-      workouts: [
-        {
-          id: 1,
-          type: "strength",
-          name: "Upper Push",
-          time: "6:30 AM",
-          duration: "45 min",
-          exercises: 6,
-          sets: 18,
-          calories: 320,
-          volume: "2,450 kg",
-          personalRecords: 2,
-        },
-        {
-          id: 2,
-          type: "cardio",
-          name: "Cardio Walk",
-          time: "2:15 PM",
-          duration: "38 min",
-          distance: "2.3 km",
-          steps: 3420,
-          calories: 130,
-        },
-        {
-          id: 7,
-          type: "cardio",
-          name: "Zone 2 Ride",
-          time: "7:45 PM",
-          duration: "30 min",
-          distance: "8.0 km",
-          calories: 210,
-        },
-      ],
-    },
-    {
-      key: "mon",
-      dateLabel: "Mon, Dec 16",
-      dailyTotals: { calories: 1040, time: "1h 46m", distance: "6.1 km", steps: 8920 },
-      workouts: [
-        {
-          id: 3,
-          type: "strength",
-          name: "Lower Body — Legs",
-          time: "6:10 AM",
-          duration: "48 min",
-          exercises: 8,
-          sets: 22,
-          calories: 620,
-          volume: "5,600 kg",
-        },
-        {
-          id: 4,
-          type: "hiit",
-          name: "Evening HIIT",
-          time: "7:20 PM",
-          duration: "28 min",
-          calories: 420,
-          avgHR: 164,
-          rpe: "3/5",
-        },
-      ],
-    },
-    {
-      key: "sun",
-      dateLabel: "Sun, Dec 14",
-      dailyTotals: { calories: 1385, time: "2h 12m", distance: "14.8 km", steps: 17430 },
-      workouts: [
-        {
-          id: 5,
-          type: "cardio",
-          name: "Long Run",
-          time: "9:00 AM",
-          duration: "1h 22m",
-          distance: "12.1 km",
-          calories: 860,
-        },
-        {
-          id: 6,
-          type: "mobility",
-          name: "Mobility & Core",
-          time: "6:30 PM",
-          duration: "50 min",
-          exercises: 9,
-          rounds: 3,
-          calories: 525,
-        },
-      ],
-    },
-  ],
-} as const;
 
 const SECTION_STYLE: CSSProperties = {
   borderColor: PROGRESS_THEME.cardBorder,
@@ -156,19 +85,115 @@ function hexToRgba(hex: string, alpha: number) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function getAccentColor(workout: Workout) {
-  return WORKOUT_ACCENTS[workout.type ?? ""] ?? PROGRESS_THEME.accentPrimary;
+function getAccentColor(type?: string) {
+  return WORKOUT_ACCENTS[type ?? ""] ?? PROGRESS_THEME.accentPrimary;
+}
+
+class Workout {
+  id: number | string;
+  type: string;
+  name: string;
+  duration?: ReactNode;
+  time?: string;
+  calories?: ReactNode;
+  distance?: ReactNode;
+  steps?: ReactNode;
+  exercises?: number;
+  sets?: number;
+  rounds?: number;
+  volume?: ReactNode;
+  personalRecords?: number;
+  accent: string;
+
+  constructor(data: CardioWeekHistoryWorkout) {
+    this.id = data.id;
+    this.type = data.type ?? "cardio";
+    this.name = data.name;
+    this.duration = data.duration;
+    this.time = data.time;
+    this.calories = data.calories;
+    this.distance = data.distance;
+    this.steps = data.steps;
+    this.exercises = data.exercises;
+    this.sets = data.sets;
+    this.rounds = data.rounds;
+    this.volume = data.volume;
+    this.personalRecords = data.personalRecords;
+    this.accent = getAccentColor(this.type);
+  }
+
+  static from(raw: CardioWeekHistoryWorkout) {
+    return new Workout(raw);
+  }
+
+  get isStrength() {
+    return this.type === "strength" || this.sets !== undefined || this.exercises !== undefined;
+  }
+
+  private formatMetric(value: ReactNode) {
+    if (typeof value === "number") {
+      return value.toLocaleString();
+    }
+    return value ?? "—";
+  }
+
+  get metricTwo() {
+    if (this.isStrength) {
+      if (this.exercises !== undefined) {
+        return { label: "Exercises", value: this.formatMetric(this.exercises) };
+      }
+      if (this.rounds !== undefined) {
+        return { label: "Rounds", value: this.formatMetric(this.rounds) };
+      }
+    }
+    if (this.distance !== undefined) {
+      return { label: "Distance", value: this.formatMetric(this.distance) };
+    }
+    if (this.volume !== undefined) {
+      return { label: "Volume", value: this.formatMetric(this.volume) };
+    }
+    if (this.rounds !== undefined) {
+      return { label: "Rounds", value: this.formatMetric(this.rounds) };
+    }
+    return { label: this.isStrength ? "Exercises" : "Distance", value: "—" };
+  }
+
+  get metricThree() {
+    if (this.isStrength) {
+      if (this.sets !== undefined) {
+        return { label: "Sets", value: this.formatMetric(this.sets) };
+      }
+      if (this.rounds !== undefined && this.metricTwo.label !== "Rounds") {
+        return { label: "Rounds", value: this.formatMetric(this.rounds) };
+      }
+    }
+    if (this.steps !== undefined) {
+      return { label: "Steps", value: this.formatMetric(this.steps) };
+    }
+    if (this.rounds !== undefined && this.metricTwo.label !== "Rounds") {
+      return { label: "Rounds", value: this.formatMetric(this.rounds) };
+    }
+    return { label: this.isStrength ? "Sets" : "Steps", value: "—" };
+  }
 }
 
 type WeekStripProps = {
-  value: DayKey;
-  onChange: (value: DayKey) => void;
+  value: string;
+  days: CardioWeekHistoryDay[];
+  onChange: (value: string) => void;
 };
 
-function WeekStrip({ value, onChange }: WeekStripProps) {
+function WeekStrip({ value, days, onChange }: WeekStripProps) {
   const labels = ["M", "T", "W", "T", "F", "S", "S"];
-  const clickable: Record<number, DayKey> = { 0: "mon", 2: "today", 6: "sun" };
-  const currentEntry = Object.entries(clickable).find(([, key]) => key === value);
+  const clickable = useMemo(() => {
+    return days.reduce<Record<number, CardioWeekHistoryDay>>((acc, day) => {
+      const index = Math.min(Math.max(day.weekIndex ?? 0, 0), 6);
+      acc[index] = day;
+      return acc;
+    }, {});
+  }, [days]);
+
+  const currentEntry = Object.entries(clickable).find(([, day]) => day.key === value);
   const currentIndex = currentEntry ? Number(currentEntry[0]) : undefined;
 
   return (
@@ -179,9 +204,10 @@ function WeekStrip({ value, onChange }: WeekStripProps) {
         </span>
         <div className="flex items-center gap-1">
           {labels.map((label, index) => {
-            const isEnabled = index in clickable;
+            const day = clickable[index];
+            const isEnabled = Boolean(day);
             const isActive = currentIndex === index;
-            const dayKey = clickable[index];
+            const buttonLabel = day?.label ?? label;
             const baseStyle: CSSProperties = {
               borderColor: PROGRESS_THEME.borderSubtle,
               color: PROGRESS_THEME.textSubtle,
@@ -196,9 +222,9 @@ function WeekStrip({ value, onChange }: WeekStripProps) {
 
             return (
               <button
-                key={`${label}-${index}`}
+                key={`${buttonLabel}-${index}`}
                 type="button"
-                onClick={() => isEnabled && dayKey && onChange(dayKey)}
+                onClick={() => day && onChange(day.key)}
                 disabled={!isEnabled}
                 className={cn(
                   "grid h-8 w-8 place-items-center rounded-full border text-sm font-semibold transition",
@@ -208,7 +234,7 @@ function WeekStrip({ value, onChange }: WeekStripProps) {
                 )}
                 style={{ ...baseStyle, ...activeStyle }}
               >
-                {label}
+                {buttonLabel}
               </button>
             );
           })}
@@ -219,17 +245,29 @@ function WeekStrip({ value, onChange }: WeekStripProps) {
 }
 
 type DailyWorkoutCardProps = {
-  dayKey: DayKey;
-  setDayKey: (value: DayKey) => void;
+  days: CardioWeekHistoryDay[];
+  dayKey: string;
+  setDayKey: (value: string) => void;
 };
 
-function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
-  const day = useMemo(() => DATA.days.find((entry) => entry.key === dayKey) ?? DATA.days[0], [dayKey]);
+function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
+  const day = useMemo(() => days.find((entry) => entry.key === dayKey) ?? days[0], [dayKey, days]);
+
+  if (!day) {
+    return null;
+  }
+
+  const totals = [
+    { Icon: Flame, label: "Calories", value: day.dailyTotals.calories },
+    { Icon: Clock, label: "Duration", value: day.dailyTotals.time },
+    { Icon: MapPin, label: "Distance", value: day.dailyTotals.distance },
+    { Icon: Footprints, label: "Steps", value: day.dailyTotals.steps },
+  ].filter((item) => item.value !== undefined && item.value !== null);
 
   return (
     <section className="w-full rounded-3xl border bg-white p-5" style={SECTION_STYLE}>
       <div className="flex flex-col gap-5">
-        <WeekStrip value={day.key} onChange={setDayKey} />
+        <WeekStrip value={day.key} days={days} onChange={setDayKey} />
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-center gap-2 text-sm font-medium" style={{ color: PROGRESS_THEME.textPrimary }}>
@@ -237,20 +275,12 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
             <span>{day.dateLabel}</span>
           </div>
           <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(60px,1fr))]">
-            {[
-              { Icon: Flame, label: "Calories", value: day.dailyTotals.calories },
-              { Icon: Clock, label: "Duration", value: day.dailyTotals.time },
-              { Icon: MapPin, label: "Distance", value: day.dailyTotals.distance },
-              { Icon: Footprints, label: "Steps", value: day.dailyTotals.steps },
-            ].map(({ Icon, label, value }) => (
-              <div
-                key={label}
-                className="flex items-center gap-2"
-              >
+            {totals.map(({ Icon, label, value }) => (
+              <div key={label} className="flex items-center gap-2">
                 <Icon className="h-3 w-3" style={{ color: PROGRESS_THEME.textMuted }} />
                 <div className="flex flex-col">
                   <span className="text-xs font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
-                    {value}
+                    {typeof value === "number" ? value.toLocaleString() : value}
                   </span>
                   <span className="text-xs uppercase tracking-[0.01em]" style={{ color: PROGRESS_THEME.textMuted }}>
                     {label}
@@ -272,34 +302,24 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
           </div>
 
           <div className="space-y-3">
-            {day.workouts.map((workout) => {
-              const accent = getAccentColor(workout);
-              const isStrength = workout.type === "strength" || "sets" in workout;
-              const metricTwo = isStrength
-                ? (workout as { exercises: number }).exercises
-                : (workout as { distance?: string }).distance;
-              const labelTwo = isStrength ? "Exercises" : "Distance";
-              const metricThree = isStrength
-                ? (workout as { sets: number }).sets
-                : ("steps" in workout ? (workout as { steps: number }).steps : "—");
-              const labelThree = isStrength ? "Sets" : "Steps";
-
+            {day.workouts.map((rawWorkout) => {
+              const workout = Workout.from(rawWorkout);
               const cardStyle: StyleWithRing = {
-                borderColor: hexToRgba(accent, 0.28),
-                backgroundColor: hexToRgba(accent, 0.12),
-                ["--tw-ring-color"]: hexToRgba(accent, 0.3),
+                borderColor: hexToRgba(workout.accent, 0.28),
+                backgroundColor: hexToRgba(workout.accent, 0.12),
+                ["--tw-ring-color"]: hexToRgba(workout.accent, 0.3),
               };
 
               const iconWrapperStyle: CSSProperties = {
-                borderColor: hexToRgba(accent, 0.4),
-                backgroundColor: hexToRgba(accent, 0.2),
-                color: accent,
+                borderColor: hexToRgba(workout.accent, 0.4),
+                backgroundColor: hexToRgba(workout.accent, 0.2),
+                color: workout.accent,
               };
 
               const badgeStyle: CSSProperties = {
-                borderColor: hexToRgba(accent, 0.35),
-                backgroundColor: hexToRgba(accent, 0.15),
-                color: accent,
+                borderColor: hexToRgba(workout.accent, 0.35),
+                backgroundColor: hexToRgba(workout.accent, 0.15),
+                color: workout.accent,
               };
 
               return (
@@ -314,7 +334,7 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
                         className="flex h-10 w-10 items-center justify-center rounded-full border"
                         style={iconWrapperStyle}
                       >
-                        {isStrength ? <Dumbbell className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
+                        {workout.isStrength ? <Dumbbell className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
                       </div>
 
                       <div className="min-w-0 flex-1">
@@ -322,7 +342,7 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
                           <h5 className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
                             {workout.name}
                           </h5>
-                          {"personalRecords" in workout && workout.personalRecords ? (
+                          {workout.personalRecords ? (
                             <span
                               className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
                               style={badgeStyle}
@@ -332,17 +352,27 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
                             </span>
                           ) : null}
                         </div>
-                        <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
-                          {workout.time}
-                        </p>
+                        {workout.time ? (
+                          <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
+                            {workout.time}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
 
                     <div className="flex text-center" style={{ gap: "clamp(0.25rem, 2vw, 1rem)" }}>
-                      <div className="flex-1"><Metric value={workout.duration} label="Duration" align="center" /></div>
-                      <div className="flex-1"><Metric value={metricTwo ?? "—"} label={labelTwo} align="center" /></div>
-                      <div className="flex-1"><Metric value={metricThree ?? "—"} label={labelThree} align="center" /></div>
-                      <div className="flex-1"><Metric value={workout.calories} label="Calories" align="center" /></div>
+                      <div className="flex-1">
+                        <Metric value={workout.duration ?? "—"} label="Duration" align="center" />
+                      </div>
+                      <div className="flex-1">
+                        <Metric value={workout.metricTwo.value} label={workout.metricTwo.label} align="center" />
+                      </div>
+                      <div className="flex-1">
+                        <Metric value={workout.metricThree.value} label={workout.metricThree.label} align="center" />
+                      </div>
+                      <div className="flex-1">
+                        <Metric value={workout.calories ?? "—"} label="Calories" align="center" />
+                      </div>
                     </div>
                   </div>
                 </article>
@@ -395,7 +425,7 @@ function Metric({ icon: Icon, value, label, iconColor, align = "center" }: Metri
           fontWeight: "clamp(500, 1vw + 400, 700)",
         }}
       >
-        {value}
+        {typeof value === "number" ? value.toLocaleString() : value}
       </span>
       <span
         className="text-[11px] uppercase tracking-[0.08em]"
@@ -411,10 +441,33 @@ function Metric({ icon: Icon, value, label, iconColor, align = "center" }: Metri
   );
 }
 
-export function CardioWeekHistory() {
-  const [dayKey, setDayKey] = useState<DayKey>("today");
+type CardioWeekHistoryProps = {
+  days: CardioWeekHistoryDay[];
+  initialDayKey?: string;
+};
 
-  return <DailyWorkoutCard dayKey={dayKey} setDayKey={setDayKey} />;
+export function CardioWeekHistory({ days, initialDayKey }: CardioWeekHistoryProps) {
+  const [dayKey, setDayKey] = useState<string>(() => initialDayKey ?? days[0]?.key ?? "");
+
+  useEffect(() => {
+    if (days.length === 0) {
+      return;
+    }
+    if (!days.some((day) => day.key === dayKey)) {
+      setDayKey((previous) => {
+        if (days.some((day) => day.key === previous)) {
+          return previous;
+        }
+        return days[0]?.key ?? "";
+      });
+    }
+  }, [dayKey, days]);
+
+  if (days.length === 0) {
+    return null;
+  }
+
+  return <DailyWorkoutCard days={days} dayKey={dayKey} setDayKey={setDayKey} />;
 }
 
 export default CardioWeekHistory;

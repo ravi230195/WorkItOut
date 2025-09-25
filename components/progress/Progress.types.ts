@@ -34,6 +34,8 @@ export type CardioHistoryEntry = {
   duration: string;
   distance: string;
   calories?: string;
+  time?: string;
+  steps?: number;
   routineTemplateId?: number;
 };
 
