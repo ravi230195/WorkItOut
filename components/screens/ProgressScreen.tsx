@@ -3,10 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import AppScreen from "../layouts/AppScreen";
 import type { TimeRange } from "../../src/types/progress";
 import type { HistoryEntry, ProgressDomain } from "../progress/Progress.types";
-import { PROGRESS_MOCK_SNAPSHOTS } from "./progress/MockData";
+import { CARDIO_WEEK_HISTORY_MOCK, PROGRESS_MOCK_SNAPSHOTS } from "./progress/MockData";
 import { TrendOverview } from "./progress/TrendOverview";
 import { KPI_COLORS, getEncouragement, getKpiFormatter } from "./progress/util";
 import { HistorySection } from "./progress/HistorySection";
+import { CardioWeekHistory, buildCardioWeekHistory, type CardioWeekHistoryDay } from "./progress/CardioWeekHistory";
 import { KpiTiles } from "./progress/KpiTiles";
 import { useAuth } from "../AuthContext";
 import { logger } from "../../utils/logging";
@@ -18,6 +19,8 @@ import { DomainSelector } from "./progress/DomainSelector";
 import { RangeSelector } from "./progress/RangeSelector";
 import { DOMAIN_LABELS, DOMAIN_OPTIONS, RANGE_LABELS, RANGE_OPTIONS } from "./progress/constants";
 import { useCardioProgressSnapshot, useStrengthHistory, useUserFirstName } from "./progress/hooks";
+
+const USE_CARDIO_WEEK_MOCK = true;
 
 interface ProgressScreenProps {
   bottomBar?: React.ReactNode;
@@ -31,7 +34,21 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const { userToken } = useAuth();
   const firstName = useUserFirstName(userToken);
   const { history: strengthHistory, loading: strengthHistoryLoading } = useStrengthHistory(userToken);
-  const { snapshot: cardioSnapshot, loading: cardioLoading } = useCardioProgressSnapshot(range);
+  const {
+    snapshot: fetchedCardioSnapshot,
+    loading: fetchedCardioLoading,
+  } = useCardioProgressSnapshot(range);
+
+  const isUsingCardioMockData = USE_CARDIO_WEEK_MOCK;
+
+  const cardioSnapshot = useMemo(() => {
+    if (isUsingCardioMockData) {
+      return PROGRESS_MOCK_SNAPSHOTS.cardio[range];
+    }
+    return fetchedCardioSnapshot;
+  }, [fetchedCardioSnapshot, isUsingCardioMockData, range]);
+
+  const cardioLoading = isUsingCardioMockData ? false : fetchedCardioLoading;
 
   const baseSnapshot = useMemo(() => {
     if (domain === "cardio" && cardioSnapshot) {
@@ -47,7 +64,20 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   }, [baseSnapshot, domain, strengthHistory]);
   const valueFormatter = useMemo(() => getKpiFormatter(domain, selectedKpiIndex), [domain, selectedKpiIndex]);
   const trendSeries = snapshot.series[selectedKpiIndex] ?? snapshot.series[0] ?? [];
+  const shouldShowCardioWeekHistory = domain === "cardio" && range === "week";
+  const cardioWeekHistoryDays = useMemo<CardioWeekHistoryDay[]>(() => {
+    if (!shouldShowCardioWeekHistory) {
+      return [];
+    }
+
+    if (USE_CARDIO_WEEK_MOCK) {
+      return CARDIO_WEEK_HISTORY_MOCK.days;
+    }
+
+    return buildCardioWeekHistory(snapshot.history);
+  }, [shouldShowCardioWeekHistory, snapshot.history]);
   const shouldShowHistory =
+    !shouldShowCardioWeekHistory &&
     domain !== "measurement" &&
     (snapshot.history.length > 0 ||
       (domain === "strength" && strengthHistoryLoading) ||
@@ -132,7 +162,9 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
         />
         <KpiTiles domain={domain} kpis={snapshot.kpis} selectedIndex={selectedKpiIndex} onSelect={setSelectedKpiIndex} />
         <Spacer y="sm" />
-        {shouldShowHistory ? (
+        {shouldShowCardioWeekHistory ? (
+          <CardioWeekHistory days={cardioWeekHistoryDays} />
+        ) : shouldShowHistory ? (
           <HistorySection
             entries={snapshot.history}
             showLoading={showHistoryLoading}
