@@ -5,7 +5,6 @@ export type DomainOption = { value: ProgressDomain; label: string };
 export type RangeOption = { value: TimeRange; label: string };
 
 export const DOMAIN_OPTIONS: DomainOption[] = [
-  { value: "strength", label: "Strength" },
   { value: "cardio", label: "Cardio" },
   { value: "measurement", label: "Measurement" },
 ];
@@ -17,7 +16,6 @@ export const RANGE_OPTIONS: RangeOption[] = [
 ];
 
 export const DOMAIN_LABELS: Record<ProgressDomain, string> = {
-  strength: "Strength",
   cardio: "Cardio",
   measurement: "Measurement",
 };
