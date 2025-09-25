@@ -333,64 +333,58 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
                   )}
                   style={buttonStyle}
                 >
-                  <div
-                    className={cn(
-                      "grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3",
-                      "sm:gap-4",
-                    )}
-                  >
-                    <div className="flex items-start gap-3 sm:min-w-0">
-                      <div
-                        className="flex h-10 w-10 items-center justify-center rounded-full border"
-                        style={iconWrapperStyle}
-                      >
-                        {isStrength ? (
-                          <Dumbbell className="h-4 w-4" />
-                        ) : (
-                          <Activity className="h-4 w-4" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h5 className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
-                            {workout.name}
-                          </h5>
-                          {"personalRecords" in workout && workout.personalRecords ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium" style={badgeStyle}>
-                              <Trophy className="h-3 w-3" />
-                              {workout.personalRecords}
-                            </span>
-                          ) : null}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="flex items-start gap-3 sm:min-w-0">
+                        <div
+                          className="flex h-10 w-10 items-center justify-center rounded-full border"
+                          style={iconWrapperStyle}
+                        >
+                          {isStrength ? (
+                            <Dumbbell className="h-4 w-4" />
+                          ) : (
+                            <Activity className="h-4 w-4" />
+                          )}
                         </div>
-                        <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
-                          {workout.time}
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h5 className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+                              {workout.name}
+                            </h5>
+                            {"personalRecords" in workout && workout.personalRecords ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium" style={badgeStyle}>
+                                <Trophy className="h-3 w-3" />
+                                {workout.personalRecords}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
+                            {workout.time}
+                          </p>
+                        </div>
                       </div>
+
+                      <ChevronDown
+                        className={cn(
+                          "h-4 w-4 shrink-0 self-start transition-transform",
+                          isOpen && "rotate-180",
+                        )}
+                        style={{ color: PROGRESS_THEME.textMuted }}
+                      />
                     </div>
 
                     <div
                       className={cn(
-                        "relative grid grid-cols-2 justify-items-end gap-x-4 gap-y-3 pl-4 text-right",
-                        "sm:min-w-[11rem] sm:grid-cols-1 sm:gap-y-2 sm:pl-6",
+                        "grid grid-cols-2 gap-3 rounded-2xl border px-3 py-2",
+                        "sm:grid-cols-4",
                       )}
+                      style={{ borderColor: hexToRgba(accent, 0.24), backgroundColor: hexToRgba(accent, 0.08) }}
                     >
-                      <span
-                        className="absolute inset-y-1 left-0 w-px rounded-full"
-                        style={{ backgroundColor: hexToRgba(accent, 0.35) }}
-                      />
-                      <Metric icon={Timer} value={workout.duration} label="Duration" align="end" />
-                      <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} align="end" />
-                      <Metric icon={BarChart3} value={metricThree ?? "—"} label={labelThree} align="end" />
-                      <Metric icon={Zap} value={workout.calories} label="Calories" iconColor={accent} align="end" />
+                      <Metric icon={Timer} value={workout.duration} label="Duration" align="center" />
+                      <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} align="center" />
+                      <Metric icon={BarChart3} value={metricThree ?? "—"} label={labelThree} align="center" />
+                      <Metric icon={Zap} value={workout.calories} label="Calories" iconColor={accent} align="center" />
                     </div>
-
-                    <ChevronDown
-                      className={cn(
-                        "h-4 w-4 justify-self-end self-start transition-transform",
-                        isOpen && "rotate-180",
-                      )}
-                      style={{ color: PROGRESS_THEME.textMuted }}
-                    />
                   </div>
 
                   <div
