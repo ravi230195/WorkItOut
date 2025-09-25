@@ -18,7 +18,7 @@ import { RangeSelector } from "./progress/RangeSelector";
 import { DOMAIN_LABELS, DOMAIN_OPTIONS, RANGE_LABELS, RANGE_OPTIONS } from "./progress/constants";
 import { useWorkoutsProgressSnapshot, useUserFirstName } from "./progress/hooks";
 
-const USE_WORKOUTS_WEEK_MOCK = true;
+const USE_WORKOUTS_WEEK_MOCK = false;
 
 interface ProgressScreenProps {
   bottomBar?: React.ReactNode;

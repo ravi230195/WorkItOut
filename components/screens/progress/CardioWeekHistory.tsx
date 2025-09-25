@@ -131,21 +131,7 @@ class Workout {
     this.personalRecords = data.personalRecords;
     this.accent = getAccentColor(this.type);
     logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout data:", data);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout type:", this.type);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout accent:", this.accent);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout personalRecords:", this.personalRecords);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout exercises:", this.exercises);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout sets:", this.sets);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout rounds:", this.rounds);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout volume:", this.volume);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout distance:", this.distance);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout steps:", this.steps);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout time:", this.time);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout duration:", this.duration);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout calories:", this.calories);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout id:", this.id);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout name:", this.name);
-  }
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout accent:", JSON.stringify(this, null, 2))  }
 
   static from(raw: CardioWeekHistoryWorkout) {
     return new Workout(raw);

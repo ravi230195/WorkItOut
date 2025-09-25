@@ -947,10 +947,12 @@ class CardioProgressProvider implements ProgressDataProvider {
           averageHeartRate: workoutHeartRateCount > 0 ? workoutHeartRateSum / workoutHeartRateCount : undefined,
           source: sample?.sourceName,
         };
-        logger.debug("[cardio] iOS workout summary", { workoutSummary });
+        //logger.debug("[cardio] iOS workout summary", { workoutSummary });
         workouts.push(workoutSummary);
       }
-
+      for (const workout of workouts) {
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Workout:", JSON.stringify(workout, null, 2));
+      }
       try {
         // ADD: Enhanced steps aggregation logging
         logger.debug("[cardio] iOS queryAggregated steps: Request", { start, end, dataType: "steps", bucket: "day"});
