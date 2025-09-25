@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 import { PROGRESS_THEME } from "./util";
-import type { CardioHistoryEntry, HistoryEntry } from "../../progress/Progress.types";
+import type { HistoryEntry, WorkoutsHistoryEntry } from "../../progress/Progress.types";
 import { logger } from "../../../utils/logging";
 
 const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" ");
@@ -200,6 +200,8 @@ class Workout {
     return { label: this.isStrength ? "Sets" : "Steps", value: "—" };
   }
 }
+
+type CardioHistoryEntry = Extract<WorkoutsHistoryEntry, { type: "cardio" }>;
 
 export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHistoryDay[] {
   const cardioEntries = entries.filter((entry): entry is CardioHistoryEntry => entry.type === "cardio");

@@ -16,30 +16,31 @@ export type KpiDatum = {
   currentNumeric?: number;
 };
 
-export type WorkoutHistoryEntry = {
-  type: "workouts";
-  id: string;
-  name: string;
-  date: string;
-  duration: string;
-  totalWeight: string;
-  routineTemplateId?: number;
-};
+export type WorkoutsHistoryEntry =
+  | {
+      type: "cardio";
+      id: string;
+      activity: string;
+      date: string;
+      duration: string;
+      distance: string;
+      calories?: string;
+      time?: string;
+      steps?: number;
+      totalWeight?: string;
+      routineTemplateId?: number;
+    }
+  | {
+      type: "workouts";
+      id: string;
+      name: string;
+      date: string;
+      duration: string;
+      totalWeight: string;
+      routineTemplateId?: number;
+    };
 
-export type CardioHistoryEntry = {
-  type: "cardio";
-  id: string;
-  activity: string;
-  date: string;
-  duration: string;
-  distance: string;
-  calories?: string;
-  time?: string;
-  steps?: number;
-  routineTemplateId?: number;
-};
-
-export type HistoryEntry = WorkoutHistoryEntry | CardioHistoryEntry;
+export type HistoryEntry = WorkoutsHistoryEntry;
 
 export type Snapshot = {
   series: TrendPoint[][];
