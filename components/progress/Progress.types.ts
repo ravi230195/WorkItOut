@@ -6,7 +6,7 @@ export type TrendPoint = {
   isPersonalBest?: boolean;
 };
 
-export type ProgressDomain = "strength" | "cardio" | "measurement";
+export type ProgressDomain = "workouts" | "measurement";
 
 export type KpiDatum = {
   title: string;
@@ -16,30 +16,21 @@ export type KpiDatum = {
   currentNumeric?: number;
 };
 
-export type StrengthHistoryEntry = {
-  type: "strength";
-  id: string;
-  name: string;
-  date: string;
-  duration: string;
-  totalWeight: string;
-  routineTemplateId?: number;
-};
-
-export type CardioHistoryEntry = {
-  type: "cardio";
+export type WorkoutsHistoryEntry = {
+  type: "cardio" | "strength";
   id: string;
   activity: string;
   date: string;
   duration: string;
-  distance: string;
+  distance?: string;
   calories?: string;
   time?: string;
   steps?: number;
+  totalWeight?: string;
   routineTemplateId?: number;
 };
 
-export type HistoryEntry = StrengthHistoryEntry | CardioHistoryEntry;
+export type HistoryEntry = WorkoutsHistoryEntry;
 
 export type Snapshot = {
   series: TrendPoint[][];

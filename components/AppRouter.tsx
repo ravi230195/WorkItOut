@@ -216,9 +216,7 @@ export function AppRouter({
         />
       </SlideTransition>
 
-      {currentView === "progress" && (
-        <ProgressScreen bottomBar={bottomBar} onSelectRoutine={onSelectRoutine} />
-      )}
+      {currentView === "progress" && <ProgressScreen bottomBar={bottomBar} />}
       {currentView === "profile" && (
         <ProfileScreen
           bottomBar={bottomBar}
