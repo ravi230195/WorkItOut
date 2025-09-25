@@ -175,7 +175,7 @@ function stepsToDisplay(value: number) {
 
 /**
  * The provider is the single entry point that the progress screen calls via
- * {@link useCardioProgressSnapshot}.  Each public method (series/kpis/bests…)
+ * {@link useWorkoutsProgressSnapshot}.  Each public method (series/kpis/bests…)
  * funnels into {@link CardioProgressProvider.ensure}, which caches the
  * aggregated buckets for the requested range.  `ensure` delegates to
  * `fetchAggregated`, which asks Capacitor for the active platform and then

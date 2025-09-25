@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import type {
   CardioHistoryEntry,
   HistoryEntry,
-  StrengthHistoryEntry,
+  WorkoutHistoryEntry,
 } from "../../progress/Progress.types";
 import { PROGRESS_THEME, formatHistoryDate, normalizeActivity } from "./util";
 
@@ -39,14 +39,14 @@ function HistorySection({ entries, showLoading }: HistorySectionProps) {
           {[...entries]
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
             .map((entry) => {
-              if (entry.type === "strength") {
+              if (entry.type === "workouts") {
                 return (
                   <li
                     key={entry.id}
                     className="flex items-center justify-between rounded-2xl px-4 py-3"
                     style={HISTORY_ITEM_STYLE}
                   >
-                    {renderStrengthEntry(entry)}
+                    {renderWorkoutEntry(entry)}
                   </li>
                 );
               }
@@ -67,7 +67,7 @@ function HistorySection({ entries, showLoading }: HistorySectionProps) {
   );
 }
 
-function renderStrengthEntry(entry: StrengthHistoryEntry) {
+function renderWorkoutEntry(entry: WorkoutHistoryEntry) {
   return (
     <>
       <div>

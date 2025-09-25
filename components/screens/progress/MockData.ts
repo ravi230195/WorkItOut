@@ -5,13 +5,13 @@ const RANGE_POINTS: Record<TimeRange, number> = { week: 7, threeMonths: 12, sixM
 const RANGE_STEPS: Record<TimeRange, number> = { week: 1, threeMonths: 7, sixMonths: 30 };
 
 const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
-  cardio: {
+  workouts: {
     week: {
       series: [
-        generateTrend("cardio", "week", 8, 0.32, 0),
-        generateTrend("cardio", "week", 6.4, 0.28, 1),
-        generateTrend("cardio", "week", 9.8, 0.3, 2),
-        generateTrend("cardio", "week", 5.2, 0.26, 3),
+        generateTrend("workouts", "week", 8, 0.32, 0),
+        generateTrend("workouts", "week", 6.4, 0.28, 1),
+        generateTrend("workouts", "week", 9.8, 0.3, 2),
+        generateTrend("workouts", "week", 5.2, 0.26, 3),
       ],
       kpis: [
         { title: "Total Time", unit: "hours", value: "4h 05m", currentNumeric: 245, previous: 203 },
@@ -131,7 +131,7 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
           steps: 8120,
         },
         {
-          type: "strength",
+          type: "workouts",
           id: "s1",
           name: "Upper Power",
           date: daysAgoISO(1),
@@ -139,7 +139,7 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
           totalWeight: "28,450 kg",
         },
         {
-          type: "strength",
+          type: "workouts",
           id: "s2",
           name: "Posterior Chain",
           date: daysAgoISO(3),
@@ -147,7 +147,7 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
           totalWeight: "30,120 kg",
         },
         {
-          type: "strength",
+          type: "workouts",
           id: "s3",
           name: "Power Pull",
           date: daysAgoISO(5),
@@ -158,10 +158,10 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
     },
     threeMonths: {
       series: [
-        generateTrend("cardio", "threeMonths", 28, 0.22, 0),
-        generateTrend("cardio", "threeMonths", 21, 0.2, 1),
-        generateTrend("cardio", "threeMonths", 34, 0.23, 2),
-        generateTrend("cardio", "threeMonths", 17, 0.19, 3),
+        generateTrend("workouts", "threeMonths", 28, 0.22, 0),
+        generateTrend("workouts", "threeMonths", 21, 0.2, 1),
+        generateTrend("workouts", "threeMonths", 34, 0.23, 2),
+        generateTrend("workouts", "threeMonths", 17, 0.19, 3),
       ],
       kpis: [
         { title: "Total Time", unit: "hours", value: "15h 38m", currentNumeric: 938, previous: 902 },
@@ -173,10 +173,10 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
     },
     sixMonths: {
       series: [
-        generateTrend("cardio", "sixMonths", 52, 0.18, 0),
-        generateTrend("cardio", "sixMonths", 38, 0.16, 1),
-        generateTrend("cardio", "sixMonths", 58, 0.19, 2),
-        generateTrend("cardio", "sixMonths", 32, 0.15, 3),
+        generateTrend("workouts", "sixMonths", 52, 0.18, 0),
+        generateTrend("workouts", "sixMonths", 38, 0.16, 1),
+        generateTrend("workouts", "sixMonths", 58, 0.19, 2),
+        generateTrend("workouts", "sixMonths", 32, 0.15, 3),
       ],
       kpis: [
         { title: "Total Time", unit: "hours", value: "168", currentNumeric: 10080, previous: 9980 },
@@ -251,7 +251,7 @@ function generateTrend(domain: ProgressDomain, range: TimeRange, seed: number, v
   const rng = createRng(`${domain}-${range}-${seed}-${variance}-${metric}`);
 
   let current = domain === "measurement" ? seed : seed * 0.55;
-  if (domain === "cardio") {
+  if (domain === "workouts") {
     current *= 1 + metric * 0.05;
   } else {
     current *= 1 + metric * 0.02;
@@ -265,7 +265,7 @@ function generateTrend(domain: ProgressDomain, range: TimeRange, seed: number, v
 
     const noise = (rng() - 0.5) * variance * seed * 0.18;
 
-    if (domain === "cardio") {
+    if (domain === "workouts") {
       const burst = seed * variance * (0.08 + rng() * 0.22 + metric * 0.03);
       current += burst + noise;
       if (rng() > 0.82) {

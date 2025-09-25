@@ -41,8 +41,8 @@ export function useUserFirstName(userToken: string | null | undefined) {
   return firstName;
 }
 
-const CARDIO_FOCUS_ORDER: CardioFocus[] = ["activeMinutes", "distance", "calories", "steps"];
-const cardioProvider = new CardioProgressProvider();
+const WORKOUTS_FOCUS_ORDER: CardioFocus[] = ["activeMinutes", "distance", "calories", "steps"];
+const workoutsProvider = new CardioProgressProvider();
 const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const distanceFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
@@ -71,7 +71,7 @@ function sanitizeSteps(value?: number) {
 }
 
 function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
-  const series = CARDIO_FOCUS_ORDER.map((focus) => {
+  const series = WORKOUTS_FOCUS_ORDER.map((focus) => {
     const entry = raw.series[focus];
     if (!entry) return [];
     return entry.current.map((point) => ({
@@ -106,9 +106,9 @@ function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
   return { series, kpis, history };
 }
 
-export function useCardioProgressSnapshot(range: TimeRange) {
+export function useWorkoutsProgressSnapshot(range: TimeRange) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(() =>
-    toSnapshot(cardioProvider.getUnavailableSnapshot(range)),
+    toSnapshot(workoutsProvider.getUnavailableSnapshot(range)),
   );
   const [loading, setLoading] = useState(false);
 
@@ -117,21 +117,21 @@ export function useCardioProgressSnapshot(range: TimeRange) {
     setLoading(true);
     
     // ADD: Log hook initialization
-    logger.debug("[cardio] useCardioProgressSnapshot: Hook initialized", { range });
+    logger.debug("[workouts] useWorkoutsProgressSnapshot: Hook initialized", { range });
     
-    const unavailable = toSnapshot(cardioProvider.getUnavailableSnapshot(range));
+    const unavailable = toSnapshot(workoutsProvider.getUnavailableSnapshot(range));
     setSnapshot(unavailable);
     
     // ADD: Log when calling provider
-    logger.debug("[cardio] useCardioProgressSnapshot: Calling cardioProvider.snapshot", { range });
-    
-    cardioProvider
+    logger.debug("[workouts] useWorkoutsProgressSnapshot: Calling workoutsProvider.snapshot", { range });
+
+    workoutsProvider
       .snapshot(range)
       .then((raw: any) => {
         if (cancelled) return;
         
         // ADD: Log raw data received from provider
-        logger.debug("[cardio] useCardioProgressSnapshot: Raw snapshot received from provider", {
+        logger.debug("[workouts] useWorkoutsProgressSnapshot: Raw snapshot received from provider", {
           range,
           seriesKeys: Object.keys(raw.series || {}),
           kpiCount: raw.kpis?.length || 0,
@@ -143,7 +143,7 @@ export function useCardioProgressSnapshot(range: TimeRange) {
         const converted = toSnapshot(raw);
         
         // ADD: Log converted data
-        logger.debug("[cardio] useCardioProgressSnapshot: Converted to Snapshot format", {
+        logger.debug("[workouts] useWorkoutsProgressSnapshot: Converted to Snapshot format", {
           range,
           seriesCount: converted.series?.length || 0,
           kpiCount: converted.kpis?.length || 0,
@@ -154,7 +154,7 @@ export function useCardioProgressSnapshot(range: TimeRange) {
       })
       .catch((error: any) => {
         if (!cancelled) {
-          logger.debug("[cardio] useCardioProgressSnapshot: Failed to load cardio snapshot", { range, error });
+          logger.debug("[workouts] useWorkoutsProgressSnapshot: Failed to load workouts snapshot", { range, error });
           setSnapshot(unavailable);
         }
       })

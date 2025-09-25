@@ -159,7 +159,7 @@ function extractFirstName(profile: Profile | null): string | null {
 
 function getKpiFormatter(domain: ProgressDomain, index: number): (value: number) => string {
   switch (domain) {
-    case "cardio":
+    case "workouts":
       return [
         formatDurationMinutes,
         formatKilometers,

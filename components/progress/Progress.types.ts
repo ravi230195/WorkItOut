@@ -6,7 +6,7 @@ export type TrendPoint = {
   isPersonalBest?: boolean;
 };
 
-export type ProgressDomain = "cardio" | "measurement";
+export type ProgressDomain = "workouts" | "measurement";
 
 export type KpiDatum = {
   title: string;
@@ -16,8 +16,8 @@ export type KpiDatum = {
   currentNumeric?: number;
 };
 
-export type StrengthHistoryEntry = {
-  type: "strength";
+export type WorkoutHistoryEntry = {
+  type: "workouts";
   id: string;
   name: string;
   date: string;
@@ -39,7 +39,7 @@ export type CardioHistoryEntry = {
   routineTemplateId?: number;
 };
 
-export type HistoryEntry = StrengthHistoryEntry | CardioHistoryEntry;
+export type HistoryEntry = WorkoutHistoryEntry | CardioHistoryEntry;
 
 export type Snapshot = {
   series: TrendPoint[][];

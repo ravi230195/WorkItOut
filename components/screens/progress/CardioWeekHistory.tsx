@@ -78,7 +78,7 @@ const DIVIDER_STYLE: CSSProperties = {
 };
 
 const WORKOUT_ACCENTS: Record<string, string> = {
-  strength: PROGRESS_THEME.accentPrimary,
+  workouts: PROGRESS_THEME.accentPrimary,
   cardio: PROGRESS_THEME.accentSecondary,
   hiit: PROGRESS_THEME.accentSecondary,
   mobility: PROGRESS_THEME.accentSecondary,
@@ -151,7 +151,7 @@ class Workout {
   }
 
   get isStrength() {
-    return this.type === "strength" || this.sets !== undefined || this.exercises !== undefined;
+    return this.type === "workouts" || this.sets !== undefined || this.exercises !== undefined;
   }
 
   private formatMetric(value: ReactNode) {
