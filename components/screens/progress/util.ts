@@ -1,6 +1,5 @@
 import type { TimeRange } from "@/types/progress";
 import type { ProgressDomain } from "../../progress/Progress.types";
-import type { LoadedExercise } from "../../../utils/routineLoader";
 import type { Profile } from "../../../utils/supabase/supabase-types";
 
 const PROGRESS_THEME = {
@@ -59,18 +58,6 @@ function formatDurationMinutes(value: number) {
     return `${hours}h`;
   }
   return `${minutes}m`;
-}
-
-function formatKilograms(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} kg`;
-}
-
-function formatDays(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} days`;
-}
-
-function formatWorkouts(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} workouts`;
 }
 
 function formatKilometers(value: number) {
@@ -149,41 +136,6 @@ function formatHistoryDate(iso: string) {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function estimateRoutineDurationMinutes(exerciseCount: number) {
-  if (!Number.isFinite(exerciseCount) || exerciseCount <= 0) return 30;
-  return exerciseCount * 10;
-}
-
-function calculateTotalWeight(exercises: LoadedExercise[]) {
-  return exercises.reduce((total, exercise) => {
-    return (
-      total +
-      exercise.sets.reduce((setTotal, set) => {
-        const reps = Number.parseFloat(set.reps);
-        const weight = Number.parseFloat(set.weight);
-        if (!Number.isFinite(reps) || !Number.isFinite(weight)) return setTotal;
-        if (reps <= 0 || weight <= 0) return setTotal;
-        return setTotal + reps * weight;
-      }, 0)
-    );
-  }, 0);
-}
-
-function formatDuration(minutes: number) {
-  const safeMinutes = Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : 0;
-  const hours = Math.floor(safeMinutes / 60);
-  const remainingMinutes = safeMinutes % 60;
-  if (hours > 0) {
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
-  }
-  return `${Math.max(remainingMinutes, 1)} min`;
-}
-
-function formatWeight(weightKg: number) {
-  const safeWeight = Number.isFinite(weightKg) && weightKg > 0 ? weightKg : 0;
-  return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.round(safeWeight))} kg`;
-}
-
 function getEncouragement(firstName?: string | null) {
   const suffix = firstName ? `, ${firstName}` : "";
   return `You’ve got this${suffix}`;
@@ -207,13 +159,6 @@ function extractFirstName(profile: Profile | null): string | null {
 
 function getKpiFormatter(domain: ProgressDomain, index: number): (value: number) => string {
   switch (domain) {
-    case "strength":
-      return [
-        formatDurationMinutes,
-        formatWorkouts,
-        formatKilograms,
-        formatDays,
-      ][index] ?? ((value) => integerFormatter.format(Math.round(value)));
     case "cardio":
       return [
         formatDurationMinutes,
@@ -273,10 +218,6 @@ export {
   KPI_COLORS,
   normalizeActivity,
   formatHistoryDate,
-  estimateRoutineDurationMinutes,
-  calculateTotalWeight,
-  formatDuration,
-  formatWeight,
   formatDayLabel,
   formatTickValue,
   generateTicks,

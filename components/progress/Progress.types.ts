@@ -6,7 +6,7 @@ export type TrendPoint = {
   isPersonalBest?: boolean;
 };
 
-export type ProgressDomain = "strength" | "cardio" | "measurement";
+export type ProgressDomain = "cardio" | "measurement";
 
 export type KpiDatum = {
   title: string;
