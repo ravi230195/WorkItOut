@@ -201,7 +201,7 @@ class Workout {
   }
 }
 
-type CardioHistoryEntry = Extract<WorkoutsHistoryEntry, { type: "cardio" }>;
+type CardioHistoryEntry = WorkoutsHistoryEntry & { type: "cardio" };
 
 export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHistoryDay[] {
   const cardioEntries = entries.filter((entry): entry is CardioHistoryEntry => entry.type === "cardio");
