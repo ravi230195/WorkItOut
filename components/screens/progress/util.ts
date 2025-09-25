@@ -61,18 +61,6 @@ function formatDurationMinutes(value: number) {
   return `${minutes}m`;
 }
 
-function formatKilograms(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} kg`;
-}
-
-function formatDays(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} days`;
-}
-
-function formatWorkouts(value: number) {
-  return `${integerFormatter.format(Math.round(clampNonNegative(value)))} workouts`;
-}
-
 function formatKilometers(value: number) {
   return `${decimalOneFormatter.format(clampNonNegative(value))} km`;
 }
@@ -207,13 +195,6 @@ function extractFirstName(profile: Profile | null): string | null {
 
 function getKpiFormatter(domain: ProgressDomain, index: number): (value: number) => string {
   switch (domain) {
-    case "strength":
-      return [
-        formatDurationMinutes,
-        formatWorkouts,
-        formatKilograms,
-        formatDays,
-      ][index] ?? ((value) => integerFormatter.format(Math.round(value)));
     case "cardio":
       return [
         formatDurationMinutes,

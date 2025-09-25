@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import AppScreen from "../layouts/AppScreen";
 import type { TimeRange } from "../../src/types/progress";
-import type { HistoryEntry, ProgressDomain } from "../progress/Progress.types";
+import type { ProgressDomain } from "../progress/Progress.types";
 import { PROGRESS_MOCK_SNAPSHOTS } from "./progress/MockData";
 import { TrendOverview } from "./progress/TrendOverview";
 import { KPI_COLORS, getEncouragement, getKpiFormatter } from "./progress/util";
@@ -18,7 +18,7 @@ import Spacer from "../layouts/Spacer";
 import { DomainSelector } from "./progress/DomainSelector";
 import { RangeSelector } from "./progress/RangeSelector";
 import { DOMAIN_LABELS, DOMAIN_OPTIONS, RANGE_LABELS, RANGE_OPTIONS } from "./progress/constants";
-import { useCardioProgressSnapshot, useStrengthHistory, useUserFirstName } from "./progress/hooks";
+import { useCardioProgressSnapshot, useUserFirstName } from "./progress/hooks";
 
 const USE_CARDIO_WEEK_MOCK = true;
 
@@ -33,7 +33,6 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const [selectedKpiIndex, setSelectedKpiIndex] = useState(0);
   const { userToken } = useAuth();
   const firstName = useUserFirstName(userToken);
-  const { history: strengthHistory, loading: strengthHistoryLoading } = useStrengthHistory(userToken);
   const {
     snapshot: fetchedCardioSnapshot,
     loading: fetchedCardioLoading,
@@ -50,18 +49,12 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
 
   const cardioLoading = isUsingCardioMockData ? false : fetchedCardioLoading;
 
-  const baseSnapshot = useMemo(() => {
+  const snapshot = useMemo(() => {
     if (domain === "cardio" && cardioSnapshot) {
       return cardioSnapshot;
     }
     return PROGRESS_MOCK_SNAPSHOTS[domain][range];
   }, [cardioSnapshot, domain, range]);
-  const snapshot = useMemo(() => {
-    if (domain === "strength" && strengthHistory.length > 0) {
-      return { ...baseSnapshot, history: strengthHistory };
-    }
-    return baseSnapshot;
-  }, [baseSnapshot, domain, strengthHistory]);
   const valueFormatter = useMemo(() => getKpiFormatter(domain, selectedKpiIndex), [domain, selectedKpiIndex]);
   const trendSeries = snapshot.series[selectedKpiIndex] ?? snapshot.series[0] ?? [];
   const shouldShowCardioWeekHistory = domain === "cardio" && range === "week";
@@ -75,12 +68,8 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const shouldShowHistory =
     !shouldShowCardioWeekHistory &&
     domain !== "measurement" &&
-    (snapshot.history.length > 0 ||
-      (domain === "strength" && strengthHistoryLoading) ||
-      (domain === "cardio" && cardioLoading));
-  const showHistoryLoading =
-    (domain === "strength" && strengthHistoryLoading && snapshot.history.length === 0) ||
-    (domain === "cardio" && cardioLoading && snapshot.history.length === 0);
+    (snapshot.history.length > 0 || (domain === "cardio" && cardioLoading));
+  const showHistoryLoading = domain === "cardio" && cardioLoading && snapshot.history.length === 0;
 
   useEffect(() => {
     setSelectedKpiIndex(0);
@@ -124,14 +113,6 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
   const rangeLabel = RANGE_LABELS[range] ?? "";
   const trendTitle = snapshot.kpis[selectedKpiIndex]?.title ?? snapshot.kpis[0]?.title ?? "";
 
-  const handleStrengthHistorySelect = (entry: HistoryEntry) => {
-    if (entry.type !== "strength") return;
-    if (!onSelectRoutine) return;
-    const { routineTemplateId } = entry;
-    if (typeof routineTemplateId !== "number") return;
-    onSelectRoutine(routineTemplateId, entry.name, RoutineAccess.ReadOnly);
-  };
-
   return (
     <AppScreen
       header={null}
@@ -161,11 +142,7 @@ export function ProgressScreen({ bottomBar, onSelectRoutine }: ProgressScreenPro
         {shouldShowCardioWeekHistory ? (
           <CardioWeekHistory days={cardioWeekHistoryDays} />
         ) : shouldShowHistory ? (
-          <HistorySection
-            entries={snapshot.history}
-            showLoading={showHistoryLoading}
-            onSelectStrength={domain === "strength" ? handleStrengthHistorySelect : undefined}
-          />
+          <HistorySection entries={snapshot.history} showLoading={showHistoryLoading} />
         ) : null}
       </Stack>
     </AppScreen>
