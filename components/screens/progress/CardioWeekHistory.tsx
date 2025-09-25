@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 import { PROGRESS_THEME } from "./util";
-import type { CardioHistoryEntry, HistoryEntry } from "../../progress/Progress.types";
+import type { HistoryEntry } from "../../progress/Progress.types";
 import { logger } from "../../../utils/logging";
 
 const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" ");
@@ -78,6 +78,7 @@ const DIVIDER_STYLE: CSSProperties = {
 };
 
 const WORKOUT_ACCENTS: Record<string, string> = {
+  workouts: PROGRESS_THEME.accentPrimary,
   strength: PROGRESS_THEME.accentPrimary,
   cardio: PROGRESS_THEME.accentSecondary,
   hiit: PROGRESS_THEME.accentSecondary,
@@ -151,7 +152,13 @@ class Workout {
   }
 
   get isStrength() {
-    return this.type === "strength" || this.sets !== undefined || this.exercises !== undefined;
+    return (
+      this.type === "strength" ||
+      this.type === "workouts" ||
+      this.sets !== undefined ||
+      this.exercises !== undefined ||
+      this.volume !== undefined
+    );
   }
 
   private formatMetric(value: ReactNode) {
@@ -202,12 +209,11 @@ class Workout {
 }
 
 export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHistoryDay[] {
-  const cardioEntries = entries.filter((entry): entry is CardioHistoryEntry => entry.type === "cardio");
-  if (cardioEntries.length === 0) {
+  if (entries.length === 0) {
     return [];
   }
 
-  const grouped = cardioEntries.reduce<
+  const grouped = entries.reduce<
     Map<string, { date: Date; workouts: CardioWeekHistoryDay["workouts"]; totals: AggregatedTotals; label?: string }>
   >((acc, entry) => {
     const date = new Date(entry.date);
@@ -231,6 +237,7 @@ export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHisto
       calories: entry.calories,
       time: entry.time,
       steps: entry.steps,
+      volume: entry.totalWeight,
     });
 
     const calories = parseNumeric(entry.calories);
