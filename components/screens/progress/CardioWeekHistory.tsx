@@ -10,7 +10,6 @@ import {
   Activity,
   BarChart3,
   Calendar,
-  ChevronDown,
   Clock,
   Dumbbell,
   Flame,
@@ -149,11 +148,6 @@ const KPI_CARD_STYLE: CSSProperties = {
   backgroundColor: PROGRESS_THEME.cardBackground,
 };
 
-const DETAIL_CARD_STYLE: CSSProperties = {
-  borderColor: PROGRESS_THEME.borderSubtle,
-  backgroundColor: PROGRESS_THEME.historyBackground,
-};
-
 const WORKOUT_ACCENTS: Record<string, string> = {
   strength: PROGRESS_THEME.accentPrimary,
   cardio: PROGRESS_THEME.accentSecondary,
@@ -240,10 +234,9 @@ type DailyWorkoutCardProps = {
 
 function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
   const day = useMemo(() => DATA.days.find((entry) => entry.key === dayKey) ?? DATA.days[0], [dayKey]);
-  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
   return (
-    <section className="w-full rounded-3xl border bg-white p-5" style={{ ...SECTION_STYLE, border: "1px solid red" }}>
+    <section className="w-full rounded-3xl border bg-white p-5" style={SECTION_STYLE}>
       <div className="flex flex-col gap-5">
         <WeekStrip value={day.key} onChange={setDayKey} />
 
@@ -252,7 +245,7 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
             <Calendar className="h-4 w-4" style={{ color: PROGRESS_THEME.accentPrimary }} />
             <span>{day.dateLabel}</span>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(60px,1fr))]">
             {[
               { Icon: Flame, label: "Calories", value: day.dailyTotals.calories },
               { Icon: Clock, label: "Duration", value: day.dailyTotals.time },
@@ -261,15 +254,15 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
             ].map(({ Icon, label, value }) => (
               <div
                 key={label}
-                className="flex items-center gap-2 rounded-2xl border px-3 py-2"
+                className="flex h-full items-center gap-1 rounded-sm border px-2 py-1"
                 style={KPI_CARD_STYLE}
               >
-                <Icon className="h-4 w-4" style={{ color: PROGRESS_THEME.textMuted }} />
+                <Icon className="h-3 w-3" style={{ color: PROGRESS_THEME.textMuted }} />
                 <div className="flex flex-col">
-                  <span className="text-[13px] font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+                  <span className="text-xs font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
                     {value}
                   </span>
-                  <span className="text-[11px] uppercase tracking-[0.08em]" style={{ color: PROGRESS_THEME.textMuted }}>
+                  <span className="text-xs uppercase tracking-[0.01em]" style={{ color: PROGRESS_THEME.textMuted }}>
                     {label}
                   </span>
                 </div>
@@ -288,11 +281,11 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
             </h4>
           </div>
 
-          <div className={cn("space-y-3", day.workouts.length > 2 && "max-h-64 overflow-y-auto")}>
+          <div className={cn("space-y-3", day.workouts.length > 2 && "max-h-64 overflow-y-auto pr-1 -mr-1")}
+          >
             {day.workouts.map((workout) => {
               const accent = getAccentColor(workout);
               const isStrength = workout.type === "strength" || "sets" in workout;
-              const isOpen = Boolean(expanded[workout.id]);
               const metricTwo = isStrength
                 ? (workout as { exercises: number }).exercises
                 : (workout as { distance?: string }).distance;
@@ -302,7 +295,7 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
                 : ("steps" in workout ? (workout as { steps: number }).steps : "—");
               const labelThree = isStrength ? "Sets" : "Steps";
 
-              const buttonStyle: StyleWithRing = {
+              const cardStyle: StyleWithRing = {
                 borderColor: hexToRgba(accent, 0.28),
                 backgroundColor: hexToRgba(accent, 0.12),
                 ["--tw-ring-color"]: hexToRgba(accent, 0.3),
@@ -321,64 +314,47 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
               };
 
               return (
-                <button
+                <article
                   key={workout.id}
-                  type="button"
-                  onClick={() =>
-                    setExpanded((previous) => ({ ...previous, [workout.id]: !previous[workout.id] }))
-                  }
-                  className={cn(
-                    "flex w-full flex-col gap-3 rounded-2xl border px-4 py-3 text-left transition",
-                    "hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-                  )}
-                  style={buttonStyle}
+                  className="w-full rounded-2xl border px-4 py-3 transition hover:shadow-sm"
+                  style={cardStyle}
                 >
                   <div className="flex flex-col gap-3">
-                    <div className="flex items-start gap-3 sm:gap-4">
-                      <div className="flex items-start gap-3 sm:min-w-0">
-                        <div
-                          className="flex h-10 w-10 items-center justify-center rounded-full border"
-                          style={iconWrapperStyle}
-                        >
-                          {isStrength ? (
-                            <Dumbbell className="h-4 w-4" />
-                          ) : (
-                            <Activity className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h5 className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
-                              {workout.name}
-                            </h5>
-                            {"personalRecords" in workout && workout.personalRecords ? (
-                              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium" style={badgeStyle}>
-                                <Trophy className="h-3 w-3" />
-                                {workout.personalRecords}
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
-                            {workout.time}
-                          </p>
-                        </div>
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="flex h-10 w-10 items-center justify-center rounded-full border"
+                        style={iconWrapperStyle}
+                      >
+                        {isStrength ? <Dumbbell className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
                       </div>
 
-                      <ChevronDown
-                        className={cn(
-                          "h-4 w-4 shrink-0 self-start transition-transform",
-                          isOpen && "rotate-180",
-                        )}
-                        style={{ color: PROGRESS_THEME.textMuted }}
-                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h5 className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+                            {workout.name}
+                          </h5>
+                          {"personalRecords" in workout && workout.personalRecords ? (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
+                              style={badgeStyle}
+                            >
+                              <Trophy className="h-3 w-3" />
+                              {workout.personalRecords}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
+                          {workout.time}
+                        </p>
+                      </div>
                     </div>
 
                     <div
-                      className={cn(
-                        "grid grid-cols-2 gap-3 rounded-2xl border px-3 py-2",
-                        "sm:grid-cols-4",
-                      )}
-                      style={{ borderColor: hexToRgba(accent, 0.24), backgroundColor: hexToRgba(accent, 0.08) }}
+                      className="grid grid-cols-2 gap-2 rounded-2xl border px-3 py-2 text-center sm:grid-cols-4"
+                      style={{
+                        borderColor: hexToRgba(accent, 0.24),
+                        backgroundColor: hexToRgba(accent, 0.08),
+                      }}
                     >
                       <Metric icon={Timer} value={workout.duration} label="Duration" align="center" />
                       <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} align="center" />
@@ -386,49 +362,13 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
                       <Metric icon={Zap} value={workout.calories} label="Calories" iconColor={accent} align="center" />
                     </div>
                   </div>
-
-                  <div
-                    className={cn(
-                      "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
-                      isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-                    )}
-                  >
-                    <div className="overflow-hidden">
-                      <div className="rounded-2xl border px-4 py-3 text-sm" style={DETAIL_CARD_STYLE}>
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                          <Detail label="Duration" value={workout.duration} />
-                          <Detail label={labelTwo} value={metricTwo ?? "—"} />
-                          <Detail label={labelThree} value={metricThree ?? "—"} />
-                          <Detail label="Calories" value={workout.calories} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </button>
+                </article>
               );
             })}
           </div>
         </div>
       </div>
     </section>
-  );
-}
-
-type DetailProps = {
-  label: string;
-  value: ReactNode;
-};
-
-function Detail({ label, value }: DetailProps) {
-  return (
-    <p>
-      <span className="font-medium" style={{ color: PROGRESS_THEME.textSubtle }}>
-        {label}:
-      </span>{" "}
-      <span className="font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
-        {value}
-      </span>
-    </p>
   );
 }
 
@@ -450,12 +390,7 @@ const METRIC_ALIGN_CLASSES: Record<MetricAlignment, string> = {
 
 function Metric({ icon: Icon, value, label, iconColor, align = "center" }: MetricProps) {
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-1",
-        METRIC_ALIGN_CLASSES[align],
-      )}
-    >
+    <div className={cn("flex flex-col gap-1", METRIC_ALIGN_CLASSES[align])}>
       <Icon className="h-4 w-4" style={{ color: iconColor ?? PROGRESS_THEME.textMuted }} />
       <span className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
         {value}
