@@ -6,7 +6,6 @@ import type { ProgressDomain } from "../progress/Progress.types";
 import { PROGRESS_MOCK_SNAPSHOTS } from "./progress/MockData";
 import { TrendOverview } from "./progress/TrendOverview";
 import { KPI_COLORS, getEncouragement, getKpiFormatter } from "./progress/util";
-import { HistorySection } from "./progress/HistorySection";
 import { CardioWeekHistory, buildCardioWeekHistory, type CardioWeekHistoryDay } from "./progress/CardioWeekHistory";
 import { KpiTiles } from "./progress/KpiTiles";
 import { useAuth } from "../AuthContext";
@@ -56,19 +55,13 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
   const snapshot = baseSnapshot;
   const valueFormatter = useMemo(() => getKpiFormatter(domain, selectedKpiIndex), [domain, selectedKpiIndex]);
   const trendSeries = snapshot.series[selectedKpiIndex] ?? snapshot.series[0] ?? [];
-  const shouldShowWorkoutsWeekHistory = domain === "workouts" && range === "week";
-  const workoutsWeekHistoryDays = useMemo<CardioWeekHistoryDay[]>(() => {
-    if (!shouldShowWorkoutsWeekHistory) {
+  const workoutsHistoryDays = useMemo<CardioWeekHistoryDay[]>(() => {
+    if (domain !== "workouts") {
       return [];
     }
 
     return buildCardioWeekHistory(snapshot.history);
-  }, [shouldShowWorkoutsWeekHistory, snapshot.history]);
-  const shouldShowHistory =
-    !shouldShowWorkoutsWeekHistory &&
-    domain !== "measurement" &&
-    (snapshot.history.length > 0 || (domain === "workouts" && workoutsLoading));
-  const showHistoryLoading = domain === "workouts" && workoutsLoading && snapshot.history.length === 0;
+  }, [domain, snapshot.history]);
 
   useEffect(() => {
     setSelectedKpiIndex(0);
@@ -138,11 +131,7 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         />
         <KpiTiles domain={domain} kpis={snapshot.kpis} selectedIndex={selectedKpiIndex} onSelect={setSelectedKpiIndex} />
         <Spacer y="sm" />
-        {shouldShowWorkoutsWeekHistory ? (
-          <CardioWeekHistory days={workoutsWeekHistoryDays} />
-        ) : shouldShowHistory ? (
-          <HistorySection entries={snapshot.history} showLoading={showHistoryLoading} />
-        ) : null}
+        {domain === "workouts" ? <CardioWeekHistory days={workoutsHistoryDays} /> : null}
       </Stack>
     </AppScreen>
   );
