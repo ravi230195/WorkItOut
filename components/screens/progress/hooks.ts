@@ -121,6 +121,21 @@ function formatHistoryDuration(minutes: number) {
   return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function formatHistoryTime(iso?: string) {
+  if (!iso) return undefined;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+function sanitizeSteps(value?: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return undefined;
+  }
+  const normalized = Math.round(value);
+  return normalized >= 0 ? normalized : undefined;
+}
+
 function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
   const series = CARDIO_FOCUS_ORDER.map((focus) => {
     const entry = raw.series[focus];
@@ -150,6 +165,8 @@ function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
     calories: typeof workout.calories === "number"
       ? `${integerFormatter.format(Math.round(workout.calories))} kcal`
       : undefined,
+    time: formatHistoryTime(workout.start),
+    steps: sanitizeSteps(workout.steps),
   }));
 
   return { series, kpis, history };
