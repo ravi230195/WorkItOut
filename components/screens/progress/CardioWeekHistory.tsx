@@ -8,17 +8,13 @@ import {
 } from "react";
 import {
   Activity,
-  BarChart3,
   Calendar,
   Clock,
   Dumbbell,
   Flame,
   Footprints,
   MapPin,
-  Target,
-  Timer,
   Trophy,
-  Zap,
 } from "lucide-react";
 
 import { PROGRESS_THEME } from "./util";
@@ -143,11 +139,6 @@ const DIVIDER_STYLE: CSSProperties = {
   backgroundColor: PROGRESS_THEME.borderSubtle,
 };
 
-const KPI_CARD_STYLE: CSSProperties = {
-  borderColor: PROGRESS_THEME.borderSubtle,
-  backgroundColor: PROGRESS_THEME.cardBackground,
-};
-
 const WORKOUT_ACCENTS: Record<string, string> = {
   strength: PROGRESS_THEME.accentPrimary,
   cardio: PROGRESS_THEME.accentSecondary,
@@ -254,8 +245,7 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
             ].map(({ Icon, label, value }) => (
               <div
                 key={label}
-                className="flex h-full items-center gap-1 rounded-sm border px-2 py-1"
-                style={KPI_CARD_STYLE}
+                className="flex items-center gap-2"
               >
                 <Icon className="h-3 w-3" style={{ color: PROGRESS_THEME.textMuted }} />
                 <div className="flex flex-col">
@@ -281,8 +271,7 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
             </h4>
           </div>
 
-          <div className={cn("space-y-3", day.workouts.length > 2 && "max-h-64 overflow-y-auto pr-1 -mr-1")}
-          >
+          <div className="space-y-3">
             {day.workouts.map((workout) => {
               const accent = getAccentColor(workout);
               const isStrength = workout.type === "strength" || "sets" in workout;
@@ -349,17 +338,11 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
                       </div>
                     </div>
 
-                    <div
-                      className="grid grid-cols-2 gap-2 rounded-2xl border px-3 py-2 text-center sm:grid-cols-4"
-                      style={{
-                        borderColor: hexToRgba(accent, 0.24),
-                        backgroundColor: hexToRgba(accent, 0.08),
-                      }}
-                    >
-                      <Metric icon={Timer} value={workout.duration} label="Duration" align="center" />
-                      <Metric icon={Target} value={metricTwo ?? "—"} label={labelTwo} align="center" />
-                      <Metric icon={BarChart3} value={metricThree ?? "—"} label={labelThree} align="center" />
-                      <Metric icon={Zap} value={workout.calories} label="Calories" iconColor={accent} align="center" />
+                    <div className="flex text-center" style={{ gap: "clamp(0.25rem, 2vw, 1rem)" }}>
+                      <div className="flex-1"><Metric value={workout.duration} label="Duration" align="center" /></div>
+                      <div className="flex-1"><Metric value={metricTwo ?? "—"} label={labelTwo} align="center" /></div>
+                      <div className="flex-1"><Metric value={metricThree ?? "—"} label={labelThree} align="center" /></div>
+                      <div className="flex-1"><Metric value={workout.calories} label="Calories" align="center" /></div>
                     </div>
                   </div>
                 </article>
@@ -375,7 +358,7 @@ function DailyWorkoutCard({ dayKey, setDayKey }: DailyWorkoutCardProps) {
 type MetricAlignment = "start" | "center" | "end";
 
 type MetricProps = {
-  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  icon?: ComponentType<SVGProps<SVGSVGElement>>;
   value: ReactNode;
   label: string;
   iconColor?: string;
@@ -390,12 +373,38 @@ const METRIC_ALIGN_CLASSES: Record<MetricAlignment, string> = {
 
 function Metric({ icon: Icon, value, label, iconColor, align = "center" }: MetricProps) {
   return (
-    <div className={cn("flex flex-col gap-1", METRIC_ALIGN_CLASSES[align])}>
-      <Icon className="h-4 w-4" style={{ color: iconColor ?? PROGRESS_THEME.textMuted }} />
-      <span className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+    <div
+      className={cn("flex flex-col", METRIC_ALIGN_CLASSES[align])}
+      style={{ gap: "clamp(0.125rem, 0.5vw, 0.5rem)" }}
+    >
+      {Icon && (
+        <Icon
+          className="h-4 w-4"
+          style={{
+            color: iconColor ?? PROGRESS_THEME.textMuted,
+            width: "clamp(0.75rem, 2vw, 1.25rem)",
+            height: "clamp(0.75rem, 2vw, 1.25rem)",
+          }}
+        />
+      )}
+      <span
+        className="text-sm font-semibold"
+        style={{
+          color: PROGRESS_THEME.textPrimary,
+          fontSize: "clamp(0.75rem, 1.5vw, 1rem)",
+          fontWeight: "clamp(500, 1vw + 400, 700)",
+        }}
+      >
         {value}
       </span>
-      <span className="text-[11px] uppercase tracking-[0.08em]" style={{ color: PROGRESS_THEME.textMuted }}>
+      <span
+        className="text-[11px] uppercase tracking-[0.08em]"
+        style={{
+          color: PROGRESS_THEME.textMuted,
+          fontSize: "clamp(0.625rem, 1vw, 0.75rem)",
+          letterSpacing: "clamp(0.06em, 0.1vw, 0.1em)",
+        }}
+      >
         {label}
       </span>
     </div>
