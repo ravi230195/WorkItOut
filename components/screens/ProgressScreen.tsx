@@ -127,7 +127,6 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
           domainLabel={domainLabel}
           rangeLabel={rangeLabel}
           title={trendTitle}
-          chipLabel={domainLabel}
           series={trendSeries}
           color={trendColor}
           range={range}
