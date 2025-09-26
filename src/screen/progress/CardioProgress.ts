@@ -252,10 +252,11 @@ class CardioProgressProvider implements ProgressDataProvider {
         range,
         seriesKeys: Object.keys(result.series || {}),
         kpiCount: result.kpis?.length || 0,
-        workoutCount: result.workouts?.length || 0,
+        workoutDays: Object.keys(result.workouts || {}).length,
+        workoutCount: Object.values(result.workouts || {}).reduce((total, day) => total + day.length, 0),
         hasTargetLine: !!result.targetLine
       });
-      
+
       return result;
     } catch (error) {
       logger.debug("[cardio] CardioProgressProvider.snapshot: Failed", { range, error });

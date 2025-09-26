@@ -1,4 +1,4 @@
-import type { TimeRange } from "@/types/progress";
+import type { CardioWorkoutSummary, TimeRange } from "@/types/progress";
 
 export type TrendPoint = {
   x: string; // ISO date
@@ -35,7 +35,7 @@ export type HistoryEntry = WorkoutsHistoryEntry;
 export type Snapshot = {
   series: TrendPoint[][];
   kpis: KpiDatum[];
-  history: HistoryEntry[];
+  workouts: Record<string, CardioWorkoutSummary[]>;
 };
 
 export type DomainSnapshotMap = Record<ProgressDomain, Record<TimeRange, Snapshot>>;

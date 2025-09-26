@@ -60,8 +60,8 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
       return [];
     }
 
-    return buildCardioWeekHistory(snapshot.history);
-  }, [domain, snapshot.history]);
+    return buildCardioWeekHistory(snapshot.workouts);
+  }, [domain, snapshot.workouts]);
 
   useEffect(() => {
     setSelectedKpiIndex(0);
@@ -86,7 +86,11 @@ export function ProgressScreen({ bottomBar }: ProgressScreenProps) {
         range,
         kpiCount: workoutsSnapshot.kpis?.length || 0,
         seriesCount: workoutsSnapshot.series?.length || 0,
-        historyCount: workoutsSnapshot.history?.length || 0,
+        workoutDayCount: Object.keys(workoutsSnapshot.workouts || {}).length,
+        workoutCount: Object.values(workoutsSnapshot.workouts || {}).reduce(
+          (total, day) => total + day.length,
+          0
+        ),
         kpis: workoutsSnapshot.kpis?.map(kpi => ({
           title: kpi.title,
           value: kpi.value,

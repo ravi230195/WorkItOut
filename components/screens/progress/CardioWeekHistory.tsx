@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 import { PROGRESS_THEME } from "./util";
-import type { HistoryEntry } from "../../progress/Progress.types";
+import type { CardioWorkoutSummary } from "@/types/progress";
 import { logger } from "../../../utils/logging";
 
 const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" ");
@@ -52,7 +52,7 @@ export type CardioWeekHistoryDay = {
     steps?: ReactNode;
   };
   workouts: CardioWeekHistoryWorkout[];
-  historyEntries: HistoryEntry[];
+  historyEntries: CardioWorkoutSummary[];
 };
 
 type StyleWithRing = CSSProperties & { ["--tw-ring-color"]?: string };
@@ -85,6 +85,9 @@ const WORKOUT_ACCENTS: Record<string, string> = {
   hiit: PROGRESS_THEME.accentSecondary,
   mobility: PROGRESS_THEME.accentSecondary,
 };
+
+const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+const distanceFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function hexToRgba(hex: string, alpha: number) {
   const normalized = hex.replace("#", "");
@@ -196,7 +199,8 @@ class Workout {
   }
 }
 
-export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHistoryDay[] {
+export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSummary[]>): CardioWeekHistoryDay[] {
+  const entries = Object.entries(groups);
   if (entries.length === 0) {
     return [];
   }
@@ -210,13 +214,23 @@ export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHisto
       {
         date: Date;
         workouts: CardioWeekHistoryDay["workouts"];
-        historyEntries: CardioWeekHistoryDay["historyEntries"];
+        historyEntries: CardioWorkoutSummary[];
         totals: AggregatedTotals;
         label?: string;
       }
     >
-  >((acc, entry) => {
-    const date = toLocalDate(entry.date);
+  >((acc, [isoDate, workouts]) => {
+    if (!Array.isArray(workouts) || workouts.length === 0) {
+      return acc;
+    }
+
+    const reference = toLocalDate(isoDate);
+    const fallback = workouts[0] ? toLocalDate(workouts[0].start) : new Date(NaN);
+    const date = !Number.isNaN(reference.getTime()) ? reference : fallback;
+
+    if (Number.isNaN(date.getTime())) {
+      return acc;
+    }
 
     if (!isWithinRange(date, startOfCurrentWeek, endOfCurrentWeek)) {
       return acc;
@@ -234,36 +248,39 @@ export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHisto
     }
 
     const group = acc.get(key)!;
-    group.historyEntries.push(entry);
-    group.workouts.push({
-      id: entry.id,
-      type: entry.type,
-      name: entry.activity,
-      duration: entry.duration,
-      distance: entry.distance,
-      calories: entry.calories,
-      time: entry.time,
-      steps: entry.steps,
-      volume: entry.totalWeight,
-    });
+    const sorted = [...workouts].sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
 
-    const calories = parseNumeric(entry.calories);
-    if (typeof calories === "number") {
-      group.totals.calories = (group.totals.calories ?? 0) + calories;
-    }
+    for (const workout of sorted) {
+      group.historyEntries.push(workout);
+      group.workouts.push({
+        id: workout.id,
+        type: "cardio",
+        name: workout.activity,
+        duration: formatHistoryDuration(workout.durationMinutes),
+        distance:
+          typeof workout.distanceKm === "number"
+            ? `${distanceFormatter.format(Math.max(0, workout.distanceKm))} km`
+            : undefined,
+        calories:
+          typeof workout.calories === "number"
+            ? `${integerFormatter.format(Math.round(Math.max(0, workout.calories)))} kcal`
+            : undefined,
+        time: formatHistoryTime(workout.start),
+        steps: sanitizeSteps(workout.steps),
+      });
 
-    const distance = parseNumeric(entry.distance);
-    if (typeof distance === "number") {
-      group.totals.distance = (group.totals.distance ?? 0) + distance;
-    }
-
-    if (typeof entry.steps === "number") {
-      group.totals.steps = (group.totals.steps ?? 0) + entry.steps;
-    }
-
-    const minutes = parseDurationMinutes(entry.duration);
-    if (typeof minutes === "number") {
-      group.totals.time = (group.totals.time ?? 0) + minutes;
+      if (typeof workout.calories === "number" && Number.isFinite(workout.calories)) {
+        group.totals.calories = (group.totals.calories ?? 0) + workout.calories;
+      }
+      if (typeof workout.distanceKm === "number" && Number.isFinite(workout.distanceKm)) {
+        group.totals.distance = (group.totals.distance ?? 0) + workout.distanceKm;
+      }
+      if (typeof workout.steps === "number" && Number.isFinite(workout.steps)) {
+        group.totals.steps = (group.totals.steps ?? 0) + workout.steps;
+      }
+      if (typeof workout.durationMinutes === "number" && Number.isFinite(workout.durationMinutes)) {
+        group.totals.time = (group.totals.time ?? 0) + workout.durationMinutes;
+      }
     }
 
     return acc;
@@ -292,32 +309,30 @@ export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHisto
     });
 }
 
-function parseNumeric(value?: string) {
-  if (!value) return undefined;
-  const match = value.match(/[\d,.]+/);
-  if (!match) return undefined;
-  const normalized = match[0].replace(/,/g, "");
-  const parsed = Number.parseFloat(normalized);
-  return Number.isNaN(parsed) ? undefined : parsed;
+function formatHistoryDuration(minutes?: number) {
+  if (!Number.isFinite(minutes) || (minutes ?? 0) <= 0) {
+    return "00:00:00";
+  }
+  const totalSeconds = Math.max(0, Math.round((minutes ?? 0) * 60));
+  const hours = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-function parseDurationMinutes(value?: string) {
-  if (!value) return undefined;
+function formatHistoryTime(iso?: string) {
+  if (!iso) return undefined;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
 
-  if (/^\d{1,2}:\d{2}:\d{2}$/.test(value)) {
-    const [hours, minutes, seconds] = value.split(":").map(Number);
-    if ([hours, minutes, seconds].some((part) => Number.isNaN(part))) {
-      return undefined;
-    }
-    return hours * 60 + minutes + seconds / 60;
+function sanitizeSteps(value?: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return undefined;
   }
-
-  const hourMatch = value.match(/(\d+)\s*h/);
-  const minuteMatch = value.match(/(\d+)\s*m/);
-  const totalMinutes =
-    (hourMatch ? Number.parseInt(hourMatch[1], 10) * 60 : 0) +
-    (minuteMatch ? Number.parseInt(minuteMatch[1], 10) : 0);
-  return Number.isNaN(totalMinutes) ? undefined : totalMinutes;
+  const normalized = Math.round(value);
+  return normalized >= 0 ? normalized : undefined;
 }
 
 function formatMinutes(totalMinutes: number) {
@@ -334,13 +349,22 @@ function getWeekIndex(date: Date) {
   return jsDay === 0 ? 6 : jsDay - 1;
 }
 
-function toLocalDate(value: string | Date) {
+function toLocalDate(value: string | Date | undefined | null) {
+  if (!value) {
+    return new Date(NaN);
+  }
   const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return new Date(NaN);
+  }
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function getStartOfWeek(date: Date) {
   const local = toLocalDate(date);
+  if (Number.isNaN(local.getTime())) {
+    return new Date(date);
+  }
   const jsDay = local.getDay();
   const diff = jsDay === 0 ? -6 : 1 - jsDay;
   local.setDate(local.getDate() + diff);

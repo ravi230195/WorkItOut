@@ -1,8 +1,21 @@
-import type { TimeRange } from "@/types/progress";
+import type { CardioWorkoutSummary, TimeRange } from "@/types/progress";
 import type { DomainSnapshotMap, ProgressDomain, TrendPoint } from "../../progress/Progress.types";
 
 const RANGE_POINTS: Record<TimeRange, number> = { week: 7, threeMonths: 12, sixMonths: 6 };
 const RANGE_STEPS: Record<TimeRange, number> = { week: 1, threeMonths: 7, sixMonths: 30 };
+
+const MOCK_WORKOUTS_WEEK = groupWorkoutsByDate([
+  createCardioWorkout("c1", "Outdoor Run", 1, 6, 30, 42.17, 7.4, 612, 7420),
+  createCardioWorkout("c1b", "Interval Sprints", 1, 12, 15, 18.4, 3.1, 284, 3140),
+  createCardioWorkout("c1c", "Evening Walk", 1, 19, 20, 35.8, 3.9, 236, 4680),
+  createCardioWorkout("c2", "Indoor Run", 2, 18, 10, 35.1, 5.6, 438, 5120),
+  createCardioWorkout("c2b", "Rowing Intervals", 2, 7, 5, 28.9, 4.2, 312, 0),
+  createCardioWorkout("c3", "Cycling", 3, 9, 0, 48.7, 18.2, 502, 1860),
+  createCardioWorkout("c3b", "Hill Repeats", 3, 6, 10, 24.3, 2.1, 198, 2840),
+  createCardioWorkout("c3c", "Lunch Walk", 3, 12, 35, 22.6, 2.7, 176, 3210),
+  createCardioWorkout("c3d", "Evening Spin", 3, 19, 45, 31.1, 10.5, 286, 960),
+  createCardioWorkout("c4", "Trail Run", 4, 8, 10, 65.2, 9.6, 684, 8120),
+]);
 
 const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
   workouts: {
@@ -19,142 +32,7 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
         { title: "Calories", unit: "kcal", value: "3,420", currentNumeric: 3420, previous: 3150 },
         { title: "Steps", value: "64,210", currentNumeric: 64210, previous: 60890 },
       ],
-      history: [
-        {
-          type: "cardio",
-          id: "c1",
-          activity: "Outdoor Run",
-          date: daysAgoISO(1),
-          duration: "00:42:10",
-          distance: "7.4 km",
-          calories: "612 kcal",
-          time: "6:30 AM",
-          steps: 7420,
-        },
-        {
-          type: "cardio",
-          id: "c1b",
-          activity: "Interval Sprints",
-          date: daysAgoISO(1),
-          duration: "00:18:24",
-          distance: "3.1 km",
-          calories: "284 kcal",
-          time: "12:15 PM",
-          steps: 3140,
-        },
-        {
-          type: "cardio",
-          id: "c1c",
-          activity: "Evening Walk",
-          date: daysAgoISO(1),
-          duration: "00:35:48",
-          distance: "3.9 km",
-          calories: "236 kcal",
-          time: "7:20 PM",
-          steps: 4680,
-        },
-        {
-          type: "cardio",
-          id: "c2",
-          activity: "Indoor Run",
-          date: daysAgoISO(2),
-          duration: "00:35:05",
-          distance: "5.6 km",
-          calories: "438 kcal",
-          time: "6:10 PM",
-          steps: 5120,
-        },
-        {
-          type: "cardio",
-          id: "c2b",
-          activity: "Rowing Intervals",
-          date: daysAgoISO(2),
-          duration: "00:28:52",
-          distance: "4.2 km",
-          calories: "312 kcal",
-          time: "7:05 AM",
-          steps: 0,
-        },
-        {
-          type: "cardio",
-          id: "c3",
-          activity: "Cycling",
-          date: daysAgoISO(3),
-          duration: "00:48:44",
-          distance: "18.2 km",
-          calories: "502 kcal",
-          time: "9:00 AM",
-          steps: 1860,
-        },
-        {
-          type: "cardio",
-          id: "c3b",
-          activity: "Hill Repeats",
-          date: daysAgoISO(3),
-          duration: "00:24:16",
-          distance: "2.1 km",
-          calories: "198 kcal",
-          time: "6:10 AM",
-          steps: 2840,
-        },
-        {
-          type: "cardio",
-          id: "c3c",
-          activity: "Lunch Walk",
-          date: daysAgoISO(3),
-          duration: "00:22:33",
-          distance: "2.7 km",
-          calories: "176 kcal",
-          time: "12:35 PM",
-          steps: 3210,
-        },
-        {
-          type: "cardio",
-          id: "c3d",
-          activity: "Evening Spin",
-          date: daysAgoISO(3),
-          duration: "00:31:08",
-          distance: "10.5 km",
-          calories: "286 kcal",
-          time: "7:45 PM",
-          steps: 960,
-        },
-        {
-          type: "cardio",
-          id: "c4",
-          activity: "Trail Run",
-          date: daysAgoISO(4),
-          duration: "01:05:12",
-          distance: "9.6 km",
-          calories: "684 kcal",
-          time: "8:10 AM",
-          steps: 8120,
-        },
-        {
-          type: "strength",
-          id: "s1",
-          activity: "Upper Power",
-          date: daysAgoISO(1),
-          duration: "52 min",
-          totalWeight: "28,450 kg",
-        },
-        {
-          type: "strength",
-          id: "s2",
-          activity: "Posterior Chain",
-          date: daysAgoISO(3),
-          duration: "47 min",
-          totalWeight: "30,120 kg",
-        },
-        {
-          type: "strength",
-          id: "s3",
-          activity: "Power Pull",
-          date: daysAgoISO(5),
-          duration: "41 min",
-          totalWeight: "24,360 kg",
-        },
-      ],
+      workouts: MOCK_WORKOUTS_WEEK,
     },
     threeMonths: {
       series: [
@@ -169,7 +47,7 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
         { title: "Calories", unit: "kcal", value: "13,420", currentNumeric: 13420, previous: 12680 },
         { title: "Steps", value: "262,410", currentNumeric: 262410, previous: 254000 },
       ],
-      history: [],
+      workouts: {},
     },
     sixMonths: {
       series: [
@@ -184,7 +62,7 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
         { title: "Calories", unit: "kcal", value: "124,650", currentNumeric: 124650, previous: 123200 },
         { title: "Steps", value: "2.9M", currentNumeric: 2900000, previous: 2840000 },
       ],
-      history: [],
+      workouts: {},
     },
   },
   measurement: {
@@ -201,7 +79,7 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
         { title: "Legs", unit: "cm", value: "58.8", currentNumeric: 58.8, previous: 58.6 },
         { title: "Back", unit: "cm", value: "96.7", currentNumeric: 96.7, previous: 97.1 },
       ],
-      history: [],
+      workouts: {},
     },
     threeMonths: {
       series: [
@@ -216,7 +94,7 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
         { title: "Legs", unit: "cm", value: "59.1", currentNumeric: 59.1, previous: 58.9 },
         { title: "Back", unit: "cm", value: "96.9", currentNumeric: 96.9, previous: 97.3 },
       ],
-      history: [],
+      workouts: {},
     },
     sixMonths: {
       series: [
@@ -231,18 +109,12 @@ const PROGRESS_MOCK_SNAPSHOTS: DomainSnapshotMap = {
         { title: "Legs", unit: "cm", value: "59.6", currentNumeric: 59.6, previous: 59.2 },
         { title: "Back", unit: "cm", value: "97.2", currentNumeric: 97.2, previous: 97.9 },
       ],
-      history: [],
+      workouts: {},
     },
   },
 };
 
 export { PROGRESS_MOCK_SNAPSHOTS };
-
-function daysAgoISO(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  return date.toISOString();
-}
 
 function generateTrend(domain: ProgressDomain, range: TimeRange, seed: number, variance: number, metric: number): TrendPoint[] {
   const today = new Date();
@@ -300,6 +172,55 @@ function createRng(key: string) {
     seed |= 0;
   }
   return mulberry32(seed >>> 0);
+}
+
+function createCardioWorkout(
+  id: string,
+  activity: string,
+  daysAgo: number,
+  startHour: number,
+  startMinute: number,
+  durationMinutes: number,
+  distanceKm?: number,
+  calories?: number,
+  steps?: number,
+): CardioWorkoutSummary {
+  const start = new Date();
+  start.setDate(start.getDate() - daysAgo);
+  start.setHours(startHour, startMinute, 0, 0);
+  const durationMs = Math.max(0, Math.round(durationMinutes * 60 * 1000));
+  const end = new Date(start.getTime() + durationMs);
+  return {
+    id,
+    activity,
+    start: start.toISOString(),
+    end: end.toISOString(),
+    durationMinutes,
+    distanceKm,
+    calories,
+    steps,
+  };
+}
+
+function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, CardioWorkoutSummary[]> {
+  const grouped: Record<string, CardioWorkoutSummary[]> = {};
+  for (const workout of workouts) {
+    const date = new Date(workout.start);
+    if (Number.isNaN(date.getTime())) {
+      continue;
+    }
+    const key = date.toISOString().slice(0, 10);
+    if (!grouped[key]) {
+      grouped[key] = [];
+    }
+    grouped[key].push(workout);
+  }
+
+  for (const key of Object.keys(grouped)) {
+    grouped[key].sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
+  }
+
+  return grouped;
 }
 
 function mulberry32(a: number) {
