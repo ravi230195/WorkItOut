@@ -4,6 +4,7 @@ export type CardioFocus = "activeMinutes" | "distance" | "calories" | "steps";
 
 export type SeriesPoint = {
   iso: string;
+  endIso?: string;
   value: number;
   isPersonalBest?: boolean;
 };
