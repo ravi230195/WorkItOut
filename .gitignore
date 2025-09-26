@@ -1,1 +1,42 @@
-node_modules
+# Dependencies
+node_modules/
+
+# Build outputs
+build/
+dist/
+.vite/
+
+# Test and coverage artifacts
+coverage/
+*.lcov
+
+# Logs and diagnostics
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.iml
+
+# Capacitor / native build artifacts
+ios/App/build/
+ios/App/DerivedData/
+ios/App/Pods/
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/App.xcworkspace/xcuserdata/
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Miscellaneous
+*.local
