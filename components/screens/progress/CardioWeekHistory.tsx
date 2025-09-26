@@ -52,7 +52,6 @@ export type CardioWeekHistoryDay = {
     steps?: ReactNode;
   };
   workouts: CardioWeekHistoryWorkout[];
-  historyEntries: CardioWorkoutSummary[];
 };
 
 type StyleWithRing = CSSProperties & { ["--tw-ring-color"]?: string };
@@ -216,7 +215,6 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
       {
         date: Date;
         workouts: CardioWeekHistoryDay["workouts"];
-        historyEntries: CardioWorkoutSummary[];
         totals: AggregatedTotals;
         label?: string;
       }
@@ -245,7 +243,6 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
       acc.set(key, {
         date,
         workouts: [],
-        historyEntries: [],
         totals: {},
         label: getWeekdayLabel(date),
       });
@@ -255,7 +252,6 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
     const sorted = [...workouts].sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
 
     for (const workout of sorted) {
-      group.historyEntries.push(workout);
       group.workouts.push({
         id: workout.id,
         type: "cardio",
@@ -291,7 +287,7 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
 
   const result = Array.from(grouped.values())
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .map(({ date, workouts, historyEntries, totals, label }) => {
+    .map(({ date, workouts, totals, label }) => {
       const weekIndex = getWeekIndex(date);
       const formattedTotals: CardioWeekHistoryDay["dailyTotals"] = {
         calories: typeof totals.calories === "number" ? Math.round(totals.calories) : totals.calories,
@@ -307,7 +303,6 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
         dateLabel: formatDateLabel(date),
         dailyTotals: formattedTotals,
         workouts,
-        historyEntries,
       } satisfies CardioWeekHistoryDay;
     });
 
@@ -331,7 +326,6 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
       dateLabel: formatDateLabel(date),
       dailyTotals: {},
       workouts: [],
-      historyEntries: [],
     };
 
     result.push(placeholder);
