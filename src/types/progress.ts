@@ -50,11 +50,3 @@ export type CardioProgressSnapshot = {
   workouts: Record<string, CardioWorkoutSummary[]>;
   targetLine?: CardioTargetLine | null;
 };
-
-export interface ProgressDataProvider {
-  series(range: TimeRange, focus: CardioFocus, options?: { compare?: boolean }): Promise<CardioSeriesResponse>;
-  kpis(range: TimeRange): Promise<CardioKpi[]>;
-  recentWorkouts(range: TimeRange): Promise<CardioWorkoutSummary[]>;
-  targetLine(range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null>;
-  snapshot(range: TimeRange): Promise<CardioProgressSnapshot>;
-}

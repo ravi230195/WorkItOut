@@ -5,7 +5,6 @@ import type {
   CardioSeriesResponse,
   CardioTargetLine,
   CardioWorkoutSummary,
-  ProgressDataProvider,
   SeriesPoint,
   TimeRange,
 } from "../../types/progress";
@@ -160,17 +159,11 @@ function minutesToDisplay(value: number) {
   return `${minuteFormatter.format(minutes)}m`;
 }
 
-function kilometersToDisplay(value: number) {
-  return `${kmFormatter.format(Math.max(0, value))} km`;
-}
+function kilometersToDisplay(value: number) { return `${kmFormatter.format(Math.max(0, value))} km`; }
 
-function caloriesToDisplay(value: number) {
-  return `${calorieFormatter.format(Math.max(0, value))}`;
-}
+function caloriesToDisplay(value: number) { return `${calorieFormatter.format(Math.max(0, value))}`;}
 
-function stepsToDisplay(value: number) {
-  return `${stepFormatter.format(Math.max(0, value))}`;
-}
+function stepsToDisplay(value: number) { return `${stepFormatter.format(Math.max(0, value))}`; }
 
 /**
  * The provider is the single entry point that the progress screen calls via
@@ -186,60 +179,10 @@ function stepsToDisplay(value: number) {
  * and aggregate totals directly from the phone before shaping them into the UI
  * friendly structures.
  */
-class CardioProgressProvider implements ProgressDataProvider {
+class CardioProgressProvider {
   private cache = new Map<TimeRange, AggregatedData>();
-  private inflight = new Map<TimeRange, Promise<AggregatedData>>();
 
   private platformPromise?: Promise<string>;
-
-  async series(range: TimeRange, focus: CardioFocus, options?: { compare?: boolean }): Promise<CardioSeriesResponse> {
-    logger.debug("[cardio] CardioProgressProvider.series: Starting", { range, focus, options });
-
-    try {
-      const data = await this.ensure(range);
-      const result = this.seriesFromAggregated(range, data, focus, options);
-
-      logger.debug("[cardio] CardioProgressProvider.series: Completed", {
-        range,
-        focus,
-        currentPoints: result.current.length,
-        previousPoints: result.previous?.length ?? 0,
-        personalBest: result.personalBest,
-      });
-
-      return result;
-    } catch (error) {
-      logger.debug("[cardio] Unable to load cardio series", { range, focus, error });
-      return this.seriesUnavailable(range, focus, options);
-    }
-  }
-
-  async kpis(range: TimeRange): Promise<CardioKpi[]> {
-    try {
-      return await this.kpisNative(range);
-    } catch (error) {
-      logger.debug("[cardio] Unable to load cardio KPIs", { range, error });
-      return this.kpisUnavailable(range);
-    }
-  }
-
-  async recentWorkouts(range: TimeRange): Promise<CardioWorkoutSummary[]> {
-    try {
-      return await this.recentWorkoutsNative(range);
-    } catch (error) {
-      logger.debug("[cardio] Unable to load cardio workouts", { range, error });
-      return [];
-    }
-  }
-
-  async targetLine(range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null> {
-    try {
-      return await this.targetLineNative(range, focus);
-    } catch (error) {
-      logger.debug("[cardio] Unable to load cardio target line", { range, focus, error });
-      return this.targetLineUnavailable(focus);
-    }
-  }
 
   async snapshot(range: TimeRange): Promise<CardioProgressSnapshot> {
     logger.debug("[cardio] CardioProgressProvider.snapshot: Called", { range });
@@ -316,12 +259,6 @@ class CardioProgressProvider implements ProgressDataProvider {
     return { focus, current, previous, personalBest: personalBest > 0 ? personalBest : undefined };
   }
 
-  private async kpisNative(range: TimeRange): Promise<CardioKpi[]> {
-    logger.debug("[cardio] CardioProgressProvider.kpisNative: Starting", { range });
-
-    const data = await this.ensure(range);
-    return this.kpisFromAggregated(range, data);
-  }
 
   private kpisFromAggregated(range: TimeRange, data: AggregatedData): CardioKpi[] {
     const workoutCount = this.collectWorkouts(data).length;
@@ -402,13 +339,6 @@ class CardioProgressProvider implements ProgressDataProvider {
     });
 
     return kpis;
-  }
-
-  private async recentWorkoutsNative(range: TimeRange): Promise<CardioWorkoutSummary[]> {
-    logger.debug("[cardio] CardioProgressProvider.recentWorkoutsNative: Starting", { range });
-
-    const data = await this.ensure(range);
-    return this.recentWorkoutsFromAggregated(range, data);
   }
 
   private recentWorkoutsFromAggregated(range: TimeRange, data: AggregatedData): CardioWorkoutSummary[] {
@@ -533,14 +463,6 @@ class CardioProgressProvider implements ProgressDataProvider {
     };
   }
 
-  private seriesUnavailable(
-    range: TimeRange,
-    focus: CardioFocus,
-    options?: { compare?: boolean },
-  ): CardioSeriesResponse {
-    const buckets = buildBucketSets(range);
-    return this.seriesUnavailableFromBuckets(focus, buckets, options);
-  }
 
   private seriesUnavailableFromBuckets(
     focus: CardioFocus,

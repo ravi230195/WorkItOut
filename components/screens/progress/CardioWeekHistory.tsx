@@ -204,9 +204,13 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
   if (entries.length === 0) {
     return [];
   }
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Entries:", JSON.stringify(entries, null, 2));
 
   const startOfCurrentWeek = getStartOfWeek(new Date());
   const endOfCurrentWeek = addDays(startOfCurrentWeek, 7);
+
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Start of current week:", startOfCurrentWeek);
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] End of current week:", endOfCurrentWeek);
 
   const grouped = entries.reduce<
     Map<
@@ -220,6 +224,8 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
       }
     >
   >((acc, [isoDate, workouts]) => {
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] ISO Date:", isoDate);
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workouts:", JSON.stringify(workouts, null, 2));
     if (!Array.isArray(workouts) || workouts.length === 0) {
       return acc;
     }
@@ -282,7 +288,7 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
         group.totals.time = (group.totals.time ?? 0) + workout.durationMinutes;
       }
     }
-
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Group:", JSON.stringify(acc, null, 2));
     return acc;
   }, new Map());
 
@@ -378,7 +384,7 @@ function addDays(date: Date, days: number) {
 }
 
 function isWithinRange(date: Date, start: Date, end: Date) {
-  return date.getTime() >= start.getTime() && date.getTime() < end.getTime();
+  return date.getTime() < end.getTime();
 }
 
 function getWeekdayLabel(date: Date) {
