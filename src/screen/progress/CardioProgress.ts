@@ -690,11 +690,20 @@ class CardioProgressProvider {
   ): Promise<void> {
     try {
       const { Health } = await import("capacitor-health");
-      const start = startRaw.toISOString();
-      const end = endRaw.toISOString();
+      const startUtcIso = startRaw.toISOString();
+      const endUtcIso = endRaw.toISOString();
+      const startLocalIso = formatLocalIso(startRaw);
+      const endLocalIso = formatLocalIso(endRaw);
       // ADD: Enhanced permission request logging
-      logger.debug("[cardio] iOS populateFromIos: Starting", { start, end, bucketCount: buckets.length, dateRange: `${start} to ${end}`});
-      logger.debug("[cardio] iOS request permissions", { start, end});
+      logger.debug("[cardio] iOS populateFromIos: Starting", {
+        startUtcIso,
+        endUtcIso,
+        startLocalIso,
+        endLocalIso,
+        bucketCount: buckets.length,
+        dateRange: `${startUtcIso} to ${endUtcIso}`
+      });
+      logger.debug("[cardio] iOS request permissions", { startUtcIso, endUtcIso });
 
       const permissionResult = await Health.requestHealthPermissions({
         permissions: [
@@ -710,8 +719,22 @@ class CardioProgressProvider {
       logger.debug("[cardio] iOS permissions result", {  permissions: permissionResult, granted: Object.values(permissionResult).every(Boolean)});
 
       // ADD: Enhanced workout query logging
-      logger.debug("[cardio] iOS queryWorkouts: Request", {start, end, includeHeartRate: true, includeRoute: false, includeSteps: true});
-      const workoutResponse: any = await Health.queryWorkouts({ startDate: start, endDate: end, includeHeartRate: true, includeRoute: false, includeSteps: true});
+      logger.debug("[cardio] iOS queryWorkouts: Request", {
+        startUtcIso,
+        endUtcIso,
+        startLocalIso,
+        endLocalIso,
+        includeHeartRate: true,
+        includeRoute: false,
+        includeSteps: true
+      });
+      const workoutResponse: any = await Health.queryWorkouts({
+        startDate: startUtcIso,
+        endDate: endUtcIso,
+        includeHeartRate: true,
+        includeRoute: false,
+        includeSteps: true
+      });
       
       // ADD: Basic workout response logging
       logger.debug("[cardio] iOS queryWorkouts: Response", {
@@ -817,9 +840,21 @@ class CardioProgressProvider {
       }
       try {
         // ADD: Enhanced steps aggregation logging
-        logger.debug("[cardio] iOS queryAggregated steps: Request", { start, end, dataType: "steps", bucket: "day"});
-        
-        const stepsAggregated: any = await Health.queryAggregated({startDate: start, endDate: end, dataType: "steps", bucket: "day"});
+        logger.debug("[cardio] iOS queryAggregated steps: Request", {
+          startUtcIso,
+          endUtcIso,
+          startLocalIso,
+          endLocalIso,
+          dataType: "steps",
+          bucket: "day"
+        });
+
+        const stepsAggregated: any = await Health.queryAggregated({
+          startDate: startUtcIso,
+          endDate: endUtcIso,
+          dataType: "steps",
+          bucket: "day"
+        });
         
         // ADD: Enhanced steps response logging
         logger.debug("[cardio] iOS queryAggregated steps: Response", {
@@ -872,9 +907,21 @@ class CardioProgressProvider {
 
       try {
         // ADD: Enhanced calories aggregation logging
-        logger.debug("[cardio] iOS queryAggregated active calories: Request", { start, end, dataType: "active-calories", bucket: "day"});
-        
-        const caloriesAggregated: any = await Health.queryAggregated({startDate: start, endDate: end, dataType: "active-calories", bucket: "day"});
+        logger.debug("[cardio] iOS queryAggregated active calories: Request", {
+          startUtcIso,
+          endUtcIso,
+          startLocalIso,
+          endLocalIso,
+          dataType: "active-calories",
+          bucket: "day"
+        });
+
+        const caloriesAggregated: any = await Health.queryAggregated({
+          startDate: startUtcIso,
+          endDate: endUtcIso,
+          dataType: "active-calories",
+          bucket: "day"
+        });
         
         // ADD: Enhanced calories response logging
         logger.debug("[cardio] iOS queryAggregated active calories: Response", {
