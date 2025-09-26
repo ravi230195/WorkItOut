@@ -10,9 +10,9 @@ export const DOMAIN_OPTIONS: DomainOption[] = [
 ];
 
 export const RANGE_OPTIONS: RangeOption[] = [
-  { value: "week", label: "Week" },
-  { value: "threeMonths", label: "3 Month" },
-  { value: "sixMonths", label: "6 Month" },
+  { value: "week", label: "W" },
+  { value: "threeMonths", label: "3M" },
+  { value: "sixMonths", label: "6M" },
 ];
 
 export const DOMAIN_LABELS: Record<ProgressDomain, string> = {
@@ -21,7 +21,7 @@ export const DOMAIN_LABELS: Record<ProgressDomain, string> = {
 };
 
 export const RANGE_LABELS: Record<TimeRange, string> = {
-  week: "Week",
-  threeMonths: "3 Month",
-  sixMonths: "6 Month",
+  week: "W",
+  threeMonths: "3M",
+  sixMonths: "6M",
 };
