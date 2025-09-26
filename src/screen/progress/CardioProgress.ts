@@ -263,11 +263,11 @@ function collectWorkouts(data: AggregatedData): CardioWorkoutSummary[] {
 function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, CardioWorkoutSummary[]> {
   const grouped: Record<string, CardioWorkoutSummary[]> = {};
   for (const workout of workouts) {
-    const end = toLocalDate(workout.end);
-    if (!end) {
+    const endDate = toLocalDateTime(workout.end);
+    if (!endDate) {
       continue;
     }
-    const key = formatDateKey(end);
+    const key = formatDateKey(endDate);
     if (!grouped[key]) {
       grouped[key] = [];
     }
