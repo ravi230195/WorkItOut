@@ -201,13 +201,11 @@ class Workout {
 
 export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSummary[]>): CardioWeekHistoryDay[] {
   const entries = Object.entries(groups);
-  if (entries.length === 0) {
-    return [];
-  }
   //logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Entries:", JSON.stringify(entries, null, 2));
 
   const startOfCurrentWeek = getStartOfWeek(new Date());
   const endOfCurrentWeek = addDays(startOfCurrentWeek, 7);
+  const today = toLocalDate(new Date());
 
   logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Start of current week:", startOfCurrentWeek);
   logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] End of current week:", endOfCurrentWeek);
@@ -313,10 +311,39 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
       } satisfies CardioWeekHistoryDay;
     });
 
-    for (const day of result) {
-      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day:", JSON.stringify(day, null, 2));
+  const existingByIndex = new Map(result.map((day) => [day.weekIndex, day]));
+  const todayIndex = Math.min(getWeekIndex(today), 6);
+
+  for (let offset = 0; offset <= todayIndex; offset += 1) {
+    if (existingByIndex.has(offset)) {
+      continue;
     }
-    return result;
+
+    const date = addDays(startOfCurrentWeek, offset);
+    if (!isWithinRange(date, startOfCurrentWeek, endOfCurrentWeek)) {
+      continue;
+    }
+
+    const placeholder: CardioWeekHistoryDay = {
+      key: date.toISOString().split("T")[0],
+      label: getWeekdayLabel(date),
+      weekIndex: offset,
+      dateLabel: formatDateLabel(date),
+      dailyTotals: {},
+      workouts: [],
+      historyEntries: [],
+    };
+
+    result.push(placeholder);
+    existingByIndex.set(offset, placeholder);
+  }
+
+  result.sort((a, b) => new Date(b.key).getTime() - new Date(a.key).getTime());
+
+  for (const day of result) {
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day:", JSON.stringify(day, null, 2));
+  }
+  return result;
 }
 
 function formatHistoryDuration(minutes?: number) {
@@ -524,82 +551,95 @@ function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
           </div>
 
           <div className="space-y-3">
-            {day.workouts.map((rawWorkout) => {
-              const workout = Workout.from(rawWorkout);
-              const cardStyle: StyleWithRing = {
-                borderColor: hexToRgba(workout.accent, 0.28),
-                backgroundColor: hexToRgba(workout.accent, 0.12),
-                ["--tw-ring-color"]: hexToRgba(workout.accent, 0.3),
-              };
+            {day.workouts.length > 0 ? (
+              day.workouts.map((rawWorkout) => {
+                const workout = Workout.from(rawWorkout);
+                const cardStyle: StyleWithRing = {
+                  borderColor: hexToRgba(workout.accent, 0.28),
+                  backgroundColor: hexToRgba(workout.accent, 0.12),
+                  ["--tw-ring-color"]: hexToRgba(workout.accent, 0.3),
+                };
 
-              const iconWrapperStyle: CSSProperties = {
-                borderColor: hexToRgba(workout.accent, 0.4),
-                backgroundColor: hexToRgba(workout.accent, 0.2),
-                color: workout.accent,
-              };
+                const iconWrapperStyle: CSSProperties = {
+                  borderColor: hexToRgba(workout.accent, 0.4),
+                  backgroundColor: hexToRgba(workout.accent, 0.2),
+                  color: workout.accent,
+                };
 
-              const badgeStyle: CSSProperties = {
-                borderColor: hexToRgba(workout.accent, 0.35),
-                backgroundColor: hexToRgba(workout.accent, 0.15),
-                color: workout.accent,
-              };
+                const badgeStyle: CSSProperties = {
+                  borderColor: hexToRgba(workout.accent, 0.35),
+                  backgroundColor: hexToRgba(workout.accent, 0.15),
+                  color: workout.accent,
+                };
 
-              return (
-                <article
-                  key={workout.id}
-                  className="w-full rounded-2xl border px-4 py-3 transition hover:shadow-sm"
-                  style={cardStyle}
-                >
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className="flex h-10 w-10 items-center justify-center rounded-full border"
-                        style={iconWrapperStyle}
-                      >
-                        {workout.isStrength ? <Dumbbell className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
-                      </div>
+                return (
+                  <article
+                    key={workout.id}
+                    className="w-full rounded-2xl border px-4 py-3 transition hover:shadow-sm"
+                    style={cardStyle}
+                  >
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="flex h-10 w-10 items-center justify-center rounded-full border"
+                          style={iconWrapperStyle}
+                        >
+                          {workout.isStrength ? <Dumbbell className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
+                        </div>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h5 className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
-                            {workout.name}
-                          </h5>
-                          {workout.personalRecords ? (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
-                              style={badgeStyle}
-                            >
-                              <Trophy className="h-3 w-3" />
-                              {workout.personalRecords}
-                            </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h5 className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+                              {workout.name}
+                            </h5>
+                            {workout.personalRecords ? (
+                              <span
+                                className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
+                                style={badgeStyle}
+                              >
+                                <Trophy className="h-3 w-3" />
+                                {workout.personalRecords}
+                              </span>
+                            ) : null}
+                          </div>
+                          {workout.time ? (
+                            <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
+                              {workout.time}
+                            </p>
                           ) : null}
                         </div>
-                        {workout.time ? (
-                          <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
-                            {workout.time}
-                          </p>
-                        ) : null}
                       </div>
-                    </div>
 
-                    <div className="flex text-center" style={{ gap: "clamp(0.25rem, 2vw, 1rem)" }}>
-                      <div className="flex-1">
-                        <Metric value={workout.duration ?? "—"} label="Duration" align="center" />
-                      </div>
-                      <div className="flex-1">
-                        <Metric value={workout.metricTwo.value} label={workout.metricTwo.label} align="center" />
-                      </div>
-                      <div className="flex-1">
-                        <Metric value={workout.metricThree.value} label={workout.metricThree.label} align="center" />
-                      </div>
-                      <div className="flex-1">
-                        <Metric value={workout.calories ?? "—"} label="Calories" align="center" />
+                      <div className="flex text-center" style={{ gap: "clamp(0.25rem, 2vw, 1rem)" }}>
+                        <div className="flex-1">
+                          <Metric value={workout.duration ?? "—"} label="Duration" align="center" />
+                        </div>
+                        <div className="flex-1">
+                          <Metric value={workout.metricTwo.value} label={workout.metricTwo.label} align="center" />
+                        </div>
+                        <div className="flex-1">
+                          <Metric value={workout.metricThree.value} label={workout.metricThree.label} align="center" />
+                        </div>
+                        <div className="flex-1">
+                          <Metric value={workout.calories ?? "—"} label="Calories" align="center" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </article>
-              );
-            })}
+                  </article>
+                );
+              })
+            ) : (
+              <div
+                className="rounded-2xl border border-dashed px-4 py-3 text-center text-sm font-medium"
+                style={{
+                  borderColor: PROGRESS_THEME.borderSubtle,
+                  color: PROGRESS_THEME.textSubtle,
+                  backgroundColor: hexToRgba(PROGRESS_THEME.borderSubtle, 0.12),
+                }}
+              >
+                No data avaliable please enable permisions
+              </div>
+            )}
           </div>
         </div>
       </div>
