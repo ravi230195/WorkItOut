@@ -643,6 +643,8 @@ class CardioProgressProvider {
       logger.debug(`${LOG_PREFIX} ios.populate.start`, {
         start: startUtc,
         end: endUtc,
+        startLocal: startLocal.toISOString(),
+        endLocal: endLocal.toISOString(),
         bucketCount: buckets.length,
       });
 
@@ -668,11 +670,12 @@ class CardioProgressProvider {
       const fallbackCalories = new Map<Bucket, number>();
       const fallbackSteps = new Map<Bucket, number>();
 
-      const workoutSamples: any[] = Array.isArray(workoutResponse?.workouts)
-        ? workoutResponse.workouts
-        : [];
+      const workoutSamples: any[] = Array.isArray(workoutResponse?.workouts) ? workoutResponse.workouts : [];
 
+      const count = workoutSamples.length;
       for (const sample of workoutSamples) {
+        const sampleIndex = workoutSamples.indexOf(sample);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Sample: #(" + sampleIndex + ")/(" + count + ")", JSON.stringify(sample, null, 2));
         const startDate = toLocalDateTime(sample?.startDate ?? sample?.startTime);
         const endDate = toLocalDateTime(sample?.endDate ?? sample?.endTime);
         if (!startDate || !endDate) {
@@ -680,6 +683,8 @@ class CardioProgressProvider {
         }
 
         const bucket = findBucket(buckets, endDate);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket start date:", bucket?.start ?? "N/A");
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket end date:", bucket?.end ?? "N/A");
         if (!bucket) {
           continue;
         }
@@ -748,7 +753,7 @@ class CardioProgressProvider {
         const response: any = await Health.queryAggregated({
           startDate: startUtc,
           endDate: endUtc,
-          dataType,
+          dataType: dataType as "steps" | "active-calories",
           bucket: "day",
         });
 
@@ -770,13 +775,8 @@ class CardioProgressProvider {
         }
       };
 
-      await applyAggregated("steps", (bucket, value) => {
-        bucket.totals.steps += value;
-      });
-
-      await applyAggregated("active-calories", (bucket, value) => {
-        bucket.totals.calories += value;
-      });
+      await applyAggregated("steps", (bucket, value) => { bucket.totals.steps += value; });
+      await applyAggregated("active-calories", (bucket, value) => { bucket.totals.calories += value;});
 
       for (const bucket of buckets) {
         if (bucket.totals.calories <= 0 && fallbackCalories.has(bucket)) {
@@ -785,6 +785,11 @@ class CardioProgressProvider {
         if (bucket.totals.steps <= 0 && fallbackSteps.has(bucket)) {
           bucket.totals.steps = fallbackSteps.get(bucket) ?? 0;
         }
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket start:", bucket.start);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket end:", bucket.end);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket workouts:", bucket.workouts.length);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket workouts:", JSON.stringify(bucket.workouts, null, 2));
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket totals:", JSON.stringify(bucket.totals, null, 2));
       }
 
       logger.debug(`${LOG_PREFIX} ios.populate.complete`, {

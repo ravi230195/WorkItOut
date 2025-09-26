@@ -135,7 +135,7 @@ class Workout {
     this.personalRecords = data.personalRecords;
     this.accent = getAccentColor(this.type);
     logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout data:", data);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout accent:", JSON.stringify(this, null, 2));
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout accent:",this);
   }
 
   static from(raw: CardioWeekHistoryWorkout) {
@@ -204,7 +204,7 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
   if (entries.length === 0) {
     return [];
   }
-  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Entries:", JSON.stringify(entries, null, 2));
+  //logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Entries:", JSON.stringify(entries, null, 2));
 
   const startOfCurrentWeek = getStartOfWeek(new Date());
   const endOfCurrentWeek = addDays(startOfCurrentWeek, 7);
@@ -288,11 +288,10 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
         group.totals.time = (group.totals.time ?? 0) + workout.durationMinutes;
       }
     }
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Group:", JSON.stringify(acc, null, 2));
     return acc;
   }, new Map());
 
-  return Array.from(grouped.values())
+  const result = Array.from(grouped.values())
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(({ date, workouts, historyEntries, totals, label }) => {
       const weekIndex = getWeekIndex(date);
@@ -313,6 +312,11 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
         historyEntries,
       } satisfies CardioWeekHistoryDay;
     });
+
+    for (const day of result) {
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day:", JSON.stringify(day, null, 2));
+    }
+    return result;
 }
 
 function formatHistoryDuration(minutes?: number) {
@@ -384,7 +388,7 @@ function addDays(date: Date, days: number) {
 }
 
 function isWithinRange(date: Date, start: Date, end: Date) {
-  return date.getTime() < end.getTime();
+  return date.getTime() >= start.getTime() && date.getTime() <= end.getTime();
 }
 
 function getWeekdayLabel(date: Date) {
