@@ -47,7 +47,7 @@ export type CardioProgressSnapshot = {
   range: TimeRange;
   series: Record<CardioFocus, CardioSeriesResponse>;
   kpis: CardioKpi[];
-  workouts: CardioWorkoutSummary[];
+  workouts: Record<string, CardioWorkoutSummary[]>;
   targetLine?: CardioTargetLine | null;
 };
 

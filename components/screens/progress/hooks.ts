@@ -89,19 +89,23 @@ function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
     currentNumeric,
   }));
 
-  const history: HistoryEntry[] = raw.workouts.map((workout) => ({
-    type: "cardio",
-    id: workout.id,
-    activity: workout.activity,
-    date: workout.start,
-    duration: formatHistoryDuration(workout.durationMinutes),
-    distance: workout.distanceKm ? `${distanceFormatter.format(workout.distanceKm)} km` : "0 km",
-    calories: typeof workout.calories === "number"
-      ? `${integerFormatter.format(Math.round(workout.calories))} kcal`
-      : undefined,
-    time: formatHistoryTime(workout.start),
-    steps: sanitizeSteps(workout.steps),
-  }));
+  const history: HistoryEntry[] = Object.entries(raw.workouts ?? {})
+    .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+    .flatMap(([, workouts]) =>
+      workouts.map((workout) => ({
+        type: "cardio",
+        id: workout.id,
+        activity: workout.activity,
+        date: workout.start,
+        duration: formatHistoryDuration(workout.durationMinutes),
+        distance: workout.distanceKm ? `${distanceFormatter.format(workout.distanceKm)} km` : "0 km",
+        calories: typeof workout.calories === "number"
+          ? `${integerFormatter.format(Math.round(workout.calories))} kcal`
+          : undefined,
+        time: formatHistoryTime(workout.start),
+        steps: sanitizeSteps(workout.steps),
+      })),
+    );
 
   return { series, kpis, history };
 }
@@ -135,7 +139,10 @@ export function useWorkoutsProgressSnapshot(range: TimeRange) {
           range,
           seriesKeys: Object.keys(raw.series || {}),
           kpiCount: raw.kpis?.length || 0,
-          workoutCount: raw.workouts?.length || 0,
+          workoutDays: raw.workouts ? Object.keys(raw.workouts).length : 0,
+          workoutCount: raw.workouts
+            ? Object.values(raw.workouts).reduce((total: number, day) => total + day.length, 0)
+            : 0,
           hasTargetLine: !!raw.targetLine
         });
         

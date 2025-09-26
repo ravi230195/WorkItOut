@@ -496,6 +496,7 @@ class CardioProgressProvider implements ProgressDataProvider {
     const stepsSeries = this.seriesFromAggregated(range, data, "steps");
     const kpis = this.kpisFromAggregated(range, data);
     const workouts = this.recentWorkoutsFromAggregated(range, data);
+    const workoutsByDay = this.groupWorkoutsByDate(workouts);
     const targetLine = await this.targetLineNative(range, "activeMinutes");
 
     // ADD: Log each component result
@@ -520,6 +521,7 @@ class CardioProgressProvider implements ProgressDataProvider {
 
     logger.debug("[cardio] CardioProgressProvider.snapshotNative: Workouts", {
       range,
+      workoutDays: Object.keys(workoutsByDay).length,
       workoutCount: workouts.length,
       hasTargetLine: !!targetLine
     });
@@ -533,7 +535,7 @@ class CardioProgressProvider implements ProgressDataProvider {
         steps: stepsSeries,
       },
       kpis,
-      workouts,
+      workouts: workoutsByDay,
       targetLine,
     };
   }
@@ -607,7 +609,7 @@ class CardioProgressProvider implements ProgressDataProvider {
         steps: this.seriesUnavailableFromBuckets("steps", buckets),
       },
       kpis: this.kpisUnavailable(range),
-      workouts: [],
+      workouts: {},
       targetLine: this.targetLineUnavailable("activeMinutes"),
     };
   }
@@ -618,6 +620,27 @@ class CardioProgressProvider implements ProgressDataProvider {
 
   private collectWorkouts(data: AggregatedData): CardioWorkoutSummary[] {
     return [...data.previous, ...data.current].flatMap((bucket) => bucket.workouts);
+  }
+
+  private groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, CardioWorkoutSummary[]> {
+    const grouped: Record<string, CardioWorkoutSummary[]> = {};
+    for (const workout of workouts) {
+      const start = new Date(workout.start);
+      if (Number.isNaN(start.getTime())) {
+        continue;
+      }
+      const key = start.toISOString().slice(0, 10);
+      if (!grouped[key]) {
+        grouped[key] = [];
+      }
+      grouped[key].push(workout);
+    }
+
+    for (const key of Object.keys(grouped)) {
+      grouped[key].sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
+    }
+
+    return grouped;
   }
 
   private async ensure(range: TimeRange): Promise<AggregatedData> {
