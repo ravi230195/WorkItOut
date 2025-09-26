@@ -14,7 +14,7 @@ const PROGRESS_THEME = {
   textFaint: "rgba(34,49,63,0.55)",
   cardBorder: "rgba(30,36,50,0.08)",
   borderSubtle: "rgba(30,36,50,0.12)",
-  cardBackground: "#FFFFFF",
+  cardBackground: "#FCFAF5",
   historyBackground: "#F8F6F3",
   domainButtonShadow: "0 12px 24px -16px rgba(30,36,50,0.4)",
   cardShadow: "0 18px 36px -20px rgba(30,36,50,0.4)",
