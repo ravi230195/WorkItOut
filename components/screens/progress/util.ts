@@ -23,7 +23,7 @@ const PROGRESS_THEME = {
   tooltipShadow: "0 12px 20px -16px rgba(30,36,50,0.45)",
 } as const;
 
-const KPI_COLORS = ["#7FD1AE", "#FFB38A", "#FFE08A", "#8FC5FF"] as const;
+const KPI_COLORS = ["#FFB38A", "#7FD1AE", "#FFE08A", "#8FC5FF"] as const;
 
 const TREND_ICONS = {
   up: "▲",
