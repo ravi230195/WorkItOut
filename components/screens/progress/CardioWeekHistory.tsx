@@ -27,6 +27,7 @@ const cn = (...classes: Array<string | false | null | undefined>) => classes.fil
 export type CardioWeekHistoryWorkout = {
   id: number | string;
   name: string;
+  source?: string;
   duration?: ReactNode;
   time?: string;
   calories?: ReactNode;
@@ -52,7 +53,6 @@ export type CardioWeekHistoryDay = {
     steps?: ReactNode;
   };
   workouts: CardioWeekHistoryWorkout[];
-  historyEntries: CardioWorkoutSummary[];
 };
 
 type StyleWithRing = CSSProperties & { ["--tw-ring-color"]?: string };
@@ -107,6 +107,7 @@ class Workout {
   id: number | string;
   type: string;
   name: string;
+  source?: string;
   duration?: ReactNode;
   time?: string;
   calories?: ReactNode;
@@ -123,6 +124,7 @@ class Workout {
     this.id = data.id;
     this.type = data.type ?? "cardio";
     this.name = data.name;
+    this.source = data.source;
     this.duration = data.duration;
     this.time = data.time;
     this.calories = data.calories;
@@ -156,58 +158,22 @@ class Workout {
     if (typeof value === "number") {
       return value.toLocaleString();
     }
-    return value ?? "—";
+    return value ?? "N/A";
   }
 
-  get metricTwo() {
-    if (this.isStrength) {
-      if (this.exercises !== undefined) {
-        return { label: "Exercises", value: this.formatMetric(this.exercises) };
-      }
-      if (this.rounds !== undefined) {
-        return { label: "Rounds", value: this.formatMetric(this.rounds) };
-      }
-    }
-    if (this.distance !== undefined) {
-      return { label: "Distance", value: this.formatMetric(this.distance) };
-    }
-    if (this.volume !== undefined) {
-      return { label: "Volume", value: this.formatMetric(this.volume) };
-    }
-    if (this.rounds !== undefined) {
-      return { label: "Rounds", value: this.formatMetric(this.rounds) };
-    }
-    return { label: this.isStrength ? "Exercises" : "Distance", value: "—" };
-  }
-
-  get metricThree() {
-    if (this.isStrength) {
-      if (this.sets !== undefined) {
-        return { label: "Sets", value: this.formatMetric(this.sets) };
-      }
-      if (this.rounds !== undefined && this.metricTwo.label !== "Rounds") {
-        return { label: "Rounds", value: this.formatMetric(this.rounds) };
-      }
-    }
-    if (this.steps !== undefined) {
-      return { label: "Steps", value: this.formatMetric(this.steps) };
-    }
-    if (this.rounds !== undefined && this.metricTwo.label !== "Rounds") {
-      return { label: "Rounds", value: this.formatMetric(this.rounds) };
-    }
-    return { label: this.isStrength ? "Sets" : "Steps", value: "—" };
-  }
+  get metricOne() { return { label: "Duration", value: this.formatMetric(this.duration) };}
+  get metricTwo() { return { label: "Distance", value: this.formatMetric(this.distance)};}
+  get metricThree() {return { label: "Steps", value: this.formatMetric(this.steps)};}
+  get metricFour() { return { label: "Calories", value: this.formatMetric(this.calories)};}
 }
 
 export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSummary[]>): CardioWeekHistoryDay[] {
   const entries = Object.entries(groups);
-  if (entries.length === 0) {
-    return [];
-  }
   //logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Entries:", JSON.stringify(entries, null, 2));
 
   const startOfCurrentWeek = getStartOfWeek(new Date());
   const endOfCurrentWeek = addDays(startOfCurrentWeek, 7);
+  const today = toLocalDate(new Date());
 
   logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Start of current week:", startOfCurrentWeek);
   logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] End of current week:", endOfCurrentWeek);
@@ -218,7 +184,6 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
       {
         date: Date;
         workouts: CardioWeekHistoryDay["workouts"];
-        historyEntries: CardioWorkoutSummary[];
         totals: AggregatedTotals;
         label?: string;
       }
@@ -247,7 +212,6 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
       acc.set(key, {
         date,
         workouts: [],
-        historyEntries: [],
         totals: {},
         label: getWeekdayLabel(date),
       });
@@ -257,11 +221,11 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
     const sorted = [...workouts].sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
 
     for (const workout of sorted) {
-      group.historyEntries.push(workout);
       group.workouts.push({
         id: workout.id,
         type: "cardio",
         name: workout.activity,
+        source: workout.source,
         duration: formatHistoryDuration(workout.durationMinutes),
         distance:
           typeof workout.distanceKm === "number"
@@ -293,7 +257,7 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
 
   const result = Array.from(grouped.values())
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .map(({ date, workouts, historyEntries, totals, label }) => {
+    .map(({ date, workouts, totals, label }) => {
       const weekIndex = getWeekIndex(date);
       const formattedTotals: CardioWeekHistoryDay["dailyTotals"] = {
         calories: typeof totals.calories === "number" ? Math.round(totals.calories) : totals.calories,
@@ -309,14 +273,41 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
         dateLabel: formatDateLabel(date),
         dailyTotals: formattedTotals,
         workouts,
-        historyEntries,
       } satisfies CardioWeekHistoryDay;
     });
 
-    for (const day of result) {
-      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day:", JSON.stringify(day, null, 2));
+  const existingByIndex = new Map(result.map((day) => [day.weekIndex, day]));
+  const todayIndex = Math.min(getWeekIndex(today), 6);
+
+  for (let offset = 0; offset <= todayIndex; offset += 1) {
+    if (existingByIndex.has(offset)) {
+      continue;
     }
-    return result;
+
+    const date = addDays(startOfCurrentWeek, offset);
+    if (!isWithinRange(date, startOfCurrentWeek, endOfCurrentWeek)) {
+      continue;
+    }
+
+    const placeholder: CardioWeekHistoryDay = {
+      key: date.toISOString().split("T")[0],
+      label: getWeekdayLabel(date),
+      weekIndex: offset,
+      dateLabel: formatDateLabel(date),
+      dailyTotals: {},
+      workouts: [],
+    };
+
+    result.push(placeholder);
+    existingByIndex.set(offset, placeholder);
+  }
+
+  result.sort((a, b) => new Date(b.key).getTime() - new Date(a.key).getTime());
+
+  for (const day of result) {
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day:", JSON.stringify(day, null, 2));
+  }
+  return result;
 }
 
 function formatHistoryDuration(minutes?: number) {
@@ -480,11 +471,11 @@ function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
   }
 
   const totals = [
-    { Icon: Flame, label: "Calories", value: day.dailyTotals.calories },
-    { Icon: Clock, label: "Duration", value: day.dailyTotals.time },
-    { Icon: MapPin, label: "Distance", value: day.dailyTotals.distance },
-    { Icon: Footprints, label: "Steps", value: day.dailyTotals.steps },
-  ].filter((item) => item.value !== undefined && item.value !== null);
+    { Icon: Flame, label: "Calories", value: day.dailyTotals.calories ?? "N/A" },
+    { Icon: Clock, label: "Duration", value: day.dailyTotals.time ?? "N/A" },
+    { Icon: MapPin, label: "Distance", value: day.dailyTotals.distance ?? "N/A" },
+    { Icon: Footprints, label: "Steps", value: day.dailyTotals.steps ?? "N/A" },
+  ];
 
   return (
     <section className="w-full rounded-3xl border bg-white p-5" style={SECTION_STYLE}>
@@ -501,7 +492,7 @@ function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
               <div key={label} className="flex items-center gap-2">
                 <Icon className="h-3 w-3" style={{ color: PROGRESS_THEME.textMuted }} />
                 <div className="flex flex-col">
-                  <span className="text-xs font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+                  <span className="text-xs font-semibold text-center" style={{ color: PROGRESS_THEME.textPrimary }}>
                     {typeof value === "number" ? value.toLocaleString() : value}
                   </span>
                   <span className="text-xs uppercase tracking-[0.01em]" style={{ color: PROGRESS_THEME.textMuted }}>
@@ -524,82 +515,103 @@ function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
           </div>
 
           <div className="space-y-3">
-            {day.workouts.map((rawWorkout) => {
-              const workout = Workout.from(rawWorkout);
-              const cardStyle: StyleWithRing = {
-                borderColor: hexToRgba(workout.accent, 0.28),
-                backgroundColor: hexToRgba(workout.accent, 0.12),
-                ["--tw-ring-color"]: hexToRgba(workout.accent, 0.3),
-              };
+            {day.workouts.length > 0 ? (
+              day.workouts.map((rawWorkout) => {
+                const workout = Workout.from(rawWorkout);
+                const cardStyle: StyleWithRing = {
+                  borderColor: hexToRgba(workout.accent, 0.28),
+                  backgroundColor: hexToRgba(workout.accent, 0.12),
+                  ["--tw-ring-color"]: hexToRgba(workout.accent, 0.3),
+                };
 
-              const iconWrapperStyle: CSSProperties = {
-                borderColor: hexToRgba(workout.accent, 0.4),
-                backgroundColor: hexToRgba(workout.accent, 0.2),
-                color: workout.accent,
-              };
+                const iconWrapperStyle: CSSProperties = {
+                  borderColor: hexToRgba(workout.accent, 0.4),
+                  backgroundColor: hexToRgba(workout.accent, 0.2),
+                  color: workout.accent,
+                };
 
-              const badgeStyle: CSSProperties = {
-                borderColor: hexToRgba(workout.accent, 0.35),
-                backgroundColor: hexToRgba(workout.accent, 0.15),
-                color: workout.accent,
-              };
+                const badgeStyle: CSSProperties = {
+                  borderColor: hexToRgba(workout.accent, 0.35),
+                  backgroundColor: hexToRgba(workout.accent, 0.15),
+                  color: workout.accent,
+                };
 
-              return (
-                <article
-                  key={workout.id}
-                  className="w-full rounded-2xl border px-4 py-3 transition hover:shadow-sm"
-                  style={cardStyle}
-                >
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className="flex h-10 w-10 items-center justify-center rounded-full border"
-                        style={iconWrapperStyle}
-                      >
-                        {workout.isStrength ? <Dumbbell className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
-                      </div>
+                return (
+                  <article
+                    key={workout.id}
+                    className="w-full rounded-2xl border px-4 py-3 transition hover:shadow-sm"
+                    style={cardStyle}
+                  >
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="flex h-10 w-10 items-center justify-center rounded-full border"
+                          style={iconWrapperStyle}
+                        >
+                          {workout.isStrength ? <Dumbbell className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
+                        </div>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h5 className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
-                            {workout.name}
-                          </h5>
-                          {workout.personalRecords ? (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
-                              style={badgeStyle}
-                            >
-                              <Trophy className="h-3 w-3" />
-                              {workout.personalRecords}
-                            </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h5 className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+                              {workout.name}
+                            </h5>
+                            {workout.source ? (
+                              <span
+                                className="text-xs font-medium"
+                                style={{ color: PROGRESS_THEME.textMuted }}
+                              >
+                                • {workout.source}
+                              </span>
+                            ) : null}
+                            {workout.personalRecords ? (
+                              <span
+                                className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
+                                style={badgeStyle}
+                              >
+                                <Trophy className="h-3 w-3" />
+                                {workout.personalRecords}
+                              </span>
+                            ) : null}
+                          </div>
+                          {workout.time ? (
+                            <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
+                              {workout.time}
+                            </p>
                           ) : null}
                         </div>
-                        {workout.time ? (
-                          <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
-                            {workout.time}
-                          </p>
-                        ) : null}
                       </div>
-                    </div>
 
-                    <div className="flex text-center" style={{ gap: "clamp(0.25rem, 2vw, 1rem)" }}>
-                      <div className="flex-1">
-                        <Metric value={workout.duration ?? "—"} label="Duration" align="center" />
-                      </div>
-                      <div className="flex-1">
-                        <Metric value={workout.metricTwo.value} label={workout.metricTwo.label} align="center" />
-                      </div>
-                      <div className="flex-1">
-                        <Metric value={workout.metricThree.value} label={workout.metricThree.label} align="center" />
-                      </div>
-                      <div className="flex-1">
-                        <Metric value={workout.calories ?? "—"} label="Calories" align="center" />
+                      <div className="flex text-center" style={{ gap: "clamp(0.25rem, 2vw, 1rem)" }}>
+                        <div className="flex-1">
+                          <Metric value={workout.metricOne.value} label={workout.metricOne.label} align="center" />
+                        </div>
+                        <div className="flex-1">
+                          <Metric value={workout.metricTwo.value} label={workout.metricTwo.label} align="center" />
+                        </div>
+                        <div className="flex-1">
+                          <Metric value={workout.metricThree.value} label={workout.metricThree.label} align="center" />
+                        </div>
+                        <div className="flex-1">
+                          <Metric value={workout.metricFour.value} label={workout.metricFour.label} align="center" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </article>
-              );
-            })}
+                  </article>
+                );
+              })
+            ) : (
+              <div
+                className="rounded-2xl border border-dashed px-4 py-3 text-center text-sm font-medium"
+                style={{
+                  borderColor: PROGRESS_THEME.borderSubtle,
+                  color: PROGRESS_THEME.textSubtle,
+                  backgroundColor: hexToRgba(PROGRESS_THEME.borderSubtle, 0.12),
+                }}
+              >
+                No data avaliable please enable permisions
+              </div>
+            )}
           </div>
         </div>
       </div>
