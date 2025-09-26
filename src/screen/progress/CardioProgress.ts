@@ -36,6 +36,7 @@ type Bucket = {
   start: Date;
   end: Date;
   iso: string;
+  endIso: string;
   totals: BucketTotals;
   workouts: CardioWorkoutSummary[];
 };
@@ -72,8 +73,41 @@ function createEmptyTotals(): BucketTotals {
   return { minutes: 0, distanceKm: 0, calories: 0, steps: 0, heartRateSum: 0, heartRateCount: 0 };
 }
 
+function pad(value: number, length = 2): string {
+  return value.toString().padStart(length, "0");
+}
+
+function formatLocalDayKey(date: Date): string {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function formatLocalIso(date: Date): string {
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  const milliseconds = pad(date.getMilliseconds(), 3);
+
+  const offsetMinutesTotal = -date.getTimezoneOffset();
+  const offsetSign = offsetMinutesTotal >= 0 ? "+" : "-";
+  const offsetMinutesAbsolute = Math.abs(offsetMinutesTotal);
+  const offsetHours = pad(Math.floor(offsetMinutesAbsolute / 60));
+  const offsetMinutes = pad(offsetMinutesAbsolute % 60);
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}${offsetSign}${offsetHours}:${offsetMinutes}`;
+}
+
 function createBucket(start: Date, end: Date): Bucket {
-  return { start, end, iso: start.toISOString(), totals: createEmptyTotals(), workouts: [] };
+  return {
+    start,
+    end,
+    iso: formatLocalIso(start),
+    endIso: formatLocalIso(end),
+    totals: createEmptyTotals(),
+    workouts: [],
+  };
 }
 
 function cloneDate(date: Date) {
@@ -236,13 +270,13 @@ class CardioProgressProvider {
     });
 
     const previous: SeriesPoint[] | undefined = includePrevious && data.previous.length
-      ? data.previous.map((bucket) => ({ iso: bucket.iso, value: selector(bucket) }))
+      ? data.previous.map((bucket) => ({ iso: bucket.iso, endIso: bucket.endIso, value: selector(bucket) }))
       : undefined;
 
     const current = data.current.map((bucket) => {
       const value = selector(bucket);
       const isPersonalBest = value > historicalMax && value > 0;
-      return { iso: bucket.iso, value, isPersonalBest };
+      return { iso: bucket.iso, endIso: bucket.endIso, value, isPersonalBest };
     });
 
     const personalBest = Math.max(historicalMax, ...current.map((point) => point.value));
@@ -470,7 +504,7 @@ class CardioProgressProvider {
     options?: { compare?: boolean },
   ): CardioSeriesResponse {
     const includePrevious = options?.compare !== false;
-    const mapBucket = (bucket: Bucket): SeriesPoint => ({ iso: bucket.iso, value: 0 });
+    const mapBucket = (bucket: Bucket): SeriesPoint => ({ iso: bucket.iso, endIso: bucket.endIso, value: 0 });
     return {
       focus,
       current: buckets.current.map(mapBucket),
@@ -544,7 +578,7 @@ class CardioProgressProvider {
       if (Number.isNaN(start.getTime())) {
         continue;
       }
-      const key = start.toISOString().slice(0, 10);
+      const key = formatLocalDayKey(start);
       if (!grouped[key]) {
         grouped[key] = [];
       }
@@ -619,11 +653,13 @@ class CardioProgressProvider {
       workoutCount: allBuckets.reduce((sum, bucket) => sum + bucket.workouts.length, 0),
       currentBucketTotals: current.map(bucket => ({
         iso: bucket.iso,
+        endIso: bucket.endIso,
         totals: bucket.totals,
         workouts: bucket.workouts.length
       })),
       previousBucketTotals: previous.map(bucket => ({
         iso: bucket.iso,
+        endIso: bucket.endIso,
         totals: bucket.totals,
         workouts: bucket.workouts.length
       }))
@@ -654,11 +690,20 @@ class CardioProgressProvider {
   ): Promise<void> {
     try {
       const { Health } = await import("capacitor-health");
-      const start = startRaw.toISOString();
-      const end = endRaw.toISOString();
+      const startUtcIso = startRaw.toISOString();
+      const endUtcIso = endRaw.toISOString();
+      const startLocalIso = formatLocalIso(startRaw);
+      const endLocalIso = formatLocalIso(endRaw);
       // ADD: Enhanced permission request logging
-      logger.debug("[cardio] iOS populateFromIos: Starting", { start, end, bucketCount: buckets.length, dateRange: `${start} to ${end}`});
-      logger.debug("[cardio] iOS request permissions", { start, end});
+      logger.debug("[cardio] iOS populateFromIos: Starting", {
+        startUtcIso,
+        endUtcIso,
+        startLocalIso,
+        endLocalIso,
+        bucketCount: buckets.length,
+        dateRange: `${startUtcIso} to ${endUtcIso}`
+      });
+      logger.debug("[cardio] iOS request permissions", { startUtcIso, endUtcIso });
 
       const permissionResult = await Health.requestHealthPermissions({
         permissions: [
@@ -674,8 +719,22 @@ class CardioProgressProvider {
       logger.debug("[cardio] iOS permissions result", {  permissions: permissionResult, granted: Object.values(permissionResult).every(Boolean)});
 
       // ADD: Enhanced workout query logging
-      logger.debug("[cardio] iOS queryWorkouts: Request", {start, end, includeHeartRate: true, includeRoute: false, includeSteps: true});
-      const workoutResponse: any = await Health.queryWorkouts({ startDate: start, endDate: end, includeHeartRate: true, includeRoute: false, includeSteps: true});
+      logger.debug("[cardio] iOS queryWorkouts: Request", {
+        startUtcIso,
+        endUtcIso,
+        startLocalIso,
+        endLocalIso,
+        includeHeartRate: true,
+        includeRoute: false,
+        includeSteps: true
+      });
+      const workoutResponse: any = await Health.queryWorkouts({
+        startDate: startUtcIso,
+        endDate: endUtcIso,
+        includeHeartRate: true,
+        includeRoute: false,
+        includeSteps: true
+      });
       
       // ADD: Basic workout response logging
       logger.debug("[cardio] iOS queryWorkouts: Response", {
@@ -763,8 +822,8 @@ class CardioProgressProvider {
         const workoutSummary: CardioWorkoutSummary = {
           id: sample?.id ?? `ios-${startDate.getTime()}`,
           activity: normalizeActivityName(sample?.workoutType),
-          start: startDate.toISOString(),
-          end: endDate.toISOString(),
+          start: formatLocalIso(startDate),
+          end: formatLocalIso(endDate),
           durationMinutes,
           distanceKm,
           calories: calories || undefined,
@@ -781,9 +840,21 @@ class CardioProgressProvider {
       }
       try {
         // ADD: Enhanced steps aggregation logging
-        logger.debug("[cardio] iOS queryAggregated steps: Request", { start, end, dataType: "steps", bucket: "day"});
-        
-        const stepsAggregated: any = await Health.queryAggregated({startDate: start, endDate: end, dataType: "steps", bucket: "day"});
+        logger.debug("[cardio] iOS queryAggregated steps: Request", {
+          startUtcIso,
+          endUtcIso,
+          startLocalIso,
+          endLocalIso,
+          dataType: "steps",
+          bucket: "day"
+        });
+
+        const stepsAggregated: any = await Health.queryAggregated({
+          startDate: startUtcIso,
+          endDate: endUtcIso,
+          dataType: "steps",
+          bucket: "day"
+        });
         
         // ADD: Enhanced steps response logging
         logger.debug("[cardio] iOS queryAggregated steps: Response", {
@@ -836,9 +907,21 @@ class CardioProgressProvider {
 
       try {
         // ADD: Enhanced calories aggregation logging
-        logger.debug("[cardio] iOS queryAggregated active calories: Request", { start, end, dataType: "active-calories", bucket: "day"});
-        
-        const caloriesAggregated: any = await Health.queryAggregated({startDate: start, endDate: end, dataType: "active-calories", bucket: "day"});
+        logger.debug("[cardio] iOS queryAggregated active calories: Request", {
+          startUtcIso,
+          endUtcIso,
+          startLocalIso,
+          endLocalIso,
+          dataType: "active-calories",
+          bucket: "day"
+        });
+
+        const caloriesAggregated: any = await Health.queryAggregated({
+          startDate: startUtcIso,
+          endDate: endUtcIso,
+          dataType: "active-calories",
+          bucket: "day"
+        });
         
         // ADD: Enhanced calories response logging
         logger.debug("[cardio] iOS queryAggregated active calories: Response", {
@@ -990,8 +1073,8 @@ class CardioProgressProvider {
         const workoutSummary: CardioWorkoutSummary = {
           id: record?.metadata?.id ?? `android-distance-${startDate.getTime()}`,
           activity: normalizeActivityName("Distance"),
-          start: startDate.toISOString(),
-          end: endDate.toISOString(),
+          start: formatLocalIso(startDate),
+          end: formatLocalIso(endDate),
           durationMinutes,
           distanceKm,
           source: record?.metadata?.dataOrigin,
