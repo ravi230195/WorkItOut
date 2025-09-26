@@ -1,12 +1,10 @@
 import type {
-  CardioBest,
   CardioFocus,
   CardioKpi,
   CardioProgressSnapshot,
   CardioSeriesResponse,
   CardioTargetLine,
   CardioWorkoutSummary,
-  ProgressDataProvider,
   SeriesPoint,
   TimeRange,
 } from "../../types/progress";
@@ -39,13 +37,13 @@ type Bucket = {
   end: Date;
   iso: string;
   totals: BucketTotals;
+  workouts: CardioWorkoutSummary[];
 };
 
 type AggregatedData = {
   range: TimeRange;
   current: Bucket[];
   previous: Bucket[];
-  workouts: CardioWorkoutSummary[];
 };
 
 type MetricSelector = (bucket: Bucket) => number;
@@ -75,7 +73,7 @@ function createEmptyTotals(): BucketTotals {
 }
 
 function createBucket(start: Date, end: Date): Bucket {
-  return { start, end, iso: start.toISOString(), totals: createEmptyTotals() };
+  return { start, end, iso: start.toISOString(), totals: createEmptyTotals(), workouts: [] };
 }
 
 function cloneDate(date: Date) {
@@ -161,21 +159,15 @@ function minutesToDisplay(value: number) {
   return `${minuteFormatter.format(minutes)}m`;
 }
 
-function kilometersToDisplay(value: number) {
-  return `${kmFormatter.format(Math.max(0, value))} km`;
-}
+function kilometersToDisplay(value: number) { return `${kmFormatter.format(Math.max(0, value))} km`; }
 
-function caloriesToDisplay(value: number) {
-  return `${calorieFormatter.format(Math.max(0, value))}`;
-}
+function caloriesToDisplay(value: number) { return `${calorieFormatter.format(Math.max(0, value))}`;}
 
-function stepsToDisplay(value: number) {
-  return `${stepFormatter.format(Math.max(0, value))}`;
-}
+function stepsToDisplay(value: number) { return `${stepFormatter.format(Math.max(0, value))}`; }
 
 /**
  * The provider is the single entry point that the progress screen calls via
- * {@link useWorkoutsProgressSnapshot}.  Each public method (series/kpis/bests…)
+ * {@link useWorkoutsProgressSnapshot}.  Each public method (series/kpis…)
  * funnels into {@link CardioProgressProvider.ensure}, which caches the
  * aggregated buckets for the requested range.  `ensure` delegates to
  * `fetchAggregated`, which asks Capacitor for the active platform and then
@@ -187,56 +179,10 @@ function stepsToDisplay(value: number) {
  * and aggregate totals directly from the phone before shaping them into the UI
  * friendly structures.
  */
-class CardioProgressProvider implements ProgressDataProvider {
+class CardioProgressProvider {
   private cache = new Map<TimeRange, AggregatedData>();
-  private inflight = new Map<TimeRange, Promise<AggregatedData>>();
 
   private platformPromise?: Promise<string>;
-
-  async series(range: TimeRange, focus: CardioFocus, options?: { compare?: boolean }): Promise<CardioSeriesResponse> {
-    try {
-      return await this.seriesNative(range, focus, options);
-    } catch (error) {
-      logger.debug("[cardio] Unable to load cardio series", { range, focus, error });
-      return this.seriesUnavailable(range, focus, options);
-    }
-  }
-
-  async kpis(range: TimeRange): Promise<CardioKpi[]> {
-    try {
-      return await this.kpisNative(range);
-    } catch (error) {
-      logger.debug("[cardio] Unable to load cardio KPIs", { range, error });
-      return this.kpisUnavailable(range);
-    }
-  }
-
-  async recentWorkouts(range: TimeRange): Promise<CardioWorkoutSummary[]> {
-    try {
-      return await this.recentWorkoutsNative(range);
-    } catch (error) {
-      logger.debug("[cardio] Unable to load cardio workouts", { range, error });
-      return [];
-    }
-  }
-
-  async bests(range: TimeRange): Promise<CardioBest[]> {
-    try {
-      return await this.bestsNative(range);
-    } catch (error) {
-      logger.debug("[cardio] Unable to load cardio bests", { range, error });
-      return [];
-    }
-  }
-
-  async targetLine(range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null> {
-    try {
-      return await this.targetLineNative(range, focus);
-    } catch (error) {
-      logger.debug("[cardio] Unable to load cardio target line", { range, focus, error });
-      return this.targetLineUnavailable(focus);
-    }
-  }
 
   async snapshot(range: TimeRange): Promise<CardioProgressSnapshot> {
     logger.debug("[cardio] CardioProgressProvider.snapshot: Called", { range });
@@ -249,11 +195,11 @@ class CardioProgressProvider implements ProgressDataProvider {
         range,
         seriesKeys: Object.keys(result.series || {}),
         kpiCount: result.kpis?.length || 0,
-        workoutCount: result.workouts?.length || 0,
-        bestCount: result.bests?.length || 0,
+        workoutDays: Object.keys(result.workouts || {}).length,
+        workoutCount: Object.values(result.workouts || {}).reduce((total, day) => total + day.length, 0),
         hasTargetLine: !!result.targetLine
       });
-      
+
       return result;
     } catch (error) {
       logger.debug("[cardio] CardioProgressProvider.snapshot: Failed", { range, error });
@@ -261,36 +207,34 @@ class CardioProgressProvider implements ProgressDataProvider {
     }
   }
 
-  private async seriesNative(
+  private seriesFromAggregated(
     range: TimeRange,
+    data: AggregatedData,
     focus: CardioFocus,
     options?: { compare?: boolean },
-  ): Promise<CardioSeriesResponse> {
-    logger.debug("[cardio] CardioProgressProvider.seriesNative: Starting", { range, focus, options });
-    
-    const data = await this.ensure(range);
+  ): CardioSeriesResponse {
     const selector = METRIC_SELECTORS[focus];
-    
-    logger.debug("[cardio] CardioProgressProvider.seriesNative: Data retrieved", {
+
+    logger.debug("[cardio] CardioProgressProvider.seriesFromAggregated: Data retrieved", {
       range,
       focus,
       currentBuckets: data.current.length,
       previousBuckets: data.previous.length,
-      selector: focus
+      selector: focus,
     });
-    
+
     const previousValues = data.previous.map((bucket) => selector(bucket));
     const historicalMax = previousValues.length ? Math.max(...previousValues) : 0;
     const includePrevious = options?.compare !== false;
-    
-    logger.debug("[cardio] CardioProgressProvider.seriesNative: Historical analysis", {
+
+    logger.debug("[cardio] CardioProgressProvider.seriesFromAggregated: Historical analysis", {
       range,
       focus,
       previousValues: previousValues.slice(0, 5), // Show first 5 values
       historicalMax,
-      includePrevious
+      includePrevious,
     });
-    
+
     const previous: SeriesPoint[] | undefined = includePrevious && data.previous.length
       ? data.previous.map((bucket) => ({ iso: bucket.iso, value: selector(bucket) }))
       : undefined;
@@ -302,8 +246,8 @@ class CardioProgressProvider implements ProgressDataProvider {
     });
 
     const personalBest = Math.max(historicalMax, ...current.map((point) => point.value));
-    
-    logger.debug("[cardio] CardioProgressProvider.seriesNative: Series calculated", {
+
+    logger.debug("[cardio] CardioProgressProvider.seriesFromAggregated: Series calculated", {
       range,
       focus,
       currentPoints: current.length,
@@ -311,21 +255,20 @@ class CardioProgressProvider implements ProgressDataProvider {
       personalBest,
       currentValues: current.slice(0, 3).map(p => ({ iso: p.iso, value: p.value, isPersonalBest: p.isPersonalBest })) // Show first 3 points
     });
-    
+
     return { focus, current, previous, personalBest: personalBest > 0 ? personalBest : undefined };
   }
 
-  private async kpisNative(range: TimeRange): Promise<CardioKpi[]> {
-    logger.debug("[cardio] CardioProgressProvider.kpisNative: Starting", { range });
-    
-    const data = await this.ensure(range);
-    
+
+  private kpisFromAggregated(range: TimeRange, data: AggregatedData): CardioKpi[] {
+    const workoutCount = this.collectWorkouts(data).length;
+
     // ADD: Log aggregated data totals
     logger.debug("[cardio] CardioProgressProvider.kpisNative: Aggregated data totals", {
       range,
       currentBuckets: data.current.length,
       previousBuckets: data.previous.length,
-      workoutCount: data.workouts.length,
+      workoutCount,
       currentTotals: data.current.reduce((acc, bucket) => ({
         minutes: acc.minutes + bucket.totals.minutes,
         distanceKm: acc.distanceKm + bucket.totals.distanceKm,
@@ -398,28 +341,26 @@ class CardioProgressProvider implements ProgressDataProvider {
     return kpis;
   }
 
-  private async recentWorkoutsNative(range: TimeRange): Promise<CardioWorkoutSummary[]> {
-    logger.debug("[cardio] CardioProgressProvider.recentWorkoutsNative: Starting", { range });
-    
-    const data = await this.ensure(range);
+  private recentWorkoutsFromAggregated(range: TimeRange, data: AggregatedData): CardioWorkoutSummary[] {
+    const allWorkouts = this.collectWorkouts(data);
     const currentStart = data.current[0]?.start ?? new Date();
     const currentEnd = data.current[data.current.length - 1]?.end ?? new Date();
-    
+
     logger.debug("[cardio] CardioProgressProvider.recentWorkoutsNative: Date range", {
       range,
       currentStart: currentStart.toISOString(),
       currentEnd: currentEnd.toISOString(),
-      totalWorkouts: data.workouts.length
+      totalWorkouts: allWorkouts.length
     });
-    
-    const filtered = data.workouts.filter((workout) => {
+
+    const filtered = allWorkouts.filter((workout) => {
       const startDate = new Date(workout.start);
       return startDate >= currentStart && startDate <= currentEnd;
     });
-    
+
     logger.debug("[cardio] CardioProgressProvider.recentWorkoutsNative: Filtered workouts", {
       range,
-      totalWorkouts: data.workouts.length,
+      totalWorkouts: allWorkouts.length,
       filteredCount: filtered.length,
       sampleWorkouts: filtered.slice(0, 3).map(w => ({
         id: w.id,
@@ -430,10 +371,10 @@ class CardioProgressProvider implements ProgressDataProvider {
         calories: w.calories
       }))
     });
-    
+
     filtered.sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
     const result = filtered.slice(0, 6);
-    
+
     logger.debug("[cardio] CardioProgressProvider.recentWorkoutsNative: Final result", {
       range,
       resultCount: result.length,
@@ -444,35 +385,8 @@ class CardioProgressProvider implements ProgressDataProvider {
         durationMinutes: w.durationMinutes
       }))
     });
-    
-    return result;
-  }
 
-  private async bestsNative(range: TimeRange): Promise<CardioBest[]> {
-    logger.debug("[cardio] CardioProgressProvider.bestsNative: Starting", { range });
-    
-    const workouts = await this.recentWorkoutsNative(range);
-    
-    logger.debug("[cardio] CardioProgressProvider.bestsNative: Workouts retrieved", {
-      range,
-      workoutCount: workouts.length
-    });
-    
-    const bests = this.computeBestsFromWorkouts(workouts);
-    
-    logger.debug("[cardio] CardioProgressProvider.bestsNative: Bests calculated", {
-      range,
-      bestCount: bests.length,
-      bests: bests.map(b => ({
-        id: b.id,
-        label: b.label,
-        metric: b.metric,
-        value: b.value,
-        date: b.date
-      }))
-    });
-    
-    return bests;
+    return result;
   }
 
   private async targetLineNative(_range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null> {
@@ -497,24 +411,15 @@ class CardioProgressProvider implements ProgressDataProvider {
   private async snapshotNative(range: TimeRange): Promise<CardioProgressSnapshot> {
     logger.debug("[cardio] CardioProgressProvider.snapshotNative: Starting", { range });
     
-    /*const [minutesSeries, distanceSeries, caloriesSeries, stepsSeries, kpis, workouts, bests, targetLine] = await Promise.all([
-      this.seriesNative(range, "activeMinutes"),
-      this.seriesNative(range, "distance"),
-      this.seriesNative(range, "calories"),
-      this.seriesNative(range, "steps"),
-      this.kpisNative(range),
-      this.recentWorkoutsNative(range),
-      this.bestsNative(range),
-      this.targetLineNative(range, "activeMinutes"),
-    ]);*/
+    const data = await this.ensure(range);
 
-    const minutesSeries = await this.seriesNative(range, "activeMinutes");
-    const distanceSeries = await this.seriesNative(range, "distance");
-    const caloriesSeries = await this.seriesNative(range, "calories");
-    const stepsSeries = await this.seriesNative(range, "steps");
-    const kpis = await this.kpisNative(range);
-    const workouts = await this.recentWorkoutsNative(range);
-    const bests = await this.bestsNative(range);
+    const minutesSeries = this.seriesFromAggregated(range, data, "activeMinutes");
+    const distanceSeries = this.seriesFromAggregated(range, data, "distance");
+    const caloriesSeries = this.seriesFromAggregated(range, data, "calories");
+    const stepsSeries = this.seriesFromAggregated(range, data, "steps");
+    const kpis = this.kpisFromAggregated(range, data);
+    const workouts = this.recentWorkoutsFromAggregated(range, data);
+    const workoutsByDay = this.groupWorkoutsByDate(workouts);
     const targetLine = await this.targetLineNative(range, "activeMinutes");
 
     // ADD: Log each component result
@@ -537,10 +442,10 @@ class CardioProgressProvider implements ProgressDataProvider {
       }))
     });
 
-    logger.debug("[cardio] CardioProgressProvider.snapshotNative: Workouts and bests", {
+    logger.debug("[cardio] CardioProgressProvider.snapshotNative: Workouts", {
       range,
+      workoutDays: Object.keys(workoutsByDay).length,
       workoutCount: workouts.length,
-      bestCount: bests.length,
       hasTargetLine: !!targetLine
     });
 
@@ -553,20 +458,11 @@ class CardioProgressProvider implements ProgressDataProvider {
         steps: stepsSeries,
       },
       kpis,
-      workouts,
-      bests,
+      workouts: workoutsByDay,
       targetLine,
     };
   }
 
-  private seriesUnavailable(
-    range: TimeRange,
-    focus: CardioFocus,
-    options?: { compare?: boolean },
-  ): CardioSeriesResponse {
-    const buckets = buildBucketSets(range);
-    return this.seriesUnavailableFromBuckets(focus, buckets, options);
-  }
 
   private seriesUnavailableFromBuckets(
     focus: CardioFocus,
@@ -628,8 +524,7 @@ class CardioProgressProvider implements ProgressDataProvider {
         steps: this.seriesUnavailableFromBuckets("steps", buckets),
       },
       kpis: this.kpisUnavailable(range),
-      workouts: [],
-      bests: [],
+      workouts: {},
       targetLine: this.targetLineUnavailable("activeMinutes"),
     };
   }
@@ -638,100 +533,29 @@ class CardioProgressProvider implements ProgressDataProvider {
     return this.snapshotUnavailable(range);
   }
 
-  private computeBestsFromWorkouts(workouts: CardioWorkoutSummary[]): CardioBest[] {
-    logger.debug("[cardio] CardioProgressProvider.computeBestsFromWorkouts: Starting", { 
-      workoutCount: workouts.length 
-    });
-    
-    if (workouts.length === 0) {
-      logger.debug("[cardio] CardioProgressProvider.computeBestsFromWorkouts: No workouts, returning empty", {});
-      return [];
-    }
+  private collectWorkouts(data: AggregatedData): CardioWorkoutSummary[] {
+    return [...data.previous, ...data.current].flatMap((bucket) => bucket.workouts);
+  }
 
-    const longestDistance = workouts.reduce<CardioWorkoutSummary | null>((best, workout) => {
-      if (!workout.distanceKm) return best;
-      if (!best || (best.distanceKm ?? 0) < workout.distanceKm) {
-        return workout;
+  private groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, CardioWorkoutSummary[]> {
+    const grouped: Record<string, CardioWorkoutSummary[]> = {};
+    for (const workout of workouts) {
+      const start = new Date(workout.start);
+      if (Number.isNaN(start.getTime())) {
+        continue;
       }
-      return best;
-    }, null);
-
-    const topCalories = workouts.reduce<CardioWorkoutSummary | null>((best, workout) => {
-      if (!workout.calories) return best;
-      if (!best || (best.calories ?? 0) < workout.calories) {
-        return workout;
+      const key = start.toISOString().slice(0, 10);
+      if (!grouped[key]) {
+        grouped[key] = [];
       }
-      return best;
-    }, null);
-
-    const longestDuration = workouts.reduce<CardioWorkoutSummary | null>((best, workout) => {
-      if (!best || best.durationMinutes < workout.durationMinutes) {
-        return workout;
-      }
-      return best;
-    }, null);
-
-    logger.debug("[cardio] CardioProgressProvider.computeBestsFromWorkouts: Best candidates found", {
-      longestDistance: longestDistance ? {
-        id: longestDistance.id,
-        distanceKm: longestDistance.distanceKm,
-        activity: longestDistance.activity
-      } : null,
-      topCalories: topCalories ? {
-        id: topCalories.id,
-        calories: topCalories.calories,
-        activity: topCalories.activity
-      } : null,
-      longestDuration: longestDuration ? {
-        id: longestDuration.id,
-        durationMinutes: longestDuration.durationMinutes,
-        activity: longestDuration.activity
-      } : null
-    });
-
-    const bests: CardioBest[] = [];
-    if (longestDistance) {
-      bests.push({
-        id: `${longestDistance.id}-distance`,
-        label: "Longest Distance",
-        metric: "distance",
-        value: kilometersToDisplay(longestDistance.distanceKm ?? 0),
-        date: longestDistance.start,
-        detail: normalizeActivityName(longestDistance.activity),
-      });
+      grouped[key].push(workout);
     }
-    if (topCalories) {
-      bests.push({
-        id: `${topCalories.id}-calories`,
-        label: "Highest Calorie Burn",
-        metric: "calories",
-        value: `${caloriesToDisplay(topCalories.calories ?? 0)} kcal`,
-        date: topCalories.start,
-        detail: normalizeActivityName(topCalories.activity),
-      });
+
+    for (const key of Object.keys(grouped)) {
+      grouped[key].sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
     }
-    if (longestDuration) {
-      bests.push({
-        id: `${longestDuration.id}-duration`,
-        label: "Longest Session",
-        metric: "activeMinutes",
-        value: minutesToDisplay(longestDuration.durationMinutes),
-        date: longestDuration.start,
-        detail: normalizeActivityName(longestDuration.activity),
-      });
-    }
-    
-    logger.debug("[cardio] CardioProgressProvider.computeBestsFromWorkouts: Final bests", {
-      bestCount: bests.length,
-      bests: bests.map(b => ({
-        id: b.id,
-        label: b.label,
-        metric: b.metric,
-        value: b.value
-      }))
-    });
-    
-    return bests;
+
+    return grouped;
   }
 
   private async ensure(range: TimeRange): Promise<AggregatedData> {
@@ -766,25 +590,24 @@ class CardioProgressProvider implements ProgressDataProvider {
 
     if (allBuckets.length === 0) {
       logger.debug("[cardio] CardioProgressProvider.fetchAggregated: No buckets, returning empty data", { range });
-      return { range, current, previous, workouts: [] };
+      return { range, current, previous };
     }
 
     const earliest = allBuckets[0].start;
     const latest = allBuckets[allBuckets.length - 1].end;
 
-    const workouts: CardioWorkoutSummary[] = [];
     const platform = await this.getPlatform();
-    
-    logger.debug("[cardio] CardioProgressProvider.fetchAggregated: Platform detected", { 
-      range, 
+
+    logger.debug("[cardio] CardioProgressProvider.fetchAggregated: Platform detected", {
+      range,
       platform,
       dateRange: { start: earliest.toISOString(), end: latest.toISOString() }
     });
 
     if (platform === "ios") {
-      await this.populateFromIos(allBuckets, earliest, latest, workouts);
+      await this.populateFromIos(allBuckets, earliest, latest);
     } else if (platform === "android") {
-      await this.populateFromAndroid(allBuckets, earliest, latest, workouts);
+      await this.populateFromAndroid(allBuckets, earliest, latest);
     } else {
       throw new Error(`Unsupported platform for cardio provider: ${platform}`);
     }
@@ -793,18 +616,20 @@ class CardioProgressProvider implements ProgressDataProvider {
     logger.debug("[cardio] CardioProgressProvider.fetchAggregated: Data populated", {
       range,
       platform,
-      workoutCount: workouts.length,
+      workoutCount: allBuckets.reduce((sum, bucket) => sum + bucket.workouts.length, 0),
       currentBucketTotals: current.map(bucket => ({
         iso: bucket.iso,
-        totals: bucket.totals
+        totals: bucket.totals,
+        workouts: bucket.workouts.length
       })),
       previousBucketTotals: previous.map(bucket => ({
         iso: bucket.iso,
-        totals: bucket.totals
+        totals: bucket.totals,
+        workouts: bucket.workouts.length
       }))
     });
 
-    return { range, current, previous, workouts };
+    return { range, current, previous };
   }
 
   private async getPlatform(): Promise<string> {
@@ -826,7 +651,6 @@ class CardioProgressProvider implements ProgressDataProvider {
     buckets: Bucket[],
     startRaw: Date,
     endRaw: Date,
-    workouts: CardioWorkoutSummary[],
   ): Promise<void> {
     try {
       const { Health } = await import("capacitor-health");
@@ -891,6 +715,7 @@ class CardioProgressProvider implements ProgressDataProvider {
 
       const fallbackCalories = new Map<Bucket, number>();
       const fallbackSteps = new Map<Bucket, number>();
+      const collectedWorkouts: CardioWorkoutSummary[] = [];
 
       for (let i = 0; i < workoutSamples.length; i++) {
         printWorkout(workoutSamples[i], i);
@@ -948,9 +773,10 @@ class CardioProgressProvider implements ProgressDataProvider {
           source: sample?.sourceName,
         };
         //logger.debug("[cardio] iOS workout summary", { workoutSummary });
-        workouts.push(workoutSummary);
+        bucket.workouts.push(workoutSummary);
+        collectedWorkouts.push(workoutSummary);
       }
-      for (const workout of workouts) {
+      for (const workout of collectedWorkouts) {
         logger.debug("🔍 DGB [CARDIO_PROGRESS] Workout:", JSON.stringify(workout, null, 2));
       }
       try {
@@ -1076,12 +902,12 @@ class CardioProgressProvider implements ProgressDataProvider {
       
       // ADD: Final summary logging
       logger.debug("[cardio] iOS populateFromIos: Final summary", {
-        totalWorkouts: workouts.length,
+        totalWorkouts: collectedWorkouts.length,
         totalBuckets: buckets.length,
-        bucketsWithData: buckets.filter(b => 
-          b.totals.minutes > 0 || 
-          b.totals.distanceKm > 0 || 
-          b.totals.calories > 0 || 
+        bucketsWithData: buckets.filter(b =>
+          b.totals.minutes > 0 ||
+          b.totals.distanceKm > 0 ||
+          b.totals.calories > 0 ||
           b.totals.steps > 0
         ).length,
         totalMinutes: buckets.reduce((sum, b) => sum + b.totals.minutes, 0),
@@ -1101,7 +927,6 @@ class CardioProgressProvider implements ProgressDataProvider {
     buckets: Bucket[],
     start: Date,
     end: Date,
-    workouts: CardioWorkoutSummary[],
   ): Promise<void> {
     try {
       const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
@@ -1141,6 +966,7 @@ class CardioProgressProvider implements ProgressDataProvider {
       }
 
       const distanceRecords = await readAllRecords("Distance");
+      const collectedWorkouts: CardioWorkoutSummary[] = [];
       for (const record of distanceRecords) {
         const startDate = new Date(record?.startTime ?? 0);
         const endDate = new Date(record?.endTime ?? 0);
@@ -1161,7 +987,7 @@ class CardioProgressProvider implements ProgressDataProvider {
         if (distanceKm) bucket.totals.distanceKm += distanceKm;
         bucket.totals.minutes += durationMinutes;
 
-        workouts.push({
+        const workoutSummary: CardioWorkoutSummary = {
           id: record?.metadata?.id ?? `android-distance-${startDate.getTime()}`,
           activity: normalizeActivityName("Distance"),
           start: startDate.toISOString(),
@@ -1169,7 +995,9 @@ class CardioProgressProvider implements ProgressDataProvider {
           durationMinutes,
           distanceKm,
           source: record?.metadata?.dataOrigin,
-        });
+        };
+        bucket.workouts.push(workoutSummary);
+        collectedWorkouts.push(workoutSummary);
       }
 
       const calorieRecords = await readAllRecords("ActiveCaloriesBurned");
@@ -1198,6 +1026,20 @@ class CardioProgressProvider implements ProgressDataProvider {
           }
         }
       }
+      logger.debug("[cardio] Android populateFromAndroid: Final summary", {
+        totalWorkouts: collectedWorkouts.length,
+        totalBuckets: buckets.length,
+        bucketsWithData: buckets.filter(b =>
+          b.totals.minutes > 0 ||
+          b.totals.distanceKm > 0 ||
+          b.totals.calories > 0 ||
+          b.totals.steps > 0
+        ).length,
+        totalMinutes: buckets.reduce((sum, b) => sum + b.totals.minutes, 0),
+        totalDistance: buckets.reduce((sum, b) => sum + b.totals.distanceKm, 0),
+        totalCalories: buckets.reduce((sum, b) => sum + b.totals.calories, 0),
+        totalSteps: buckets.reduce((sum, b) => sum + b.totals.steps, 0)
+      });
     } catch (error) {
       logger.warn("[cardio] Failed to populate Android cardio data", error);
       throw error;

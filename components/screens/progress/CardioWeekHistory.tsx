@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 import { PROGRESS_THEME } from "./util";
-import type { HistoryEntry } from "../../progress/Progress.types";
+import type { CardioWorkoutSummary } from "@/types/progress";
 import { logger } from "../../../utils/logging";
 
 const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" ");
@@ -52,6 +52,7 @@ export type CardioWeekHistoryDay = {
     steps?: ReactNode;
   };
   workouts: CardioWeekHistoryWorkout[];
+  historyEntries: CardioWorkoutSummary[];
 };
 
 type StyleWithRing = CSSProperties & { ["--tw-ring-color"]?: string };
@@ -84,6 +85,9 @@ const WORKOUT_ACCENTS: Record<string, string> = {
   hiit: PROGRESS_THEME.accentSecondary,
   mobility: PROGRESS_THEME.accentSecondary,
 };
+
+const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+const distanceFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function hexToRgba(hex: string, alpha: number) {
   const normalized = hex.replace("#", "");
@@ -131,7 +135,8 @@ class Workout {
     this.personalRecords = data.personalRecords;
     this.accent = getAccentColor(this.type);
     logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout data:", data);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout accent:", JSON.stringify(this, null, 2))  }
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout accent:", JSON.stringify(this, null, 2));
+  }
 
   static from(raw: CardioWeekHistoryWorkout) {
     return new Workout(raw);
@@ -194,63 +199,102 @@ class Workout {
   }
 }
 
-export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHistoryDay[] {
+export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSummary[]>): CardioWeekHistoryDay[] {
+  const entries = Object.entries(groups);
   if (entries.length === 0) {
     return [];
   }
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Entries:", JSON.stringify(entries, null, 2));
+
+  const startOfCurrentWeek = getStartOfWeek(new Date());
+  const endOfCurrentWeek = addDays(startOfCurrentWeek, 7);
+
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Start of current week:", startOfCurrentWeek);
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] End of current week:", endOfCurrentWeek);
 
   const grouped = entries.reduce<
-    Map<string, { date: Date; workouts: CardioWeekHistoryDay["workouts"]; totals: AggregatedTotals; label?: string }>
-  >((acc, entry) => {
-    const date = new Date(entry.date);
+    Map<
+      string,
+      {
+        date: Date;
+        workouts: CardioWeekHistoryDay["workouts"];
+        historyEntries: CardioWorkoutSummary[];
+        totals: AggregatedTotals;
+        label?: string;
+      }
+    >
+  >((acc, [isoDate, workouts]) => {
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] ISO Date:", isoDate);
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workouts:", JSON.stringify(workouts, null, 2));
+    if (!Array.isArray(workouts) || workouts.length === 0) {
+      return acc;
+    }
+
+    const reference = toLocalDate(isoDate);
+    const fallback = workouts[0] ? toLocalDate(workouts[0].start) : new Date(NaN);
+    const date = !Number.isNaN(reference.getTime()) ? reference : fallback;
+
+    if (Number.isNaN(date.getTime())) {
+      return acc;
+    }
+
+    if (!isWithinRange(date, startOfCurrentWeek, endOfCurrentWeek)) {
+      return acc;
+    }
+
     const key = date.toISOString().split("T")[0];
     if (!acc.has(key)) {
       acc.set(key, {
         date,
         workouts: [],
+        historyEntries: [],
         totals: {},
         label: getWeekdayLabel(date),
       });
     }
 
     const group = acc.get(key)!;
-    group.workouts.push({
-      id: entry.id,
-      type: entry.type,
-      name: entry.activity,
-      duration: entry.duration,
-      distance: entry.distance,
-      calories: entry.calories,
-      time: entry.time,
-      steps: entry.steps,
-      volume: entry.totalWeight,
-    });
+    const sorted = [...workouts].sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
 
-    const calories = parseNumeric(entry.calories);
-    if (typeof calories === "number") {
-      group.totals.calories = (group.totals.calories ?? 0) + calories;
+    for (const workout of sorted) {
+      group.historyEntries.push(workout);
+      group.workouts.push({
+        id: workout.id,
+        type: "cardio",
+        name: workout.activity,
+        duration: formatHistoryDuration(workout.durationMinutes),
+        distance:
+          typeof workout.distanceKm === "number"
+            ? `${distanceFormatter.format(Math.max(0, workout.distanceKm))} km`
+            : undefined,
+        calories:
+          typeof workout.calories === "number"
+            ? `${integerFormatter.format(Math.round(Math.max(0, workout.calories)))} kcal`
+            : undefined,
+        time: formatHistoryTime(workout.start),
+        steps: sanitizeSteps(workout.steps),
+      });
+
+      if (typeof workout.calories === "number" && Number.isFinite(workout.calories)) {
+        group.totals.calories = (group.totals.calories ?? 0) + workout.calories;
+      }
+      if (typeof workout.distanceKm === "number" && Number.isFinite(workout.distanceKm)) {
+        group.totals.distance = (group.totals.distance ?? 0) + workout.distanceKm;
+      }
+      if (typeof workout.steps === "number" && Number.isFinite(workout.steps)) {
+        group.totals.steps = (group.totals.steps ?? 0) + workout.steps;
+      }
+      if (typeof workout.durationMinutes === "number" && Number.isFinite(workout.durationMinutes)) {
+        group.totals.time = (group.totals.time ?? 0) + workout.durationMinutes;
+      }
     }
-
-    const distance = parseNumeric(entry.distance);
-    if (typeof distance === "number") {
-      group.totals.distance = (group.totals.distance ?? 0) + distance;
-    }
-
-    if (typeof entry.steps === "number") {
-      group.totals.steps = (group.totals.steps ?? 0) + entry.steps;
-    }
-
-    const minutes = parseDurationMinutes(entry.duration);
-    if (typeof minutes === "number") {
-      group.totals.time = (group.totals.time ?? 0) + minutes;
-    }
-
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Group:", JSON.stringify(acc, null, 2));
     return acc;
   }, new Map());
 
   return Array.from(grouped.values())
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .map(({ date, workouts, totals, label }) => {
+    .map(({ date, workouts, historyEntries, totals, label }) => {
       const weekIndex = getWeekIndex(date);
       const formattedTotals: CardioWeekHistoryDay["dailyTotals"] = {
         calories: typeof totals.calories === "number" ? Math.round(totals.calories) : totals.calories,
@@ -266,36 +310,35 @@ export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHisto
         dateLabel: formatDateLabel(date),
         dailyTotals: formattedTotals,
         workouts,
+        historyEntries,
       } satisfies CardioWeekHistoryDay;
     });
 }
 
-function parseNumeric(value?: string) {
-  if (!value) return undefined;
-  const match = value.match(/[\d,.]+/);
-  if (!match) return undefined;
-  const normalized = match[0].replace(/,/g, "");
-  const parsed = Number.parseFloat(normalized);
-  return Number.isNaN(parsed) ? undefined : parsed;
+function formatHistoryDuration(minutes?: number) {
+  if (!Number.isFinite(minutes) || (minutes ?? 0) <= 0) {
+    return "00:00:00";
+  }
+  const totalSeconds = Math.max(0, Math.round((minutes ?? 0) * 60));
+  const hours = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-function parseDurationMinutes(value?: string) {
-  if (!value) return undefined;
+function formatHistoryTime(iso?: string) {
+  if (!iso) return undefined;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
 
-  if (/^\d{1,2}:\d{2}:\d{2}$/.test(value)) {
-    const [hours, minutes, seconds] = value.split(":").map(Number);
-    if ([hours, minutes, seconds].some((part) => Number.isNaN(part))) {
-      return undefined;
-    }
-    return hours * 60 + minutes + seconds / 60;
+function sanitizeSteps(value?: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return undefined;
   }
-
-  const hourMatch = value.match(/(\d+)\s*h/);
-  const minuteMatch = value.match(/(\d+)\s*m/);
-  const totalMinutes =
-    (hourMatch ? Number.parseInt(hourMatch[1], 10) * 60 : 0) +
-    (minuteMatch ? Number.parseInt(minuteMatch[1], 10) : 0);
-  return Number.isNaN(totalMinutes) ? undefined : totalMinutes;
+  const normalized = Math.round(value);
+  return normalized >= 0 ? normalized : undefined;
 }
 
 function formatMinutes(totalMinutes: number) {
@@ -310,6 +353,38 @@ function formatMinutes(totalMinutes: number) {
 function getWeekIndex(date: Date) {
   const jsDay = date.getDay();
   return jsDay === 0 ? 6 : jsDay - 1;
+}
+
+function toLocalDate(value: string | Date | undefined | null) {
+  if (!value) {
+    return new Date(NaN);
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return new Date(NaN);
+  }
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getStartOfWeek(date: Date) {
+  const local = toLocalDate(date);
+  if (Number.isNaN(local.getTime())) {
+    return new Date(date);
+  }
+  const jsDay = local.getDay();
+  const diff = jsDay === 0 ? -6 : 1 - jsDay;
+  local.setDate(local.getDate() + diff);
+  return local;
+}
+
+function addDays(date: Date, days: number) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+function isWithinRange(date: Date, start: Date, end: Date) {
+  return date.getTime() < end.getTime();
 }
 
 function getWeekdayLabel(date: Date) {

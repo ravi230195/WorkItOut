@@ -37,15 +37,6 @@ export type CardioWorkoutSummary = {
   source?: string;
 };
 
-export type CardioBest = {
-  id: string;
-  label: string;
-  metric: CardioFocus;
-  value: string;
-  date: string;
-  detail?: string;
-};
-
 export type CardioTargetLine = {
   focus: CardioFocus;
   value: number;
@@ -56,16 +47,6 @@ export type CardioProgressSnapshot = {
   range: TimeRange;
   series: Record<CardioFocus, CardioSeriesResponse>;
   kpis: CardioKpi[];
-  workouts: CardioWorkoutSummary[];
-  bests: CardioBest[];
+  workouts: Record<string, CardioWorkoutSummary[]>;
   targetLine?: CardioTargetLine | null;
 };
-
-export interface ProgressDataProvider {
-  series(range: TimeRange, focus: CardioFocus, options?: { compare?: boolean }): Promise<CardioSeriesResponse>;
-  kpis(range: TimeRange): Promise<CardioKpi[]>;
-  recentWorkouts(range: TimeRange): Promise<CardioWorkoutSummary[]>;
-  bests(range: TimeRange): Promise<CardioBest[]>;
-  targetLine(range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null>;
-  snapshot(range: TimeRange): Promise<CardioProgressSnapshot>;
-}

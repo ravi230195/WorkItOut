@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import type { TimeRange, CardioFocus, CardioProgressSnapshot } from "@/types/progress";
 import { CardioProgressProvider } from "@/screen/progress/CardioProgress";
-import type { HistoryEntry, Snapshot } from "../../progress/Progress.types";
+import type { Snapshot } from "../../progress/Progress.types";
 import { supabaseAPI } from "../../../utils/supabase/supabase-api";
 import type { Profile } from "../../../utils/supabase/supabase-types";
 import { extractFirstName } from "./util";
@@ -43,33 +43,6 @@ export function useUserFirstName(userToken: string | null | undefined) {
 
 const WORKOUTS_FOCUS_ORDER: CardioFocus[] = ["activeMinutes", "distance", "calories", "steps"];
 const workoutsProvider = new CardioProgressProvider();
-const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
-const distanceFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-function formatHistoryDuration(minutes: number) {
-  if (!Number.isFinite(minutes) || minutes <= 0) return "00:00:00";
-  const totalSeconds = Math.max(0, Math.round(minutes * 60));
-  const hours = Math.floor(totalSeconds / 3600);
-  const mins = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
-function formatHistoryTime(iso?: string) {
-  if (!iso) return undefined;
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return undefined;
-  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-}
-
-function sanitizeSteps(value?: number) {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return undefined;
-  }
-  const normalized = Math.round(value);
-  return normalized >= 0 ? normalized : undefined;
-}
-
 function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
   const series = WORKOUTS_FOCUS_ORDER.map((focus) => {
     const entry = raw.series[focus];
@@ -89,21 +62,7 @@ function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
     currentNumeric,
   }));
 
-  const history: HistoryEntry[] = raw.workouts.map((workout) => ({
-    type: "cardio",
-    id: workout.id,
-    activity: workout.activity,
-    date: workout.start,
-    duration: formatHistoryDuration(workout.durationMinutes),
-    distance: workout.distanceKm ? `${distanceFormatter.format(workout.distanceKm)} km` : "0 km",
-    calories: typeof workout.calories === "number"
-      ? `${integerFormatter.format(Math.round(workout.calories))} kcal`
-      : undefined,
-    time: formatHistoryTime(workout.start),
-    steps: sanitizeSteps(workout.steps),
-  }));
-
-  return { series, kpis, history };
+  return { series, kpis, workouts: raw.workouts ?? {} };
 }
 
 export function useWorkoutsProgressSnapshot(range: TimeRange) {
@@ -135,19 +94,22 @@ export function useWorkoutsProgressSnapshot(range: TimeRange) {
           range,
           seriesKeys: Object.keys(raw.series || {}),
           kpiCount: raw.kpis?.length || 0,
-          workoutCount: raw.workouts?.length || 0,
-          bestCount: raw.bests?.length || 0,
+          workoutDays: raw.workouts ? Object.keys(raw.workouts).length : 0,
+          workoutCount: raw.workouts
+            ? Object.values(raw.workouts).reduce((total: number, day) => total + day.length, 0)
+            : 0,
           hasTargetLine: !!raw.targetLine
         });
-        
+
         const converted = toSnapshot(raw);
-        
+
         // ADD: Log converted data
         logger.debug("[workouts] useWorkoutsProgressSnapshot: Converted to Snapshot format", {
           range,
           seriesCount: converted.series?.length || 0,
           kpiCount: converted.kpis?.length || 0,
-          historyCount: converted.history?.length || 0
+          workoutDayCount: Object.keys(converted.workouts || {}).length,
+          workoutCount: Object.values(converted.workouts || {}).reduce((total, day) => total + day.length, 0)
         });
         
         setSnapshot(converted);
