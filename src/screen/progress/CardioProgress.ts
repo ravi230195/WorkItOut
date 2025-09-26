@@ -263,10 +263,11 @@ function collectWorkouts(data: AggregatedData): CardioWorkoutSummary[] {
 function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, CardioWorkoutSummary[]> {
   const grouped: Record<string, CardioWorkoutSummary[]> = {};
   for (const workout of workouts) {
-    const endDate = toLocalDateTime(workout.end);
-    if (!endDate) {
+    const endDate = workout.end instanceof Date ? workout.end : new Date(workout.end);
+    if (Number.isNaN(endDate.getTime())) {
       continue;
     }
+
     const key = formatDateKey(endDate);
     if (!grouped[key]) {
       grouped[key] = [];
@@ -276,9 +277,9 @@ function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, C
 
   for (const key of Object.keys(grouped)) {
     grouped[key].sort((a, b) => {
-      const aEnd = toLocalDateTime(a.end)?.getTime() ?? 0;
-      const bEnd = toLocalDateTime(b.end)?.getTime() ?? 0;
-      return bEnd - aEnd;
+      const aEnd = a.end instanceof Date ? a.end : new Date(a.end);
+      const bEnd = b.end instanceof Date ? b.end : new Date(b.end);
+      return (bEnd.getTime() || 0) - (aEnd.getTime() || 0);
     });
   }
 
