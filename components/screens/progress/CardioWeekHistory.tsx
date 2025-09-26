@@ -27,6 +27,7 @@ const cn = (...classes: Array<string | false | null | undefined>) => classes.fil
 export type CardioWeekHistoryWorkout = {
   id: number | string;
   name: string;
+  source?: string;
   duration?: ReactNode;
   time?: string;
   calories?: ReactNode;
@@ -106,6 +107,7 @@ class Workout {
   id: number | string;
   type: string;
   name: string;
+  source?: string;
   duration?: ReactNode;
   time?: string;
   calories?: ReactNode;
@@ -122,6 +124,7 @@ class Workout {
     this.id = data.id;
     this.type = data.type ?? "cardio";
     this.name = data.name;
+    this.source = data.source;
     this.duration = data.duration;
     this.time = data.time;
     this.calories = data.calories;
@@ -256,6 +259,7 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
         id: workout.id,
         type: "cardio",
         name: workout.activity,
+        source: workout.source,
         duration: formatHistoryDuration(workout.durationMinutes),
         distance:
           typeof workout.distanceKm === "number"
@@ -586,6 +590,14 @@ function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
                             <h5 className="text-sm font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
                               {workout.name}
                             </h5>
+                            {workout.source ? (
+                              <span
+                                className="text-xs font-medium"
+                                style={{ color: PROGRESS_THEME.textMuted }}
+                              >
+                                • {workout.source}
+                              </span>
+                            ) : null}
                             {workout.personalRecords ? (
                               <span
                                 className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium"
