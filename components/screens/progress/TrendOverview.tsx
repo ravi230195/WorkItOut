@@ -49,11 +49,10 @@ export function TrendOverview({
 
   return (
     <section
-      className="rounded-3xl border p-5"
+      className="rounded-3xl border bg-white p-5"
       style={{
         borderColor: PROGRESS_THEME.cardBorder,
         boxShadow: PROGRESS_THEME.cardShadow,
-        background: `linear-gradient(180deg, rgba(251, 247, 239, 0.92) 0%, rgba(255, 255, 255, 0.98) 100%)`,
       }}
     >
       <header className="flex items-center justify-between gap-3">

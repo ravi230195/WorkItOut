@@ -19,7 +19,6 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
   const [width, setWidth] = useState(0);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const gradientId = useMemo(() => `grad-${Math.random().toString(36).slice(2, 10)}`, []);
-  const textureId = useMemo(() => `texture-${Math.random().toString(36).slice(2, 10)}`, []);
   const inset = useMemo(() => {
     if (range === "threeMonths") {
       return { top: 16, bottom: 12, left: 28, right: 36 } as const;
@@ -136,27 +135,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
               <stop offset="0%" stopColor={color} stopOpacity={0.6} />
               <stop offset="100%" stopColor={color} stopOpacity={0.12} />
             </linearGradient>
-            <pattern id={textureId} patternUnits="userSpaceOnUse" width={10} height={10}>
-              <path d="M0 10H10" stroke="rgba(30,36,50,0.07)" strokeWidth={0.5} />
-              <path d="M10 0V10" stroke="rgba(30,36,50,0.05)" strokeWidth={0.5} />
-            </pattern>
           </defs>
-          <rect
-            x={inset.left}
-            y={inset.top}
-            width={width - inset.left - inset.right}
-            height={CHART_HEIGHT - inset.top - inset.bottom}
-            fill="rgba(226, 209, 188, 0.18)"
-            rx={18}
-          />
-          <rect
-            x={inset.left}
-            y={inset.top}
-            width={width - inset.left - inset.right}
-            height={CHART_HEIGHT - inset.top - inset.bottom}
-            fill={`url(#${textureId})`}
-            opacity={0.08}
-          />
           {ticks.map((tick) => (
             <line
               key={`grid-${tick}`}
