@@ -193,8 +193,21 @@ class CardioProgressProvider implements ProgressDataProvider {
   private platformPromise?: Promise<string>;
 
   async series(range: TimeRange, focus: CardioFocus, options?: { compare?: boolean }): Promise<CardioSeriesResponse> {
+    logger.debug("[cardio] CardioProgressProvider.series: Starting", { range, focus, options });
+
     try {
-      return await this.seriesNative(range, focus, options);
+      const data = await this.ensure(range);
+      const result = this.seriesFromAggregated(range, data, focus, options);
+
+      logger.debug("[cardio] CardioProgressProvider.series: Completed", {
+        range,
+        focus,
+        currentPoints: result.current.length,
+        previousPoints: result.previous?.length ?? 0,
+        personalBest: result.personalBest,
+      });
+
+      return result;
     } catch (error) {
       logger.debug("[cardio] Unable to load cardio series", { range, focus, error });
       return this.seriesUnavailable(range, focus, options);
@@ -250,17 +263,6 @@ class CardioProgressProvider implements ProgressDataProvider {
     }
   }
 
-  private async seriesNative(
-    range: TimeRange,
-    focus: CardioFocus,
-    options?: { compare?: boolean },
-  ): Promise<CardioSeriesResponse> {
-    logger.debug("[cardio] CardioProgressProvider.seriesNative: Starting", { range, focus, options });
-
-    const data = await this.ensure(range);
-    return this.seriesFromAggregated(range, data, focus, options);
-  }
-
   private seriesFromAggregated(
     range: TimeRange,
     data: AggregatedData,
@@ -269,7 +271,7 @@ class CardioProgressProvider implements ProgressDataProvider {
   ): CardioSeriesResponse {
     const selector = METRIC_SELECTORS[focus];
 
-    logger.debug("[cardio] CardioProgressProvider.seriesNative: Data retrieved", {
+    logger.debug("[cardio] CardioProgressProvider.seriesFromAggregated: Data retrieved", {
       range,
       focus,
       currentBuckets: data.current.length,
@@ -281,7 +283,7 @@ class CardioProgressProvider implements ProgressDataProvider {
     const historicalMax = previousValues.length ? Math.max(...previousValues) : 0;
     const includePrevious = options?.compare !== false;
 
-    logger.debug("[cardio] CardioProgressProvider.seriesNative: Historical analysis", {
+    logger.debug("[cardio] CardioProgressProvider.seriesFromAggregated: Historical analysis", {
       range,
       focus,
       previousValues: previousValues.slice(0, 5), // Show first 5 values
@@ -301,7 +303,7 @@ class CardioProgressProvider implements ProgressDataProvider {
 
     const personalBest = Math.max(historicalMax, ...current.map((point) => point.value));
 
-    logger.debug("[cardio] CardioProgressProvider.seriesNative: Series calculated", {
+    logger.debug("[cardio] CardioProgressProvider.seriesFromAggregated: Series calculated", {
       range,
       focus,
       currentPoints: current.length,
@@ -478,16 +480,6 @@ class CardioProgressProvider implements ProgressDataProvider {
   private async snapshotNative(range: TimeRange): Promise<CardioProgressSnapshot> {
     logger.debug("[cardio] CardioProgressProvider.snapshotNative: Starting", { range });
     
-    /*const [minutesSeries, distanceSeries, caloriesSeries, stepsSeries, kpis, workouts, targetLine] = await Promise.all([
-      this.seriesNative(range, "activeMinutes"),
-      this.seriesNative(range, "distance"),
-      this.seriesNative(range, "calories"),
-      this.seriesNative(range, "steps"),
-      this.kpisNative(range),
-      this.recentWorkoutsNative(range),
-      this.targetLineNative(range, "activeMinutes"),
-    ]);*/
-
     const data = await this.ensure(range);
 
     const minutesSeries = this.seriesFromAggregated(range, data, "activeMinutes");
