@@ -160,7 +160,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
             y1={averageY}
             y2={averageY}
             stroke={color}
-            strokeOpacity={0.22}
+            strokeOpacity={0.75}
             strokeWidth={2}
             strokeDasharray="4 6"
           />
@@ -224,7 +224,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
               y={yPosition(tick)}
               textAnchor="start"
               fontSize={11}
-              fill="rgba(30,36,50,0.25)"
+              fill="#111111"
             >
               {formatTickValue(tick)}
             </text>
@@ -268,7 +268,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
             y={averageY - 8}
             textAnchor="end"
             fontSize={10}
-            fill="rgba(30,36,50,0.45)"
+            fill="#111111"
           >
             {`Avg ${formatter(averageValue)}`}
           </text>

@@ -35,9 +35,6 @@ export function TrendOverview({
           {domainLabel}
         </div>
         <h2 className="text-xl font-semibold text-[#111111]">{title}</h2>
-        <p className="text-xs font-medium" style={{ color: PROGRESS_THEME.textMuted }}>
-          {rangeLabel} overview
-        </p>
       </header>
       <TrendChart data={series} color={color} range={range} formatter={formatter} />
     </section>
