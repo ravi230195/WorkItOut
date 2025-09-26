@@ -158,47 +158,13 @@ class Workout {
     if (typeof value === "number") {
       return value.toLocaleString();
     }
-    return value ?? "—";
+    return value ?? "N/A";
   }
 
-  get metricTwo() {
-    if (this.isStrength) {
-      if (this.exercises !== undefined) {
-        return { label: "Exercises", value: this.formatMetric(this.exercises) };
-      }
-      if (this.rounds !== undefined) {
-        return { label: "Rounds", value: this.formatMetric(this.rounds) };
-      }
-    }
-    if (this.distance !== undefined) {
-      return { label: "Distance", value: this.formatMetric(this.distance) };
-    }
-    if (this.volume !== undefined) {
-      return { label: "Volume", value: this.formatMetric(this.volume) };
-    }
-    if (this.rounds !== undefined) {
-      return { label: "Rounds", value: this.formatMetric(this.rounds) };
-    }
-    return { label: this.isStrength ? "Exercises" : "Distance", value: "—" };
-  }
-
-  get metricThree() {
-    if (this.isStrength) {
-      if (this.sets !== undefined) {
-        return { label: "Sets", value: this.formatMetric(this.sets) };
-      }
-      if (this.rounds !== undefined && this.metricTwo.label !== "Rounds") {
-        return { label: "Rounds", value: this.formatMetric(this.rounds) };
-      }
-    }
-    if (this.steps !== undefined) {
-      return { label: "Steps", value: this.formatMetric(this.steps) };
-    }
-    if (this.rounds !== undefined && this.metricTwo.label !== "Rounds") {
-      return { label: "Rounds", value: this.formatMetric(this.rounds) };
-    }
-    return { label: this.isStrength ? "Sets" : "Steps", value: "—" };
-  }
+  get metricOne() { return { label: "Duration", value: this.formatMetric(this.duration) };}
+  get metricTwo() { return { label: "Distance", value: this.formatMetric(this.distance)};}
+  get metricThree() {return { label: "Steps", value: this.formatMetric(this.steps)};}
+  get metricFour() { return { label: "Calories", value: this.formatMetric(this.calories)};}
 }
 
 export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSummary[]>): CardioWeekHistoryDay[] {
@@ -505,11 +471,11 @@ function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
   }
 
   const totals = [
-    { Icon: Flame, label: "Calories", value: day.dailyTotals.calories },
-    { Icon: Clock, label: "Duration", value: day.dailyTotals.time },
-    { Icon: MapPin, label: "Distance", value: day.dailyTotals.distance },
-    { Icon: Footprints, label: "Steps", value: day.dailyTotals.steps },
-  ].filter((item) => item.value !== undefined && item.value !== null);
+    { Icon: Flame, label: "Calories", value: day.dailyTotals.calories ?? "N/A" },
+    { Icon: Clock, label: "Duration", value: day.dailyTotals.time ?? "N/A" },
+    { Icon: MapPin, label: "Distance", value: day.dailyTotals.distance ?? "N/A" },
+    { Icon: Footprints, label: "Steps", value: day.dailyTotals.steps ?? "N/A" },
+  ];
 
   return (
     <section className="w-full rounded-3xl border bg-white p-5" style={SECTION_STYLE}>
@@ -526,7 +492,7 @@ function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
               <div key={label} className="flex items-center gap-2">
                 <Icon className="h-3 w-3" style={{ color: PROGRESS_THEME.textMuted }} />
                 <div className="flex flex-col">
-                  <span className="text-xs font-semibold" style={{ color: PROGRESS_THEME.textPrimary }}>
+                  <span className="text-xs font-semibold text-center" style={{ color: PROGRESS_THEME.textPrimary }}>
                     {typeof value === "number" ? value.toLocaleString() : value}
                   </span>
                   <span className="text-xs uppercase tracking-[0.01em]" style={{ color: PROGRESS_THEME.textMuted }}>
@@ -618,7 +584,7 @@ function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
 
                       <div className="flex text-center" style={{ gap: "clamp(0.25rem, 2vw, 1rem)" }}>
                         <div className="flex-1">
-                          <Metric value={workout.duration ?? "—"} label="Duration" align="center" />
+                          <Metric value={workout.metricOne.value} label={workout.metricOne.label} align="center" />
                         </div>
                         <div className="flex-1">
                           <Metric value={workout.metricTwo.value} label={workout.metricTwo.label} align="center" />
@@ -627,7 +593,7 @@ function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
                           <Metric value={workout.metricThree.value} label={workout.metricThree.label} align="center" />
                         </div>
                         <div className="flex-1">
-                          <Metric value={workout.calories ?? "—"} label="Calories" align="center" />
+                          <Metric value={workout.metricFour.value} label={workout.metricFour.label} align="center" />
                         </div>
                       </div>
                     </div>
