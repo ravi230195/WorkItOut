@@ -9,7 +9,7 @@ const RANGE_GROUP_STYLE: CSSProperties = {
   alignItems: "center",
   gap: 8,
   padding: 4,
-  borderRadius: 9999,
+  borderRadius: 1000,
   backgroundColor: PROGRESS_THEME.cardBackground,
   border: `1px solid ${PROGRESS_THEME.borderSubtle}`,
   boxShadow: PROGRESS_THEME.rangeButtonShadow,
@@ -18,13 +18,13 @@ const RANGE_GROUP_STYLE: CSSProperties = {
 const RANGE_BUTTON_STYLE = (isActive: boolean): CSSProperties => ({
   backgroundColor: isActive ? PROGRESS_THEME.accentPrimary : "#FFFFFF",
   color: isActive ? "#FFFFFF" : PROGRESS_THEME.textPrimary,
-  borderRadius: 9999,
+  borderRadius: 1000,
   border: "none",
   boxShadow: isActive ? PROGRESS_THEME.rangeButtonShadowActive : "none",
   transform: isActive ? "translateY(-1px)" : "translateY(0)",
   transition: "all 0.24s cubic-bezier(0.4, 0, 0.2, 1)",
-  minWidth: 60,
-  padding: "8px 18px",
+  minWidth: 40,
+  padding: "6px 12px",
 });
 
 interface RangeSelectorProps {
@@ -45,7 +45,7 @@ export function RangeSelector({ range, onChange, options = RANGE_OPTIONS }: Rang
               type="button"
               onClick={() => onChange(option.value)}
               aria-pressed={isActive}
-              className="rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[rgba(226,125,96,0.35)]"
+              className="px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[rgba(226,125,96,0.35)]"
               style={RANGE_BUTTON_STYLE(isActive)}
               data-testid={`progress-range-${option.value}`}
             >
