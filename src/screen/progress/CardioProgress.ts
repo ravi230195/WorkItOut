@@ -256,30 +256,39 @@ class CardioProgressProvider implements ProgressDataProvider {
     options?: { compare?: boolean },
   ): Promise<CardioSeriesResponse> {
     logger.debug("[cardio] CardioProgressProvider.seriesNative: Starting", { range, focus, options });
-    
+
     const data = await this.ensure(range);
+    return this.seriesFromAggregated(range, data, focus, options);
+  }
+
+  private seriesFromAggregated(
+    range: TimeRange,
+    data: AggregatedData,
+    focus: CardioFocus,
+    options?: { compare?: boolean },
+  ): CardioSeriesResponse {
     const selector = METRIC_SELECTORS[focus];
-    
+
     logger.debug("[cardio] CardioProgressProvider.seriesNative: Data retrieved", {
       range,
       focus,
       currentBuckets: data.current.length,
       previousBuckets: data.previous.length,
-      selector: focus
+      selector: focus,
     });
-    
+
     const previousValues = data.previous.map((bucket) => selector(bucket));
     const historicalMax = previousValues.length ? Math.max(...previousValues) : 0;
     const includePrevious = options?.compare !== false;
-    
+
     logger.debug("[cardio] CardioProgressProvider.seriesNative: Historical analysis", {
       range,
       focus,
       previousValues: previousValues.slice(0, 5), // Show first 5 values
       historicalMax,
-      includePrevious
+      includePrevious,
     });
-    
+
     const previous: SeriesPoint[] | undefined = includePrevious && data.previous.length
       ? data.previous.map((bucket) => ({ iso: bucket.iso, value: selector(bucket) }))
       : undefined;
@@ -291,7 +300,7 @@ class CardioProgressProvider implements ProgressDataProvider {
     });
 
     const personalBest = Math.max(historicalMax, ...current.map((point) => point.value));
-    
+
     logger.debug("[cardio] CardioProgressProvider.seriesNative: Series calculated", {
       range,
       focus,
@@ -300,7 +309,7 @@ class CardioProgressProvider implements ProgressDataProvider {
       personalBest,
       currentValues: current.slice(0, 3).map(p => ({ iso: p.iso, value: p.value, isPersonalBest: p.isPersonalBest })) // Show first 3 points
     });
-    
+
     return { focus, current, previous, personalBest: personalBest > 0 ? personalBest : undefined };
   }
 
@@ -308,6 +317,10 @@ class CardioProgressProvider implements ProgressDataProvider {
     logger.debug("[cardio] CardioProgressProvider.kpisNative: Starting", { range });
 
     const data = await this.ensure(range);
+    return this.kpisFromAggregated(range, data);
+  }
+
+  private kpisFromAggregated(range: TimeRange, data: AggregatedData): CardioKpi[] {
     const workoutCount = this.collectWorkouts(data).length;
 
     // ADD: Log aggregated data totals
@@ -392,6 +405,10 @@ class CardioProgressProvider implements ProgressDataProvider {
     logger.debug("[cardio] CardioProgressProvider.recentWorkoutsNative: Starting", { range });
 
     const data = await this.ensure(range);
+    return this.recentWorkoutsFromAggregated(range, data);
+  }
+
+  private recentWorkoutsFromAggregated(range: TimeRange, data: AggregatedData): CardioWorkoutSummary[] {
     const allWorkouts = this.collectWorkouts(data);
     const currentStart = data.current[0]?.start ?? new Date();
     const currentEnd = data.current[data.current.length - 1]?.end ?? new Date();
@@ -421,10 +438,10 @@ class CardioProgressProvider implements ProgressDataProvider {
         calories: w.calories
       }))
     });
-    
+
     filtered.sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
     const result = filtered.slice(0, 6);
-    
+
     logger.debug("[cardio] CardioProgressProvider.recentWorkoutsNative: Final result", {
       range,
       resultCount: result.length,
@@ -435,7 +452,7 @@ class CardioProgressProvider implements ProgressDataProvider {
         durationMinutes: w.durationMinutes
       }))
     });
-    
+
     return result;
   }
 
@@ -471,12 +488,14 @@ class CardioProgressProvider implements ProgressDataProvider {
       this.targetLineNative(range, "activeMinutes"),
     ]);*/
 
-    const minutesSeries = await this.seriesNative(range, "activeMinutes");
-    const distanceSeries = await this.seriesNative(range, "distance");
-    const caloriesSeries = await this.seriesNative(range, "calories");
-    const stepsSeries = await this.seriesNative(range, "steps");
-    const kpis = await this.kpisNative(range);
-    const workouts = await this.recentWorkoutsNative(range);
+    const data = await this.ensure(range);
+
+    const minutesSeries = this.seriesFromAggregated(range, data, "activeMinutes");
+    const distanceSeries = this.seriesFromAggregated(range, data, "distance");
+    const caloriesSeries = this.seriesFromAggregated(range, data, "calories");
+    const stepsSeries = this.seriesFromAggregated(range, data, "steps");
+    const kpis = this.kpisFromAggregated(range, data);
+    const workouts = this.recentWorkoutsFromAggregated(range, data);
     const targetLine = await this.targetLineNative(range, "activeMinutes");
 
     // ADD: Log each component result
