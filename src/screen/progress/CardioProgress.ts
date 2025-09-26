@@ -11,6 +11,12 @@ import type {
 import { logger } from "../../../utils/logging";
 
 const TARGET_MINUTES = 40;
+const CARDIO_FOCUSES: readonly CardioFocus[] = [
+  "activeMinutes",
+  "distance",
+  "calories",
+  "steps",
+];
 const ACTIVITY_LABELS: Record<string, string> = {
   "outdoor walk": "Outdoor Walk",
   "indoor walk": "Indoor Walk",
@@ -62,6 +68,19 @@ const stepFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 
 
 const MIN_MS = 60_000;
 
+function toUtcIso(date: Date): string {
+  return new Date(date).toISOString();
+}
+
+function toLocalDate(value: unknown): Date | undefined {
+  if (!value) return undefined;
+  const date = value instanceof Date ? new Date(value) : new Date(value as any);
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  return date;
+}
+
 function normalizeActivityName(activity: string | undefined): string {
   if (!activity) return "Workout";
   const key = activity.trim().toLowerCase();
@@ -78,6 +97,13 @@ function createBucket(start: Date, end: Date): Bucket {
 
 function cloneDate(date: Date) {
   return new Date(date.getTime());
+}
+
+function formatLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function buildBuckets(range: TimeRange, inclusiveEnd: Date): Bucket[] {
@@ -464,69 +490,35 @@ class CardioProgressProvider {
   }
 
 
-  private seriesUnavailableFromBuckets(
-    focus: CardioFocus,
-    buckets: ReturnType<typeof buildBucketSets>,
-    options?: { compare?: boolean },
-  ): CardioSeriesResponse {
-    const includePrevious = options?.compare !== false;
-    const mapBucket = (bucket: Bucket): SeriesPoint => ({ iso: bucket.iso, value: 0 });
-    return {
-      focus,
-      current: buckets.current.map(mapBucket),
-      previous: includePrevious ? buckets.previous.map(mapBucket) : undefined,
-    };
-  }
-
-  private kpisUnavailable(_range: TimeRange): CardioKpi[] {
-    return [
-      {
-        key: "activeMinutes",
-        title: "Total Time",
-        unit: "minutes",
-        value: "N/A",
-      },
-      {
-        key: "distance",
-        title: "Distance",
-        unit: "km",
-        value: "N/A",
-      },
-      {
-        key: "calories",
-        title: "Calories",
-        unit: "kcal",
-        value: "N/A",
-      },
-      {
-        key: "steps",
-        title: "Steps",
-        value: "N/A",
-      },
-    ];
-  }
-
-  private targetLineUnavailable(focus: CardioFocus): CardioTargetLine | null {
-    if (focus !== "activeMinutes") {
-      return null;
-    }
-    return { focus, value: TARGET_MINUTES, unit: "minutes" };
-  }
-
   private snapshotUnavailable(range: TimeRange): CardioProgressSnapshot {
     const buckets = buildBucketSets(range);
-    return {
-      range,
-      series: {
-        activeMinutes: this.seriesUnavailableFromBuckets("activeMinutes", buckets),
-        distance: this.seriesUnavailableFromBuckets("distance", buckets),
-        calories: this.seriesUnavailableFromBuckets("calories", buckets),
-        steps: this.seriesUnavailableFromBuckets("steps", buckets),
-      },
-      kpis: this.kpisUnavailable(range),
-      workouts: {},
-      targetLine: this.targetLineUnavailable("activeMinutes"),
+    const unavailableSeries = Object.fromEntries(
+      CARDIO_FOCUSES.map((focus) => [
+        focus,
+        {
+          focus,
+          current: buckets.current.map((bucket) => ({ iso: bucket.iso, value: 0 })),
+          previous: buckets.previous.length
+            ? buckets.previous.map((bucket) => ({ iso: bucket.iso, value: 0 }))
+            : undefined,
+        } satisfies CardioSeriesResponse,
+      ]),
+    ) as Record<CardioFocus, CardioSeriesResponse>;
+
+    const kpis: CardioKpi[] = [
+      { key: "activeMinutes", title: "Total Time", unit: "minutes", value: "N/A" },
+      { key: "distance", title: "Distance", unit: "km", value: "N/A" },
+      { key: "calories", title: "Calories", unit: "kcal", value: "N/A" },
+      { key: "steps", title: "Steps", value: "N/A" },
+    ];
+
+    const targetLine: CardioTargetLine | null = {
+      focus: "activeMinutes",
+      value: TARGET_MINUTES,
+      unit: "minutes",
     };
+
+    return { range, series: unavailableSeries, kpis, workouts: {}, targetLine };
   }
 
   public getUnavailableSnapshot(range: TimeRange): CardioProgressSnapshot {
@@ -540,11 +532,11 @@ class CardioProgressProvider {
   private groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, CardioWorkoutSummary[]> {
     const grouped: Record<string, CardioWorkoutSummary[]> = {};
     for (const workout of workouts) {
-      const start = new Date(workout.start);
-      if (Number.isNaN(start.getTime())) {
+      const end = toLocalDate(workout.end) ?? toLocalDate(workout.start);
+      if (!end) {
         continue;
       }
-      const key = start.toISOString().slice(0, 10);
+      const key = formatLocalDateKey(end);
       if (!grouped[key]) {
         grouped[key] = [];
       }
@@ -552,7 +544,7 @@ class CardioProgressProvider {
     }
 
     for (const key of Object.keys(grouped)) {
-      grouped[key].sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
+      grouped[key].sort((a, b) => new Date(b.end).getTime() - new Date(a.end).getTime());
     }
 
     return grouped;
@@ -654,13 +646,10 @@ class CardioProgressProvider {
   ): Promise<void> {
     try {
       const { Health } = await import("capacitor-health");
-      const start = startRaw.toISOString();
-      const end = endRaw.toISOString();
-      // ADD: Enhanced permission request logging
-      logger.debug("[cardio] iOS populateFromIos: Starting", { start, end, bucketCount: buckets.length, dateRange: `${start} to ${end}`});
-      logger.debug("[cardio] iOS request permissions", { start, end});
+      const start = toUtcIso(startRaw);
+      const end = toUtcIso(endRaw);
 
-      const permissionResult = await Health.requestHealthPermissions({
+      await Health.requestHealthPermissions({
         permissions: [
           "READ_WORKOUTS",
           "READ_ACTIVE_CALORIES",
@@ -670,65 +659,30 @@ class CardioProgressProvider {
           "READ_STEPS",
         ],
       });
-      
-      logger.debug("[cardio] iOS permissions result", {  permissions: permissionResult, granted: Object.values(permissionResult).every(Boolean)});
 
-      // ADD: Enhanced workout query logging
-      logger.debug("[cardio] iOS queryWorkouts: Request", {start, end, includeHeartRate: true, includeRoute: false, includeSteps: true});
-      const workoutResponse: any = await Health.queryWorkouts({ startDate: start, endDate: end, includeHeartRate: true, includeRoute: false, includeSteps: true});
-      
-      // ADD: Basic workout response logging
-      logger.debug("[cardio] iOS queryWorkouts: Response", {
-        hasWorkouts: !!workoutResponse?.workouts,
-        workoutCount: Array.isArray(workoutResponse?.workouts) ? workoutResponse.workouts.length : 0,
-        responseKeys: Object.keys(workoutResponse || {})
+      const { workouts = [] } = await Health.queryWorkouts({
+        startDate: start,
+        endDate: end,
+        includeHeartRate: true,
+        includeRoute: false,
+        includeSteps: true,
       });
-      
-      // ADD: Print all workouts one by one in readable format
-      const workoutSamples: any[] = Array.isArray(workoutResponse?.workouts) ? workoutResponse.workouts : [];
-      logger.debug("[cardio] iOS queryWorkouts: Detailed workout breakdown", { 
-        totalWorkouts: workoutSamples.length 
-      });
-      
-      const printWorkout = (workout: any, i: number) => {
-        logger.debug(`[cardio] iOS Workout #${i + 1}/${workoutSamples.length}`, {
-          id: workout?.id || 'N/A',
-          workoutType: workout?.workoutType || 'N/A',
-          startDate: workout?.startDate || 'N/A',
-          endDate: workout?.endDate || 'N/A',
-          duration: workout?.duration || 'N/A',
-          distance: workout?.distance || 'N/A',
-          calories: workout?.calories || 'N/A',
-          steps: workout?.steps || 'N/A',
-          sourceName: workout?.sourceName || 'N/A',
-          heartRateCount: Array.isArray(workout?.heartRate) ? workout.heartRate.length : 0,
-          heartRateSample: Array.isArray(workout?.heartRate) && workout.heartRate.length > 0 ? {
-            firstBpm: workout.heartRate[0]?.bpm || 'N/A',
-            lastBpm: workout.heartRate[workout.heartRate.length - 1]?.bpm || 'N/A',
-            totalReadings: workout.heartRate.length
-          } : null,
-          allKeys: Object.keys(workout || {})
-        });
-      }
-      
-      logger.debug("[cardio] iOS workouts fetched", { count: workoutSamples.length });
 
       const fallbackCalories = new Map<Bucket, number>();
       const fallbackSteps = new Map<Bucket, number>();
-      const collectedWorkouts: CardioWorkoutSummary[] = [];
 
-      for (let i = 0; i < workoutSamples.length; i++) {
-        printWorkout(workoutSamples[i], i);
+      for (const sample of workouts as any[]) {
+        const startDate = toLocalDate(sample?.startDate ?? sample?.startTime);
+        const endDate = toLocalDate(sample?.endDate ?? sample?.endTime);
+        if (!startDate || !endDate) continue;
 
-        const sample = workoutSamples[i];
-        const startDate = new Date(sample?.startDate ?? sample?.startTime ?? 0);
-        const endDate = new Date(sample?.endDate ?? sample?.endTime ?? 0);
-        if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) continue;
-        const bucket = findBucket(buckets, startDate);
+        const bucket = findBucket(buckets, endDate);
         if (!bucket) continue;
 
         const rawDuration = safeNumber(sample?.duration);
-        const durationMinutes = rawDuration > 0 ? rawDuration / 60 : Math.max(0, (endDate.getTime() - startDate.getTime()) / MIN_MS);
+        const durationMinutes = rawDuration > 0
+          ? rawDuration / 60
+          : Math.max(0, (endDate.getTime() - startDate.getTime()) / MIN_MS);
         const distanceMeters = safeNumber(sample?.distance);
         const distanceKm = distanceMeters > 0 ? distanceMeters / 1000 : undefined;
         const calories = safeNumber(sample?.calories);
@@ -736,31 +690,24 @@ class CardioProgressProvider {
 
         bucket.totals.minutes += durationMinutes;
         if (distanceKm) bucket.totals.distanceKm += distanceKm;
-        if (calories) {
-          const existing = fallbackCalories.get(bucket) ?? 0;
-          fallbackCalories.set(bucket, existing + calories);
-        }
+        if (calories) fallbackCalories.set(bucket, (fallbackCalories.get(bucket) ?? 0) + calories);
+        if (steps) fallbackSteps.set(bucket, (fallbackSteps.get(bucket) ?? 0) + steps);
 
-        if (steps) {
-          const existingSteps = fallbackSteps.get(bucket) ?? 0;
-          fallbackSteps.set(bucket, existingSteps + steps);
-        }
-
-        let workoutHeartRateSum = 0;
-        let workoutHeartRateCount = 0;
+        let heartRateSum = 0;
+        let heartRateCount = 0;
         if (Array.isArray(sample?.heartRate)) {
           for (const reading of sample.heartRate) {
             const bpm = safeNumber(reading?.bpm);
             if (bpm > 0) {
               bucket.totals.heartRateSum += bpm;
               bucket.totals.heartRateCount += 1;
-              workoutHeartRateSum += bpm;
-              workoutHeartRateCount += 1;
+              heartRateSum += bpm;
+              heartRateCount += 1;
             }
           }
         }
 
-        const workoutSummary: CardioWorkoutSummary = {
+        bucket.workouts.push({
           id: sample?.id ?? `ios-${startDate.getTime()}`,
           activity: normalizeActivityName(sample?.workoutType),
           start: startDate.toISOString(),
@@ -769,127 +716,36 @@ class CardioProgressProvider {
           distanceKm,
           calories: calories || undefined,
           steps: steps || undefined,
-          averageHeartRate: workoutHeartRateCount > 0 ? workoutHeartRateSum / workoutHeartRateCount : undefined,
+          averageHeartRate: heartRateCount > 0 ? heartRateSum / heartRateCount : undefined,
           source: sample?.sourceName,
-        };
-        //logger.debug("[cardio] iOS workout summary", { workoutSummary });
-        bucket.workouts.push(workoutSummary);
-        collectedWorkouts.push(workoutSummary);
-      }
-      for (const workout of collectedWorkouts) {
-        logger.debug("🔍 DGB [CARDIO_PROGRESS] Workout:", JSON.stringify(workout, null, 2));
-      }
-      try {
-        // ADD: Enhanced steps aggregation logging
-        logger.debug("[cardio] iOS queryAggregated steps: Request", { start, end, dataType: "steps", bucket: "day"});
-        
-        const stepsAggregated: any = await Health.queryAggregated({startDate: start, endDate: end, dataType: "steps", bucket: "day"});
-        
-        // ADD: Enhanced steps response logging
-        logger.debug("[cardio] iOS queryAggregated steps: Response", {
-          hasAggregatedData: !!stepsAggregated?.aggregatedData,
-          dataCount: Array.isArray(stepsAggregated?.aggregatedData) ? stepsAggregated.aggregatedData.length : 0,
-          responseKeys: Object.keys(stepsAggregated || {}),
-          sampleData: Array.isArray(stepsAggregated?.aggregatedData) && stepsAggregated.aggregatedData.length > 0 ? {
-            startDate: stepsAggregated.aggregatedData[0]?.startDate,
-            date: stepsAggregated.aggregatedData[0]?.date,
-            value: stepsAggregated.aggregatedData[0]?.value
-          } : null
         });
-        
-        const stepRows: any[] = Array.isArray(stepsAggregated?.aggregatedData) ? stepsAggregated.aggregatedData : [];
-        let processedSteps = 0;
-        let totalSteps = 0;
-        
-        // ADD: Print all step data one by one in readable format
-        logger.debug("[cardio] iOS queryAggregated steps: Detailed step breakdown", { totalStepRows: stepRows.length });
-        
-        const printStep = (row: any, i: number) => {
-          logger.debug(`[cardio] iOS Step Row #${i + 1}/${stepRows.length}`, {
-            startDate: row?.startDate || 'N/A',
-            date: row?.date || 'N/A',
-            value: row?.value || 'N/A',
-            allKeys: Object.keys(row || {})
-          });
-        }
-        
-        for (let i = 0; i < stepRows.length; i++) {
-          const row = stepRows[i];
-          printStep(row, i);
-          const rowDate = new Date(row?.startDate ?? row?.date ?? 0);
-          const bucket = findBucket(buckets, rowDate);
-          if (!bucket) continue;
-          const stepValue = safeNumber(row?.value);
-          bucket.totals.steps += stepValue;
-          totalSteps += stepValue;
-          processedSteps++;
-        }
-        
-        logger.debug("[cardio] iOS steps processed", {
-          processedRows: processedSteps,
-          totalSteps,
-          bucketsWithSteps: buckets.filter(b => b.totals.steps > 0).length
-        });
-      } catch (error) {
-        logger.debug("[cardio] iOS step aggregation failed", error);
       }
 
-      try {
-        // ADD: Enhanced calories aggregation logging
-        logger.debug("[cardio] iOS queryAggregated active calories: Request", { start, end, dataType: "active-calories", bucket: "day"});
-        
-        const caloriesAggregated: any = await Health.queryAggregated({startDate: start, endDate: end, dataType: "active-calories", bucket: "day"});
-        
-        // ADD: Enhanced calories response logging
-        logger.debug("[cardio] iOS queryAggregated active calories: Response", {
-          hasAggregatedData: !!caloriesAggregated?.aggregatedData,
-          dataCount: Array.isArray(caloriesAggregated?.aggregatedData) ? caloriesAggregated.aggregatedData.length : 0,
-          responseKeys: Object.keys(caloriesAggregated || {}),
-          sampleData: Array.isArray(caloriesAggregated?.aggregatedData) && caloriesAggregated.aggregatedData.length > 0 ? {
-            startDate: caloriesAggregated.aggregatedData[0]?.startDate,
-            date: caloriesAggregated.aggregatedData[0]?.date,
-            value: caloriesAggregated.aggregatedData[0]?.value
-          } : null
+      const applyAggregate = async (dataType: string, assign: (bucket: Bucket, value: number) => void) => {
+        const response: any = await Health.queryAggregated({
+          startDate: start,
+          endDate: end,
+          dataType,
+          bucket: "day",
         });
-        
-        const calorieRows: any[] = Array.isArray(caloriesAggregated?.aggregatedData) ? caloriesAggregated.aggregatedData : [];
-        let processedCalories = 0;
-        let totalCalories = 0;
-        
-        // ADD: Print all calorie data one by one in readable format
-        logger.debug("[cardio] iOS queryAggregated calories: Detailed calorie breakdown", { totalCalorieRows: calorieRows.length });
-        
-        const printCalorie = (row: any, i: number) => {
-          logger.debug(`[cardio] iOS Calorie Row #${i + 1}/${calorieRows.length}`, {
-            startDate: row?.startDate || 'N/A',
-            date: row?.date || 'N/A',
-            value: row?.value || 'N/A',
-            allKeys: Object.keys(row || {})
-          });
-        }
-        
-        for (let i = 0; i < calorieRows.length; i++) {
-          const row = calorieRows[i];
-          printCalorie(row, i);
-          const rowDate = new Date(row?.startDate ?? row?.date ?? 0);
-          const bucket = findBucket(buckets, rowDate);
+
+        for (const row of Array.isArray(response?.aggregatedData) ? response.aggregatedData : []) {
+          const date = toLocalDate(row?.endDate ?? row?.startDate ?? row?.date);
+          if (!date) continue;
+          const bucket = findBucket(buckets, date);
           if (!bucket) continue;
           const value = safeNumber(row?.value);
-          if (value > 0) {
-            bucket.totals.calories += value;
-            totalCalories += value;
-            processedCalories++;
-          }
+          if (value > 0) assign(bucket, value);
         }
-        
-        logger.debug("[cardio] iOS calories processed", {
-          processedRows: processedCalories, 
-          totalCalories,
-          bucketsWithCalories: buckets.filter(b => b.totals.calories > 0).length});
+      };
 
-      } catch (error) {
-        logger.debug("[cardio] iOS calorie aggregation failed", error);
-      }
+      await applyAggregate("steps", (bucket, value) => {
+        bucket.totals.steps += value;
+      });
+
+      await applyAggregate("activeEnergyBurned", (bucket, value) => {
+        bucket.totals.calories += value;
+      });
 
       for (const bucket of buckets) {
         if (bucket.totals.calories <= 0 && fallbackCalories.has(bucket)) {
@@ -899,24 +755,6 @@ class CardioProgressProvider {
           bucket.totals.steps = fallbackSteps.get(bucket) ?? 0;
         }
       }
-      
-      // ADD: Final summary logging
-      logger.debug("[cardio] iOS populateFromIos: Final summary", {
-        totalWorkouts: collectedWorkouts.length,
-        totalBuckets: buckets.length,
-        bucketsWithData: buckets.filter(b =>
-          b.totals.minutes > 0 ||
-          b.totals.distanceKm > 0 ||
-          b.totals.calories > 0 ||
-          b.totals.steps > 0
-        ).length,
-        totalMinutes: buckets.reduce((sum, b) => sum + b.totals.minutes, 0),
-        totalDistance: buckets.reduce((sum, b) => sum + b.totals.distanceKm, 0),
-        totalCalories: buckets.reduce((sum, b) => sum + b.totals.calories, 0),
-        totalSteps: buckets.reduce((sum, b) => sum + b.totals.steps, 0),
-        fallbackCaloriesUsed: fallbackCalories.size,
-        fallbackStepsUsed: fallbackSteps.size
-      });
     } catch (error) {
       logger.warn("[cardio] Failed to populate iOS cardio data", error);
       throw error;
@@ -925,12 +763,14 @@ class CardioProgressProvider {
 
   private async populateFromAndroid(
     buckets: Bucket[],
-    start: Date,
-    end: Date,
+    startRaw: Date,
+    endRaw: Date,
   ): Promise<void> {
     try {
       const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
-      logger.debug("[cardio] Android request permissions", { start: start.toISOString(), end: end.toISOString() });
+      const start = new Date(toUtcIso(startRaw));
+      const end = new Date(toUtcIso(endRaw));
+
       await HealthConnect.requestHealthPermissions({
         read: ["Steps", "Distance", "ActiveCaloriesBurned", "HeartRateSeries"],
         write: [],
@@ -942,7 +782,6 @@ class CardioProgressProvider {
         const records: any[] = [];
         let pageToken: string | undefined;
         do {
-          logger.debug("[cardio] Android readRecords", { type, pageToken });
           const response: any = await HealthConnect.readRecords({
             type: type as any,
             timeRangeFilter,
@@ -957,22 +796,22 @@ class CardioProgressProvider {
         return records;
       };
 
-      const stepRecords = await readAllRecords("Steps");
-      for (const record of stepRecords) {
-        const startDate = new Date(record?.startTime ?? 0);
-        const bucket = findBucket(buckets, startDate);
+      for (const record of await readAllRecords("Steps")) {
+        const endDate = toLocalDate(record?.endTime ?? record?.startTime);
+        if (!endDate) continue;
+        const bucket = findBucket(buckets, endDate);
         if (!bucket) continue;
         bucket.totals.steps += safeNumber(record?.count);
       }
 
       const distanceRecords = await readAllRecords("Distance");
-      const collectedWorkouts: CardioWorkoutSummary[] = [];
       for (const record of distanceRecords) {
-        const startDate = new Date(record?.startTime ?? 0);
-        const endDate = new Date(record?.endTime ?? 0);
-        if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) continue;
-        const bucket = findBucket(buckets, startDate);
+        const startDate = toLocalDate(record?.startTime);
+        const endDate = toLocalDate(record?.endTime ?? record?.startTime);
+        if (!startDate || !endDate) continue;
+        const bucket = findBucket(buckets, endDate);
         if (!bucket) continue;
+
         const durationMinutes = Math.max(0, (endDate.getTime() - startDate.getTime()) / MIN_MS);
         const distanceValue = safeNumber(record?.distance?.value);
         const unit = (record?.distance?.unit ?? "meter").toLowerCase();
@@ -987,7 +826,7 @@ class CardioProgressProvider {
         if (distanceKm) bucket.totals.distanceKm += distanceKm;
         bucket.totals.minutes += durationMinutes;
 
-        const workoutSummary: CardioWorkoutSummary = {
+        bucket.workouts.push({
           id: record?.metadata?.id ?? `android-distance-${startDate.getTime()}`,
           activity: normalizeActivityName("Distance"),
           start: startDate.toISOString(),
@@ -995,15 +834,13 @@ class CardioProgressProvider {
           durationMinutes,
           distanceKm,
           source: record?.metadata?.dataOrigin,
-        };
-        bucket.workouts.push(workoutSummary);
-        collectedWorkouts.push(workoutSummary);
+        });
       }
 
-      const calorieRecords = await readAllRecords("ActiveCaloriesBurned");
-      for (const record of calorieRecords) {
-        const startDate = new Date(record?.startTime ?? 0);
-        const bucket = findBucket(buckets, startDate);
+      for (const record of await readAllRecords("ActiveCaloriesBurned")) {
+        const endDate = toLocalDate(record?.endTime ?? record?.startTime);
+        if (!endDate) continue;
+        const bucket = findBucket(buckets, endDate);
         if (!bucket) continue;
         const energy = safeNumber(record?.energy?.value);
         if (energy > 0) {
@@ -1011,10 +848,10 @@ class CardioProgressProvider {
         }
       }
 
-      const heartRateRecords = await readAllRecords("HeartRateSeries");
-      for (const record of heartRateRecords) {
-        const startDate = new Date(record?.startTime ?? 0);
-        const bucket = findBucket(buckets, startDate);
+      for (const record of await readAllRecords("HeartRateSeries")) {
+        const endDate = toLocalDate(record?.endTime ?? record?.startTime);
+        if (!endDate) continue;
+        const bucket = findBucket(buckets, endDate);
         if (!bucket) continue;
         if (Array.isArray(record?.samples)) {
           for (const sample of record.samples) {
@@ -1026,25 +863,12 @@ class CardioProgressProvider {
           }
         }
       }
-      logger.debug("[cardio] Android populateFromAndroid: Final summary", {
-        totalWorkouts: collectedWorkouts.length,
-        totalBuckets: buckets.length,
-        bucketsWithData: buckets.filter(b =>
-          b.totals.minutes > 0 ||
-          b.totals.distanceKm > 0 ||
-          b.totals.calories > 0 ||
-          b.totals.steps > 0
-        ).length,
-        totalMinutes: buckets.reduce((sum, b) => sum + b.totals.minutes, 0),
-        totalDistance: buckets.reduce((sum, b) => sum + b.totals.distanceKm, 0),
-        totalCalories: buckets.reduce((sum, b) => sum + b.totals.calories, 0),
-        totalSteps: buckets.reduce((sum, b) => sum + b.totals.steps, 0)
-      });
     } catch (error) {
       logger.warn("[cardio] Failed to populate Android cardio data", error);
       throw error;
     }
   }
+
 }
 
 export { CardioProgressProvider };
