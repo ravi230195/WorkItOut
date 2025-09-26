@@ -52,6 +52,7 @@ export type CardioWeekHistoryDay = {
     steps?: ReactNode;
   };
   workouts: CardioWeekHistoryWorkout[];
+  historyEntries: HistoryEntry[];
 };
 
 type StyleWithRing = CSSProperties & { ["--tw-ring-color"]?: string };
@@ -131,7 +132,8 @@ class Workout {
     this.personalRecords = data.personalRecords;
     this.accent = getAccentColor(this.type);
     logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout data:", data);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout accent:", JSON.stringify(this, null, 2))  }
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout accent:", JSON.stringify(this, null, 2));
+  }
 
   static from(raw: CardioWeekHistoryWorkout) {
     return new Workout(raw);
@@ -199,21 +201,40 @@ export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHisto
     return [];
   }
 
+  const startOfCurrentWeek = getStartOfWeek(new Date());
+  const endOfCurrentWeek = addDays(startOfCurrentWeek, 7);
+
   const grouped = entries.reduce<
-    Map<string, { date: Date; workouts: CardioWeekHistoryDay["workouts"]; totals: AggregatedTotals; label?: string }>
+    Map<
+      string,
+      {
+        date: Date;
+        workouts: CardioWeekHistoryDay["workouts"];
+        historyEntries: CardioWeekHistoryDay["historyEntries"];
+        totals: AggregatedTotals;
+        label?: string;
+      }
+    >
   >((acc, entry) => {
-    const date = new Date(entry.date);
+    const date = toLocalDate(entry.date);
+
+    if (!isWithinRange(date, startOfCurrentWeek, endOfCurrentWeek)) {
+      return acc;
+    }
+
     const key = date.toISOString().split("T")[0];
     if (!acc.has(key)) {
       acc.set(key, {
         date,
         workouts: [],
+        historyEntries: [],
         totals: {},
         label: getWeekdayLabel(date),
       });
     }
 
     const group = acc.get(key)!;
+    group.historyEntries.push(entry);
     group.workouts.push({
       id: entry.id,
       type: entry.type,
@@ -250,7 +271,7 @@ export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHisto
 
   return Array.from(grouped.values())
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .map(({ date, workouts, totals, label }) => {
+    .map(({ date, workouts, historyEntries, totals, label }) => {
       const weekIndex = getWeekIndex(date);
       const formattedTotals: CardioWeekHistoryDay["dailyTotals"] = {
         calories: typeof totals.calories === "number" ? Math.round(totals.calories) : totals.calories,
@@ -266,6 +287,7 @@ export function buildCardioWeekHistory(entries: HistoryEntry[]): CardioWeekHisto
         dateLabel: formatDateLabel(date),
         dailyTotals: formattedTotals,
         workouts,
+        historyEntries,
       } satisfies CardioWeekHistoryDay;
     });
 }
@@ -310,6 +332,29 @@ function formatMinutes(totalMinutes: number) {
 function getWeekIndex(date: Date) {
   const jsDay = date.getDay();
   return jsDay === 0 ? 6 : jsDay - 1;
+}
+
+function toLocalDate(value: string | Date) {
+  const date = value instanceof Date ? value : new Date(value);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getStartOfWeek(date: Date) {
+  const local = toLocalDate(date);
+  const jsDay = local.getDay();
+  const diff = jsDay === 0 ? -6 : 1 - jsDay;
+  local.setDate(local.getDate() + diff);
+  return local;
+}
+
+function addDays(date: Date, days: number) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+function isWithinRange(date: Date, start: Date, end: Date) {
+  return date.getTime() >= start.getTime() && date.getTime() < end.getTime();
 }
 
 function getWeekdayLabel(date: Date) {

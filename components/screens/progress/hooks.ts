@@ -136,7 +136,6 @@ export function useWorkoutsProgressSnapshot(range: TimeRange) {
           seriesKeys: Object.keys(raw.series || {}),
           kpiCount: raw.kpis?.length || 0,
           workoutCount: raw.workouts?.length || 0,
-          bestCount: raw.bests?.length || 0,
           hasTargetLine: !!raw.targetLine
         });
         
