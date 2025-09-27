@@ -224,9 +224,9 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
           {ticks.map((tick) => (
             <text
               key={`y-${tick}`}
-              x={width - inset.right + 6}
+              x={width - inset.right - 4}
               y={yPosition(tick)}
-              textAnchor="start"
+              textAnchor="end"
               fontSize={11}
               fill="#111111"
             >
