@@ -321,7 +321,12 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
   result.sort((a, b) => new Date(b.key).getTime() - new Date(a.key).getTime());
 
   for (const day of result) {
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day:", JSON.stringify(day, null, 2));
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day key:", day.key);
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day label:", day.label);
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day weekIndex:", day.weekIndex);
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day dateLabel:", day.dateLabel);
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day dailyTotals:", JSON.stringify(day.dailyTotals, null, 2));
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day workouts:", JSON.stringify(day.workouts, null, 2));
   }
   return result;
 }
