@@ -183,7 +183,11 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
                 width={bar.width}
                 height={CHART_HEIGHT - inset.top - inset.bottom}
                 fill="transparent"
-                style={{ cursor: "pointer" }}
+                style={{
+                  cursor: "pointer",
+                  outline: "none",
+                  WebkitTapHighlightColor: "transparent",
+                }}
                 tabIndex={0}
                 role="presentation"
                 aria-label={`${formatter(data[index].y)} on ${formatDayLabel(range, data[index].x)}`}
@@ -245,7 +249,35 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
               />
               <circle r={Math.max(6, bars[hoverIndex].width / 2.6)} fill={color} fillOpacity={0.16} />
               <circle r={Math.max(3.5, bars[hoverIndex].width / 4.5)} stroke={color} strokeWidth={1.4} fill="#FFFFFF" />
-              <foreignObject x={-74} y={-64} width={148} height={56}>
+              <foreignObject
+                x={(() => {
+                  const tooltipWidth = 148;
+                  const tooltipHalf = tooltipWidth / 2;
+                  const chartLeft = inset.left + 4;
+                  const chartRight = width - inset.right - 4;
+                  const centerX = bars[hoverIndex].x + bars[hoverIndex].width / 2;
+                  const desiredLeft = centerX - tooltipHalf;
+                  const desiredRight = centerX + tooltipHalf;
+
+                  if (desiredLeft < chartLeft) {
+                    return -tooltipHalf + (chartLeft - desiredLeft);
+                  }
+                  if (desiredRight > chartRight) {
+                    return -tooltipHalf - (desiredRight - chartRight);
+                  }
+                  return -tooltipHalf;
+                })()}
+                y={(() => {
+                  const tooltipHeight = 56;
+                  const verticalGap = 8;
+                  const desiredY = -tooltipHeight - verticalGap;
+                  const chartTop = inset.top + 4;
+                  const minY = chartTop - bars[hoverIndex].y;
+                  return Math.max(desiredY, minY);
+                })()}
+                width={148}
+                height={56}
+              >
                 <div
                   className="rounded-2xl border bg-white px-3 py-2 text-[10px] font-semibold text-[#111111]"
                   style={{ borderColor: PROGRESS_THEME.cardBorder, boxShadow: PROGRESS_THEME.tooltipShadow }}
