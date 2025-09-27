@@ -395,7 +395,27 @@ function addDays(date: Date, days: number) {
 }
 
 function isWithinRange(date: Date, start: Date, end: Date) {
-  return date.getTime() >= start.getTime() && date.getTime() <= end.getTime();
+  const dateTime = date.getTime();
+  const startTime = start.getTime();
+  const endTime = end.getTime();
+
+  if (Number.isNaN(dateTime) || Number.isNaN(startTime) || Number.isNaN(endTime)) {
+    return false;
+  }
+
+  if (dateTime < startTime || dateTime > endTime) {
+    return false;
+  }
+
+  const dateDay = toLocalDate(date).getTime();
+  const startDay = toLocalDate(start).getTime();
+  const endDay = toLocalDate(end).getTime();
+
+  if (endDay > startDay && dateDay === endDay) {
+    return false;
+  }
+
+  return true;
 }
 
 function getWeekdayLabel(date: Date) {
