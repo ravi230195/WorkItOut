@@ -57,7 +57,6 @@ const METRIC_SELECTORS: Record<CardioFocus, MetricSelector> = {
   steps: (bucket) => bucket.totals.steps,
 };
 
-const minuteFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const kmFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const calorieFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const stepFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
@@ -244,10 +243,25 @@ function safeNumber(value: unknown): number {
   return 0;
 }
 
-function minutesToDisplay(value: number) { return `${minuteFormatter.format(Math.max(0, value))}`; }
+function minutesToDisplay(value: number) {
+  const totalMinutes = Math.max(0, Math.round(value));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  const hoursText = String(hours).padStart(2, "0");
+  const minutesText = String(minutes).padStart(2, "0");
+
+  return `${hoursText}:${minutesText}`;
+}
 function kilometersToDisplay(value: number) { return `${kmFormatter.format(Math.max(0, value))}`; }
 function caloriesToDisplay(value: number) { return `${calorieFormatter.format(Math.max(0, value))}`; }
-function stepsToDisplay(value: number) { return `${stepFormatter.format(Math.max(0, value))}`; }
+function stepsToDisplay(value: number) {
+  const safeValue = Math.max(0, value);
+  if (safeValue > 10_000) {
+    return `${Math.round(safeValue / 1_000)}K`;
+  }
+  return `${stepFormatter.format(Math.round(safeValue))}`;
+}
 
 function averageHeartRate(bucket: Bucket): number | undefined {
   if (bucket.totals.heartRateCount <= 0) {
