@@ -175,11 +175,8 @@ function ExerciseList({
 // Screen
 // ────────────────────────────────────────────────────────────────────────────────
 export function AddExercisesToRoutineScreen({
-  routineId,
-  routineName,
   onBack,
   onExerciseSelected,
-  isFromExerciseSetup = true,
 }: AddExercisesToRoutineScreenProps) {
   const { userToken } = useAuth();
   const keyboardVisible = useKeyboardVisible();

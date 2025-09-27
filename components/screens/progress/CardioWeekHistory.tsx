@@ -298,9 +298,25 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
       workouts: [],
     };
 
-    result.push(placeholder);
-    existingByIndex.set(offset, placeholder);
+    // Ensure 'label' is always present for placeholder to satisfy required type
+    if (!placeholder.label) {
+      placeholder.label = getWeekdayLabel(date);
+    }
+
+    // Ensure 'label' is always present for placeholder to satisfy required type
+    if (!placeholder.label) {
+      placeholder.label = getWeekdayLabel(date);
+    }
+
+    // Type assertion to satisfy required 'label' property for downstream usage
+    result.push(placeholder as Required<Pick<CardioWeekHistoryDay, "label">> & CardioWeekHistoryDay);
+    existingByIndex.set(offset, placeholder as Required<Pick<CardioWeekHistoryDay, "label">> & CardioWeekHistoryDay);
   }
+  result.forEach((day) => {
+    if (typeof day.label === "undefined") {
+      day.label = getWeekdayLabel(new Date(day.key));
+    }
+  });
 
   result.sort((a, b) => new Date(b.key).getTime() - new Date(a.key).getTime());
 

@@ -87,7 +87,6 @@ export function AppRouter({
   onRoutineCreated,
   onCloseCreateRoutine,
   onCloseEditMeasurements,
-  onCompleteRoutineCreation,
 
   onExerciseSelected,
   onCloseExerciseSetup,

@@ -277,7 +277,18 @@ function collectWorkouts(data: AggregatedData): CardioWorkoutSummary[] {
 function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, CardioWorkoutSummary[]> {
   const grouped: Record<string, CardioWorkoutSummary[]> = {};
   for (const workout of workouts) {
-    const endDate = workout.end instanceof Date ? workout.end : new Date(workout.end);
+    let endDate: Date;
+    if (
+      typeof workout.end === "object" &&
+      workout.end !== null &&
+      Object.prototype.toString.call(workout.end) === "[object Date]"
+    ) {
+      endDate = workout.end as Date;
+    } else if (typeof workout.end === "string" || typeof workout.end === "number") {
+      endDate = new Date(workout.end);
+    } else {
+      continue;
+    }
     if (Number.isNaN(endDate.getTime())) {
       continue;
     }
@@ -291,8 +302,29 @@ function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, C
 
   for (const key of Object.keys(grouped)) {
     grouped[key].sort((a, b) => {
-      const aEnd = a.end instanceof Date ? a.end : new Date(a.end);
-      const bEnd = b.end instanceof Date ? b.end : new Date(b.end);
+      let aEnd: Date;
+      let bEnd: Date;
+
+      if (
+        typeof a.end === "object" &&
+        a.end !== null &&
+        Object.prototype.toString.call(a.end) === "[object Date]"
+      ) {
+        aEnd = a.end as Date;
+      } else {
+        aEnd = new Date(a.end);
+      }
+
+      if (
+        typeof b.end === "object" &&
+        b.end !== null &&
+        Object.prototype.toString.call(b.end) === "[object Date]"
+      ) {
+        bEnd = b.end as Date;
+      } else {
+        bEnd = new Date(b.end);
+      }
+
       return (bEnd.getTime() || 0) - (aEnd.getTime() || 0);
     });
   }

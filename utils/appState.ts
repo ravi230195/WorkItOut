@@ -117,7 +117,7 @@ export function useAppStateSaver<T>(
           `[APP-STATE] Restoring cached state for key: ${key} on mount`,
           cached
         );
-        setData(cached);
+        setData(cached as T);
         logger.info(
           `[APP-STATE] Successfully restored cached state for key: ${key} on mount`
         );

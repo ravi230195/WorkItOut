@@ -96,9 +96,14 @@ export function useWorkoutsProgressSnapshot(range: TimeRange) {
           kpiCount: raw.kpis?.length || 0,
           workoutDays: raw.workouts ? Object.keys(raw.workouts).length : 0,
           workoutCount: raw.workouts
-            ? Object.values(raw.workouts).reduce((total: number, day) => total + day.length, 0)
+            ? Object.values(raw.workouts).reduce((total: number, day: unknown) => {
+                if (Array.isArray(day)) {
+                  return total + day.length;
+                }
+                return total;
+              }, 0)
             : 0,
-          hasTargetLine: !!raw.targetLine
+          hasTargetLine: !!raw.targetLine,
         });
 
         const converted = toSnapshot(raw);

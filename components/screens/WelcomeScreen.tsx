@@ -160,42 +160,6 @@ export function WelcomeScreen({
       }
     };
 
-    const handleAuthError = (event: Event) => {
-      const detail = (
-        event as CustomEvent<{
-          provider?: SocialProvider;
-          providerSlug?: string;
-          message?: string;
-        }>
-      ).detail;
-
-      setPendingProvider(null);
-      const defaultMessage = detail?.provider
-        ? `We couldn't complete the ${detail.provider} sign-in. Please try again.`
-        : "We couldn't complete the sign-in. Please try again.";
-      const message = detail?.message ?? defaultMessage;
-      const normalizedMessage = message.toLowerCase();
-      const providerPrefix = detail?.provider ? `${detail.provider} ` : "";
-
-      if (normalizedMessage.includes("canceled") || normalizedMessage.includes("cancelled")) {
-        toast.info(detail?.provider ? `${providerPrefix}sign-in was canceled.` : message);
-      } else {
-        toast.error(message);
-      }
-    };
-
-    const handleAuthCancelled = (event: Event) => {
-      const detail = (
-        event as CustomEvent<{
-          provider?: SocialProvider;
-          providerSlug?: string;
-        }>
-      ).detail;
-      setPendingProvider(null);
-      const providerPrefix = detail?.provider ? `${detail.provider} ` : "";
-      toast.info(`${providerPrefix}sign-in was canceled before completion.`.trim());
-    };
-
     window.addEventListener('auth-success', handleAuthSuccess as EventListener);
     
     return () => {

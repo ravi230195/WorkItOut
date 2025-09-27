@@ -18,8 +18,6 @@ import { performanceTimer } from "../performanceTimer";
 type OAuthProvider = "Apple" | "Google";
 type OAuthProviderSlug = Lowercase<OAuthProvider>;
 
-type ListenerHandle = { remove: () => Promise<void> | void };
-
 const SUPPORTED_OAUTH_PROVIDERS = new Set<OAuthProviderSlug>(["apple", "google"]);
 
 type ProviderConfig = {
@@ -45,7 +43,6 @@ const OAUTH_PROVIDER_CONFIG: Record<OAuthProviderSlug, ProviderConfig> = {
 };
 
 const NATIVE_PROTOCOLS = new Set(["capacitor:", "ionic:", "ms-appx:", "ms-appx-web:"]); 
-const HTTP_PROTOCOLS = new Set(["http:", "https:"]); 
 const BLOCKED_REDIRECT_PROTOCOLS = new Set(["javascript:", "vbscript:", "data:"]);
 const CUSTOM_SCHEME_PATTERN = /^[a-z][a-z0-9+\-.]*:$/i;
 
@@ -128,73 +125,6 @@ const resolveOAuthRedirectTarget = (explicit?: string): string => {
 
         throw error instanceof Error ? error : new Error(String(error));
     }
-};
-
-const dispatchAuthEvent = <T>(eventName: string, detail: T) => {
-    if (typeof window === "undefined" || typeof window.dispatchEvent !== "function") return;
-    window.dispatchEvent(new CustomEvent(eventName, { detail }));
-};
-
-const dispatchAuthSuccess = (provider: OAuthProvider, token: string, refreshToken: string) => {
-    const providerSlug = provider.toLowerCase() as OAuthProviderSlug;
-    dispatchAuthEvent("auth-success", { provider, providerSlug, token, refreshToken });
-};
-
-const dispatchAuthError = (provider: OAuthProvider, message: string) => {
-    const providerSlug = provider.toLowerCase() as OAuthProviderSlug;
-    dispatchAuthEvent("auth-error", { provider, providerSlug, message });
-};
-
-const dispatchAuthCancelled = (provider: OAuthProvider) => {
-    const providerSlug = provider.toLowerCase() as OAuthProviderSlug;
-    dispatchAuthEvent("auth-cancelled", { provider, providerSlug });
-};
-
-const ensureNativeRedirectScheme = (url: string): string => {
-    const parsed = new URL(url);
-    const protocol = parsed.protocol?.toLowerCase() ?? "";
-
-    if (HTTP_PROTOCOLS.has(protocol)) {
-        throw new Error(
-            "Native social sign-in requires a custom deep link redirect (for example workouttracker://auth/callback). Update VITE_SUPABASE_OAUTH_REDIRECT or pass a redirectTo that uses your app's scheme before trying again."
-        );
-    }
-
-    return parsed.toString();
-};
-
-const createRedirectMatcher = (redirectUrl: string) => {
-    const normalizedPrefix = redirectUrl.toLowerCase();
-    const prefixLength = redirectUrl.length;
-
-    return (candidate: string): boolean => {
-        if (typeof candidate !== "string" || candidate.length < prefixLength) {
-            return false;
-        }
-
-        return candidate.slice(0, prefixLength).toLowerCase() === normalizedPrefix;
-    };
-};
-
-const formatOAuthErrorMessage = (provider: OAuthProvider, rawMessage?: string | null): string => {
-    const fallback = `We couldn't finish signing you in with ${provider}. Please try again.`;
-    if (!rawMessage) return fallback;
-
-    const normalized = rawMessage.toLowerCase();
-
-    if (provider === "Apple" && (normalized.includes("invalid_scope") || normalized.includes("missing scope"))) {
-        return "Apple sign-in requires the name and email scopes. Enable them in Supabase's Apple provider settings and try again.";
-    }
-
-    if (normalized.includes("provider is not enabled")) {
-        return `${provider} sign-in isn't configured yet. Enable it in Supabase and try again.`;
-    }
-
-    if (normalized === "access_denied" || normalized.includes("access denied")) {
-        return "The sign-in flow was canceled before completion.";
-    }
-
-    return rawMessage;
 };
 
 export class SupabaseDBWrite extends SupabaseBase {

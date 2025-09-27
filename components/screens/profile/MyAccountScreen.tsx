@@ -9,7 +9,6 @@ import {
 import { AppScreen, ScreenHeader, Section, Stack } from "../../layouts";
 import { BottomNavigation } from "../../BottomNavigation";
 import { BottomNavigationButton } from "../../BottomNavigationButton";
-import { Avatar, AvatarFallback } from "../../ui/avatar";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import {
@@ -73,7 +72,7 @@ const createSegmentedOptions = <Value extends string>(
 ): ReadonlyArray<{ value: Value; label: string }> =>
   Object.entries(labels).map(([value, label]) => ({
     value: value as Value,
-    label,
+    label: label as string,
   }));
 
 const LENGTH_UNIT_OPTIONS = createSegmentedOptions<LengthUnit>(LENGTH_UNIT_LABELS);
@@ -128,25 +127,6 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
 
     loadProfile();
   }, []);
-
-  const displayName = useMemo(() => {
-    const trimmedDisplay = formState.displayName.trim();
-    if (trimmedDisplay) return trimmedDisplay;
-    const combined = [formState.firstName.trim(), formState.lastName.trim()]
-      .filter(Boolean)
-      .join(" ");
-    return combined || "User";
-  }, [formState.displayName, formState.firstName, formState.lastName]);
-
-  const initials = useMemo(() => {
-    const name = displayName;
-    if (!name) return "US";
-    const parts = name.split(" ").filter(Boolean);
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
-  }, [displayName]);
 
   const isDirty = useMemo(() => {
     return JSON.stringify(formState) !== JSON.stringify(initialState);
@@ -436,7 +416,7 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
                   <SegmentedToggle<LengthUnit>
                     value={formState.lengthUnit}
                     onChange={handleLengthUnitChange}
-                    options={LENGTH_UNIT_OPTIONS}
+                    options={[...LENGTH_UNIT_OPTIONS]}
                     size="md"
                     variant="filled"
                     tone="accent"
@@ -452,7 +432,7 @@ export function MyAccountScreen({ onBack }: MyAccountScreenProps) {
                   <SegmentedToggle<WeightUnit>
                     value={formState.weightUnit}
                     onChange={handleWeightUnitChange}
-                    options={WEIGHT_UNIT_OPTIONS}
+                    options={[...WEIGHT_UNIT_OPTIONS]}
                     size="md"
                     variant="filled"
                     tone="accent"
