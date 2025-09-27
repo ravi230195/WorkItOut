@@ -10,8 +10,8 @@ type KpiTilesProps = {
   onSelect: (index: number) => void;
 };
 
-const KPI_HEADER_CLASS_ACTIVE = "text-[#22313F]" as const;
-const KPI_HEADER_CLASS_INACTIVE = "text-[rgba(34,49,63,0.65)]" as const;
+const KPI_HEADER_CLASS_ACTIVE = "text-[#111111]" as const;
+const KPI_HEADER_CLASS_INACTIVE = "text-[#111111]" as const;
 
 const KPI_TILE_STYLE = (isActive: boolean, tileColor: string): CSSProperties => ({
   backgroundColor: isActive ? tileColor : PROGRESS_THEME.cardBackground,
