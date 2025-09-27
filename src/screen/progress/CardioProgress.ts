@@ -251,7 +251,7 @@ function minutesToDisplay(value: number) {
   const hoursText = String(hours).padStart(2, "0");
   const minutesText = String(minutes).padStart(2, "0");
 
-  return `${hoursText}:${minutesText}`;
+  return `${hoursText}h ${minutesText}m`;
 }
 function kilometersToDisplay(value: number) { return `${kmFormatter.format(Math.max(0, value))}`; }
 function caloriesToDisplay(value: number) { return `${calorieFormatter.format(Math.max(0, value))}`; }
