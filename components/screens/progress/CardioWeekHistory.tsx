@@ -202,12 +202,15 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
     if (Number.isNaN(date.getTime())) {
       return acc;
     }
-
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Date:", date);
     if (!isWithinRange(date, startOfCurrentWeek, endOfCurrentWeek)) {
       return acc;
     }
 
-    const key = date.toISOString().split("T")[0];
+    //const key = date.toISOString().split("T")[0];
+    const key = date.toLocaleDateString('sv-SE')
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Key:", key);
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Get week index:", getWeekdayLabel(date));
     if (!acc.has(key)) {
       acc.set(key, {
         date,
