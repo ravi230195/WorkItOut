@@ -267,7 +267,14 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
                   }
                   return -tooltipHalf;
                 })()}
-                y={-64}
+                y={(() => {
+                  const tooltipHeight = 56;
+                  const verticalGap = 8;
+                  const desiredY = -tooltipHeight - verticalGap;
+                  const chartTop = inset.top + 4;
+                  const minY = chartTop - bars[hoverIndex].y;
+                  return Math.max(desiredY, minY);
+                })()}
                 width={148}
                 height={56}
               >
