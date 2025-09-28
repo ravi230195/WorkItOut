@@ -96,7 +96,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
         y: isPositive ? Math.min(valueY, baselineY - height) : baselineY,
         width: barWidth,
         height,
-        label: point.x,
+        label: point.x.getTime().toString(),
       };
     });
 
@@ -205,7 +205,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
             const labelY = range === "threeMonths" ? CHART_HEIGHT - 18 : CHART_HEIGHT - 4;
             return (
               <text
-                key={`x-${point.x}`}
+                key={`x-${point.x.getTime()}`}
                 x={(bar?.x ?? inset.left) + (bar?.width ?? 0) / 2}
                 y={labelY}
                 textAnchor={range === "threeMonths" ? "end" : "middle"}
@@ -286,7 +286,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, color, range, formatter }
                     {formatter(data[hoverIndex].y)}
                   </p>
                   <p className="text-[10px] font-medium" style={{ color: PROGRESS_THEME.textFaint }}>
-                    {new Date(data[hoverIndex].x).toLocaleDateString(undefined, {
+                    {data[hoverIndex].x.toLocaleDateString(undefined, {
                       month: "short",
                       day: "numeric",
                     })}

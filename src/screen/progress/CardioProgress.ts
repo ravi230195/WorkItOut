@@ -37,7 +37,6 @@ type BucketTotals = {
 type Bucket = {
   start: Date;
   end: Date;
-  iso: string;
   totals: BucketTotals;
   workouts: CardioWorkoutSummary[];
 };
@@ -81,24 +80,6 @@ function toUtcDate(date: Date): Date {
 
 function toUtcISOString(date: Date): string {
   return toUtcDate(date).toISOString();
-}
-
-function toLocalISOString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-  const milliseconds = String(date.getMilliseconds()).padStart(3, "0");
-
-  const offsetMinutes = -date.getTimezoneOffset();
-  const sign = offsetMinutes >= 0 ? "+" : "-";
-  const absoluteOffset = Math.abs(offsetMinutes);
-  const offsetHours = String(Math.floor(absoluteOffset / 60)).padStart(2, "0");
-  const offsetRemainingMinutes = String(absoluteOffset % 60).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}${sign}${offsetHours}:${offsetRemainingMinutes}`;
 }
 
 function toLocalDateTime(value: DateInput): Date | undefined {
@@ -165,7 +146,7 @@ function createEmptyTotals(): BucketTotals {
 }
 
 function createBucket(start: Date, end: Date): Bucket {
-  return { start, end, iso: start.toISOString(), totals: createEmptyTotals(), workouts: [] };
+  return { start, end, totals: createEmptyTotals(), workouts: [] };
 }
 
 function cloneDate(date: Date) {
@@ -277,19 +258,8 @@ function collectWorkouts(data: AggregatedData): CardioWorkoutSummary[] {
 function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, CardioWorkoutSummary[]> {
   const grouped: Record<string, CardioWorkoutSummary[]> = {};
   for (const workout of workouts) {
-    let endDate: Date;
-    if (
-      typeof workout.end === "object" &&
-      workout.end !== null &&
-      Object.prototype.toString.call(workout.end) === "[object Date]"
-    ) {
-      endDate = workout.end as Date;
-    } else if (typeof workout.end === "string" || typeof workout.end === "number") {
-      endDate = new Date(workout.end);
-    } else {
-      continue;
-    }
-    if (Number.isNaN(endDate.getTime())) {
+    const endDate = toLocalDateTime(workout.end) ?? toLocalDateTime(workout.start);
+    if (!endDate || Number.isNaN(endDate.getTime())) {
       continue;
     }
 
@@ -302,30 +272,10 @@ function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, C
 
   for (const key of Object.keys(grouped)) {
     grouped[key].sort((a, b) => {
-      let aEnd: Date;
-      let bEnd: Date;
+      const aEnd = toLocalDateTime(a.end);
+      const bEnd = toLocalDateTime(b.end);
 
-      if (
-        typeof a.end === "object" &&
-        a.end !== null &&
-        Object.prototype.toString.call(a.end) === "[object Date]"
-      ) {
-        aEnd = a.end as Date;
-      } else {
-        aEnd = new Date(a.end);
-      }
-
-      if (
-        typeof b.end === "object" &&
-        b.end !== null &&
-        Object.prototype.toString.call(b.end) === "[object Date]"
-      ) {
-        bEnd = b.end as Date;
-      } else {
-        bEnd = new Date(b.end);
-      }
-
-      return (bEnd.getTime() || 0) - (aEnd.getTime() || 0);
+      return (bEnd?.getTime() ?? 0) - (aEnd?.getTime() ?? 0);
     });
   }
 
@@ -338,7 +288,7 @@ function seriesUnavailableFromBuckets(
   options?: { compare?: boolean },
 ): CardioSeriesResponse {
   const includePrevious = options?.compare !== false;
-  const mapBucket = (bucket: Bucket): SeriesPoint => ({ iso: bucket.iso, value: 0 });
+  const mapBucket = (bucket: Bucket): SeriesPoint => ({ date: new Date(bucket.start.getTime()), value: 0 });
   return {
     focus,
     current: buckets.current.map(mapBucket),
@@ -472,13 +422,13 @@ class CardioProgressProvider {
     const historicalMax = previousValues.length ? Math.max(...previousValues) : 0;
 
     const previous: SeriesPoint[] | undefined = includePrevious && data.previous.length
-      ? data.previous.map((bucket) => ({ iso: bucket.iso, value: selector(bucket) }))
+      ? data.previous.map((bucket) => ({ date: new Date(bucket.start.getTime()), value: selector(bucket) }))
       : undefined;
 
     const current = data.current.map((bucket) => {
       const value = selector(bucket);
       const isPersonalBest = value > historicalMax && value > 0;
-      return { iso: bucket.iso, value, isPersonalBest };
+      return { date: new Date(bucket.start.getTime()), value, isPersonalBest };
     });
 
     const personalBest = Math.max(historicalMax, ...current.map((point) => point.value));
@@ -555,11 +505,13 @@ class CardioProgressProvider {
     const currentEnd = data.current[data.current.length - 1]?.end ?? new Date();
 
     const filtered = allWorkouts.filter((workout) => {
-      const endDate = new Date(workout.end);
-      return endDate >= currentStart && endDate <= currentEnd;
+      const endDate = toLocalDateTime(workout.end);
+      return !!endDate && endDate >= currentStart && endDate <= currentEnd;
     });
 
-    filtered.sort((a, b) => new Date(b.end).getTime() - new Date(a.end).getTime());
+    filtered.sort(
+      (a, b) => (toLocalDateTime(b.end)?.getTime() ?? 0) - (toLocalDateTime(a.end)?.getTime() ?? 0),
+    );
     const result = filtered.slice(0, 6);
 
     logger.debug(`${LOG_PREFIX} workouts`, {
@@ -781,8 +733,8 @@ class CardioProgressProvider {
         const workoutSummary: CardioWorkoutSummary = {
           id: sample?.id ?? `ios-${endDate.getTime()}`,
           activity: normalizeActivityName(sample?.workoutType ?? sample?.activityName),
-          start: toLocalISOString(startDate),
-          end: toLocalISOString(endDate),
+          start: new Date(startDate.getTime()),
+          end: new Date(endDate.getTime()),
           durationMinutes,
           distanceKm,
           calories: calories > 0 ? calories : undefined,
@@ -944,8 +896,8 @@ class CardioProgressProvider {
         const workoutSummary: CardioWorkoutSummary = {
           id: record?.metadata?.id ?? `android-distance-${endDate.getTime()}`,
           activity: normalizeActivityName("Distance"),
-          start: toLocalISOString(startDate),
-          end: toLocalISOString(endDate),
+          start: new Date(startDate.getTime()),
+          end: new Date(endDate.getTime()),
           durationMinutes,
           distanceKm,
           source: record?.metadata?.dataOrigin,

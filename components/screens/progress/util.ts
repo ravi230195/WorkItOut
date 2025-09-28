@@ -101,8 +101,8 @@ function generateTicks(domain: [number, number], count: number) {
   return Array.from({ length: count }, (_, index) => Number((min + index * step).toFixed(2)));
 }
 
-function formatDayLabel(range: TimeRange, iso: string) {
-  const date = new Date(iso);
+function formatDayLabel(range: TimeRange, value: Date) {
+  const date = new Date(value.getTime());
   if (range === "week") {
     return date.toLocaleDateString(undefined, { weekday: "short" });
   }
@@ -131,8 +131,8 @@ function normalizeActivity(activity: string) {
   return mapping[activity.trim().toLowerCase()] ?? activity;
 }
 
-function formatHistoryDate(iso: string) {
-  const date = new Date(iso);
+function formatHistoryDate(value: Date) {
+  const date = new Date(value.getTime());
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 

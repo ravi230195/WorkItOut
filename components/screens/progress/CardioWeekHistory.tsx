@@ -103,6 +103,13 @@ function getAccentColor(type?: string) {
   return WORKOUT_ACCENTS[type ?? ""] ?? PROGRESS_THEME.accentPrimary;
 }
 
+function formatLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 class Workout {
   id: number | string;
   type: string;
@@ -207,7 +214,7 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
       return acc;
     }
 
-    const key = date.toISOString().split("T")[0];
+    const key = formatLocalDateKey(date);
     if (!acc.has(key)) {
       acc.set(key, {
         date,
@@ -218,7 +225,11 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
     }
 
     const group = acc.get(key)!;
-    const sorted = [...workouts].sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
+    const sorted = [...workouts].sort((a, b) => {
+      const aTime = a.start instanceof Date ? a.start.getTime() : new Date(a.start).getTime();
+      const bTime = b.start instanceof Date ? b.start.getTime() : new Date(b.start).getTime();
+      return bTime - aTime;
+    });
 
     for (const workout of sorted) {
       group.workouts.push({
@@ -267,7 +278,7 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
       };
 
       return {
-        key: date.toISOString().split("T")[0],
+        key: formatLocalDateKey(date),
         label,
         weekIndex,
         dateLabel: formatDateLabel(date),
@@ -290,7 +301,7 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
     }
 
     const placeholder: CardioWeekHistoryDay = {
-      key: date.toISOString().split("T")[0],
+      key: formatLocalDateKey(date),
       label: getWeekdayLabel(date),
       weekIndex: offset,
       dateLabel: formatDateLabel(date),
@@ -314,11 +325,11 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
   }
   result.forEach((day) => {
     if (typeof day.label === "undefined") {
-      day.label = getWeekdayLabel(new Date(day.key));
+      day.label = getWeekdayLabel(toLocalDate(day.key));
     }
   });
 
-  result.sort((a, b) => new Date(b.key).getTime() - new Date(a.key).getTime());
+  result.sort((a, b) => toLocalDate(b.key).getTime() - toLocalDate(a.key).getTime());
 
   for (const day of result) {
     logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day:", JSON.stringify(day, null, 2));
@@ -337,9 +348,9 @@ function formatHistoryDuration(minutes?: number) {
   return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-function formatHistoryTime(iso?: string) {
-  if (!iso) return undefined;
-  const date = new Date(iso);
+function formatHistoryTime(value?: Date | string) {
+  if (!value) return undefined;
+  const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return undefined;
   return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }

@@ -48,7 +48,7 @@ function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
     const entry = raw.series[focus];
     if (!entry) return [];
     return entry.current.map((point) => ({
-      x: point.iso,
+      x: new Date(point.date.getTime()),
       y: point.value,
       isPersonalBest: point.isPersonalBest,
     }));

@@ -3,7 +3,7 @@ export type TimeRange = "week" | "threeMonths" | "sixMonths";
 export type CardioFocus = "activeMinutes" | "distance" | "calories" | "steps";
 
 export type SeriesPoint = {
-  iso: string;
+  date: Date;
   value: number;
   isPersonalBest?: boolean;
 };
@@ -27,8 +27,8 @@ export type CardioKpi = {
 export type CardioWorkoutSummary = {
   id: string;
   activity: string;
-  start: string;
-  end: string;
+  start: Date;
+  end: Date;
   durationMinutes: number;
   distanceKm?: number;
   calories?: number;

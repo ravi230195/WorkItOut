@@ -1,7 +1,7 @@
 import type { CardioWorkoutSummary, TimeRange } from "@/types/progress";
 
 export type TrendPoint = {
-  x: string; // ISO date
+  x: Date; // Local date
   y: number; // value
   isPersonalBest?: boolean;
 };
@@ -20,7 +20,7 @@ export type WorkoutsHistoryEntry = {
   type: "cardio" | "strength";
   id: string;
   activity: string;
-  date: string;
+  date: Date;
   duration: string;
   distance?: string;
   calories?: string;

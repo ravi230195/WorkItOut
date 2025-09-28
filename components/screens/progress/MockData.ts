@@ -156,7 +156,7 @@ function generateTrend(domain: ProgressDomain, range: TimeRange, seed: number, v
     current = Math.min(ceiling, Math.max(floor, current));
 
     values.push({
-      x: date.toISOString(),
+      x: new Date(date.getTime()),
       y: Number(current.toFixed(2)),
       isPersonalBest: index === points - 2,
     });
@@ -193,8 +193,8 @@ function createCardioWorkout(
   return {
     id,
     activity,
-    start: start.toISOString(),
-    end: end.toISOString(),
+    start: new Date(start.getTime()),
+    end: new Date(end.getTime()),
     durationMinutes,
     distanceKm,
     calories,
@@ -205,11 +205,13 @@ function createCardioWorkout(
 function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, CardioWorkoutSummary[]> {
   const grouped: Record<string, CardioWorkoutSummary[]> = {};
   for (const workout of workouts) {
-    const date = new Date(workout.start);
+    const date = workout.start instanceof Date ? workout.start : new Date(workout.start);
     if (Number.isNaN(date.getTime())) {
       continue;
     }
-    const key = date.toISOString().slice(0, 10);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+      date.getDate(),
+    ).padStart(2, "0")}`;
     if (!grouped[key]) {
       grouped[key] = [];
     }
@@ -217,7 +219,11 @@ function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, C
   }
 
   for (const key of Object.keys(grouped)) {
-    grouped[key].sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime());
+    grouped[key].sort((a, b) => {
+      const aTime = a.start instanceof Date ? a.start.getTime() : new Date(a.start).getTime();
+      const bTime = b.start instanceof Date ? b.start.getTime() : new Date(b.start).getTime();
+      return bTime - aTime;
+    });
   }
 
   return grouped;
