@@ -15,7 +15,6 @@ import {
   caloriesToDisplay,
   collectWorkouts,
   findBucket,
-  formatDateKey,
   groupWorkoutsByDate,
   kilometersToDisplay,
   minutesToDisplay,
@@ -41,9 +40,35 @@ const METRIC_SELECTORS: Record<CardioFocus, MetricSelector> = {
   steps: (bucket) => bucket.totals.steps,
 };
 
-const SERIES_FOCUSES: CardioFocus[] = ["activeMinutes", "distance", "calories", "steps"];
-
 const MIN_MS = 60_000;
+
+function kpisUnavailable(): CardioKpi[] {
+  return [
+    {
+      key: "activeMinutes",
+      title: "Total Time",
+      unit: "minutes",
+      value: "N/A",
+    },
+    {
+      key: "distance",
+      title: "Distance",
+      unit: "km",
+      value: "N/A",
+    },
+    {
+      key: "calories",
+      title: "Calories",
+      unit: "kcal",
+      value: "N/A",
+    },
+    {
+      key: "steps",
+      title: "Steps",
+      value: "N/A",
+    },
+  ];
+}
 
 class CardioProgressProvider {
   private cache = new Map<TimeRange, Promise<AggregatedData>>();
@@ -580,7 +605,7 @@ class CardioProgressProvider {
         write: [],
       });
 
-      const timeRangeFilter = { type: "between", startTime: startUtc, endTime: endUtc } as const;
+      const timeRangeFilter = { type: "between", startTime: new Date(startUtc), endTime: new Date(endUtc) } as const;
 
       const readAllRecords = async (type: string) => {
         const records: any[] = [];
