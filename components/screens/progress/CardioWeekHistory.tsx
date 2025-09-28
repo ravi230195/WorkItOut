@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 import { PROGRESS_THEME } from "./util";
-import type { CardioWorkoutSummary } from "@/types/progress";
+import type { CardioWorkoutSummary } from "../../progress/Progress.types";
 import { logger } from "../../../utils/logging";
 
 const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" ");
@@ -546,6 +546,28 @@ type DailyWorkoutCardProps = {
   setDayKey: (value: string) => void;
 };
 
+function formatWorkoutDateTime(workout: Workout): string {
+  if (!workout.start || !workout.end) {
+    return workout.time || 'N/A';
+  }
+
+  const startDate = workout.start.toDateString();
+  const endDate = workout.end.toDateString();
+  const startTime = workout.start.toTimeString().split(' ')[0]; // Remove AM/PM
+  const endTime = workout.end.toTimeString().split(' ')[0]; // Remove AM/PM
+
+  if (startDate === endDate) {
+    // Same date: "Sat 14:30 - 15:45"
+    const dayOfWeek = workout.start.toDateString().split(' ')[0]; // Get "Sat"
+    return `${dayOfWeek} ${startTime} - ${endTime}`;
+  } else {
+    // Different dates: "Sat 14:30 - Sun 15:45"
+    const startDay = workout.start.toDateString().split(' ')[0]; // Get "Sat"
+    const endDay = workout.end.toDateString().split(' ')[0]; // Get "Sun"
+    return `${startDay} ${startTime} - ${endDay} ${endTime}`;
+  }
+}
+
 function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
   const day = useMemo(() => days.find((entry) => entry.key === dayKey) ?? days[0], [dayKey, days]);
 
@@ -659,18 +681,7 @@ function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
                           </div>
                           {workout.time ? (
                             <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
-                              {workout.start && workout.end ? (
-                                workout.start.getTime() === workout.end.getTime() ? (
-                                  // Same start and end time - show just start date and time
-                                  `${workout.start.toDateString()} - ${workout.time || 'N/A'}`
-                                ) : (
-                                  // Different start and end times - show start date/time - end date/time
-                                  `${workout.start.toDateString()} ${workout.start.toTimeString()} - ${workout.end.toDateString()} ${workout.end.toTimeString()}`
-                                )
-                              ) : (
-                                // No start/end dates - just show time
-                                workout.time || 'N/A'
-                              )}
+                              {formatWorkoutDateTime(workout)}
                             </p>
                           ) : null}
                         </div>

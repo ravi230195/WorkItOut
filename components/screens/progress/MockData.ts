@@ -1,4 +1,4 @@
-import type { CardioWorkoutSummary, TimeRange } from "@/types/progress";
+import type { CardioWorkoutSummary, TimeRange } from "../../progress/Progress.types";
 import type { DomainSnapshotMap, ProgressDomain, TrendPoint } from "../../progress/Progress.types";
 
 const RANGE_POINTS: Record<TimeRange, number> = { week: 7, threeMonths: 12, sixMonths: 6 };

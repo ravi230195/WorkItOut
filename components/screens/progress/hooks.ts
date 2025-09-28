@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 
-import type { TimeRange, CardioFocus, CardioProgressSnapshot } from "@/types/progress";
-import { CardioProgressProvider } from "@/screen/progress/CardioProgress";
+import type { TimeRange, CardioFocus, CardioProgressSnapshot } from "../../progress/Progress.types";
+import { CardioProgressProvider } from "./CardioProgress";
 import type { Snapshot } from "../../progress/Progress.types";
 import { supabaseAPI } from "../../../utils/supabase/supabase-api";
 import type { Profile } from "../../../utils/supabase/supabase-types";
 import { extractFirstName } from "./util";
 import { logger } from "../../../utils/logging";
-import { printCardioProgressSnapshot } from "../../../src/types/progress";
 
 export function useUserFirstName(userToken: string | null | undefined) {
   const [firstName, setFirstName] = useState<string | null>(null);
@@ -43,7 +42,9 @@ export function useUserFirstName(userToken: string | null | undefined) {
 }
 
 const WORKOUTS_FOCUS_ORDER: CardioFocus[] = ["activeMinutes", "distance", "calories", "steps"];
+
 const workoutsProvider = new CardioProgressProvider();
+
 function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
   const series = WORKOUTS_FOCUS_ORDER.map((focus) => {
     const entry = raw.series[focus];
@@ -51,7 +52,6 @@ function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
     return entry.current.map((point) => ({
       x: new Date(point.date.getTime()),
       y: point.value,
-      isPersonalBest: point.isPersonalBest,
     }));
   });
 
@@ -67,6 +67,7 @@ function toSnapshot(raw: CardioProgressSnapshot): Snapshot {
 }
 
 export function useWorkoutsProgressSnapshot(range: TimeRange) {
+
   const [snapshot, setSnapshot] = useState<Snapshot | null>(() =>
     toSnapshot(workoutsProvider.getUnavailableSnapshot(range)),
   );
@@ -95,16 +96,8 @@ export function useWorkoutsProgressSnapshot(range: TimeRange) {
           range,
           seriesKeys: Object.keys(raw.series || {}),
           kpiCount: raw.kpis?.length || 0,
-          workoutDays: raw.workouts ? Object.keys(raw.workouts).length : 0,
-          workoutCount: raw.workouts
-            ? Object.values(raw.workouts).reduce((total: number, day: unknown) => {
-                if (Array.isArray(day)) {
-                  return total + day.length;
-                }
-                return total;
-              }, 0)
-            : 0,
-          hasTargetLine: !!raw.targetLine,
+          workoutDays: Object.keys(raw.workouts || {}).length,
+          workoutCount: Object.values(raw.workouts || {}).reduce((total, day : any) => total + day.length, 0),
         });
 
         const converted = toSnapshot(raw);
@@ -112,7 +105,7 @@ export function useWorkoutsProgressSnapshot(range: TimeRange) {
         // ADD: Log converted data
         logger.debug("[workouts] useWorkoutsProgressSnapshot: Converted to Snapshot format", {
           range,
-          seriesCount: converted.series?.length || 0,
+          seriesKeys: Object.keys(converted.series || {}),
           kpiCount: converted.kpis?.length || 0,
           workoutDayCount: Object.keys(converted.workouts || {}).length,
           workoutCount: Object.values(converted.workouts || {}).reduce((total, day) => total + day.length, 0)

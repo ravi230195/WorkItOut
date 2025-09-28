@@ -1,5 +1,3 @@
-import type { CardioWorkoutSummary, TimeRange } from "@/types/progress";
-
 export type TrendPoint = {
   x: Date; // Local date
   y: number; // value
@@ -39,3 +37,47 @@ export type Snapshot = {
 };
 
 export type DomainSnapshotMap = Record<ProgressDomain, Record<TimeRange, Snapshot>>;
+
+export type TimeRange = "week" | "threeMonths" | "sixMonths";
+
+export type CardioFocus = "activeMinutes" | "distance" | "calories" | "steps";
+
+export type SeriesPoint = {
+  date: Date;
+  value: number;
+};
+
+export type CardioSeriesResponse = {
+  focus: CardioFocus;
+  current: SeriesPoint[];
+  previous?: SeriesPoint[];
+};
+
+export type CardioKpi = {
+  key: CardioFocus;
+  title: string;
+  value: string;
+  unit?: string;
+  currentNumeric?: number;
+  previous?: number;
+};
+
+export type CardioWorkoutSummary = {
+  id: string;
+  activity: string;
+  start: Date;
+  end: Date;
+  durationMinutes: number;
+  distanceKm?: number;
+  calories?: number;
+  steps?: number;
+  averageHeartRate?: number;
+  source?: string;
+};
+
+export type CardioProgressSnapshot = {
+  range: TimeRange;
+  series: Record<CardioFocus, CardioSeriesResponse>;
+  kpis: CardioKpi[];
+  workouts: Record<string, CardioWorkoutSummary[]>;
+};

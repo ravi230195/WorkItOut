@@ -1,4 +1,4 @@
-import type { TimeRange } from "@/types/progress";
+import type { TimeRange } from "../../progress/Progress.types";
 import type { ProgressDomain } from "../../progress/Progress.types";
 
 export type DomainOption = { value: ProgressDomain; label: string };

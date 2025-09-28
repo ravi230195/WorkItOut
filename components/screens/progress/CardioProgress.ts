@@ -3,16 +3,14 @@ import type {
   CardioKpi,
   CardioProgressSnapshot,
   CardioSeriesResponse,
-  CardioTargetLine,
   CardioWorkoutSummary,
   SeriesPoint,
   TimeRange,
-} from "../../types/progress";
+} from "../../progress/Progress.types";
 import { logger } from "../../../utils/logging";
 
 const LOG_PREFIX = "[cardioProgess]";
 
-const TARGET_MINUTES = 40;
 const ACTIVITY_LABELS: Record<string, string> = {
   "outdoor walk": "Outdoor Walk",
   "indoor walk": "Indoor Walk",
@@ -76,10 +74,6 @@ function toUtcDate(date: Date): Date {
       date.getMilliseconds(),
     ),
   );
-}
-
-function toUtcISOString(date: Date): string {
-  return toUtcDate(date).toISOString();
 }
 
 function toLocalDateTime(value: DateInput): Date | undefined {
@@ -259,24 +253,22 @@ function collectWorkouts(data: AggregatedData): CardioWorkoutSummary[] {
 function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, CardioWorkoutSummary[]> {
   const grouped: Record<string, CardioWorkoutSummary[]> = {};
   for (const workout of workouts) {
-    const endDate = toLocalDateTime(workout.end) ?? toLocalDateTime(workout.start);
-    if (!endDate || Number.isNaN(endDate.getTime())) {
+    const date = toLocalDateTime(workout.start) ?? toLocalDateTime(workout.end);
+    if (!date || Number.isNaN(date.getTime())) {
       continue;
     }
-
-    const key = formatDateKey(endDate);
-    if (!grouped[key]) {
-      grouped[key] = [];
-    }
+  
+    const key = formatDateKey(date);
+    grouped[key] = grouped[key] || [];
     grouped[key].push(workout);
   }
 
   for (const key of Object.keys(grouped)) {
     grouped[key].sort((a, b) => {
-      const aEnd = toLocalDateTime(a.end);
-      const bEnd = toLocalDateTime(b.end);
+      const aStart = toLocalDateTime(a.start);
+      const bStart = toLocalDateTime(b.start);
 
-      return (bEnd?.getTime() ?? 0) - (aEnd?.getTime() ?? 0);
+      return (bStart?.getTime() ?? 0) - (aStart?.getTime() ?? 0);
     });
   }
 
@@ -325,9 +317,6 @@ function kpisUnavailable(): CardioKpi[] {
   ];
 }
 
-function targetLineUnavailable(): CardioTargetLine | null {
-  return { focus: "activeMinutes", value: TARGET_MINUTES, unit: "minutes" };
-}
 
 function snapshotUnavailable(range: TimeRange): CardioProgressSnapshot {
   const buckets = buildBucketSets(range);
@@ -341,7 +330,6 @@ function snapshotUnavailable(range: TimeRange): CardioProgressSnapshot {
     series,
     kpis: kpisUnavailable(),
     workouts: {},
-    targetLine: targetLineUnavailable(),
   };
 }
 
@@ -355,9 +343,9 @@ class CardioProgressProvider {
 
     try {
       const result = await this.snapshotNative(range);
-      logger.debug(`${LOG_PREFIX} snapshot.success`, {
-        range,
-        kpis: result.kpis?.length ?? 0,
+      logger.debug(`${LOG_PREFIX} snapshot.success`, { 
+        range: range,
+        kpis: JSON.stringify(result.kpis, null, 2),
         workoutDays: Object.keys(result.workouts ?? {}).length,
       });
       return result;
@@ -370,14 +358,13 @@ class CardioProgressProvider {
   async series(
     range: TimeRange,
     focus: CardioFocus,
-    options?: { compare?: boolean },
   ): Promise<CardioSeriesResponse> {
     try {
       const data = await this.ensure(range);
-      return this.seriesFromAggregated(range, data, focus, options);
+      return this.seriesFromAggregated(range, data, focus);
     } catch (error) {
       logger.debug(`${LOG_PREFIX} series.failed`, { range, focus, error });
-      return seriesUnavailableFromBuckets(focus, buildBucketSets(range), options);
+      return seriesUnavailableFromBuckets(focus, buildBucketSets(range));
     }
   }
 
@@ -401,48 +388,32 @@ class CardioProgressProvider {
     }
   }
 
-  async targetLine(range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null> {
-    try {
-      return await this.targetLineNative(range, focus);
-    } catch (error) {
-      logger.debug(`${LOG_PREFIX} targetLine.failed`, { range, focus, error });
-      return focus === "activeMinutes" ? targetLineUnavailable() : null;
-    }
-  }
 
   private seriesFromAggregated(
     range: TimeRange,
     data: AggregatedData,
     focus: CardioFocus,
-    options?: { compare?: boolean },
   ): CardioSeriesResponse {
     const selector = METRIC_SELECTORS[focus];
-    const includePrevious = options?.compare !== false;
-
-    const previousValues = data.previous.map((bucket) => selector(bucket));
-    const historicalMax = previousValues.length ? Math.max(...previousValues) : 0;
-
-    const previous: SeriesPoint[] | undefined = includePrevious && data.previous.length
-      ? data.previous.map((bucket) => ({ date: new Date(bucket.start.getTime()), value: selector(bucket) }))
-      : undefined;
-
+  
+    const previous: SeriesPoint[] = data.previous.map((bucket) => ({ 
+      date: new Date(bucket.start.getTime()), 
+      value: selector(bucket) 
+    }));
+  
     const current = data.current.map((bucket) => {
       const value = selector(bucket);
-      const isPersonalBest = value > historicalMax && value > 0;
-      return { date: new Date(bucket.start.getTime()), value, isPersonalBest };
+      return { date: new Date(bucket.start.getTime()), value };
     });
-
-    const personalBest = Math.max(historicalMax, ...current.map((point) => point.value));
-
+  
     logger.debug(`${LOG_PREFIX} series`, {
       range,
       focus,
       currentPoints: current.length,
-      previousPoints: previous?.length ?? 0,
-      personalBest,
+      previousPoints: previous.length,
     });
-
-    return { focus, current, previous, personalBest: personalBest > 0 ? personalBest : undefined };
+  
+    return { focus, current, previous };
   }
 
   private kpisFromAggregated(_range: TimeRange, data: AggregatedData): CardioKpi[] {
@@ -524,12 +495,6 @@ class CardioProgressProvider {
     return result;
   }
 
-  private async targetLineNative(_range: TimeRange, focus: CardioFocus): Promise<CardioTargetLine | null> {
-    if (focus !== "activeMinutes") {
-      return null;
-    }
-    return { focus, value: TARGET_MINUTES, unit: "minutes" };
-  }
 
   private async snapshotNative(range: TimeRange): Promise<CardioProgressSnapshot> {
     const data = await this.ensure(range);
@@ -542,7 +507,6 @@ class CardioProgressProvider {
     const kpis = this.kpisFromAggregated(range, data);
     const workouts = collectWorkouts(data);
     const workoutsByDay = groupWorkoutsByDate(workouts);
-    const targetLine = await this.targetLineNative(range, "activeMinutes");
 
     logger.debug(`${LOG_PREFIX} snapshotNative`, {
       range,
@@ -560,7 +524,6 @@ class CardioProgressProvider {
       },
       kpis,
       workouts: workoutsByDay,
-      targetLine,
     };
   }
 
@@ -580,12 +543,15 @@ class CardioProgressProvider {
 
     const { current, previous } = buildBucketSets(range);
     for (const bucket of previous) {
-      logger.debug("🔍 DGB [CARDIO_PROGRESS] Previous Bucket Start:", bucket.start.toDateString(), " " + bucket.start.toTimeString(), 
-        "Previous Bucket End:", bucket.end.toDateString(), " " + bucket.end.toTimeString());
+      logger.debug("🔍 DGB [CARDIO_PROGRESS] " + range + 
+        " Previous Bucket Start: ", bucket.start.toDateString(), " " + bucket.start.toTimeString(), 
+        " Previous Bucket End: ", bucket.end.toDateString(), " " + bucket.end.toTimeString());
     }
+
     for (const bucket of current) {
-      logger.debug("🔍 DGB [CARDIO_PROGRESS] Current Bucket Start:", bucket.start.toDateString(), " " + bucket.start.toTimeString(), 
-        "Current Bucket End:", bucket.end.toDateString(), " " + bucket.end.toTimeString());
+      logger.debug("🔍 DGB [CARDIO_PROGRESS] " + range +
+        " Current Bucket Start: " + bucket.start.toDateString(), " " + bucket.start.toTimeString(), 
+        " Current Bucket End: ", bucket.end.toDateString(), " " + bucket.end.toTimeString());
     }
     const allBuckets = [...previous, ...current];
 
@@ -685,33 +651,40 @@ class CardioProgressProvider {
       for (const sample of workoutSamples) {
         logger.debug("🔍 DGB [CARDIO_PROGRESS] ======================= WORKOUT START ======================= ");
         const sampleIndex = workoutSamples.indexOf(sample);
-  
         logger.debug("🔍 DGB [CARDIO_PROGRESS] Sample: #(" + (sampleIndex + 1) + ")/(" + count + ")");// sampleDbg - heart rate in array
         
-        // Log sample data without heartbeat details
+        // Log sample data without heartbeat details JUST FOR LOGGING remove it after testing
         const { heartRate, ...sampleWithoutHeartRate } = sample;
         logger.debug("🔍 DGB [CARDIO_PROGRESS] Sample: ", JSON.stringify(sampleWithoutHeartRate, null, 2));
+
         const startDate = toLocalDateTime(sample?.startDate ?? sample?.startTime);
-        const endDate = toLocalDateTime(sample?.endDate ?? sample?.endTime);
+        const endDate = toLocalDateTime(sample?.endDate ?? sample?.endTime);        
         if (!startDate || !endDate) {
           continue;
         }
 
         const bucket = findBucket(buckets, endDate);
-        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket start date:", bucket?.start ? bucket.start.toDateString() + " " + bucket.start.toTimeString() : "N/A", "Bucket end date:", bucket?.end ? bucket.end.toDateString() + " " + bucket.end.toTimeString() : "N/A");
         if (!bucket) {
+          logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket not found for sample: ", sample?.id);
           continue;
         }
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket start date:", bucket.start.toDateString() + " " + bucket.start.toTimeString(),
+        " Bucket end date:", bucket.end.toDateString() + " " + bucket.end.toTimeString());
 
+
+        // calculate duration
         const rawDuration = safeNumber(sample?.duration);
-        const durationMinutes =
-          rawDuration > 0
-            ? rawDuration / 60
-            : Math.max(0, (endDate.getTime() - startDate.getTime()) / MIN_MS);
+        const calculatedDuration = Math.max(0, (endDate.getTime() - startDate.getTime()) / MIN_MS);
+        const durationMinutes = rawDuration > 0 ? rawDuration / 60 : calculatedDuration;
 
+        // calculate distance
         const distanceMeters = safeNumber(sample?.distance);
         const distanceKm = distanceMeters > 0 ? distanceMeters / 1000 : undefined;
+        
+        // calculate calories
         const calories = safeNumber(sample?.calories ?? sample?.totalEnergyBurned);
+
+        // calculate steps
         const steps = safeNumber(sample?.steps);
 
         bucket.totals.minutes += durationMinutes;
@@ -750,10 +723,8 @@ class CardioProgressProvider {
           distanceKm,
           calories: calories > 0 ? calories : undefined,
           steps: steps > 0 ? steps : undefined,
-          averageHeartRate:
-            workoutHeartRateCount > 0
-              ? workoutHeartRateSum / workoutHeartRateCount
-              : undefined,
+          averageHeartRate: workoutHeartRateCount > 0
+              ? workoutHeartRateSum / workoutHeartRateCount : undefined,
           source: sample?.sourceName,
         };
       
@@ -782,21 +753,28 @@ class CardioProgressProvider {
           bucket: "day",
         });
 
-        const rows: any[] = Array.isArray(response?.aggregatedData)
-          ? response.aggregatedData
-          : [];
+        const rows: any[] = Array.isArray(response?.aggregatedData) ? response.aggregatedData : [];
 
         for (const row of rows) {
           const rwoIndex = rows.indexOf(row);
           logger.debug("🔍 DGB [CARDIO_PROGRESS] queryAggregated ", dataType, rwoIndex + 1 + "/" + rows.length)
-          logger.debug("🔍 DGB [CARDIO_PROGRESS] queryAggregated ", response);
+          
           const rowDate = toLocalDate(row?.startDate ?? row?.date);
-          if (!rowDate) continue;
-
-          const bucket = findBucket(buckets, rowDate);
-          if (!bucket) continue;
+          if (!rowDate) {
+            logger.debug("🔍 DGB [CARDIO_PROGRESS] rowDate not found", row?.startDate.toDateString() + " " + row?.startDate.toTimeString(), 
+            row?.date.toDateString() + " " + row?.date.toTimeString());
+            continue;
+          }
+          const bucket = findBucket(buckets, rowDate)
+          if (!bucket){
+            logger.debug("🔍 DGB [CARDIO_PROGRESS] bucket not found", row?.startDate.toDateString() + " " + row?.startDate.toTimeString(), 
+            row?.date.toDateString() + " " + row?.date.toTimeString());
+            continue;
+          }
 
           const value = safeNumber(row?.value);
+          logger.debug("🔍 DGB [CARDIO_PROGRESS] queryAggregated Date: ", 
+            rowDate.toDateString() + " " + rowDate.toTimeString(), " Value: ", row.value);
           if (value > 0) {
             apply(bucket, value);
           }

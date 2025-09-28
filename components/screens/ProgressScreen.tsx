@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import AppScreen from "../layouts/AppScreen";
-import type { TimeRange } from "../../src/types/progress";
+import type { TimeRange } from "../progress/Progress.types";
 import type { ProgressDomain } from "../progress/Progress.types";
 import { PROGRESS_MOCK_SNAPSHOTS } from "./progress/MockData";
 import { TrendOverview } from "./progress/TrendOverview";

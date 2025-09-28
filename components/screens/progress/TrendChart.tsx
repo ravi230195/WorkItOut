@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { scaleBand, scaleLinear } from "d3-scale";
 
-import type { TimeRange } from "@/types/progress";
+import type { TimeRange } from "../../progress/Progress.types";
 import type { TrendPoint } from "../../progress/Progress.types";
 import { PROGRESS_THEME, formatDayLabel, formatTickValue, generateTicks } from "./util";
 
