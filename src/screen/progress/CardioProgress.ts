@@ -190,6 +190,7 @@ function buildBuckets(range: TimeRange, inclusiveEnd: Date): Bucket[] {
 
 function buildBucketSets(range: TimeRange): { current: Bucket[]; previous: Bucket[] } {
   const today = new Date();
+  logger.debug("🔍 DGB [CARDIO_PROGRESS] Today:", today.toDateString());
   const current = buildBuckets(range, today);
   const firstCurrent = current[0];
   if (!firstCurrent) {
@@ -578,6 +579,14 @@ class CardioProgressProvider {
     logger.debug(`${LOG_PREFIX} fetchAggregated.start`, { range });
 
     const { current, previous } = buildBucketSets(range);
+    for (const bucket of previous) {
+      logger.debug("🔍 DGB [CARDIO_PROGRESS] Previous Bucket Start:", bucket.start.toDateString(), " " + bucket.start.toTimeString(), 
+        "Previous Bucket End:", bucket.end.toDateString(), " " + bucket.end.toTimeString());
+    }
+    for (const bucket of current) {
+      logger.debug("🔍 DGB [CARDIO_PROGRESS] Current Bucket Start:", bucket.start.toDateString(), " " + bucket.start.toTimeString(), 
+        "Current Bucket End:", bucket.end.toDateString(), " " + bucket.end.toTimeString());
+    }
     const allBuckets = [...previous, ...current];
 
     if (allBuckets.length === 0) {
@@ -635,14 +644,16 @@ class CardioProgressProvider {
   ): Promise<void> {
     try {
       const { Health } = await import("capacitor-health");
-      const startUtc = toUtcISOString(startLocal);
-      const endUtc = toUtcISOString(endLocal);
+      logger.debug("🔍 DGB [CARDIO_PROGRESS] Start Local:", startLocal.toDateString() + " " + startLocal.toTimeString());
+      logger.debug("🔍 DGB [CARDIO_PROGRESS] End Local:", endLocal.toDateString() + " " + endLocal.toTimeString());
+      const startUtc = startLocal.toISOString();
+      const endUtc = endLocal.toISOString();
 
       logger.debug(`${LOG_PREFIX} ios.populate.start`, {
         start: startUtc,
         end: endUtc,
-        startLocal: startLocal.toISOString(),
-        endLocal: endLocal.toISOString(),
+        startLocal: startLocal.toDateString() + " " + startLocal.toTimeString(),
+        endLocal: endLocal.toDateString() + " " + endLocal.toTimeString(),
         bucketCount: buckets.length,
       });
 
@@ -679,7 +690,7 @@ class CardioProgressProvider {
         
         // Log sample data without heartbeat details
         const { heartRate, ...sampleWithoutHeartRate } = sample;
-        logger.debug("🔍 DGB [CARDIO_PROGRESS] Sample: ", sampleWithoutHeartRate);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Sample: ", JSON.stringify(sampleWithoutHeartRate, null, 2));
         const startDate = toLocalDateTime(sample?.startDate ?? sample?.startTime);
         const endDate = toLocalDateTime(sample?.endDate ?? sample?.endTime);
         if (!startDate || !endDate) {
@@ -687,7 +698,7 @@ class CardioProgressProvider {
         }
 
         const bucket = findBucket(buckets, endDate);
-        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket start date:", bucket?.start ?? "N/A", "Bucket end date:", bucket?.end ?? "N/A");
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket start date:", bucket?.start ? bucket.start.toDateString() + " " + bucket.start.toTimeString() : "N/A", "Bucket end date:", bucket?.end ? bucket.end.toDateString() + " " + bucket.end.toTimeString() : "N/A");
         if (!bucket) {
           continue;
         }
@@ -746,7 +757,16 @@ class CardioProgressProvider {
           source: sample?.sourceName,
         };
       
-        logger.debug("🔍 DGB [CARDIO_PROGRESS] summary ", workoutSummary);
+        //print workoutSummary
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.id);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.start.toDateString() + " " + workoutSummary.start.toTimeString());
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.end.toDateString() + " " + workoutSummary.end.toTimeString());
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.durationMinutes);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.distanceKm);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.calories);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.steps);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.averageHeartRate);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.source);
         bucket.workouts.push(workoutSummary);
         logger.debug("🔍 DGB [CARDIO_PROGRESS] ======================= WORKOUT END ======================= ");
       }
@@ -768,7 +788,8 @@ class CardioProgressProvider {
 
         for (const row of rows) {
           const rwoIndex = rows.indexOf(row);
-          logger.debug("🔍 DGB [CARDIO_PROGRESS] queryAggregated ", dataType, rwoIndex + 1 + "/" + rows.length, JSON.stringify(response, null, 2));
+          logger.debug("🔍 DGB [CARDIO_PROGRESS] queryAggregated ", dataType, rwoIndex + 1 + "/" + rows.length)
+          logger.debug("🔍 DGB [CARDIO_PROGRESS] queryAggregated ", response);
           const rowDate = toLocalDate(row?.startDate ?? row?.date);
           if (!rowDate) continue;
 
@@ -797,7 +818,8 @@ class CardioProgressProvider {
         if (bucket.totals.steps <= 0 && fallbackSteps.has(bucket)) {
           bucket.totals.steps = fallbackSteps.get(bucket) ?? 0;
         }
-        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket start:", bucket.start, "Bucket end:", bucket.end);
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket start:", bucket.start.toDateString() + " " + bucket.start.toTimeString(), 
+        "Bucket end:", bucket.end.toDateString() + " " + bucket.end.toTimeString());
         logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket workouts:", bucket.workouts.length);
         //logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket workouts:", JSON.stringify(bucket.workouts, null, 2));
         logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket totals:", JSON.stringify(bucket.totals, null, 2));

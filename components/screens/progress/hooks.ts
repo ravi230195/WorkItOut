@@ -7,6 +7,7 @@ import { supabaseAPI } from "../../../utils/supabase/supabase-api";
 import type { Profile } from "../../../utils/supabase/supabase-types";
 import { extractFirstName } from "./util";
 import { logger } from "../../../utils/logging";
+import { printCardioProgressSnapshot } from "../../../src/types/progress";
 
 export function useUserFirstName(userToken: string | null | undefined) {
   const [firstName, setFirstName] = useState<string | null>(null);

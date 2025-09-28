@@ -39,6 +39,8 @@ export type CardioWeekHistoryWorkout = {
   volume?: ReactNode;
   personalRecords?: number;
   type?: string;
+  start?: Date;
+  end?: Date;
 };
 
 export type CardioWeekHistoryDay = {
@@ -126,6 +128,8 @@ class Workout {
   volume?: ReactNode;
   personalRecords?: number;
   accent: string;
+  start?: Date;
+  end?: Date;
 
   constructor(data: CardioWeekHistoryWorkout) {
     this.id = data.id;
@@ -142,6 +146,8 @@ class Workout {
     this.rounds = data.rounds;
     this.volume = data.volume;
     this.personalRecords = data.personalRecords;
+    this.start = data.start;
+    this.end = data.end;
     this.accent = getAccentColor(this.type);
     logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout data:", data);
     logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout accent:",this);
@@ -182,8 +188,9 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
   const endOfCurrentWeek = addDays(startOfCurrentWeek, 7);
   const today = toLocalDate(new Date());
 
-  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Start of current week:", startOfCurrentWeek);
-  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] End of current week:", endOfCurrentWeek);
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Start of current week:", startOfCurrentWeek.toDateString() + " " + startOfCurrentWeek.toTimeString());
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] End of current week:", endOfCurrentWeek.toDateString() + " " + endOfCurrentWeek.toTimeString());
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Today:", today.toDateString() + " " + today.toTimeString());
 
   const grouped = entries.reduce<
     Map<
@@ -195,17 +202,28 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
         label?: string;
       }
     >
-  >((acc, [isoDate, workouts]) => {
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] ISO Date:", isoDate);
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workouts:", JSON.stringify(workouts, null, 2));
+  >((acc, [localDate, workouts]) => {
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] ======================= WEEK_CARDIO_HISTORY START ======================= ");
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Date:", localDate);
+    for (const workout of workouts) {
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.start.toDateString() + " " + workout.start.toTimeString());
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.end.toDateString() + " " + workout.end.toTimeString());
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.durationMinutes);
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.distanceKm);
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.calories);
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.steps);
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.source);
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.activity);
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.id);
+    }
     if (!Array.isArray(workouts) || workouts.length === 0) {
       return acc;
     }
 
-    const reference = toLocalDate(isoDate);
-    const fallback = workouts[0] ? toLocalDate(workouts[0].start) : new Date(NaN);
-    const date = !Number.isNaN(reference.getTime()) ? reference : fallback;
-
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Fallback:", workouts[0] ? toLocalDate(workouts[0].start).toDateString() + " " + toLocalDate(workouts[0].start).toTimeString() : "N/A");
+    const date = workouts[0] ? toLocalDate(workouts[0].start) : new Date(NaN);
+    
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Date:", date.toDateString() + " " + date.toTimeString());
     if (Number.isNaN(date.getTime())) {
       return acc;
     }
@@ -215,6 +233,7 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
     }
 
     const key = formatLocalDateKey(date);
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Key:", key);
     if (!acc.has(key)) {
       acc.set(key, {
         date,
@@ -248,6 +267,8 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
             : undefined,
         time: formatHistoryTime(workout.start),
         steps: sanitizeSteps(workout.steps),
+        start: workout.start,
+        end: workout.end,
       });
 
       if (typeof workout.calories === "number" && Number.isFinite(workout.calories)) {
@@ -263,9 +284,18 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
         group.totals.time = (group.totals.time ?? 0) + workout.durationMinutes;
       }
     }
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] ======================= WEEK_CARDIO_HISTORY END ======================= ");
     return acc;
   }, new Map());
 
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] ======================= WEEK_CARDIO_HISTORY GROUPED START ======================= ");
+  for (const [key, value] of grouped.entries()) {
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Key:", key);
+    for (const workout of value.workouts) {
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", JSON.stringify(workout, null, 2));
+    }
+  }
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] ======================= WEEK_CARDIO_HISTORY GROUPED END ======================= ");
   const result = Array.from(grouped.values())
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .map(({ date, workouts, totals, label }) => {
@@ -377,16 +407,22 @@ function getWeekIndex(date: Date) {
   return jsDay === 0 ? 6 : jsDay - 1;
 }
 
-function toLocalDate(value: string | Date | undefined | null) {
-  if (!value) {
-    return new Date(NaN);
+export function toLocalDate(value?: string | Date | null): Date {
+  if (!value) return new Date(NaN);
+
+  if (value instanceof Date) {
+    // Drop the time, keep local calendar day
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
   }
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return new Date(NaN);
-  }
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  // Expect "yyyy-mm-dd"
+  const m = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return new Date(NaN);
+
+  const yyyy = +m[1], mm = +m[2], dd = +m[3];
+  return new Date(yyyy, mm - 1, dd); // local midnight
 }
+
 
 function getStartOfWeek(date: Date) {
   const local = toLocalDate(date);
@@ -623,7 +659,18 @@ function DailyWorkoutCard({ days, dayKey, setDayKey }: DailyWorkoutCardProps) {
                           </div>
                           {workout.time ? (
                             <p className="text-xs" style={{ color: PROGRESS_THEME.textMuted }}>
-                              {workout.time}
+                              {workout.start && workout.end ? (
+                                workout.start.getTime() === workout.end.getTime() ? (
+                                  // Same start and end time - show just start date and time
+                                  `${workout.start.toDateString()} - ${workout.time || 'N/A'}`
+                                ) : (
+                                  // Different start and end times - show start date/time - end date/time
+                                  `${workout.start.toDateString()} ${workout.start.toTimeString()} - ${workout.end.toDateString()} ${workout.end.toTimeString()}`
+                                )
+                              ) : (
+                                // No start/end dates - just show time
+                                workout.time || 'N/A'
+                              )}
                             </p>
                           ) : null}
                         </div>
