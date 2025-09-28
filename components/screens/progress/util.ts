@@ -24,9 +24,9 @@ export const PROGRESS_THEME = {
   accentPrimaryFocusRing: "rgba(226,125,96,0.35)",
   accentSecondary: "#68A691",
   textPrimary: "#111111",
-  textMuted: "rgba(34,49,63,0.65)",
-  textSubtle: "rgba(34,49,63,0.6)",
-  textFaint: "rgba(34,49,63,0.55)",
+  textMuted: "#111111",
+  textSubtle: "#111111",
+  textFaint: "#111111",
   cardBorder: "rgba(30,36,50,0.08)",
   borderSubtle: "rgba(30,36,50,0.12)",
   cardBackground: "#FFFFFF",
@@ -201,8 +201,8 @@ export function determineTrend(currentValue: number | null, previousValue: numbe
   if (currentValue === null || previousValue === null) {
     return {
       icon: TREND_ICONS.flat,
-      color: "text-[rgba(34,49,63,0.55)]",
-      colorActive: "text-[#22313F]",
+      color: "text-[#111111]",
+      colorActive: "text-[#111111]",
       text: "No change",
       delta: 0,
     };
@@ -213,8 +213,8 @@ export function determineTrend(currentValue: number | null, previousValue: numbe
   if (Math.abs(difference) < 0.01) {
     return {
       icon: TREND_ICONS.flat,
-      color: "text-[rgba(34,49,63,0.45)]",
-      colorActive: "text-[#22313F]",
+      color: "text-[#111111]",
+      colorActive: "text-[#111111]",
       text: "Same as prior",
       delta: 0,
     };
