@@ -1,4 +1,6 @@
 import type {
+  AggregatedData,
+  Bucket,
   CardioFocus,
   CardioKpi,
   CardioProgressSnapshot,
@@ -7,43 +9,28 @@ import type {
   SeriesPoint,
   TimeRange,
 } from "../../progress/Progress.types";
+import {
+  averageHeartRate,
+  buildBucketSets,
+  caloriesToDisplay,
+  collectWorkouts,
+  findBucket,
+  formatDateKey,
+  groupWorkoutsByDate,
+  kilometersToDisplay,
+  minutesToDisplay,
+  normalizeActivityName,
+  safeNumber,
+  seriesUnavailableFromBuckets,
+  snapshotUnavailable,
+  stepsToDisplay,
+  getDateString,
+  toLocalBucketDate,
+  toLocalDateTime,
+} from "./util";
 import { logger } from "../../../utils/logging";
 
 const LOG_PREFIX = "[cardioProgess]";
-
-const ACTIVITY_LABELS: Record<string, string> = {
-  "outdoor walk": "Outdoor Walk",
-  "indoor walk": "Indoor Walk",
-  "outdoor run": "Outdoor Run",
-  "indoor run": "Indoor Run",
-  cycling: "Cycling",
-  elliptical: "Elliptical",
-  rowing: "Rowing",
-  "stair stepper": "Stair Stepper",
-  swimming: "Swimming",
-};
-
-type BucketTotals = {
-  minutes: number;
-  distanceKm: number;
-  calories: number;
-  steps: number;
-  heartRateSum: number;
-  heartRateCount: number;
-};
-
-type Bucket = {
-  start: Date;
-  end: Date;
-  totals: BucketTotals;
-  workouts: CardioWorkoutSummary[];
-};
-
-type AggregatedData = {
-  range: TimeRange;
-  current: Bucket[];
-  previous: Bucket[];
-};
 
 type MetricSelector = (bucket: Bucket) => number;
 
@@ -54,284 +41,9 @@ const METRIC_SELECTORS: Record<CardioFocus, MetricSelector> = {
   steps: (bucket) => bucket.totals.steps,
 };
 
-const kmFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const calorieFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
-const stepFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
-
-const MIN_MS = 60_000;
-
-type DateInput = string | number | Date | undefined | null;
-
-function toUtcDate(date: Date): Date {
-  return new Date(
-    Date.UTC(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
-      date.getHours(),
-      date.getMinutes(),
-      date.getSeconds(),
-      date.getMilliseconds(),
-    ),
-  );
-}
-
-function toLocalDateTime(value: DateInput): Date | undefined {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return undefined;
-  }
-
-  const valueIsString = typeof value === "string";
-  const hasExplicitOffset = valueIsString && /([zZ]|[+-]\d{2}:?\d{2})$/.test(value);
-
-  if (valueIsString && !hasExplicitOffset) {
-    return new Date(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate(),
-      date.getUTCHours(),
-      date.getUTCMinutes(),
-      date.getUTCSeconds(),
-      date.getUTCMilliseconds(),
-    );
-  }
-
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    date.getHours(),
-    date.getMinutes(),
-    date.getSeconds(),
-    date.getMilliseconds(),
-  );
-}
-
-function toLocalDate(value: DateInput): Date | undefined {
-  const date = toLocalDateTime(value);
-  if (!date) {
-    return undefined;
-  }
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0);
-}
-
-function formatDateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 const SERIES_FOCUSES: CardioFocus[] = ["activeMinutes", "distance", "calories", "steps"];
 
-function normalizeActivityName(activity: string | undefined): string {
-  if (!activity) return "Workout";
-  const key = activity.trim().toLowerCase();
-  return ACTIVITY_LABELS[key] ?? activity;
-}
-
-function createEmptyTotals(): BucketTotals {
-  return { minutes: 0, distanceKm: 0, calories: 0, steps: 0, heartRateSum: 0, heartRateCount: 0 };
-}
-
-function createBucket(start: Date, end: Date): Bucket {
-  return { start, end, totals: createEmptyTotals(), workouts: [] };
-}
-
-function cloneDate(date: Date) {
-  return new Date(date.getTime());
-}
-
-function buildBuckets(range: TimeRange, inclusiveEnd: Date): Bucket[] {
-  if (range === "sixMonths") {
-    const endMonthStart = new Date(inclusiveEnd.getFullYear(), inclusiveEnd.getMonth(), 1, 0, 0, 0, 0);
-    const startMonth = new Date(endMonthStart);
-    startMonth.setMonth(startMonth.getMonth() - 5);
-    const buckets: Bucket[] = [];
-    for (let index = 0; index < 6; index += 1) {
-      const monthStart = new Date(startMonth.getFullYear(), startMonth.getMonth() + index, 1, 0, 0, 0, 0);
-      const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0, 23, 59, 59, 999);
-      buckets.push(createBucket(monthStart, monthEnd));
-    }
-    return buckets;
-  }
-
-  const bucketCount = range === "week" ? 7 : 12;
-  const stepDays = range === "week" ? 1 : 7;
-  const buckets: Bucket[] = [];
-  const end = cloneDate(inclusiveEnd);
-  end.setHours(23, 59, 59, 999);
-  const start = new Date(end);
-  start.setDate(end.getDate() - stepDays * (bucketCount - 1));
-  start.setHours(0, 0, 0, 0);
-
-  for (let index = 0; index < bucketCount; index += 1) {
-    const bucketStart = new Date(start);
-    bucketStart.setDate(start.getDate() + index * stepDays);
-    const bucketEnd = new Date(bucketStart);
-    bucketEnd.setDate(bucketStart.getDate() + stepDays - 1);
-    bucketEnd.setHours(23, 59, 59, 999);
-    buckets.push(createBucket(bucketStart, bucketEnd));
-  }
-
-  return buckets;
-}
-
-function buildBucketSets(range: TimeRange): { current: Bucket[]; previous: Bucket[] } {
-  const today = new Date();
-  logger.debug("🔍 DGB [CARDIO_PROGRESS] Today:", today.toDateString());
-  const current = buildBuckets(range, today);
-  const firstCurrent = current[0];
-  if (!firstCurrent) {
-    return { current: [], previous: [] };
-  }
-  const previousEnd = new Date(firstCurrent.start);
-  previousEnd.setDate(previousEnd.getDate() - 1);
-  previousEnd.setHours(23, 59, 59, 999);
-  const previous = buildBuckets(range, previousEnd);
-  return { current, previous };
-}
-
-function findBucket(buckets: Bucket[], date: Date): Bucket | undefined {
-  for (const bucket of buckets) {
-    if (date >= bucket.start && date <= bucket.end) {
-      return bucket;
-    }
-  }
-  return undefined;
-}
-
-function safeNumber(value: unknown): number {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === "string") {
-    const parsed = Number.parseFloat(value);
-    if (Number.isFinite(parsed)) {
-      return parsed;
-    }
-  }
-  return 0;
-}
-
-function minutesToDisplay(value: number) {
-  const totalMinutes = Math.max(0, Math.round(value));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  const hoursText = String(hours).padStart(2, "0");
-  const minutesText = String(minutes).padStart(2, "0");
-
-  return `${hoursText}h ${minutesText}m`;
-}
-function kilometersToDisplay(value: number) { return `${kmFormatter.format(Math.max(0, value))}`; }
-function caloriesToDisplay(value: number) { return `${calorieFormatter.format(Math.max(0, value))}`; }
-function stepsToDisplay(value: number) {
-  const safeValue = Math.max(0, value);
-  if (safeValue > 10_000) {
-    return `${Math.round(safeValue / 1_000)}K`;
-  }
-  return `${stepFormatter.format(Math.round(safeValue))}`;
-}
-
-function averageHeartRate(bucket: Bucket): number | undefined {
-  if (bucket.totals.heartRateCount <= 0) {
-    return undefined;
-  }
-  return bucket.totals.heartRateSum / bucket.totals.heartRateCount;
-}
-
-function collectWorkouts(data: AggregatedData): CardioWorkoutSummary[] {
-  return [...data.previous, ...data.current].flatMap((bucket) => bucket.workouts);
-}
-
-function groupWorkoutsByDate(workouts: CardioWorkoutSummary[]): Record<string, CardioWorkoutSummary[]> {
-  const grouped: Record<string, CardioWorkoutSummary[]> = {};
-  for (const workout of workouts) {
-    const date = toLocalDateTime(workout.start) ?? toLocalDateTime(workout.end);
-    if (!date || Number.isNaN(date.getTime())) {
-      continue;
-    }
-  
-    const key = formatDateKey(date);
-    grouped[key] = grouped[key] || [];
-    grouped[key].push(workout);
-  }
-
-  for (const key of Object.keys(grouped)) {
-    grouped[key].sort((a, b) => {
-      const aStart = toLocalDateTime(a.start);
-      const bStart = toLocalDateTime(b.start);
-
-      return (bStart?.getTime() ?? 0) - (aStart?.getTime() ?? 0);
-    });
-  }
-
-  return grouped;
-}
-
-function seriesUnavailableFromBuckets(
-  focus: CardioFocus,
-  buckets: ReturnType<typeof buildBucketSets>,
-  options?: { compare?: boolean },
-): CardioSeriesResponse {
-  const includePrevious = options?.compare !== false;
-  const mapBucket = (bucket: Bucket): SeriesPoint => ({ date: new Date(bucket.start.getTime()), value: 0 });
-  return {
-    focus,
-    current: buckets.current.map(mapBucket),
-    previous: includePrevious ? buckets.previous.map(mapBucket) : undefined,
-  };
-}
-
-function kpisUnavailable(): CardioKpi[] {
-  return [
-    {
-      key: "activeMinutes",
-      title: "Total Time",
-      unit: "minutes",
-      value: "N/A",
-    },
-    {
-      key: "distance",
-      title: "Distance",
-      unit: "km",
-      value: "N/A",
-    },
-    {
-      key: "calories",
-      title: "Calories",
-      unit: "kcal",
-      value: "N/A",
-    },
-    {
-      key: "steps",
-      title: "Steps",
-      value: "N/A",
-    },
-  ];
-}
-
-
-function snapshotUnavailable(range: TimeRange): CardioProgressSnapshot {
-  const buckets = buildBucketSets(range);
-  const series = SERIES_FOCUSES.reduce<Record<CardioFocus, CardioSeriesResponse>>((acc, focus) => {
-    acc[focus] = seriesUnavailableFromBuckets(focus, buckets);
-    return acc;
-  }, {} as Record<CardioFocus, CardioSeriesResponse>);
-
-  return {
-    range,
-    series,
-    kpis: kpisUnavailable(),
-    workouts: {},
-  };
-}
+const MIN_MS = 60_000;
 
 class CardioProgressProvider {
   private cache = new Map<TimeRange, Promise<AggregatedData>>();
@@ -543,15 +255,23 @@ class CardioProgressProvider {
 
     const { current, previous } = buildBucketSets(range);
     for (const bucket of previous) {
-      logger.debug("🔍 DGB [CARDIO_PROGRESS] " + range + 
-        " Previous Bucket Start: ", bucket.start.toDateString(), " " + bucket.start.toTimeString(), 
-        " Previous Bucket End: ", bucket.end.toDateString(), " " + bucket.end.toTimeString());
+      logger.debug(
+        "🔍 DGB [CARDIO_PROGRESS] " + range,
+        " Previous Bucket Start:",
+        getDateString(bucket.start),
+        " Previous Bucket End:",
+        getDateString(bucket.end),
+      );
     }
 
     for (const bucket of current) {
-      logger.debug("🔍 DGB [CARDIO_PROGRESS] " + range +
-        " Current Bucket Start: " + bucket.start.toDateString(), " " + bucket.start.toTimeString(), 
-        " Current Bucket End: ", bucket.end.toDateString(), " " + bucket.end.toTimeString());
+      logger.debug(
+        "🔍 DGB [CARDIO_PROGRESS] " + range,
+        " Current Bucket Start:",
+        getDateString(bucket.start),
+        " Current Bucket End:",
+        getDateString(bucket.end),
+      );
     }
     const allBuckets = [...previous, ...current];
 
@@ -610,16 +330,16 @@ class CardioProgressProvider {
   ): Promise<void> {
     try {
       const { Health } = await import("capacitor-health");
-      logger.debug("🔍 DGB [CARDIO_PROGRESS] Start Local:", startLocal.toDateString() + " " + startLocal.toTimeString());
-      logger.debug("🔍 DGB [CARDIO_PROGRESS] End Local:", endLocal.toDateString() + " " + endLocal.toTimeString());
+      logger.debug("🔍 DGB [CARDIO_PROGRESS] Start Local:", getDateString(startLocal));
+      logger.debug("🔍 DGB [CARDIO_PROGRESS] End Local:", getDateString(endLocal));
       const startUtc = startLocal.toISOString();
       const endUtc = endLocal.toISOString();
 
       logger.debug(`${LOG_PREFIX} ios.populate.start`, {
         start: startUtc,
         end: endUtc,
-        startLocal: startLocal.toDateString() + " " + startLocal.toTimeString(),
-        endLocal: endLocal.toDateString() + " " + endLocal.toTimeString(),
+        startLocal: getDateString(startLocal),
+        endLocal: getDateString(endLocal),
         bucketCount: buckets.length,
       });
 
@@ -668,8 +388,12 @@ class CardioProgressProvider {
           logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket not found for sample: ", sample?.id);
           continue;
         }
-        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket start date:", bucket.start.toDateString() + " " + bucket.start.toTimeString(),
-        " Bucket end date:", bucket.end.toDateString() + " " + bucket.end.toTimeString());
+        logger.debug(
+          "🔍 DGB [CARDIO_PROGRESS] Bucket start date:",
+          getDateString(bucket.start),
+          " Bucket end date:",
+          getDateString(bucket.end),
+        );
 
 
         // calculate duration
@@ -730,8 +454,8 @@ class CardioProgressProvider {
       
         //print workoutSummary
         logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.id);
-        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.start.toDateString() + " " + workoutSummary.start.toTimeString());
-        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.end.toDateString() + " " + workoutSummary.end.toTimeString());
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", getDateString(workoutSummary.start));
+        logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", getDateString(workoutSummary.end));
         logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.durationMinutes);
         logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.distanceKm);
         logger.debug("🔍 DGB [CARDIO_PROGRESS] workoutSummary ", workoutSummary.calories);
@@ -759,22 +483,32 @@ class CardioProgressProvider {
           const rwoIndex = rows.indexOf(row);
           logger.debug("🔍 DGB [CARDIO_PROGRESS] queryAggregated ", dataType, rwoIndex + 1 + "/" + rows.length)
           
-          const rowDate = toLocalDate(row?.startDate ?? row?.date);
+          const rowDate = toLocalBucketDate(row?.startDate ?? row?.date);
           if (!rowDate) {
-            logger.debug("🔍 DGB [CARDIO_PROGRESS] rowDate not found", row?.startDate.toDateString() + " " + row?.startDate.toTimeString(), 
-            row?.date.toDateString() + " " + row?.date.toTimeString());
+            logger.debug(
+              "🔍 DGB [CARDIO_PROGRESS] rowDate not found",
+              row?.startDate ? getDateString(new Date(row.startDate)) : "Unknown start",
+              row?.date ? getDateString(new Date(row.date)) : "Unknown date",
+            );
             continue;
           }
           const bucket = findBucket(buckets, rowDate)
           if (!bucket){
-            logger.debug("🔍 DGB [CARDIO_PROGRESS] bucket not found", row?.startDate.toDateString() + " " + row?.startDate.toTimeString(), 
-            row?.date.toDateString() + " " + row?.date.toTimeString());
+            logger.debug(
+              "🔍 DGB [CARDIO_PROGRESS] bucket not found",
+              row?.startDate ? getDateString(new Date(row.startDate)) : "Unknown start",
+              row?.date ? getDateString(new Date(row.date)) : "Unknown date",
+            );
             continue;
           }
 
           const value = safeNumber(row?.value);
-          logger.debug("🔍 DGB [CARDIO_PROGRESS] queryAggregated Date: ", 
-            rowDate.toDateString() + " " + rowDate.toTimeString(), " Value: ", row.value);
+          logger.debug(
+            "🔍 DGB [CARDIO_PROGRESS] queryAggregated Date: ",
+            getDateString(rowDate),
+            " Value: ",
+            row.value,
+          );
           if (value > 0) {
             apply(bucket, value);
           }
@@ -796,8 +530,12 @@ class CardioProgressProvider {
         if (bucket.totals.steps <= 0 && fallbackSteps.has(bucket)) {
           bucket.totals.steps = fallbackSteps.get(bucket) ?? 0;
         }
-        logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket start:", bucket.start.toDateString() + " " + bucket.start.toTimeString(), 
-        "Bucket end:", bucket.end.toDateString() + " " + bucket.end.toTimeString());
+        logger.debug(
+          "🔍 DGB [CARDIO_PROGRESS] Bucket start:",
+          getDateString(bucket.start),
+          "Bucket end:",
+          getDateString(bucket.end),
+        );
         logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket workouts:", bucket.workouts.length);
         //logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket workouts:", JSON.stringify(bucket.workouts, null, 2));
         logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket totals:", JSON.stringify(bucket.totals, null, 2));
@@ -820,12 +558,12 @@ class CardioProgressProvider {
   ): Promise<void> {
     try {
       const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
-      const startUtc = toUtcDate(startLocal);
-      const endUtc = toUtcDate(endLocal);
+      const startTime = new Date(startLocal.getTime());
+      const endTime = new Date(endLocal.getTime());
 
       logger.debug(`${LOG_PREFIX} android.populate.start`, {
-        start: startUtc.toISOString(),
-        end: endUtc.toISOString(),
+        start: startTime.toISOString(),
+        end: endTime.toISOString(),
         bucketCount: buckets.length,
       });
 
@@ -834,7 +572,7 @@ class CardioProgressProvider {
         write: [],
       });
 
-      const timeRangeFilter = { type: "between", startTime: startUtc, endTime: endUtc } as const;
+      const timeRangeFilter = { type: "between", startTime, endTime } as const;
 
       const readAllRecords = async (type: string) => {
         const records: any[] = [];
@@ -856,7 +594,7 @@ class CardioProgressProvider {
 
       const stepRecords = await readAllRecords("Steps");
       for (const record of stepRecords) {
-        const bucketDate = toLocalDate(record?.endTime ?? record?.startTime);
+        const bucketDate = toLocalBucketDate(record?.endTime ?? record?.startTime);
         if (!bucketDate) continue;
         const bucket = findBucket(buckets, bucketDate);
         if (!bucket) continue;
@@ -908,7 +646,7 @@ class CardioProgressProvider {
 
       const calorieRecords = await readAllRecords("ActiveCaloriesBurned");
       for (const record of calorieRecords) {
-        const bucketDate = toLocalDate(record?.startTime ?? record?.endTime);
+        const bucketDate = toLocalBucketDate(record?.startTime ?? record?.endTime);
         if (!bucketDate) continue;
         const bucket = findBucket(buckets, bucketDate);
         if (!bucket) continue;
@@ -921,7 +659,7 @@ class CardioProgressProvider {
 
       const heartRateRecords = await readAllRecords("HeartRateSeries");
       for (const record of heartRateRecords) {
-        const bucketDate = toLocalDate(record?.startTime ?? record?.endTime);
+        const bucketDate = toLocalBucketDate(record?.startTime ?? record?.endTime);
         if (!bucketDate) continue;
         const bucket = findBucket(buckets, bucketDate);
         if (!bucket) continue;

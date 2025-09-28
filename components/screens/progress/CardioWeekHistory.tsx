@@ -18,53 +18,35 @@ import {
   Trophy,
 } from "lucide-react";
 
-import { PROGRESS_THEME } from "./util";
-import type { CardioWorkoutSummary } from "../../progress/Progress.types";
+import {
+  PROGRESS_THEME,
+  addDays,
+  formatDateLabel,
+  formatLocalDateKey,
+  formatMinutes,
+  formatHistoryDuration,
+  formatHistoryTime,
+  getAccentColor,
+  getDateString,
+  getStartOfWeek,
+  getWeekIndex,
+  getWeekdayLabel,
+  hexToRgba,
+  isWithinRange,
+  sanitizeSteps,
+  toLocalCalendarDate,
+} from "./util";
+import type {
+  AggregatedTotals,
+  CardioWeekHistoryDay,
+  CardioWeekHistoryWorkout,
+  CardioWorkoutSummary,
+} from "../../progress/Progress.types";
 import { logger } from "../../../utils/logging";
 
 const cn = (...classes: Array<string | false | null | undefined>) => classes.filter(Boolean).join(" ");
 
-export type CardioWeekHistoryWorkout = {
-  id: number | string;
-  name: string;
-  source?: string;
-  duration?: ReactNode;
-  time?: string;
-  calories?: ReactNode;
-  distance?: ReactNode;
-  steps?: ReactNode;
-  exercises?: number;
-  sets?: number;
-  rounds?: number;
-  volume?: ReactNode;
-  personalRecords?: number;
-  type?: string;
-  start?: Date;
-  end?: Date;
-};
-
-export type CardioWeekHistoryDay = {
-  key: string;
-  label?: string;
-  weekIndex: number;
-  dateLabel: string;
-  dailyTotals: {
-    calories?: ReactNode;
-    time?: ReactNode;
-    distance?: ReactNode;
-    steps?: ReactNode;
-  };
-  workouts: CardioWeekHistoryWorkout[];
-};
-
 type StyleWithRing = CSSProperties & { ["--tw-ring-color"]?: string };
-
-type AggregatedTotals = {
-  calories?: number;
-  distance?: number;
-  steps?: number;
-  time?: number;
-};
 
 const SECTION_STYLE: CSSProperties = {
   borderColor: PROGRESS_THEME.cardBorder,
@@ -80,37 +62,8 @@ const DIVIDER_STYLE: CSSProperties = {
   backgroundColor: PROGRESS_THEME.borderSubtle,
 };
 
-const WORKOUT_ACCENTS: Record<string, string> = {
-  workouts: PROGRESS_THEME.accentPrimary,
-  strength: PROGRESS_THEME.accentPrimary,
-  cardio: PROGRESS_THEME.accentSecondary,
-  hiit: PROGRESS_THEME.accentSecondary,
-  mobility: PROGRESS_THEME.accentSecondary,
-};
-
 const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const distanceFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-function hexToRgba(hex: string, alpha: number) {
-  const normalized = hex.replace("#", "");
-  const value = Number.parseInt(normalized, 16);
-  const isShort = normalized.length === 3;
-  const r = isShort ? ((value >> 8) & 0xf) * 17 : (value >> 16) & 0xff;
-  const g = isShort ? ((value >> 4) & 0xf) * 17 : (value >> 8) & 0xff;
-  const b = isShort ? (value & 0xf) * 17 : value & 0xff;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-function getAccentColor(type?: string) {
-  return WORKOUT_ACCENTS[type ?? ""] ?? PROGRESS_THEME.accentPrimary;
-}
-
-function formatLocalDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 class Workout {
   id: number | string;
@@ -186,11 +139,11 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
 
   const startOfCurrentWeek = getStartOfWeek(new Date());
   const endOfCurrentWeek = addDays(startOfCurrentWeek, 7);
-  const today = toLocalDate(new Date());
+  const today = toLocalCalendarDate(new Date());
 
-  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Start of current week:", startOfCurrentWeek.toDateString() + " " + startOfCurrentWeek.toTimeString());
-  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] End of current week:", endOfCurrentWeek.toDateString() + " " + endOfCurrentWeek.toTimeString());
-  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Today:", today.toDateString() + " " + today.toTimeString());
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Start of current week:", getDateString(startOfCurrentWeek));
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] End of current week:", getDateString(endOfCurrentWeek));
+  logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Today:", getDateString(today));
 
   const grouped = entries.reduce<
     Map<
@@ -206,8 +159,8 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
     logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] ======================= WEEK_CARDIO_HISTORY START ======================= ");
     logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Date:", localDate);
     for (const workout of workouts) {
-      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.start.toDateString() + " " + workout.start.toTimeString());
-      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.end.toDateString() + " " + workout.end.toTimeString());
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", getDateString(workout.start));
+      logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", getDateString(workout.end));
       logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.durationMinutes);
       logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.distanceKm);
       logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Workout:", workout.calories);
@@ -220,10 +173,13 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
       return acc;
     }
 
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Fallback:", workouts[0] ? toLocalDate(workouts[0].start).toDateString() + " " + toLocalDate(workouts[0].start).toTimeString() : "N/A");
-    const date = workouts[0] ? toLocalDate(workouts[0].start) : new Date(NaN);
+    logger.debug(
+      "🔍 DGB [CARDIO_WEEK_HISTORY] Fallback:",
+      workouts[0] ? getDateString(toLocalCalendarDate(workouts[0].start)) : "N/A",
+    );
+    const date = workouts[0] ? toLocalCalendarDate(workouts[0].start) : new Date(NaN);
     
-    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Date:", date.toDateString() + " " + date.toTimeString());
+    logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Date:", getDateString(date));
     if (Number.isNaN(date.getTime())) {
       return acc;
     }
@@ -355,122 +311,18 @@ export function buildCardioWeekHistory(groups: Record<string, CardioWorkoutSumma
   }
   result.forEach((day) => {
     if (typeof day.label === "undefined") {
-      day.label = getWeekdayLabel(toLocalDate(day.key));
+      day.label = getWeekdayLabel(toLocalCalendarDate(day.key));
     }
   });
 
-  result.sort((a, b) => toLocalDate(b.key).getTime() - toLocalDate(a.key).getTime());
+  result.sort(
+    (a, b) => toLocalCalendarDate(b.key).getTime() - toLocalCalendarDate(a.key).getTime(),
+  );
 
   for (const day of result) {
     logger.debug("🔍 DGB [CARDIO_WEEK_HISTORY] Day:", JSON.stringify(day, null, 2));
   }
   return result;
-}
-
-function formatHistoryDuration(minutes?: number) {
-  if (!Number.isFinite(minutes) || (minutes ?? 0) <= 0) {
-    return "00:00:00";
-  }
-  const totalSeconds = Math.max(0, Math.round((minutes ?? 0) * 60));
-  const hours = Math.floor(totalSeconds / 3600);
-  const mins = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
-function formatHistoryTime(value?: Date | string) {
-  if (!value) return undefined;
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return undefined;
-  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-}
-
-function sanitizeSteps(value?: number) {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return undefined;
-  }
-  const normalized = Math.round(value);
-  return normalized >= 0 ? normalized : undefined;
-}
-
-function formatMinutes(totalMinutes: number) {
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = Math.round(totalMinutes % 60);
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${minutes}m`;
-}
-
-function getWeekIndex(date: Date) {
-  const jsDay = date.getDay();
-  return jsDay === 0 ? 6 : jsDay - 1;
-}
-
-export function toLocalDate(value?: string | Date | null): Date {
-  if (!value) return new Date(NaN);
-
-  if (value instanceof Date) {
-    // Drop the time, keep local calendar day
-    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
-  }
-
-  // Expect "yyyy-mm-dd"
-  const m = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return new Date(NaN);
-
-  const yyyy = +m[1], mm = +m[2], dd = +m[3];
-  return new Date(yyyy, mm - 1, dd); // local midnight
-}
-
-
-function getStartOfWeek(date: Date) {
-  const local = toLocalDate(date);
-  if (Number.isNaN(local.getTime())) {
-    return new Date(date);
-  }
-  const jsDay = local.getDay();
-  const diff = jsDay === 0 ? -6 : 1 - jsDay;
-  local.setDate(local.getDate() + diff);
-  return local;
-}
-
-function addDays(date: Date, days: number) {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-
-function isWithinRange(date: Date, start: Date, end: Date) {
-  const dateTime = date.getTime();
-  const startTime = start.getTime();
-  const endTime = end.getTime();
-
-  if (Number.isNaN(dateTime) || Number.isNaN(startTime) || Number.isNaN(endTime)) {
-    return false;
-  }
-
-  if (dateTime < startTime || dateTime > endTime) {
-    return false;
-  }
-
-  const dateDay = toLocalDate(date).getTime();
-  const startDay = toLocalDate(start).getTime();
-  const endDay = toLocalDate(end).getTime();
-
-  if (endDay > startDay && dateDay === endDay) {
-    return false;
-  }
-
-  return true;
-}
-
-function getWeekdayLabel(date: Date) {
-  return date.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 1).toUpperCase();
-}
-
-function formatDateLabel(date: Date) {
-  return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
 
 type WeekStripProps = {
