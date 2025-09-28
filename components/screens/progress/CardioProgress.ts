@@ -558,21 +558,29 @@ class CardioProgressProvider {
   ): Promise<void> {
     try {
       const { HealthConnect } = await import("@kiwi-health/capacitor-health-connect");
-      const startTime = new Date(startLocal.getTime());
-      const endTime = new Date(endLocal.getTime());
+      const startUtc = startLocal.toISOString();
+      const endUtc = endLocal.toISOString();
 
       logger.debug(`${LOG_PREFIX} android.populate.start`, {
-        start: startTime.toISOString(),
-        end: endTime.toISOString(),
+        start: startUtc,
+        end: endUtc,
+        startLocal: getDateString(startLocal),
+        endLocal: getDateString(endLocal),
         bucketCount: buckets.length,
       });
 
       await HealthConnect.requestHealthPermissions({
-        read: ["Steps", "Distance", "ActiveCaloriesBurned", "HeartRateSeries"],
+        read: [
+          "Steps",
+          "Distance",
+          "ActiveCaloriesBurned",
+          "HeartRateSeries",
+          "ExerciseSession" as any,
+        ],
         write: [],
       });
 
-      const timeRangeFilter = { type: "between", startTime, endTime } as const;
+      const timeRangeFilter = { type: "between", startTime: startUtc, endTime: endUtc } as const;
 
       const readAllRecords = async (type: string) => {
         const records: any[] = [];
@@ -592,6 +600,139 @@ class CardioProgressProvider {
         return records;
       };
 
+      const addToMap = (map: Map<Bucket, number>, bucket: Bucket, value: number) => {
+        map.set(bucket, (map.get(bucket) ?? 0) + value);
+      };
+
+      const fallbackCalories = new Map<Bucket, number>();
+      const fallbackSteps = new Map<Bucket, number>();
+      const aggregatedCalories = new Map<Bucket, number>();
+      const aggregatedSteps = new Map<Bucket, number>();
+
+      const workoutIndex = new WeakMap<Bucket, Map<string, CardioWorkoutSummary>>();
+      const WORKOUT_MATCH_WINDOW_MS = 5 * MIN_MS;
+
+      const getWorkoutMap = (bucket: Bucket) => {
+        let map = workoutIndex.get(bucket);
+        if (!map) {
+          map = new Map();
+          workoutIndex.set(bucket, map);
+        }
+        return map;
+      };
+
+      const registerWorkout = (bucket: Bucket, workout: CardioWorkoutSummary) => {
+        getWorkoutMap(bucket).set(workout.id, workout);
+        bucket.workouts.push(workout);
+        return workout;
+      };
+
+      const findWorkoutById = (bucket: Bucket, id?: string) => {
+        if (!id) return undefined;
+        return getWorkoutMap(bucket).get(id);
+      };
+
+      const findWorkoutByTime = (bucket: Bucket, start: Date, end: Date) => {
+        const startMs = start.getTime();
+        const endMs = end.getTime();
+        return bucket.workouts.find((workout) => {
+          const workoutStart = workout.start.getTime();
+          const workoutEnd = workout.end.getTime();
+          const startDiff = Math.abs(workoutStart - startMs);
+          const endDiff = Math.abs(workoutEnd - endMs);
+          const overlaps =
+            startMs <= workoutEnd + WORKOUT_MATCH_WINDOW_MS &&
+            endMs >= workoutStart - WORKOUT_MATCH_WINDOW_MS;
+          return startDiff <= WORKOUT_MATCH_WINDOW_MS || endDiff <= WORKOUT_MATCH_WINDOW_MS || overlaps;
+        });
+      };
+
+      const ensureWorkout = (
+        bucket: Bucket,
+        id: string,
+        start: Date,
+        end: Date,
+        activity: string,
+        source: string | undefined,
+        durationMinutes: number,
+      ) => {
+        const existingById = findWorkoutById(bucket, id);
+        if (existingById) {
+          existingById.start = new Date(Math.min(existingById.start.getTime(), start.getTime()));
+          existingById.end = new Date(Math.max(existingById.end.getTime(), end.getTime()));
+          existingById.durationMinutes = Math.max(existingById.durationMinutes, durationMinutes);
+          if (source && !existingById.source) {
+            existingById.source = source;
+          }
+          return existingById;
+        }
+
+        const existingByTime = findWorkoutByTime(bucket, start, end);
+        if (existingByTime) {
+          existingByTime.start = new Date(Math.min(existingByTime.start.getTime(), start.getTime()));
+          existingByTime.end = new Date(Math.max(existingByTime.end.getTime(), end.getTime()));
+          existingByTime.durationMinutes = Math.max(existingByTime.durationMinutes, durationMinutes);
+          if (source && !existingByTime.source) {
+            existingByTime.source = source;
+          }
+          if (!existingByTime.activity) {
+            existingByTime.activity = activity;
+          }
+          return existingByTime;
+        }
+
+        const workout: CardioWorkoutSummary = {
+          id,
+          activity,
+          start: new Date(start.getTime()),
+          end: new Date(end.getTime()),
+          durationMinutes,
+          source,
+        };
+
+        if (durationMinutes > 0) {
+          bucket.totals.minutes += durationMinutes;
+        }
+
+        return registerWorkout(bucket, workout);
+      };
+
+      let exerciseSessions: any[] = [];
+      try {
+        exerciseSessions = await readAllRecords("ExerciseSession");
+      } catch (error) {
+        logger.debug(`${LOG_PREFIX} android.workouts.sessions_unavailable`, { error });
+      }
+
+      for (const record of exerciseSessions) {
+        const startDate = toLocalDateTime(record?.startTime);
+        const endDate = toLocalDateTime(record?.endTime);
+        if (!startDate || !endDate) continue;
+
+        const bucket = findBucket(buckets, startDate);
+        if (!bucket) continue;
+
+        const durationMinutes = Math.max(0, (endDate.getTime() - startDate.getTime()) / MIN_MS);
+        const activityName = normalizeActivityName(record?.exerciseType ?? record?.activityType ?? "Workout");
+        const id = String(record?.metadata?.id ?? `android-session-${endDate.getTime()}`);
+        const workout = ensureWorkout(
+          bucket,
+          id,
+          startDate,
+          endDate,
+          activityName,
+          record?.metadata?.dataOrigin,
+          durationMinutes,
+        );
+
+        workout.activity = activityName;
+        workout.start = new Date(startDate.getTime());
+        workout.end = new Date(endDate.getTime());
+        workout.durationMinutes = Math.max(workout.durationMinutes, durationMinutes);
+      }
+
+      const hasExerciseSessions = exerciseSessions.length > 0;
+
       const stepRecords = await readAllRecords("Steps");
       for (const record of stepRecords) {
         const bucketDate = toLocalBucketDate(record?.endTime ?? record?.startTime);
@@ -601,7 +742,8 @@ class CardioProgressProvider {
 
         const steps = safeNumber(record?.count);
         if (steps > 0) {
-          bucket.totals.steps += steps;
+          addToMap(aggregatedSteps, bucket, steps);
+          addToMap(fallbackSteps, bucket, steps);
         }
       }
 
@@ -626,22 +768,25 @@ class CardioProgressProvider {
           distanceKm = distanceValue * 1.60934;
         }
 
-        bucket.totals.minutes += durationMinutes;
+        const workoutId = String(record?.metadata?.id ?? `android-distance-${endDate.getTime()}`);
+        const workout = ensureWorkout(
+          bucket,
+          workoutId,
+          startDate,
+          endDate,
+          normalizeActivityName(record?.activityType ?? "Distance"),
+          record?.metadata?.dataOrigin,
+          durationMinutes,
+        );
+
         if (distanceKm && distanceKm > 0) {
           bucket.totals.distanceKm += distanceKm;
+          workout.distanceKm = (workout.distanceKm ?? 0) + distanceKm;
         }
 
-        const workoutSummary: CardioWorkoutSummary = {
-          id: record?.metadata?.id ?? `android-distance-${endDate.getTime()}`,
-          activity: normalizeActivityName("Distance"),
-          start: new Date(startDate.getTime()),
-          end: new Date(endDate.getTime()),
-          durationMinutes,
-          distanceKm,
-          source: record?.metadata?.dataOrigin,
-        };
-
-        bucket.workouts.push(workoutSummary);
+        if (!hasExerciseSessions) {
+          workout.durationMinutes = Math.max(workout.durationMinutes, durationMinutes);
+        }
       }
 
       const calorieRecords = await readAllRecords("ActiveCaloriesBurned");
@@ -653,7 +798,17 @@ class CardioProgressProvider {
 
         const energy = safeNumber(record?.energy?.value);
         if (energy > 0) {
-          bucket.totals.calories += energy;
+          addToMap(aggregatedCalories, bucket, energy);
+          addToMap(fallbackCalories, bucket, energy);
+
+          const startDate = toLocalDateTime(record?.startTime ?? record?.endTime);
+          const endDate = toLocalDateTime(record?.endTime ?? record?.startTime);
+          if (startDate && endDate) {
+            const workout = findWorkoutByTime(bucket, startDate, endDate);
+            if (workout) {
+              workout.calories = (workout.calories ?? 0) + energy;
+            }
+          }
         }
       }
 
@@ -675,6 +830,29 @@ class CardioProgressProvider {
         }
       }
 
+      const applyAggregated = (
+        aggregated: Map<Bucket, number>,
+        fallback: Map<Bucket, number>,
+        apply: (bucket: Bucket, value: number) => void,
+      ) => {
+        for (const bucket of buckets) {
+          const aggregatedValue = aggregated.get(bucket);
+          if (aggregatedValue && aggregatedValue > 0) {
+            apply(bucket, aggregatedValue);
+          } else if (fallback.has(bucket)) {
+            apply(bucket, fallback.get(bucket) ?? 0);
+          }
+        }
+      };
+
+      applyAggregated(aggregatedSteps, fallbackSteps, (bucket, value) => {
+        bucket.totals.steps += value;
+      });
+
+      applyAggregated(aggregatedCalories, fallbackCalories, (bucket, value) => {
+        bucket.totals.calories += value;
+      });
+
       for (const bucket of buckets) {
         const avg = averageHeartRate(bucket);
         if (avg !== undefined) {
@@ -687,6 +865,7 @@ class CardioProgressProvider {
       logger.debug(`${LOG_PREFIX} android.populate.complete`, {
         workouts: buckets.reduce((total, bucket) => total + bucket.workouts.length, 0),
         bucketsWithWorkouts: buckets.filter((bucket) => bucket.workouts.length > 0).length,
+        exerciseSessions: exerciseSessions.length,
       });
     } catch (error) {
       logger.warn(`${LOG_PREFIX} android.populate.error`, { error });
