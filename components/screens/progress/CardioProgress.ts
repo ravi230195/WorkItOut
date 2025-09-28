@@ -663,7 +663,7 @@ class CardioProgressProvider {
           continue;
         }
 
-        const bucket = findBucket(buckets, endDate);
+        const bucket = findBucket(buckets, startDate);
         if (!bucket) {
           logger.debug("🔍 DGB [CARDIO_PROGRESS] Bucket not found for sample: ", sample?.id);
           continue;
@@ -873,7 +873,7 @@ class CardioProgressProvider {
         const endDate = toLocalDateTime(record?.endTime);
         if (!startDate || !endDate) continue;
 
-        const bucket = findBucket(buckets, endDate);
+        const bucket = findBucket(buckets, startDate);
         if (!bucket) continue;
 
         const durationMinutes = Math.max(0, (endDate.getTime() - startDate.getTime()) / MIN_MS);
@@ -908,7 +908,7 @@ class CardioProgressProvider {
 
       const calorieRecords = await readAllRecords("ActiveCaloriesBurned");
       for (const record of calorieRecords) {
-        const bucketDate = toLocalDate(record?.endTime ?? record?.startTime);
+        const bucketDate = toLocalDate(record?.startTime ?? record?.endTime);
         if (!bucketDate) continue;
         const bucket = findBucket(buckets, bucketDate);
         if (!bucket) continue;
@@ -921,7 +921,7 @@ class CardioProgressProvider {
 
       const heartRateRecords = await readAllRecords("HeartRateSeries");
       for (const record of heartRateRecords) {
-        const bucketDate = toLocalDate(record?.endTime ?? record?.startTime);
+        const bucketDate = toLocalDate(record?.startTime ?? record?.endTime);
         if (!bucketDate) continue;
         const bucket = findBucket(buckets, bucketDate);
         if (!bucket) continue;
